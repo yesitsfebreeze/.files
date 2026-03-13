@@ -1,0 +1,15 @@
+# Ignore everything
+*
+
+# Except these folders
+!wezterm/
+!wezterm/**
+!nvim/
+!nvim/**
+!opencode
+# Keep .gitignore itself
+!.gitignore
+
+
+_backup
+__pycache__
