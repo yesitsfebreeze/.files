@@ -50,11 +50,16 @@ alias oc="opencode"
 # opencode
 export PATH=/Users/feb/.opencode/bin:$PATH
 
-# Reload command to download and source .shrc from .files.git
+# Sync .files repo and reload .zshrc
 reload() {
-  curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/.shrc -o ~/.shrc
-  source ~/.shrc
-  update
+  local cwd="$PWD"
+  cd ~
+  git add -A
+  git commit -m "sync"
+  git pull --rebase
+  git push
+  cd "$cwd"
+  source ~/.zshrc
 }
 
 # Sync command to download and rsync .files repo (Dockerfile logic)
