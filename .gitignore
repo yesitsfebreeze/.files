@@ -18,6 +18,9 @@
 !.config/karabiner/
 !.config/karabiner/**
 
+!docker/
+!docker/**
+
 # Keep .gitignore itself
 !.gitignore
 
