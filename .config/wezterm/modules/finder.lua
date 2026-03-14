@@ -49,7 +49,7 @@ local function fzf_grep_script(cwd)
   return SIGNAL_FN .. [[
 cd "]] .. cwd .. [["
 RESULT=$(: | fzf --layout=reverse --prompt=" Grep > " --disabled --border \
-  --bind "change:reload:rg --line-number --no-heading --color=never --smart-case -- {q} || true" \
+  --bind 'change:reload:q={q}; [ ${#q} -ge 2 ] && rg --line-number --no-heading --color=never --smart-case -- "$q" 2>/dev/null; true' \
   --delimiter=: \
   --preview 'bat --color=always --highlight-line {2} {1} 2>/dev/null' \
   --preview-window 'right,50%,border-left,+{2}/2')

@@ -24,6 +24,7 @@ config.cursor_blink_rate = 0
 config.audible_bell = "Disabled"
 config.scrollback_lines = 3500
 
+config.font_dirs = { wezterm.config_dir .. "/fonts" }
 config.font = wezterm.font(globals.font_family or "DepartureMono Nerd Font Mono")
 config.font_size = globals.font_size or 13
 config.line_height = globals.line_height or 1.01

@@ -11,6 +11,8 @@
 !.config/nvim/**
 !.config/opencode/
 !.config/opencode/**
+!.config/karabiner/
+!.config/karabiner/**
 
 # Keep .gitignore itself
 !.gitignore
