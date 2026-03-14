@@ -1,15 +1,19 @@
 # Ignore everything
 *
 
+# Allow .config directory itself (required for nested un-ignores to work)
+!.config/
+
 # Except these folders
-!wezterm/
-!wezterm/**
-!nvim/
-!nvim/**
-!opencode
+!.config/wezterm/
+!.config/wezterm/**
+!.config/nvim/
+!.config/nvim/**
+!.config/opencode/
+!.config/opencode/**
+
 # Keep .gitignore itself
 !.gitignore
 
-
-_backup
+# Ignore subfolders
 __pycache__
