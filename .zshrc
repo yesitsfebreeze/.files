@@ -1,3 +1,5 @@
+# This config is distributed via Docker (Linux) — do not add macOS or platform-specific plugins/tools.
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
@@ -13,7 +15,7 @@ HIST_STAMPS="dd/mm/yyyy"
 
 # Standard plugins can be found in $ZSH/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git docker 1password macos)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
