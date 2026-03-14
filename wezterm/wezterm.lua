@@ -44,8 +44,9 @@ config.hide_tab_bar_if_only_one_tab = false
 -- ── Modules ─────────────────────────────────────────────────────
 modules.apply_all(config, globals, {
   "theme",            -- color scheme + tab bar theming
-  "theme_picker",     -- Ctrl+Shift+T — fuzzy theme switcher
+  "sessions",         -- agent session tracker (must load before layout)
   "layout",           -- startup pane splits + Ctrl+Shift+/ cycle
+  "projects",         -- Leader+h/o — project tracking + pane reset
   "keys",             -- leader key bindings
   "leader_overlay",   -- LEADER indicator + ? help overlay
   "workspaces",       -- Ctrl+Shift+Alt+W/S — workspace manager

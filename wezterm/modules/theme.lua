@@ -64,9 +64,12 @@ function M.apply(config, globals)
     },
   }
 
-  -- Custom tab title: index + process name
+  -- Custom tab title: index + process name (or explicit tab title if set)
   wezterm.on("format-tab-title", function(tab, _tabs, _panes, _cfg, _hover, _max)
-    local title = tab.active_pane.title
+    local title = tab.tab_title
+    if not title or #title == 0 then
+      title = tab.active_pane.title
+    end
     if title and #title > 24 then
       title = title:sub(1, 22) .. "…"
     end

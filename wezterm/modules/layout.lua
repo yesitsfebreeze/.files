@@ -48,6 +48,9 @@ local function apply_splits(gui_win, tab, widths, focus_idx)
   if pane_info[focus_idx] then
     pane_info[focus_idx].pane:activate()
   end
+
+  -- Notify sessions module to initialize the sidebar in the rightmost pane
+  wezterm.emit("sessions-init-sidebar", gui_win, tab)
 end
 
 -- ── Startup layout (first window, first tab) ───────────────────
@@ -87,6 +90,7 @@ wezterm.on("new-tab-button-click", function(window, pane, is_default_click)
 end)
 
 --- Cycle focus: left → center → right → left …
+--- Skips the sidebar pane (rightmost) when 4+ panes exist.
 local function cycle_pane_focus(window, _pane)
   local tab = window:active_tab()
   local panes = tab:panes_with_info()
@@ -99,6 +103,12 @@ local function cycle_pane_focus(window, _pane)
     return a.top < b.top
   end)
 
+  -- Exclude the sidebar pane (rightmost) from cycling when 4+ panes
+  local cycle_count = #panes
+  if #panes >= 4 then
+    cycle_count = #panes - 1
+  end
+
   -- Find which pane is currently active
   local active_idx = 1
   for i, p in ipairs(panes) do
@@ -108,8 +118,14 @@ local function cycle_pane_focus(window, _pane)
     end
   end
 
-  -- Cycle to the next pane
-  local next_idx = (active_idx % #panes) + 1
+  -- If on the sidebar, jump to first pane
+  if active_idx > cycle_count then
+    panes[1].pane:activate()
+    return
+  end
+
+  -- Cycle to the next pane (within the non-sidebar panes)
+  local next_idx = (active_idx % cycle_count) + 1
   panes[next_idx].pane:activate()
 end
 

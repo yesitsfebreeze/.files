@@ -5,6 +5,7 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 local mux = wezterm.mux
+local projects = require("modules.projects")
 
 local M = {}
 
@@ -79,6 +80,7 @@ function M.apply(config, _globals)
                   description = "Enter workspace path:",
                   action = wezterm.action_callback(function(w, p, line)
                     if line and #line > 0 then
+                      projects.track(line)
                       w:perform_action(act.SwitchToWorkspace({
                         name = line:match("([^/\\]+)$") or line,
                         spawn = { cwd = line },
@@ -89,6 +91,7 @@ function M.apply(config, _globals)
                 inner_pane
               )
             else
+              projects.track(id)
               inner_window:perform_action(act.SwitchToWorkspace({
                 name = label,
                 spawn = { cwd = id },
