@@ -7,10 +7,14 @@
 # Except these folders
 !.config/wezterm/
 !.config/wezterm/**
+.config/wezterm/.theme_list
+
 !.config/nvim/
 !.config/nvim/**
+
 !.config/opencode/
 !.config/opencode/**
+
 !.config/karabiner/
 !.config/karabiner/**
 
