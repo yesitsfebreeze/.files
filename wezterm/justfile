@@ -9,20 +9,20 @@ set windows-shell := ["powershell", "-NoProfile", "-Command"]
 #  ripgrep    rg        BurntSushi.ripgrep      ripgrep       ripgrep      ripgrep
 #  fzf        fzf       junegunn.fzf            fzf           fzf          fzf
 #  bat        bat       sharkdp.bat             bat           bat          bat
-#  python     python    Python.Python.3.12      python@3      python3      python
+#  fd         fd        sharkdp.fd              fd            fd-find      fd
 #  wezterm    wezterm   wez.wezterm             --cask        (website)    (website)
 
-check_bins  := "wezterm rg bat fzf python"
+check_bins  := "wezterm rg bat fzf fd"
 
-winget_ids  := "BurntSushi.ripgrep junegunn.fzf sharkdp.bat Python.Python.3.12 wez.wezterm"
+winget_ids  := "BurntSushi.ripgrep junegunn.fzf sharkdp.bat sharkdp.fd wez.wezterm"
 winget_opts := "--accept-source-agreements --accept-package-agreements -e"
 
-brew_pkgs   := "ripgrep fzf bat python@3"
+brew_pkgs   := "ripgrep fzf bat fd"
 brew_casks  := "wezterm"
 
-apt_pkgs    := "ripgrep fzf bat python3"
-dnf_pkgs    := "ripgrep fzf bat python3"
-pacman_pkgs := "ripgrep fzf bat python"
+apt_pkgs    := "ripgrep fzf bat fd-find"
+dnf_pkgs    := "ripgrep fzf bat fd-find"
+pacman_pkgs := "ripgrep fzf bat fd"
 
 # ── Install ──────────────────────────────────────────────────────
 

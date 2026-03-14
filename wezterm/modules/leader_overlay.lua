@@ -9,10 +9,16 @@ local wezterm = require("wezterm")
 
 local M = {}
 
---- Look up colors from the active color scheme (cached).
-local _color_cache = {}
+--- Look up colors from the active color scheme.
+--- Shares the tiny per-scheme cache in wezterm.GLOBAL._scheme_colors
+--- (populated on first use by theme.lua or here).
 local function get_scheme_colors(scheme_name)
-  if _color_cache.name == scheme_name then return _color_cache.colors end
+  if not wezterm.GLOBAL._scheme_colors then
+    wezterm.GLOBAL._scheme_colors = {}
+  end
+  local cached = wezterm.GLOBAL._scheme_colors[scheme_name]
+  if cached then return cached end
+
   local schemes = wezterm.color.get_builtin_schemes()
   local scheme = schemes[scheme_name]
   local colors
@@ -25,8 +31,7 @@ local function get_scheme_colors(scheme_name)
       bg = scheme.background or "#1a1a1a",
     }
   end
-  _color_cache.name = scheme_name
-  _color_cache.colors = colors
+  wezterm.GLOBAL._scheme_colors[scheme_name] = colors
   return colors
 end
 

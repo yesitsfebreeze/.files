@@ -7,6 +7,7 @@
 
 local wezterm = require("wezterm")
 local act = wezterm.action
+local utils = require("modules.utils")
 
 local M = {}
 
@@ -20,29 +21,9 @@ local function scratch_state()
   return wezterm.GLOBAL.scratch_panes
 end
 
--- Find a pane object in a tab by its string pane_id
-local function find_pane(tab, pane_id_str)
-  for _, p in ipairs(tab:panes()) do
-    if tostring(p:pane_id()) == pane_id_str then
-      return p
-    end
-  end
-end
-
--- Check if something in this tab is zoomed
-local function tab_is_zoomed(tab)
-  for _, info in ipairs(tab:panes_with_info()) do
-    if info.is_zoomed then return true end
-  end
-  return false
-end
-
--- Get CWD from a pane for the split
-local function get_cwd(pane)
-  local cwd = pane:get_current_working_dir()
-  local dir = cwd and (cwd.file_path or tostring(cwd)) or wezterm.home_dir
-  return dir:gsub("^file:///", "")
-end
+local find_pane = utils.find_pane
+local tab_is_zoomed = utils.tab_is_zoomed
+local get_cwd = utils.get_cwd
 
 -- ── Toggle action ───────────────────────────────────────────────
 

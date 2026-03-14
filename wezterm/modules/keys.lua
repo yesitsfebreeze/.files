@@ -5,9 +5,8 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 local projects = require("modules.projects")
-local finder = require("modules.pickers.finder")
+local finder_overlay = require("modules.finder")
 local scratch = require("modules.scratch")
-local sessions = require("modules.sessions")
 
 local M = {}
 
@@ -31,11 +30,10 @@ local custom_actions = {
   CloseCurrentPane = act.CloseCurrentPane({ confirm = false }),
   ResetPanesToProject = wezterm.action_callback(projects.reset_panes),
   OpenProjectPicker   = wezterm.action_callback(projects.open_project_picker),
-  FindFiles           = finder.find_files_action(),
-  FindGrep            = finder.find_grep_action(),
-  ToggleSidebar       = sessions.ToggleSidebar,
-  PickSession         = sessions.PickSession,
-  AddSession          = sessions.AddSession,
+  FindFiles           = finder_overlay.open_action("Files"),
+  FindGrep            = finder_overlay.open_action("Grep"),
+  FinderOpen          = finder_overlay.open_action(nil),
+  ThemeFzf            = finder_overlay.theme_fzf_action(),
 
   ClearAllPanes = wezterm.action_callback(function(window, pane)
     local tab = window:active_tab()

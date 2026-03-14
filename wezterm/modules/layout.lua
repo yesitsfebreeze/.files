@@ -48,9 +48,6 @@ local function apply_splits(gui_win, tab, widths, focus_idx)
   if pane_info[focus_idx] then
     pane_info[focus_idx].pane:activate()
   end
-
-  -- Notify sessions module to initialize the sidebar in the rightmost pane
-  wezterm.emit("sessions-init-sidebar", gui_win, tab)
 end
 
 -- ── Startup layout (first window, first tab) ───────────────────

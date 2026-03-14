@@ -9,17 +9,29 @@ local wezterm = require("wezterm")
 local M = {}
 
 --- Look up the cursor color from the active color scheme.
+--- Caches only the 3 colors we need per scheme in wezterm.GLOBAL (tiny).
+--- The full builtin schemes table is transient and can be GC'd.
 local function get_scheme_colors(scheme_name)
+  if not wezterm.GLOBAL._scheme_colors then
+    wezterm.GLOBAL._scheme_colors = {}
+  end
+  local cached = wezterm.GLOBAL._scheme_colors[scheme_name]
+  if cached then return cached end
+
   local schemes = wezterm.color.get_builtin_schemes()
   local scheme = schemes[scheme_name]
+  local colors
   if not scheme then
-    return { cursor = "#c0c0c0", fg = "#c0c0c0", bg = "#1a1a1a" }
+    colors = { cursor = "#c0c0c0", fg = "#c0c0c0", bg = "#1a1a1a" }
+  else
+    colors = {
+      cursor = scheme.cursor_bg or scheme.foreground or "#c0c0c0",
+      fg = scheme.foreground or "#c0c0c0",
+      bg = scheme.background or "#1a1a1a",
+    }
   end
-  return {
-    cursor = scheme.cursor_bg or scheme.foreground or "#c0c0c0",
-    fg = scheme.foreground or "#c0c0c0",
-    bg = scheme.background or "#1a1a1a",
-  }
+  wezterm.GLOBAL._scheme_colors[scheme_name] = colors
+  return colors
 end
 
 function M.apply(config, globals)

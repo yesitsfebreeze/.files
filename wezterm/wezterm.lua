@@ -1,5 +1,4 @@
 -- WezTerm — Minimal config (workspace-focused)
--- Full config backed up in _backup/
 
 local wezterm = require("wezterm")
 local config = wezterm.config_builder and wezterm.config_builder() or {}
@@ -44,9 +43,9 @@ config.hide_tab_bar_if_only_one_tab = false
 -- ── Modules ─────────────────────────────────────────────────────
 modules.apply_all(config, globals, {
   "theme",            -- color scheme + tab bar theming
-  "sessions",         -- agent session tracker (must load before layout)
   "layout",           -- startup pane splits + Ctrl+Shift+/ cycle
   "projects",         -- Leader+h/o — project tracking + pane reset
+  "finder",           -- full-screen finder overlay (Leader+f+f/g/Space)
   "keys",             -- leader key bindings
   "leader_overlay",   -- LEADER indicator + ? help overlay
   "workspaces",       -- Ctrl+Shift+Alt+W/S — workspace manager

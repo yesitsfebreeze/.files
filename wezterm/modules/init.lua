@@ -2,15 +2,14 @@
 -- Loads and applies feature modules based on the enabled list.
 --
 -- Usage in wezterm.lua:
---   require("modules").apply_all(config, {
---     "appearance",
---     "tabs",
+--   require("modules").apply_all(config, globals, {
+--     "theme",
+--     "layout",
+--     "projects",
+--     "finder",
 --     "keys",
---     "theme_picker",
---     "font_picker",
+--     "leader_overlay",
 --     "workspaces",
---     "panes",
---     "status_bar",
 --   })
 
 local M = {}
