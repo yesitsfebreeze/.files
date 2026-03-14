@@ -34,7 +34,7 @@ alias .="open ."
 alias ..="cd .."
 alias c='cd'
 alias e="nvim"
-alias dk="docker rm -f $(docker ps -a -q)"
+alias dk='docker rm -f $(docker ps -a -q)'
 
 di() {
   cd ~/dev/diw/diw-installer/customers/$@
