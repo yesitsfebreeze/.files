@@ -1,7 +1,17 @@
-set shell := ["zsh", "-c"]
+set windows-shell := ["cmd", "/c"]
 
 default: run
 
-run directory:
-	docker build -t devzsh -f dockerfile .
-	docker run -it -v {{directory}}:/workspace -w /workspace devzsh zsh
+
+[unix]
+mkdir dir:
+  @mkdir -p {{dir}}
+
+[windows]
+mkdir dir:
+  @if not exist {{dir}} mkdir {{dir}}
+
+run:
+  @just mkdir workspace
+  @docker build -t devzsh -f dockerfile .
+  @docker run -it -v ./workspace:/workspace -w /workspace devzsh zsh

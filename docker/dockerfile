@@ -7,7 +7,6 @@ ENV LANG=C.UTF-8
 RUN apt-get update && apt-get install -y \
   git \
   zsh \
-  git \
   curl \
   wget \
   unzip \
@@ -21,7 +20,18 @@ RUN apt-get update && apt-get install -y \
   build-essential \
   python3 \
   python3-pip \
+  bat \
   && rm -rf /var/lib/apt/lists/*
+
+# Install eza (modern ls replacement)
+RUN curl -sSL https://github.com/eza-community/eza/releases/download/v0.20.23/eza_x86_64-unknown-linux-gnu.tar.gz | tar xz -C /usr/local/bin ./eza
+
+# Install Odin compiler from source
+RUN apt-get update && apt-get install -y clang llvm make && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 https://github.com/odin-lang/Odin.git /opt/odin && \
+    cd /opt/odin && make release-native
+ENV PATH="/opt/odin:$PATH"
+ENV ODIN_ROOT="/opt/odin"
 
 RUN useradd -ms /bin/zsh dev
 
@@ -30,38 +40,18 @@ WORKDIR /home/dev
 
 # Install Oh My Zsh
 RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-
-# Clone Neovim dotfiles
-RUN git clone https://github.com/yesitsfebreeze/nvim /tmp/dontmindme
-RUN rsync -a /tmp/dontmindme/ .
-RUN rm -rf /tmp/dontmindme
-
 # Download .shrc from .files dotfiles
-RUN curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/.shrc -o ~/.shrc
+RUN curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/.zshrc -o ~/.zshrc
 
-# Create basic .zshrc with color support
-RUN echo 'export ZSH="$HOME/.oh-my-zsh"' > ~/.zshrc && \
-    echo 'ZSH_THEME="amuse"' >> ~/.zshrc && \
-    echo 'ENABLE_CORRECTION="true"' >> ~/.zshrc && \
-    echo 'plugins=(git)' >> ~/.zshrc && \
-    echo 'source $ZSH/oh-my-zsh.sh' >> ~/.zshrc && \
-    echo 'export LANG=en_US.UTF-8' >> ~/.zshrc && \
-    echo '' >> ~/.zshrc && \
-    echo '# Reload command to download and source .shrc from .files.git' >> ~/.zshrc && \
-    echo 'reload() {' >> ~/.zshrc && \
-    echo '  curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/.shrc -o ~/.shrc' >> ~/.zshrc && \
-    echo '  source ~/.shrc' >> ~/.zshrc && \
-    echo '  update' >> ~/.zshrc && \
-    echo '}' >> ~/.zshrc && \
-    echo '' >> ~/.zshrc && \
-    echo '# Sync command to download and rsync .files repo' >> ~/.zshrc && \
-    echo 'sync() {' >> ~/.zshrc && \
-    echo '  rm -rf /tmp/dotfiles' >> ~/.zshrc && \
-    echo '  git clone https://github.com/yesitsfebreeze/.files.git /tmp/dotfiles' >> ~/.zshrc && \
-    echo '  rsync -a /tmp/dotfiles/ .' >> ~/.zshrc && \
-    echo '  rm -rf /tmp/dotfiles' >> ~/.zshrc && \
-    echo '  source ~/.zshrc' >> ~/.zshrc && \
-    echo '}' >> ~/.zshrc
+# Disable docker plugin and mount function when running inside container
+RUN grep -q '/.dockerenv' /proc/1/cgroup 2>/dev/null && \
+    sed -i 's/plugins=(git docker 1password macos)/plugins=(git 1password macos)/' ~/.zshrc && \
+    sed -i "s/alias dk=.*/alias dk='echo Docker not available inside container'/" ~/.zshrc && \
+    echo 'mount() { echo "Cannot mount from inside container"; }' >> ~/.zshrc || true
+
+# Install opencode CLI
+RUN curl -fsSL https://opencode.ai/install | bash
+ENV PATH="/home/dev/.local/bin:$PATH"
 
 WORKDIR /workspace
 VOLUME /workspace

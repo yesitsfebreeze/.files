@@ -14,6 +14,7 @@ config.animation_fps = 1
 config.cursor_blink_rate = 0
 config.audible_bell = "Disabled"
 config.scrollback_lines = 3500
+config.canonicalize_pasted_newlines = "LineFeed"
 
 -- ── Font ────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ end
 local colors = get_scheme_colors(SCHEME_NAME)
 
 config.background = {
-  { width = "100%", height = "100%", opacity = 0.925, source = { Color = colors.bg } },
+  { width = "100%", height = "100%", opacity = 0.725, source = { Color = colors.bg } },
 }
 
 config.colors = {
@@ -97,9 +98,17 @@ wezterm.on("gui-attached", function()
   end
 end)
 
--- ── Start with tmux and 3-pane layout ────────────────────────────
+-- ── Start tmux ─────────────────────────────────────────────────
 
-config.default_prog = { "/bin/zsh", "-c", "tmux new-session -A -s main \\; split-window -h -l 30% \\; split-window -h -l 57% \\; select-pane -t 1" }
+local function get_default_prog()
+  local target = wezterm.target_triple
+  if target:match("windows") then
+    return nil
+  end
+  return { "/bin/zsh", "-c", "command -v zsh >/dev/null 2>&1 && tmux new-session -A -s main || :" }
+end
+
+config.default_prog = get_default_prog()
 
 -- ── Theme picker ────────────────────────────────────────────────
 
@@ -178,6 +187,7 @@ config.keys = {
   -- Clipboard
   { key = "c", mods = "CMD", action = act.CopyTo("Clipboard") },
   { key = "v", mods = "CMD", action = act.PasteFrom("Clipboard") },
+  { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
 
   -- Theme picker
   { key = "t", mods = "CMD|SHIFT", action = open_theme_picker },
