@@ -53,12 +53,12 @@ export PATH=/Users/feb/.opencode/bin:$PATH
 # Sync .files repo and reload .zshrc
 reload() {
   local cwd="$PWD"
-  cd ~
+  builtin cd ~
   git add -A
   git commit -m "sync"
   git pull --rebase
   git push
-  cd "$cwd"
+  builtin cd "$cwd"
   source ~/.zshrc
 }
 
