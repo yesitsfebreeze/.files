@@ -19,13 +19,13 @@
                         ]
                     },
                     {
-                        "description": "CTRL -> CMD",
+                        "description": "CMD -> CTRL",
                         "manipulators": [
                             {
-                                "from": { "key_code": "left_control" },
+                                "from": { "key_code": "left_command" },
                                 "to": [
                                     {
-                                        "key_code": "left_command",
+                                        "key_code": "left_control",
                                         "modifiers": []
                                     }
                                 ],
@@ -1194,17 +1194,7 @@
                             }
                         ]
                     },
-                    {
-                        "description": "Win [Open Spotlight] [Always]",
-                        "manipulators": [
-                            {
-                                "from": { "key_code": "left_command" },
-                                "to": [{ "key_code": "left_command" }],
-                                "to_if_alone": [{ "apple_vendor_keyboard_key_code": "spotlight" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
+
                     {
                         "description": "L (Win) [Lock Screen] [Always]",
                         "manipulators": [

@@ -1,7 +1,7 @@
-set shell := ["powershell", "-Command"]
+set shell := ["zsh", "-c"]
 
 default: run
 
 run:
-	docker build -t devzsh .
+	docker build -t devzsh -f dockerfile .
 	docker run -it -v ${PWD}:/workspace -w /workspace devzsh zsh

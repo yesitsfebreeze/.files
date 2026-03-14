@@ -1,6 +1,7 @@
 # Ignore everything
 *
 
+!.zshrc
 # Allow .config directory itself (required for nested un-ignores to work)
 !.config/
 
