@@ -97,6 +97,10 @@ wezterm.on("gui-attached", function()
   end
 end)
 
+-- ── Start with tmux and 3-pane layout ────────────────────────────
+
+config.default_prog = { "/bin/zsh", "-c", "tmux new-session -A -s main \\; split-window -h -l 30% \\; split-window -h -l 57% \\; select-pane -t 1" }
+
 -- ── Theme picker ────────────────────────────────────────────────
 
 local act = wezterm.action

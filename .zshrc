@@ -49,3 +49,17 @@ alias oc="opencode"
 
 # opencode
 export PATH=/Users/feb/.opencode/bin:$PATH
+
+# Reload command to download and source .shrc from .files.git
+reload() {
+  curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/.shrc -o ~/.shrc
+  source ~/.shrc
+  update
+}
+
+# Sync command to download and rsync .files repo (Dockerfile logic)
+mount() {
+  local cwd="$PWD"
+  cd ~/docker
+  just run "$cwd"
+}

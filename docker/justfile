@@ -2,6 +2,6 @@ set shell := ["zsh", "-c"]
 
 default: run
 
-run:
+run directory:
 	docker build -t devzsh -f dockerfile .
-	docker run -it -v ${PWD}:/workspace -w /workspace devzsh zsh
+	docker run -it -v {{directory}}:/workspace -w /workspace devzsh zsh
