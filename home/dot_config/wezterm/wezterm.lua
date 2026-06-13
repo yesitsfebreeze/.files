@@ -145,6 +145,25 @@ config.keys = {
     { key = "[", mods = "LEADER", action = act.ActivateCopyMode },
     { key = "v", mods = "LEADER", action = act.PasteFrom("Clipboard") },
 
+    -- Standard clipboard shortcuts.
+    -- CTRL-V pastes from the system clipboard.
+    { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+    -- CTRL-C copies when a selection exists, otherwise falls through to the
+    -- shell as a normal interrupt (SIGINT) so it keeps its terminal meaning.
+    {
+        key = "c",
+        mods = "CTRL",
+        action = wezterm.action_callback(function(window, pane)
+            local sel = window:get_selection_text_for_pane(pane)
+            if sel and sel ~= "" then
+                window:perform_action(act.CopyTo("ClipboardAndPrimarySelection"), pane)
+                window:perform_action(act.ClearSelection, pane)
+            else
+                window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
+            end
+        end),
+    },
+
     -- Config reload
     { key = "r", mods = "LEADER", action = act.ReloadConfiguration },
 
