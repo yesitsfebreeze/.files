@@ -39,3 +39,11 @@ fi
 # Guarantee the file exists (empty = harmless no-op) so `source` never fails
 # when tv isn't installed yet.
 [ -s "$tv_init" ] || : > "$tv_init"
+
+# tinty (live `theme` switcher) — clone the configured items (tinted-shell) into
+# tinty's data dir so the first `tinty apply`/`init` works. Reads the chezmoi-
+# managed config.toml applied just before this script. Idempotent: tinty skips
+# items already present. Quiet + non-fatal so a missing network never breaks apply.
+if command -v tinty >/dev/null 2>&1; then
+    tinty install >/dev/null 2>&1 || true
+fi

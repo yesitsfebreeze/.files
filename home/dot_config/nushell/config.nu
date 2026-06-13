@@ -120,3 +120,17 @@ def fg [] {
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
+
+# ---------------------------------------------------------------------------
+# Live theme: re-apply the last `theme` pick so it persists into new shells and
+# panes. tinty re-emits OSC palette sequences that retint the terminal's 16 ANSI
+# colors + bg/fg/cursor, so every ANSI-following surface (nushell tables, eza,
+# bat, git output) follows. Stdout is left attached to the terminal on purpose —
+# that IS the re-theming; only stderr is discarded. No-op until you pick a theme
+# (no default-scheme), so the Gruvbox base (theme.yaml -> WezTerm) stands.
+# Runs in the inner, in-Zellij interactive shell (after the exec above), guarded
+# to interactive terminals so scripts/pipelines stay clean.
+# ---------------------------------------------------------------------------
+if (which tinty | is-not-empty) and (is-terminal --stdout) {
+    ^tinty init e> /dev/null
+}
