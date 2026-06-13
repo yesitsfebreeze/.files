@@ -119,6 +119,12 @@ packages:
       pacman: github-cli
       dnf: gh
 
+    - name: tinty         # Tinted Theming CLI — base16/base24 engine behind the live `theme` switcher
+      brew: tinted-theming/tinty/tinty   # not in homebrew-core; fully-qualified name auto-taps tinted-theming/tinty
+      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
+      pacman: ""          # AUR-only (tinty); GitHub-release binary / cargo fallback
+      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
+
     # --- font: DepartureMono Nerd Font for prompt/eza/lualine glyphs ---
     # Package-manager coverage is thin for this font, so the installer also fetches
     # it from the nerd-fonts release when missing (nerdfont_asset, below). That

@@ -167,6 +167,26 @@ if [ "$(uname -s)" = "Linux" ] && ! command -v gh >/dev/null 2>&1; then
     fi
 fi
 
+# tinty — musl on x86_64, gnu on aarch64; release assets are tag-agnostic
+# (latest/download). Drives the live `theme` switcher; pulled here because no
+# Linux package manager ships it. macOS is covered by the auto-tapping brew name.
+if [ "$(uname -s)" = "Linux" ] && ! command -v tinty >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)  tinty_target=x86_64-unknown-linux-musl ;;
+        aarch64|arm64) tinty_target=aarch64-unknown-linux-gnu ;;
+        *)             tinty_target="" ;;
+    esac
+    if [ -z "$tinty_target" ]; then
+        warn "tinty: no prebuilt binary for $(uname -m); will rely on cargo fallback"
+    else
+        log "install tinty ($tinty_target binary, GitHub release fallback)"
+        fetch_tarball_binary tinty \
+            "https://github.com/tinted-theming/tinty/releases/latest/download/tinty-$tinty_target.tar.gz" \
+            && log "  installed tinty" \
+            || warn "  could not install tinty from the GitHub release"
+    fi
+fi
+
 # --- cargo fallback for tools the native manager could not provide ---
 bin_for() {
     case "$1" in
@@ -188,6 +208,7 @@ crate_for() {
         delta) echo git-delta ;;
         nu) echo nu ;;
         tv) echo television ;;
+        tinty) echo tinty ;;
         *) echo "" ;;
     esac
 }
