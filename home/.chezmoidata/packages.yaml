@@ -115,7 +115,7 @@ packages:
 
     - name: gh
       brew: gh
-      apt: gh            # via GitHub apt repo; add the repo manually if missing
+      apt: ""            # not in default apt (needs GitHub's apt repo); installed via GitHub-release binary fallback (see installer)
       pacman: github-cli
       dnf: gh
 
