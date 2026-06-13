@@ -134,12 +134,17 @@ packages:
       winget: GitHub.cli
       scoop: gh
 
-    # --- font: Nerd Font for prompt/eza/lualine glyphs ---
+    # --- font: DepartureMono Nerd Font for prompt/eza/lualine glyphs ---
+    # Package-manager coverage is thin for this font, so the installers also fetch
+    # it from the nerd-fonts release when missing (nerdfont_asset, below). That
+    # download path is the cross-platform "install if not available" guarantee;
+    # the per-manager fields are used where they exist.
     - name: nerd-font
-      brew: font-jetbrains-mono-nerd-font   # cask
+      brew: font-departure-mono-nerd-font   # cask
       cask: true
-      apt: fonts-jetbrains-mono             # non-patched; glyphs may be partial
-      pacman: ttf-jetbrains-mono-nerd
-      dnf: ""
-      winget: ""
-      scoop: JetBrainsMono-NF               # needs the nerd-fonts bucket (added by installer)
+      apt: ""               # not packaged; installed via nerd-fonts release fallback
+      pacman: ""            # AUR-only (otf-departure-mono-nerd); use release fallback
+      dnf: ""               # not packaged; release fallback
+      winget: ""            # not on winget; release fallback (scoop bucket has it)
+      scoop: DepartureMono-NF               # needs the nerd-fonts bucket (added by installer)
+      nerdfont_asset: DepartureMono         # nerd-fonts release zip basename -> download fallback source

@@ -95,6 +95,47 @@ if command -v cargo >/dev/null 2>&1; then
     done
 fi
 
+# --- Nerd Font: guarantee the patched font is present (release fallback) ---
+# Font identity comes from packages.yaml (nerdfont_asset); fetch the nerd-fonts
+# release zip when the font is not already installed, so the terminal/prompt
+# glyphs always resolve regardless of package-manager coverage. Idempotent.
+nerdfont_asset="{{ range .packages }}{{ if hasKey . "nerdfont_asset" }}{{ .nerdfont_asset }}{{ end }}{{ end }}"
+if [ -n "$nerdfont_asset" ]; then
+    case "$(uname -s)" in
+        Darwin) font_dir="$HOME/Library/Fonts" ;;
+        *)      font_dir="$HOME/.local/share/fonts" ;;
+    esac
+    have_font=1
+    ls "$font_dir/$nerdfont_asset"*.ttf >/dev/null 2>&1 || have_font=0
+    if [ "$have_font" = 0 ] && command -v fc-list >/dev/null 2>&1; then
+        fc-list 2>/dev/null | grep -qi "$nerdfont_asset" && have_font=1
+    fi
+    if [ "$have_font" = 0 ]; then
+        log "install Nerd Font $nerdfont_asset (nerd-fonts release fallback)"
+        mkdir -p "$font_dir"
+        ft="$(mktemp -d)"
+        if curl -fsSL -o "$ft/$nerdfont_asset.zip" \
+            "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$nerdfont_asset.zip"; then
+            if command -v unzip >/dev/null 2>&1; then
+                unzip -oq "$ft/$nerdfont_asset.zip" '*.ttf' -d "$ft/ttf" 2>/dev/null
+            elif command -v python3 >/dev/null 2>&1; then
+                python3 -m zipfile -e "$ft/$nerdfont_asset.zip" "$ft/ttf" >/dev/null 2>&1
+            else
+                mkdir -p "$ft/ttf" && tar -xf "$ft/$nerdfont_asset.zip" -C "$ft/ttf" 2>/dev/null
+            fi
+            if cp "$ft/ttf"/*.ttf "$font_dir"/ 2>/dev/null; then
+                command -v fc-cache >/dev/null 2>&1 && fc-cache -f "$font_dir" >/dev/null 2>&1
+                log "  installed $nerdfont_asset"
+            else
+                warn "  downloaded but could not place $nerdfont_asset .ttf files"
+            fi
+        else
+            warn "  could not download $nerdfont_asset from the nerd-fonts release"
+        fi
+        rm -rf "$ft"
+    fi
+fi
+
 # --- bat: install Catppuccin Mocha theme + rebuild cache ---
 if command -v bat >/dev/null 2>&1; then
     theme_dir="$(bat --config-dir 2>/dev/null)/themes"

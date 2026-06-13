@@ -45,6 +45,40 @@ else {
     Warn "Install winget (App Installer from the Microsoft Store) or scoop (https://scoop.sh), then re-run: chezmoi apply"
 }
 
+# --- Nerd Font: guarantee the patched font is present (release fallback) ---
+# Font identity comes from packages.yaml (nerdfont_asset); fetch the nerd-fonts
+# release zip when the font is not already installed, so glyphs always resolve
+# regardless of winget/scoop coverage. Per-user install, no admin. Idempotent.
+$nerdfontAsset = "{{ range .packages }}{{ if hasKey . "nerdfont_asset" }}{{ .nerdfont_asset }}{{ end }}{{ end }}"
+if ($nerdfontAsset) {
+    $fontDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+    $haveFont = (Test-Path (Join-Path $fontDir "$nerdfontAsset*.ttf"))
+    if (-not $haveFont) {
+        Log "install Nerd Font $nerdfontAsset (nerd-fonts release fallback)"
+        New-Item -ItemType Directory -Force -Path $fontDir | Out-Null
+        $regKey = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+        $tmp = Join-Path ([System.IO.Path]::GetTempPath()) "nf_$nerdfontAsset"
+        $zip = "$tmp.zip"
+        Remove-Item -Recurse -Force $tmp, $zip -ErrorAction SilentlyContinue
+        try {
+            Invoke-WebRequest -UseBasicParsing `
+                -Uri "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$nerdfontAsset.zip" `
+                -OutFile $zip
+            Expand-Archive -Path $zip -DestinationPath $tmp -Force
+            foreach ($f in Get-ChildItem -Path $tmp -Recurse -Filter '*.ttf') {
+                $dest = Join-Path $fontDir $f.Name
+                Copy-Item -Path $f.FullName -Destination $dest -Force
+                $regName = [System.IO.Path]::GetFileNameWithoutExtension($f.Name) + ' (TrueType)'
+                New-ItemProperty -Path $regKey -Name $regName -Value $dest -PropertyType String -Force | Out-Null
+            }
+            Log "  installed $nerdfontAsset"
+        } catch {
+            Warn "  could not download/install $nerdfontAsset from the nerd-fonts release"
+        }
+        Remove-Item -Recurse -Force $tmp, $zip -ErrorAction SilentlyContinue
+    }
+}
+
 # --- bat: install Catppuccin Mocha theme + rebuild cache ---
 if (Get-Command bat -ErrorAction SilentlyContinue) {
     $themeDir = Join-Path (bat --config-dir) "themes"
