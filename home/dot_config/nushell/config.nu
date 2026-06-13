@@ -54,6 +54,10 @@ alias v = nvim
 alias vi = nvim
 alias cdi = zi          # zoxide interactive
 
+# Reload dotfiles: re-pull the source from the repo and re-apply.
+# --force overwrites local drift without prompting (non-interactive reload).
+alias rlcfg = chezmoi init --apply --force yesitsfebreeze/.files
+
 # ---------------------------------------------------------------------------
 # fzf-powered helpers
 # ---------------------------------------------------------------------------
