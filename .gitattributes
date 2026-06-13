@@ -1,3 +1,10 @@
 # Shell scripts must keep LF endings or they break under sh on macOS/Linux.
 *.sh    text eol=lf
 *.ps1   text eol=crlf
+
+# chezmoi renders a template's bytes verbatim, so the SOURCE eol leaks into the
+# rendered file. A stray CR breaks bash line-continuations (a `\` then CR escapes
+# the CR, not the newline, aborting the script). Keep all templates LF; only
+# PowerShell templates keep CRLF.
+*.tmpl      text eol=lf
+*.ps1.tmpl  text eol=crlf
