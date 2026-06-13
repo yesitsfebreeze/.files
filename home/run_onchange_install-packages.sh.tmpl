@@ -65,13 +65,102 @@ mkdir -p "$HOME/.local/bin"
 command -v batcat >/dev/null 2>&1 && [ ! -e "$HOME/.local/bin/bat" ] && ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
 command -v fdfind >/dev/null 2>&1 && [ ! -e "$HOME/.local/bin/fd" ]  && ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 
+# --- nushell: prebuilt-binary fallback (no apt package, avoid slow source build) ---
+# Nushell isn't in Debian/Ubuntu apt and `cargo install nu` is a heavy source
+# build, so on Linux we fetch the prebuilt binary from the GitHub release when
+# it's missing. Runs BEFORE the cargo fallback below so cargo skips the build.
+# macOS is covered by brew. Idempotent. Mirrors the zellij fallback.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+if [ "$(uname -s)" = "Linux" ] && ! command -v nu >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)  nu_arch=x86_64 ;;
+        aarch64|arm64) nu_arch=aarch64 ;;
+        *)             nu_arch="" ;;
+    esac
+    if [ -n "$nu_arch" ]; then
+        # Resolve the latest tag — nushell assets are version-stamped (unlike zellij).
+        nu_tag="$(curl -fsSL https://api.github.com/repos/nushell/nushell/releases/latest 2>/dev/null \
+            | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+        if [ -n "$nu_tag" ]; then
+            log "install nushell $nu_tag ($nu_arch musl binary, GitHub release fallback)"
+            mkdir -p "$HOME/.local/bin"
+            nt="$(mktemp -d)"
+            nu_asset="nu-$nu_tag-$nu_arch-unknown-linux-musl.tar.gz"
+            if curl -fsSL -o "$nt/$nu_asset" \
+                "https://github.com/nushell/nushell/releases/download/$nu_tag/$nu_asset" \
+                && tar -xzf "$nt/$nu_asset" -C "$nt" 2>/dev/null; then
+                nu_bin="$(find "$nt" -type f -name nu 2>/dev/null | head -n1)"
+                if [ -n "$nu_bin" ] && cp "$nu_bin" "$HOME/.local/bin/nu"; then
+                    chmod +x "$HOME/.local/bin/nu"
+                    log "  installed nushell"
+                else
+                    warn "  downloaded but could not place the nushell binary"
+                fi
+            else
+                warn "  could not download nushell from the GitHub release"
+            fi
+            rm -rf "$nt"
+        else
+            warn "nushell: could not resolve latest release tag; will rely on cargo fallback"
+        fi
+    else
+        warn "nushell: no prebuilt binary for $(uname -m); install manually"
+    fi
+fi
+
+# --- television: prebuilt-binary fallback (no apt/dnf package, avoid source build) ---
+# Television (binary `tv`) isn't in Debian/Ubuntu apt or Fedora dnf, and
+# `cargo install television` is a heavy source build, so on Linux we fetch the
+# prebuilt binary from the GitHub release when it's missing. Runs BEFORE the
+# cargo fallback below so cargo skips the build (and cargo stays the last resort
+# if this download fails). macOS is covered by brew. Assets are version-stamped,
+# so resolve the tag first (mirrors the nushell fallback). musl ships only for
+# x86_64; aarch64 uses the gnu build. Idempotent.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+if [ "$(uname -s)" = "Linux" ] && ! command -v tv >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)  tv_target=x86_64-unknown-linux-musl ;;
+        aarch64|arm64) tv_target=aarch64-unknown-linux-gnu ;;
+        *)             tv_target="" ;;
+    esac
+    if [ -n "$tv_target" ]; then
+        tv_tag="$(curl -fsSL https://api.github.com/repos/alexpasmantier/television/releases/latest 2>/dev/null \
+            | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+        if [ -n "$tv_tag" ]; then
+            log "install television $tv_tag ($tv_target binary, GitHub release fallback)"
+            mkdir -p "$HOME/.local/bin"
+            tt="$(mktemp -d)"
+            tv_asset="tv-$tv_tag-$tv_target.tar.gz"
+            if curl -fsSL -o "$tt/$tv_asset" \
+                "https://github.com/alexpasmantier/television/releases/download/$tv_tag/$tv_asset" \
+                && tar -xzf "$tt/$tv_asset" -C "$tt" 2>/dev/null; then
+                tv_bin="$(find "$tt" -type f -name tv 2>/dev/null | head -n1)"
+                if [ -n "$tv_bin" ] && cp "$tv_bin" "$HOME/.local/bin/tv"; then
+                    chmod +x "$HOME/.local/bin/tv"
+                    log "  installed television"
+                else
+                    warn "  downloaded but could not place the television binary"
+                fi
+            else
+                warn "  could not download television from the GitHub release"
+            fi
+            rm -rf "$tt"
+        else
+            warn "television: could not resolve latest release tag; will rely on cargo fallback"
+        fi
+    else
+        warn "television: no prebuilt binary for $(uname -m); install manually"
+    fi
+fi
+
 # --- cargo fallback for tools the native manager could not provide ---
 bin_for() {
     case "$1" in
-        ripgrep) echo rg ;;
-        neovim)  echo nvim ;;
-        nushell) echo nu ;;
-        *)       echo "$1" ;;
+        ripgrep)    echo rg ;;
+        neovim)     echo nvim ;;
+        nushell)    echo nu ;;
+        television) echo tv ;;
+        *)          echo "$1" ;;
     esac
 }
 crate_for() {
@@ -84,6 +173,7 @@ crate_for() {
         starship) echo starship ;;
         delta) echo git-delta ;;
         nu) echo nu ;;
+        tv) echo television ;;
         *) echo "" ;;
     esac
 }

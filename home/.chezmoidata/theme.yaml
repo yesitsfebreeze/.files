@@ -17,6 +17,7 @@ theme:
     nvim_contrast: "hard"
     lualine: "gruvbox"
     zellij: "gruvbox-dark"        # built into zellij
+    television: "gruvbox-dark"    # built into television (themes/gruvbox-dark.toml)
 
   # Cursor. wezterm uses CamelCase styles; nvim uses a guicursor spec;
   # nushell only controls shape (the terminal handles blinking).

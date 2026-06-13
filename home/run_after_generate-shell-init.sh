@@ -25,3 +25,17 @@ if command -v zoxide >/dev/null 2>&1; then
     zoxide init nushell > "$zoxide_init" 2>/dev/null || true
 fi
 [ -s "$zoxide_init" ] || : > "$zoxide_init"
+
+# Television (tv) shell integration -> ~/.cache/television/init.nu
+# `tv init nu` emits the Ctrl-T (smart autocomplete) and Ctrl-R (history) Nushell
+# keybindings. Generated here at apply time (never at shell start) and sourced by
+# config.nu. tv replaces fzf as the interactive finder, so config.nu no longer
+# binds Ctrl-R to fzf.
+tv_init="$HOME/.cache/television/init.nu"
+mkdir -p "$(dirname "$tv_init")"
+if command -v tv >/dev/null 2>&1; then
+    tv init nu > "$tv_init" 2>/dev/null || true
+fi
+# Guarantee the file exists (empty = harmless no-op) so `source` never fails
+# when tv isn't installed yet.
+[ -s "$tv_init" ] || : > "$tv_init"

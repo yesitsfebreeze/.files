@@ -1,10 +1,13 @@
 # Single source of truth for what the dotfiles install.
-# Each entry maps one logical tool to its package name per platform/manager.
+# Each entry maps one logical tool to its package name per manager.
 # An empty string means "no package under this manager" -> the installer skips it.
+#
+# Linux/WSL is the target; macOS is supported via Homebrew. On Windows there is
+# no native install: WezTerm boots straight into WSL Ubuntu and everything is
+# provisioned there with the Linux path.
 #
 # Consumed at render time by:
 #   run_onchange_install-packages.sh.tmpl   (brew / apt / pacman / dnf)
-#   run_onchange_install-packages.ps1.tmpl  (winget / scoop)
 #
 # Keep this list as the place you add/remove tools. Editing it re-triggers the
 # run_onchange installer on the next `chezmoi apply`.
@@ -17,32 +20,24 @@ packages:
       apt: ""           # no reliable apt package; install via official repo/AppImage manually
       pacman: wezterm
       dnf: ""
-      winget: wez.wezterm
-      scoop: wezterm
 
     - name: zellij        # terminal multiplexer (tabs/panes/session-restore), shell-side
       brew: zellij
       apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
       pacman: zellij
       dnf: zellij
-      winget: ""          # Unix-only: Windows runs Zellij inside WSL, not natively
-      scoop: ""
 
     - name: neovim
       brew: neovim
       apt: neovim
       pacman: neovim
       dnf: neovim
-      winget: Neovim.Neovim
-      scoop: neovim
 
     - name: nushell
       brew: nushell
       apt: ""           # not in default apt; cargo/brew/official repo
       pacman: nushell
       dnf: ""
-      winget: Nushell.Nushell
-      scoop: nu
 
     # --- modern CLI core ---
     - name: ripgrep
@@ -50,64 +45,54 @@ packages:
       apt: ripgrep
       pacman: ripgrep
       dnf: ripgrep
-      winget: BurntSushi.ripgrep.MSVC
-      scoop: ripgrep
 
     - name: fd
       brew: fd
       apt: fd-find       # binary is `fdfind` on Debian/Ubuntu
       pacman: fd
       dnf: fd-find
-      winget: sharkdp.fd
-      scoop: fd
 
     - name: fzf
       brew: fzf
       apt: fzf
       pacman: fzf
       dnf: fzf
-      winget: junegunn.fzf
-      scoop: fzf
+
+    - name: television    # fuzzy finder TUI (binary: `tv`) — interactive in-shell finder (Ctrl-R history, Ctrl-T autocomplete)
+      brew: television
+      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
+      pacman: television
+      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
 
     - name: bat
       brew: bat
       apt: bat           # binary is `batcat` on Debian/Ubuntu
       pacman: bat
       dnf: bat
-      winget: sharkdp.bat
-      scoop: bat
 
     - name: eza
       brew: eza
       apt: ""            # not in older apt; cargo/brew/repo
       pacman: eza
       dnf: eza
-      winget: eza-community.eza
-      scoop: eza
 
     - name: zoxide
       brew: zoxide
       apt: zoxide
       pacman: zoxide
       dnf: zoxide
-      winget: ajeetdsouza.zoxide
-      scoop: zoxide
 
     - name: starship
       brew: starship
       apt: ""            # use official installer; not in apt
       pacman: starship
       dnf: ""
-      winget: Starship.Starship
-      scoop: starship
 
     - name: jq
       brew: jq
       apt: jq
       pacman: jq
       dnf: jq
-      winget: jqlang.jq
-      scoop: jq
 
     # --- git experience ---
     - name: git
@@ -115,44 +100,34 @@ packages:
       apt: git
       pacman: git
       dnf: git
-      winget: Git.Git
-      scoop: git
 
     - name: delta
       brew: git-delta
       apt: ""            # `git-delta` not in default apt; cargo/brew/repo
       pacman: git-delta
       dnf: git-delta
-      winget: dandavison.delta
-      scoop: delta
 
     - name: lazygit
       brew: lazygit
       apt: ""            # PPA/repo needed; not in default apt
       pacman: lazygit
       dnf: lazygit
-      winget: JesseDuffield.lazygit
-      scoop: lazygit
 
     - name: gh
       brew: gh
       apt: gh            # via GitHub apt repo; add the repo manually if missing
       pacman: github-cli
       dnf: gh
-      winget: GitHub.cli
-      scoop: gh
 
     # --- font: DepartureMono Nerd Font for prompt/eza/lualine glyphs ---
-    # Package-manager coverage is thin for this font, so the installers also fetch
+    # Package-manager coverage is thin for this font, so the installer also fetches
     # it from the nerd-fonts release when missing (nerdfont_asset, below). That
-    # download path is the cross-platform "install if not available" guarantee;
-    # the per-manager fields are used where they exist.
+    # download path is the "install if not available" guarantee; the per-manager
+    # fields are used where they exist.
     - name: nerd-font
       brew: font-departure-mono-nerd-font   # cask
       cask: true
       apt: ""               # not packaged; installed via nerd-fonts release fallback
       pacman: ""            # AUR-only (otf-departure-mono-nerd); use release fallback
       dnf: ""               # not packaged; release fallback
-      winget: ""            # not on winget; release fallback (scoop bucket has it)
-      scoop: DepartureMono-NF               # needs the nerd-fonts bucket (added by installer)
       nerdfont_asset: DepartureMono         # nerd-fonts release zip basename -> download fallback source

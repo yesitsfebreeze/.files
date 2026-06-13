@@ -1,17 +1,8 @@
 {{- /*
-    Run only the installer script for the current OS:
-    chezmoi would otherwise try to execute the .sh on Windows (and the .ps1 on
-    Unix), which fails. Gate the wrong one out per platform.
-
-    Add other per-OS exclusions here as needed.
+    Linux/WSL is the target; macOS is supported via Homebrew. chezmoi never runs
+    on the Windows host itself (WezTerm boots into WSL, where the Linux path runs).
+    Gate the macOS-only Homebrew bootstrap out on every non-macOS system.
 */ -}}
-{{ if eq .chezmoi.os "windows" }}
-install-packages.sh
-generate-shell-init.sh
-{{ else }}
-install-packages.ps1
-generate-shell-init.ps1
-{{ end }}
 {{ if ne .chezmoi.os "darwin" }}
 install-homebrew.sh
 {{ end }}

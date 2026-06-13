@@ -80,36 +80,29 @@ alias cdi = zi          # zoxide interactive
 alias rlcfg = chezmoi update --force
 
 # ---------------------------------------------------------------------------
-# fzf-powered helpers
+# television-powered helpers. tv is the interactive finder (replaces fzf in the
+# shell): Ctrl-T smart autocomplete and Ctrl-R history come from the sourced
+# `tv init nu` integration near the end of this file. These defs add two
+# side-effecting shortcuts on top of the builtin tv channels.
 # ---------------------------------------------------------------------------
 
-# Fuzzy-find a file and open it in $EDITOR.
+# Fuzzy-find a file (tv `files` channel, bat preview) and open it in $EDITOR.
 def ff [] {
-    let file = (fzf --height 40% --reverse --preview "bat --color=always --style=numbers {}" | str trim)
+    let file = (tv files | str trim)
     if ($file | is-not-empty) { ^$env.EDITOR $file }
 }
 
-# Fuzzy-cd into a subdirectory.
+# Fuzzy-cd into a subdirectory (tv `dirs` channel).
 def --env fcd [] {
-    let dir = (fd --type d --hidden --exclude .git | fzf --height 40% --reverse | str trim)
+    let dir = (tv dirs | str trim)
     if ($dir | is-not-empty) { cd $dir }
 }
 
-# ---------------------------------------------------------------------------
-# Keybindings: Ctrl-r fuzzy history via fzf.
-# ---------------------------------------------------------------------------
-$env.config = ($env.config | upsert keybindings [
-    {
-        name: fzf_history
-        modifier: control
-        keycode: char_r
-        mode: [emacs vi_normal vi_insert]
-        event: {
-            send: executehostcommand
-            cmd: "commandline edit --replace (history | get command | reverse | uniq | str join (char nl) | fzf --height 40% --reverse --scheme history --query (commandline) | str trim)"
-        }
-    }
-])
+# Live-grep across files (tv `text` channel). Enter runs the channel's builtin
+# edit action, opening $EDITOR at the matched line (no stdout round-trip needed).
+def fg [] {
+    tv text
+}
 
 # ---------------------------------------------------------------------------
 # Source shell integrations. These files are GENERATED AT APPLY TIME by the
@@ -119,6 +112,7 @@ $env.config = ($env.config | upsert keybindings [
 # ---------------------------------------------------------------------------
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
+source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
 
 # Undo starship's forced `render_right_prompt_on_last_line: true`. On
 # WezTerm/Windows that setting parks the caret on the last terminal line, where

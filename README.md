@@ -1,82 +1,62 @@
 # Dotfiles
 
-Cross-platform dev environment (Windows / macOS / Linux), managed with
-[chezmoi](https://chezmoi.io). One command sets up everything:
+A Linux dev environment — native, inside WSL on Windows, or on macOS — managed
+with [chezmoi](https://chezmoi.io). One command installs the tools and writes
+every config into place.
 
-- **WezTerm** — terminal, multiplexer, and session manager (no tmux)
+## Components
+
+- **WezTerm** — terminal (plain host; no multiplexing)
+- **Zellij** — multiplexer (tabs/panes/sessions); auto-starts in the shell
 - **Nushell** — shell
-- **Neovim** — editor (Lua + lazy.nvim, LSP, Treesitter, Telescope)
-- **Starship** prompt, **git + delta + lazygit + gh**
-- CLI core: ripgrep, fd, fzf, bat, eza, zoxide, jq
-- Theme: Gruvbox Dark Hard everywhere, with a blinking block cursor. Centralized
-  in `home/.chezmoidata/theme.yaml` — change palette/theme/cursor in one place,
-  run `chezmoi apply`, and every tool re-themes together.
+- **Neovim** — editor (Lua, lazy.nvim, LSP, Treesitter, Telescope)
+- **Starship** — prompt
+- **Git** — git + delta + lazygit + gh
+- **CLI core** — ripgrep, fd, fzf, bat, eza, zoxide, jq
+- **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
+  Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
+- **Theme** — Gruvbox Dark Hard everywhere, centralized in
+  `home/.chezmoidata/theme.yaml`; edit once, `chezmoi apply`, all tools re-theme
+
+Run from a normal (non-admin) shell in your home directory.
 
 ## Install
 
-One `chezmoi init --apply` clones this repo, prompts once for your git name +
-email, writes every config into place, and installs all the tools (Homebrew is
-bootstrapped on macOS first). Run it from a **normal (non-admin) shell in your
-home directory** — the dotfiles install per-user. Then open WezTerm.
-
-**Windows (PowerShell)** — installs chezmoi via winget (puts it on PATH), then applies:
-
-```powershell
-winget install twpayne.chezmoi          # or: scoop install chezmoi
-chezmoi init --apply yesitsfebreeze/.files
-```
-
-**macOS / Linux** — no prerequisites; installs chezmoi to `~/.local/bin`, then applies:
+One command. It installs chezmoi, then pulls and applies the dotfiles. Run it on
+**Linux, WSL, or macOS**:
 
 ```sh
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesitsfebreeze/.files
 ```
 
-chezmoi clones the repo into its own source dir (`~/.local/share/chezmoi`) and
-tracks this GitHub remote, so updates are a single command — no checkout to
-manage yourself.
+Already have chezmoi? Just `chezmoi init --apply yesitsfebreeze/.files`.
 
-> Already have chezmoi installed (winget/scoop/brew)? Just run
-> `chezmoi init --apply yesitsfebreeze/.files`. Avoid running it from an
-> elevated shell or `C:\Windows\System32`.
+> **Windows:** there is no native Windows setup. Install WezTerm on Windows, then
+> run the command above inside WSL Ubuntu (`wsl -d Ubuntu`). WezTerm boots straight
+> into that WSL session, so everything you use lives in Linux.
 
-## Update
+## Commands
 
 ```sh
-chezmoi update    # git pull this repo, then re-apply
-```
-
-That is the whole update story: `chezmoi update` pulls the latest commit from
-GitHub and applies the difference. Other day-to-day commands:
-
-```sh
-chezmoi apply     # re-apply the current source without pulling
+chezmoi update    # pull latest + re-apply
+chezmoi apply     # re-apply current source
 chezmoi diff      # preview pending changes
-chezmoi cd        # drop into the source dir; exit returns you back
+chezmoi cd        # enter source dir (exit returns)
 ```
-
-Add or remove tools by editing `home/.chezmoidata/packages.yaml`; the next
-`chezmoi apply` installs the difference.
 
 ## Develop
 
-To change the dotfiles, edit this repo and push — every machine picks it up on
-the next `chezmoi update`:
-
 ```sh
 git clone https://github.com/yesitsfebreeze/.files
-# edit files under home/, then:
 chezmoi execute-template < home/<file>.tmpl   # render a template to check it
-git commit -am "..." && git push
+chezmoi apply --source <path-to-checkout>     # apply local WIP without pushing
+git commit -am "..." && git push              # push; machines pick it up on update
 ```
 
-Apply work-in-progress straight from a local checkout without pushing:
-
-```sh
-chezmoi apply --source <path-to-checkout>
-```
+Add/remove tools by editing `home/.chezmoidata/packages.yaml`; the next
+`chezmoi apply` installs the difference.
 
 ## Keys
 
-WezTerm leader is `Ctrl-a`, Neovim leader is `Space`. Full keymaps live in
+WezTerm leader `Ctrl-a`, Neovim leader `Space`. Full keymaps in
 `home/dot_config/wezterm/wezterm.lua` and `home/dot_config/nvim/`.
