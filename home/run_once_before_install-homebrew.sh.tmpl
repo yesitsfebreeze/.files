@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+{{- if eq .chezmoi.os "darwin" }}
+# chezmoi run_once (before) — ensure Homebrew exists on macOS before packages.
+# Homebrew is the package manager every macOS cask/formula in packages.yaml
+# relies on, so it must be present before run_onchange_install-packages runs.
+# Gated to macOS in .chezmoiignore; idempotent (skips when brew is present).
+set -eu
+
+if ! command -v brew >/dev/null 2>&1 \
+    && [ ! -x /opt/homebrew/bin/brew ] && [ ! -x /usr/local/bin/brew ]; then
+    printf '\033[1;32m==>\033[0m %s\n' "Installing Homebrew (non-interactive)"
+    NONINTERACTIVE=1 /bin/bash -c \
+        "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+{{- end }}

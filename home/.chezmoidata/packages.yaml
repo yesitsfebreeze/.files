@@ -128,7 +128,7 @@ packages:
 
     - name: gh
       brew: gh
-      apt: gh            # via GitHub apt repo; bootstrap adds it where possible
+      apt: gh            # via GitHub apt repo; add the repo manually if missing
       pacman: github-cli
       dnf: gh
       winget: GitHub.cli

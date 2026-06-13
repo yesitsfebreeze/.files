@@ -12,36 +12,62 @@ Cross-platform dev environment (Windows / macOS / Linux), managed with
 
 ## Install
 
+One command installs [chezmoi](https://chezmoi.io), clones this repo, and applies
+everything. chezmoi prompts once for your git name + email, writes every config
+into place, and installs all the tools (Homebrew is bootstrapped on macOS first).
+Then open WezTerm.
+
 **macOS / Linux**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.sh | sh
+sh -c "$(curl -fsSL https://get.chezmoi.io)" -- init --apply yesitsfebreeze/.files
 ```
 
-**Windows (PowerShell)**
+**Windows (PowerShell)** — needs winget or scoop for the tool installs:
 
 ```powershell
-irm https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.ps1 | iex
+iex "&{$(irm 'https://get.chezmoi.io/ps1')} -- init --apply yesitsfebreeze/.files"
 ```
 
-The installer clones the repo into `~/.files` (or `git pull`s it if already
-present), then runs bootstrap: it installs chezmoi (and Homebrew on macOS if
-missing), asks once for your git name + email, writes every config into place,
-and installs all the tools. Then open WezTerm.
+chezmoi clones the repo into its own source dir (`~/.local/share/chezmoi`) and
+tracks this GitHub remote, so updates are a single command — no checkout to
+manage yourself.
 
-> Already have the repo checked out? Just run `./bootstrap.sh` (or
-> `.\bootstrap.ps1`) from it — no re-clone needed.
-
-## Day to day
+## Update
 
 ```sh
-chezmoi apply     # re-apply configs on this machine
-chezmoi update    # git pull, then apply
+chezmoi update    # git pull this repo, then re-apply
+```
+
+That is the whole update story: `chezmoi update` pulls the latest commit from
+GitHub and applies the difference. Other day-to-day commands:
+
+```sh
+chezmoi apply     # re-apply the current source without pulling
 chezmoi diff      # preview pending changes
+chezmoi cd        # drop into the source dir; exit returns you back
 ```
 
 Add or remove tools by editing `home/.chezmoidata/packages.yaml`; the next
 `chezmoi apply` installs the difference.
+
+## Develop
+
+To change the dotfiles, edit this repo and push — every machine picks it up on
+the next `chezmoi update`:
+
+```sh
+git clone https://github.com/yesitsfebreeze/.files
+# edit files under home/, then:
+chezmoi execute-template < home/<file>.tmpl   # render a template to check it
+git commit -am "..." && git push
+```
+
+Apply work-in-progress straight from a local checkout without pushing:
+
+```sh
+chezmoi apply --source <path-to-checkout>
+```
 
 ## Keys
 

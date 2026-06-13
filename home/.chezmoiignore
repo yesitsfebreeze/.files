@@ -10,3 +10,6 @@ install-packages.sh
 {{ else }}
 install-packages.ps1
 {{ end }}
+{{ if ne .chezmoi.os "darwin" }}
+install-homebrew.sh
+{{ end }}
