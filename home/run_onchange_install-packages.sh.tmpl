@@ -100,6 +100,36 @@ if command -v cargo >/dev/null 2>&1; then
     done
 fi
 
+# --- zellij: prebuilt-binary fallback (no apt package, avoid source build) ---
+# Zellij isn't in Debian/Ubuntu apt and building the crate from source is heavy,
+# so on Linux we fetch the static musl binary from the GitHub release when it's
+# missing. macOS is covered by brew. Idempotent.
+if [ "$(uname -s)" = "Linux" ] && ! command -v zellij >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)        zj_arch=x86_64 ;;
+        aarch64|arm64)       zj_arch=aarch64 ;;
+        *)                   zj_arch="" ;;
+    esac
+    if [ -n "$zj_arch" ]; then
+        log "install zellij ($zj_arch musl binary, GitHub release fallback)"
+        mkdir -p "$HOME/.local/bin"
+        zt="$(mktemp -d)"
+        zj_asset="zellij-$zj_arch-unknown-linux-musl.tar.gz"
+        if curl -fsSL -o "$zt/$zj_asset" \
+            "https://github.com/zellij-org/zellij/releases/latest/download/$zj_asset" \
+            && tar -xzf "$zt/$zj_asset" -C "$zt" 2>/dev/null \
+            && cp "$zt/zellij" "$HOME/.local/bin/zellij" 2>/dev/null; then
+            chmod +x "$HOME/.local/bin/zellij"
+            log "  installed zellij"
+        else
+            warn "  could not install zellij from the GitHub release"
+        fi
+        rm -rf "$zt"
+    else
+        warn "zellij: no prebuilt binary for $(uname -m); install manually"
+    fi
+fi
+
 # --- Nerd Font: guarantee the patched font is present (release fallback) ---
 # Font identity comes from packages.yaml (nerdfont_asset); fetch the nerd-fonts
 # release zip when the font is not already installed, so the terminal/prompt

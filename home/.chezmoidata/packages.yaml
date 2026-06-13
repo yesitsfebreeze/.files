@@ -22,7 +22,7 @@ packages:
 
     - name: zellij        # terminal multiplexer (tabs/panes/session-restore), shell-side
       brew: zellij
-      apt: ""             # not in Debian/Ubuntu repos; install via cargo or official binary
+      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
       pacman: zellij
       dnf: zellij
       winget: ""          # Unix-only: Windows runs Zellij inside WSL, not natively
