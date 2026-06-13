@@ -12,26 +12,31 @@ Cross-platform dev environment (Windows / macOS / Linux), managed with
 
 ## Install
 
-One command installs [chezmoi](https://chezmoi.io), clones this repo, and applies
-everything. chezmoi prompts once for your git name + email, writes every config
-into place, and installs all the tools (Homebrew is bootstrapped on macOS first).
-Then open WezTerm.
+One `chezmoi init --apply` clones this repo, prompts once for your git name +
+email, writes every config into place, and installs all the tools (Homebrew is
+bootstrapped on macOS first). Run it from a **normal (non-admin) shell in your
+home directory** — the dotfiles install per-user. Then open WezTerm.
 
-**macOS / Linux**
-
-```sh
-sh -c "$(curl -fsSL https://get.chezmoi.io)" -- init --apply yesitsfebreeze/.files
-```
-
-**Windows (PowerShell)** — needs winget or scoop for the tool installs:
+**Windows (PowerShell)** — installs chezmoi via winget (puts it on PATH), then applies:
 
 ```powershell
-iex "&{$(irm 'https://get.chezmoi.io/ps1')} -- init --apply yesitsfebreeze/.files"
+winget install twpayne.chezmoi          # or: scoop install chezmoi
+chezmoi init --apply yesitsfebreeze/.files
+```
+
+**macOS / Linux** — no prerequisites; installs chezmoi to `~/.local/bin`, then applies:
+
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesitsfebreeze/.files
 ```
 
 chezmoi clones the repo into its own source dir (`~/.local/share/chezmoi`) and
 tracks this GitHub remote, so updates are a single command — no checkout to
 manage yourself.
+
+> Already have chezmoi installed (winget/scoop/brew)? Just run
+> `chezmoi init --apply yesitsfebreeze/.files`. Avoid running it from an
+> elevated shell or `C:\Windows\System32`.
 
 ## Update
 
