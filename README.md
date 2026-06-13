@@ -15,21 +15,22 @@ Cross-platform dev environment (Windows / macOS / Linux), managed with
 **macOS / Linux**
 
 ```sh
-git clone https://github.com/yesitsfebreeze/.files.git ~/.files && ~/.files/bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-git clone https://github.com/yesitsfebreeze/.files.git "$HOME\.files"; & "$HOME\.files\bootstrap.ps1"
+irm https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.ps1 | iex
 ```
 
-That installs chezmoi (and Homebrew on macOS if missing), asks once for your git
-name + email, writes every config into place, and installs all the tools. Then
-open WezTerm.
+The installer clones the repo into `~/.files` (or `git pull`s it if already
+present), then runs bootstrap: it installs chezmoi (and Homebrew on macOS if
+missing), asks once for your git name + email, writes every config into place,
+and installs all the tools. Then open WezTerm.
 
-> Already have the repo checked out? Just run `setup/bootstrap.sh` (or
-> `setup\bootstrap.ps1`) from it — no re-clone needed.
+> Already have the repo checked out? Just run `./bootstrap.sh` (or
+> `.\bootstrap.ps1`) from it — no re-clone needed.
 
 ## Day to day
 

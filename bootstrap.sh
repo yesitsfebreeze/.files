@@ -1,14 +1,14 @@
 #!/usr/bin/env sh
 # One-click dotfiles bootstrap (macOS / Linux).
 #
-# From a checkout of this repo:
-#     ./setup/bootstrap.sh
+# Applies the dotfiles from a checkout of this repo:
+#     ./bootstrap.sh
 #
-# Or one line (clones into ~/.files, then bootstraps):
-#     git clone https://github.com/yesitsfebreeze/kern.git ~/.files && ~/.files/bootstrap.sh
+# To clone-or-update first, use the remote installer instead:
+#     curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.sh | sh
 #
 # It installs chezmoi (and Homebrew on macOS if absent), then applies the dotfiles,
-# which in turn installs every tool from setup/home/.chezmoidata/packages.yaml.
+# which in turn installs every tool from home/.chezmoidata/packages.yaml.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

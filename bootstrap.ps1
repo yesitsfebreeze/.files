@@ -1,13 +1,13 @@
 # One-click dotfiles bootstrap (Windows).
 #
-# From a checkout of this repo:
-#     ./setup/bootstrap.ps1
+# Applies the dotfiles from a checkout of this repo:
+#     .\bootstrap.ps1
 #
-# Or one line (clones into ~\.files, then bootstraps):
-#     git clone https://github.com/yesitsfebreeze/kern.git "$HOME\.files"; & "$HOME\.files\bootstrap.ps1"
+# To clone-or-update first, use the remote installer instead:
+#     irm https://raw.githubusercontent.com/yesitsfebreeze/.files/main/install.ps1 | iex
 #
 # Installs chezmoi (via winget/scoop), then applies the dotfiles, which in turn
-# install every tool from setup/home/.chezmoidata/packages.yaml.
+# install every tool from home/.chezmoidata/packages.yaml.
 $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
