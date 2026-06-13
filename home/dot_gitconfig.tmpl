@@ -20,7 +20,9 @@
 
 [core]
     pager = delta
-    autocrlf = {{ if eq .chezmoi.os "windows" }}true{{ else }}input{{ end }}
+    # Linux/WSL/macOS only — chezmoi never runs on the Windows host, so `input`
+    # (normalise CRLF on commit, leave the working tree alone) always applies.
+    autocrlf = input
 
 [interactive]
     diffFilter = delta --color-only
