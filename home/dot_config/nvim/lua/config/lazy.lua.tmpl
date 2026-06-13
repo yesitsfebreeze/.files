@@ -19,7 +19,7 @@ require("lazy").setup({
         { import = "plugins" },
     },
     defaults = { lazy = false, version = false },
-    install = { colorscheme = { "catppuccin" } },
+    install = { colorscheme = { "{{ .theme.names.nvim_colorscheme }}" } },
     checker = { enabled = true, notify = false },
     change_detection = { notify = false },
     performance = {

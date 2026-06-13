@@ -8,9 +8,9 @@ default_shell "nu"
 // Default layout (see layouts/default.kdl): one tab, with tab-bar + status-bar.
 default_layout "default"
 
-// Catppuccin Mocha to match WezTerm/Starship. Built into recent Zellij; if an
-// older Zellij lacks it, it falls back to the default theme harmlessly.
-theme "catppuccin-mocha"
+// Theme managed centrally in home/.chezmoidata/theme.yaml. Built into recent
+// Zellij; if an older Zellij lacks it, it falls back to the default harmlessly.
+theme "{{ .theme.names.zellij }}"
 
 // Session resurrection: serialize running sessions to disk so `zellij attach`
 // (and our shell auto-start) resumes layout + pane viewports after a full

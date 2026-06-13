@@ -8,7 +8,9 @@ Cross-platform dev environment (Windows / macOS / Linux), managed with
 - **Neovim** — editor (Lua + lazy.nvim, LSP, Treesitter, Telescope)
 - **Starship** prompt, **git + delta + lazygit + gh**
 - CLI core: ripgrep, fd, fzf, bat, eza, zoxide, jq
-- Theme: Catppuccin Mocha everywhere
+- Theme: Gruvbox Dark Hard everywhere, with a blinking block cursor. Centralized
+  in `home/.chezmoidata/theme.yaml` — change palette/theme/cursor in one place,
+  run `chezmoi apply`, and every tool re-themes together.
 
 ## Install
 
