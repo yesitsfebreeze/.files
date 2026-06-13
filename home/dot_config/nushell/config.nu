@@ -50,11 +50,18 @@ $env.config = {
     }
     filesize: { unit: binary }
     use_kitty_protocol: false
+    # Disable OSC 133/633 semantic prompt-zone markers. We run WezTerm hosting
+    # Zellij hosting Nushell, and BOTH WezTerm and Zellij interpret OSC 133. With
+    # the two-line starship prompt ($line_break before $character) the doubled
+    # prompt-start mark is re-emitted on each reedline repaint and the terminal
+    # renders it as a phantom blank line above the input. Turning the markers off
+    # removes the blank lines. Trade-off: loses terminal-side "jump to previous
+    # prompt" / command-status / semantic-zone features, which we don't rely on.
+    shell_integration: {
+        osc133: false
+        osc633: false
+    }
 }
-# NOTE: render_right_prompt_on_last_line is deliberately NOT set in the block
-# above. The starship init (sourced at the end of this file) force-merges it to
-# `true`, which clobbers anything set here. We re-assert `false` AFTER that
-# source instead -- see the end of the file.
 
 # ---------------------------------------------------------------------------
 # Aliases — modern CLI replacements.
@@ -113,10 +120,3 @@ def fg [] {
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
-
-# Undo starship's forced `render_right_prompt_on_last_line: true`. On
-# WezTerm/Windows that setting parks the caret on the last terminal line, where
-# reedline's per-keystroke cursor reposition is emitted as a newline instead of
-# a carriage return -- so every keypress inserts a blank line (cleared on Enter).
-# See nushell#5585 and wezterm#1999. Must run AFTER the starship source above.
-$env.config.render_right_prompt_on_last_line = false
