@@ -1,0 +1,18 @@
+// Default Zellij layout: one tab with the tab-bar on top and status-bar on
+// bottom, and a single working pane in between. This is the declarative "setup"
+// — add tabs/panes/cwds here and they become part of your versioned config.
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="main" focus=true {
+        pane
+    }
+}

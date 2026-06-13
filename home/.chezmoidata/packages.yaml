@@ -20,6 +20,14 @@ packages:
       winget: wez.wezterm
       scoop: wezterm
 
+    - name: zellij        # terminal multiplexer (tabs/panes/session-restore), shell-side
+      brew: zellij
+      apt: ""             # not in Debian/Ubuntu repos; install via cargo or official binary
+      pacman: zellij
+      dnf: zellij
+      winget: ""          # Unix-only: Windows runs Zellij inside WSL, not natively
+      scoop: ""
+
     - name: neovim
       brew: neovim
       apt: neovim

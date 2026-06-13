@@ -5,6 +5,19 @@
 [init]
     defaultBranch = main
 
+# Route github.com auth through gh (gh auth git-credential) so pushes follow
+# gh's active account instead of Git Credential Manager's cached token. The
+# empty `helper =` resets the inherited helper list for these URLs only, so the
+# system-level `manager` helper does NOT also fire for github.com; every other
+# host (e.g. Azure DevOps) still uses `manager`. Requires gh on PATH (installed
+# via packages.yaml). This is what `gh auth setup-git` writes, made declarative.
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !gh auth git-credential
+
 [core]
     pager = delta
     autocrlf = {{ if eq .chezmoi.os "windows" }}true{{ else }}input{{ end }}

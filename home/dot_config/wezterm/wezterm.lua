@@ -1,6 +1,12 @@
--- WezTerm: the cross-platform centerpiece AND the multiplexer + session manager.
--- (tmux is intentionally not used — WezTerm provides splits, tabs, named
--- workspaces/sessions, and persistence across restarts.)
+-- WezTerm: a PLAIN cross-platform host terminal. Multiplexing (tabs, panes,
+-- named sessions, restore-across-restart) has been moved OUT of WezTerm and into
+-- the shell via Zellij, so the setup is portable to any terminal. See
+-- /.proj/plans/zellij-wsl-multiplexer.md for the decision and rollout.
+--
+-- Status: the resurrect.wezterm plugin (which flashed console windows on Windows)
+-- is removed. The remaining LEADER mux keybindings below are transitional and are
+-- retired in the cutover slice, once Zellij is provisioned (incl. inside WSL on
+-- Windows, where Zellij runs since it has no native Windows build).
 --
 -- OS branching is done at runtime via wezterm.target_triple, so this file is
 -- shipped verbatim by chezmoi (no template processing).
@@ -85,25 +91,13 @@ wezterm.on("update-right-status", function(window, _pane)
 end)
 
 -- ---------------------------------------------------------------------------
--- Session persistence via resurrect.wezterm (guarded: offline/first-run safe).
--- Built-in workspaces below already give live session switching with no plugin;
--- resurrect adds save/restore of layouts across full restarts.
--- ---------------------------------------------------------------------------
-local ok_resurrect, resurrect = pcall(function()
-    return wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
-end)
-
-if ok_resurrect then
-    -- Auto-save the workspace layout periodically and on changes.
-    resurrect.state_manager.periodic_save({
-        interval_seconds = 300,
-        save_workspaces = true,
-    })
-    wezterm.on("resurrect.error", function(err)
-        wezterm.log_error("resurrect: " .. tostring(err))
-    end)
-end
-
+-- NOTE: no WezTerm plugins are loaded here, by design.
+-- Session persistence / multiplexing is being moved OUT of WezTerm and INTO the
+-- shell (Zellij), so WezTerm stays a plain terminal that works identically under
+-- any host. The previous resurrect.wezterm plugin was removed because, at config
+-- load, it shells out via os.execute() ("mkdir", git) and -- since wezterm-gui is
+-- a GUI process with no console -- Windows allocated a NEW visible conhost window
+-- for each call, flashing several terminals and slowing every launch.
 -- ---------------------------------------------------------------------------
 -- Keybindings: a tmux-like leader (CTRL-a) so muscle memory is consistent.
 -- ---------------------------------------------------------------------------
@@ -167,20 +161,6 @@ config.keys = {
     -- Config reload
     { key = "r", mods = "LEADER", action = act.ReloadConfiguration },
 
-    -- Update WezTerm plugins (e.g. resurrect) in-process via WezTerm's own
-    -- plugin system: no external terminal, no shell script. update_all() does a
-    -- git fast-forward / pull --rebase on each plugin repo, then we reload.
-    {
-        key = "u",
-        mods = "LEADER",
-        action = wezterm.action_callback(function(window, _pane)
-            window:toast_notification("WezTerm", "Updating plugins...", nil, 4000)
-            wezterm.plugin.update_all()
-            window:toast_notification("WezTerm", "Plugins updated - reloading config", nil, 4000)
-            wezterm.reload_configuration()
-        end),
-    },
-
     -- ---- Sessions / workspaces (tmux-style) ----
     -- Switch session: fuzzy launcher over all live workspaces.
     { key = "w", mods = "LEADER", action = act.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }) },
@@ -214,44 +194,5 @@ config.keys = {
     { key = ")", mods = "LEADER|SHIFT", action = act.SwitchWorkspaceRelative(1) },
     { key = "(", mods = "LEADER|SHIFT", action = act.SwitchWorkspaceRelative(-1) },
 }
-
--- resurrect-backed save/restore (only wired when the plugin loaded).
-if ok_resurrect then
-    -- leader s : save current workspace layout
-    table.insert(config.keys, {
-        key = "s",
-        mods = "LEADER",
-        action = wezterm.action_callback(function(_win, _pane)
-            resurrect.state_manager.save_state(resurrect.workspace_state.get_workspace_state())
-        end),
-    })
-    -- leader o : open/restore a saved session (fuzzy)
-    table.insert(config.keys, {
-        key = "o",
-        mods = "LEADER",
-        action = wezterm.action_callback(function(win, pane)
-            resurrect.fuzzy_loader.fuzzy_load(win, pane, function(id, _label)
-                local kind = string.match(id, "^([^/]+)")
-                id = string.match(id, "([^/]+)$")
-                id = string.match(id, "(.+)%..+$")
-                local opts = {
-                    relative = true,
-                    restore_text = true,
-                    on_pane_restore = resurrect.tab_state.default_on_pane_restore,
-                }
-                if kind == "workspace" then
-                    local state = resurrect.state_manager.load_state(id, "workspace")
-                    resurrect.workspace_state.restore_workspace(state, opts)
-                elseif kind == "window" then
-                    local state = resurrect.state_manager.load_state(id, "window")
-                    resurrect.window_state.restore_window(pane:window(), state, opts)
-                elseif kind == "tab" then
-                    local state = resurrect.state_manager.load_state(id, "tab")
-                    resurrect.tab_state.restore_tab(pane:tab(), state, opts)
-                end
-            end)
-        end),
-    })
-end
 
 return config

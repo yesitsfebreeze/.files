@@ -3,6 +3,9 @@
 
 "$schema" = "https://starship.rs/config-schema.json"
 
+# Don't insert a blank line above the prompt on each new command.
+add_newline = false
+
 format = """
 [](surface0)\
 $os\

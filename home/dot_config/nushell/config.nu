@@ -2,6 +2,22 @@
 # Launched explicitly by WezTerm via:  nu --config ~/.config/nushell/config.nu
 # Colors follow the terminal palette (Catppuccin Mocha, set by WezTerm).
 
+# ---------------------------------------------------------------------------
+# Auto-start Zellij (the multiplexer that owns tabs/panes/session-restore).
+# This is what makes multiplexing live in the SHELL, decoupled from WezTerm:
+# any host terminal that drops us into an interactive Nushell gets Zellij.
+# Replace this shell with the "main" Zellij session, resuming it if it exists.
+# Guards (skip auto-start when):
+#   - already inside Zellij        ('ZELLIJ' env already set) -> avoid recursion
+#   - Zellij isn't installed        (e.g. native Windows -> WSL handles it instead)
+#   - stdout isn't a real terminal  (scripts, `nu -c ...`, pipelines)
+# Placed first so the outer shell does no extra work before handing off; the
+# inner Nushell that Zellij spawns re-runs this file with $env.ZELLIJ set and
+# falls straight through.
+if ('ZELLIJ' not-in $env) and (which zellij | is-not-empty) and (is-terminal --stdout) {
+    exec zellij attach --create main
+}
+
 $env.config = {
     show_banner: false
     edit_mode: vi
@@ -54,9 +70,10 @@ alias v = nvim
 alias vi = nvim
 alias cdi = zi          # zoxide interactive
 
-# Reload dotfiles: re-pull the source from the repo and re-apply.
-# --force overwrites local drift without prompting (non-interactive reload).
-alias rlcfg = chezmoi init --apply --force yesitsfebreeze/.files
+# Reload dotfiles: re-pull the source from the already-configured remote and
+# re-apply. --force overwrites local drift without prompting (non-interactive
+# reload). No repo handle baked in here -- chezmoi knows its own source remote.
+alias rlcfg = chezmoi update --force
 
 # ---------------------------------------------------------------------------
 # fzf-powered helpers
