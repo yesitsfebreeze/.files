@@ -1,4 +1,5 @@
-# lazygit configuration — Catppuccin Mocha (mauve accent).
+# lazygit configuration — theme managed centrally in
+# home/.chezmoidata/theme.yaml (Gruvbox Dark Hard, orange accent).
 gui:
   nerdFontsVersion: "3"
   scrollHeight: 2
@@ -7,24 +8,24 @@ gui:
   showCommandLog: false
   theme:
     activeBorderColor:
-      - "#cba6f7"
+      - "{{ .theme.palette.orange }}"
       - bold
     inactiveBorderColor:
-      - "#a6adc8"
+      - "{{ .theme.palette.fg4 }}"
     optionsTextColor:
-      - "#89b4fa"
+      - "{{ .theme.palette.blue }}"
     selectedLineBgColor:
-      - "#313244"
+      - "{{ .theme.palette.bg2 }}"
     cherryPickedCommitBgColor:
-      - "#45475a"
+      - "{{ .theme.palette.bg3 }}"
     cherryPickedCommitFgColor:
-      - "#cba6f7"
+      - "{{ .theme.palette.orange }}"
     unstagedChangesColor:
-      - "#f38ba8"
+      - "{{ .theme.palette.red }}"
     defaultFgColor:
-      - "#cdd6f4"
+      - "{{ .theme.palette.fg1 }}"
     searchingActiveBorderColor:
-      - "#f9e2af"
+      - "{{ .theme.palette.yellow }}"
 
 git:
   paging:

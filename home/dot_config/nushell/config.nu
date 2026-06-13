@@ -1,6 +1,6 @@
 # config.nu — main Nushell configuration.
 # Launched explicitly by WezTerm via:  nu --config ~/.config/nushell/config.nu
-# Colors follow the terminal palette (Catppuccin Mocha, set by WezTerm).
+# Colors follow the terminal palette (Gruvbox Dark Hard, set by WezTerm).
 
 # ---------------------------------------------------------------------------
 # Auto-start Zellij (the multiplexer that owns tabs/panes/session-restore).
@@ -21,8 +21,9 @@ if ('ZELLIJ' not-in $env) and (which zellij | is-not-empty) and (is-terminal --s
 $env.config = {
     show_banner: false
     edit_mode: vi
+    # Block cursor in every mode (terminal applies the blink).
     cursor_shape: {
-        vi_insert: line
+        vi_insert: block
         vi_normal: block
     }
     rm: { always_trash: true }
@@ -48,9 +49,12 @@ $env.config = {
         }
     }
     filesize: { unit: binary }
-    render_right_prompt_on_last_line: false
     use_kitty_protocol: false
 }
+# NOTE: render_right_prompt_on_last_line is deliberately NOT set in the block
+# above. The starship init (sourced at the end of this file) force-merges it to
+# `true`, which clobbers anything set here. We re-assert `false` AFTER that
+# source instead -- see the end of the file.
 
 # ---------------------------------------------------------------------------
 # Aliases — modern CLI replacements.
@@ -115,3 +119,10 @@ $env.config = ($env.config | upsert keybindings [
 # ---------------------------------------------------------------------------
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
+
+# Undo starship's forced `render_right_prompt_on_last_line: true`. On
+# WezTerm/Windows that setting parks the caret on the last terminal line, where
+# reedline's per-keystroke cursor reposition is emitted as a newline instead of
+# a carriage return -- so every keypress inserts a blank line (cleared on Enter).
+# See nushell#5585 and wezterm#1999. Must run AFTER the starship source above.
+$env.config.render_right_prompt_on_last_line = false

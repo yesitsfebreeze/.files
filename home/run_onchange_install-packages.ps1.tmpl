@@ -79,19 +79,10 @@ if ($nerdfontAsset) {
     }
 }
 
-# --- bat: install Catppuccin Mocha theme + rebuild cache ---
+# --- bat: rebuild theme cache ---
+# The active theme ({{ .theme.names.bat }}) is built into bat, so no theme file
+# is fetched; just rebuild the cache so a fresh install picks it up.
 if (Get-Command bat -ErrorAction SilentlyContinue) {
-    $themeDir = Join-Path (bat --config-dir) "themes"
-    New-Item -ItemType Directory -Force -Path $themeDir | Out-Null
-    $themeFile = Join-Path $themeDir "Catppuccin Mocha.tmTheme"
-    if (-not (Test-Path $themeFile)) {
-        Log "fetch bat Catppuccin Mocha theme"
-        try {
-            Invoke-WebRequest -UseBasicParsing `
-                -Uri "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme" `
-                -OutFile $themeFile
-        } catch { Warn "could not fetch bat theme" }
-    }
     bat cache --build 2>$null | Out-Null
 }
 

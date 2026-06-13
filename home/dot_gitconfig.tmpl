@@ -29,19 +29,19 @@
     navigate = true
     line-numbers = true
     side-by-side = false
-    syntax-theme = Catppuccin Mocha
-    # Catppuccin Mocha accents for the diff frame
-    minus-style                   = syntax "#45283c"
-    minus-non-emph-style          = syntax "#45283c"
-    minus-emph-style              = syntax "#63303f"
-    plus-style                    = syntax "#283c34"
-    plus-non-emph-style           = syntax "#283c34"
-    plus-emph-style               = syntax "#30633f"
-    line-numbers-minus-style      = "#f38ba8"
-    line-numbers-plus-style       = "#a6e3a1"
-    line-numbers-zero-style       = "#6c7086"
-    file-style                    = bold "#cdd6f4"
-    hunk-header-style             = "#89b4fa" bold
+    syntax-theme = {{ .theme.names.delta }}
+    # Diff frame accents from the central theme (home/.chezmoidata/theme.yaml).
+    minus-style                   = syntax "{{ .theme.diff.minus_bg }}"
+    minus-non-emph-style          = syntax "{{ .theme.diff.minus_bg }}"
+    minus-emph-style              = syntax "{{ .theme.diff.minus_emph_bg }}"
+    plus-style                    = syntax "{{ .theme.diff.plus_bg }}"
+    plus-non-emph-style           = syntax "{{ .theme.diff.plus_bg }}"
+    plus-emph-style               = syntax "{{ .theme.diff.plus_emph_bg }}"
+    line-numbers-minus-style      = "{{ .theme.palette.red }}"
+    line-numbers-plus-style       = "{{ .theme.palette.green }}"
+    line-numbers-zero-style       = "{{ .theme.palette.gray }}"
+    file-style                    = bold "{{ .theme.palette.fg1 }}"
+    hunk-header-style             = "{{ .theme.palette.blue }}" bold
 
 [merge]
     conflictStyle = zdiff3

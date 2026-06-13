@@ -1,4 +1,4 @@
--- Statusline + icons.
+-- Statusline + icons. Theme managed centrally in home/.chezmoidata/theme.yaml.
 return {
     {
         "nvim-lualine/lualine.nvim",
@@ -6,7 +6,7 @@ return {
         event = "VeryLazy",
         opts = {
             options = {
-                theme = "catppuccin",
+                theme = "{{ .theme.names.lualine }}",
                 globalstatus = true,
                 component_separators = "",
                 section_separators = { left = "", right = "" },

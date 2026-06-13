@@ -1,6 +1,0 @@
-# bat configuration.
-# The Catppuccin Mocha theme file is installed by the package installer
-# (fetched into ~/.config/bat/themes and registered with `bat cache --build`).
---theme="Catppuccin Mocha"
---style="numbers,changes,header"
---paging=auto

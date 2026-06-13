@@ -141,16 +141,10 @@ if [ -n "$nerdfont_asset" ]; then
     fi
 fi
 
-# --- bat: install Catppuccin Mocha theme + rebuild cache ---
+# --- bat: rebuild theme cache ---
+# The active theme ({{ .theme.names.bat }}) is built into bat, so no theme file
+# is fetched; just rebuild the cache so a fresh install picks it up.
 if command -v bat >/dev/null 2>&1; then
-    theme_dir="$(bat --config-dir 2>/dev/null)/themes"
-    mkdir -p "$theme_dir"
-    if [ ! -f "$theme_dir/Catppuccin Mocha.tmTheme" ]; then
-        log "fetch bat Catppuccin Mocha theme"
-        curl -fsSL -o "$theme_dir/Catppuccin Mocha.tmTheme" \
-            "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme" \
-            >/dev/null 2>&1 || warn "  could not fetch bat theme"
-    fi
     bat cache --build >/dev/null 2>&1 || true
 fi
 
