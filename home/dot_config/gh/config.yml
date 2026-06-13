@@ -8,3 +8,4 @@ aliases:
     pv: pr view
     pc: pr create
     rv: repo view --web
+version: "1"
