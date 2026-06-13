@@ -1,0 +1,73 @@
+[user]
+    name = {{ .name }}
+    email = {{ .email }}
+
+[init]
+    defaultBranch = main
+
+[core]
+    pager = delta
+    autocrlf = {{ if eq .chezmoi.os "windows" }}true{{ else }}input{{ end }}
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    line-numbers = true
+    side-by-side = false
+    syntax-theme = Catppuccin Mocha
+    # Catppuccin Mocha accents for the diff frame
+    minus-style                   = syntax "#45283c"
+    minus-non-emph-style          = syntax "#45283c"
+    minus-emph-style              = syntax "#63303f"
+    plus-style                    = syntax "#283c34"
+    plus-non-emph-style           = syntax "#283c34"
+    plus-emph-style               = syntax "#30633f"
+    line-numbers-minus-style      = "#f38ba8"
+    line-numbers-plus-style       = "#a6e3a1"
+    line-numbers-zero-style       = "#6c7086"
+    file-style                    = bold "#cdd6f4"
+    hunk-header-style             = "#89b4fa" bold
+
+[merge]
+    conflictStyle = zdiff3
+
+[diff]
+    colorMoved = default
+    algorithm = histogram
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+    default = current
+
+[fetch]
+    prune = true
+
+[rebase]
+    autoStash = true
+    autoSquash = true
+
+[column]
+    ui = auto
+
+[branch]
+    sort = -committerdate
+
+[alias]
+    s = status -sb
+    co = checkout
+    sw = switch
+    br = branch
+    cm = commit -m
+    ca = commit --amend
+    can = commit --amend --no-edit
+    unstage = restore --staged
+    last = log -1 HEAD --stat
+    lg = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) %C(dim white)%an%C(reset) %C(green)(%ar)%C(reset)%C(auto)%d%C(reset)%n          %s'
+    undo = reset --soft HEAD~1
+    wip = !git add -A && git commit -m 'wip'
+    aliases = config --get-regexp ^alias\\.

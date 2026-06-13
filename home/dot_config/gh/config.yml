@@ -1,0 +1,10 @@
+# GitHub CLI configuration.
+git_protocol: https
+editor: nvim
+prompt: enabled
+pager: delta
+aliases:
+    co: pr checkout
+    pv: pr view
+    pc: pr create
+    rv: repo view --web

@@ -1,0 +1,37 @@
+-- Treesitter: syntax-aware highlighting, indentation, text objects.
+return {
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    event = { "BufReadPost", "BufNewFile" },
+    main = "nvim-treesitter.configs",
+    opts = {
+        ensure_installed = {
+            "bash",
+            "c",
+            "lua",
+            "luadoc",
+            "markdown",
+            "markdown_inline",
+            "nu",
+            "python",
+            "query",
+            "rust",
+            "toml",
+            "vim",
+            "vimdoc",
+            "yaml",
+            "json",
+        },
+        auto_install = true,
+        highlight = { enable = true },
+        indent = { enable = true },
+        incremental_selection = {
+            enable = true,
+            keymaps = {
+                init_selection = "<C-space>",
+                node_incremental = "<C-space>",
+                node_decremental = "<bs>",
+            },
+        },
+    },
+}

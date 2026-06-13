@@ -1,0 +1,145 @@
+# Single source of truth for what the dotfiles install.
+# Each entry maps one logical tool to its package name per platform/manager.
+# An empty string means "no package under this manager" -> the installer skips it.
+#
+# Consumed at render time by:
+#   run_onchange_install-packages.sh.tmpl   (brew / apt / pacman / dnf)
+#   run_onchange_install-packages.ps1.tmpl  (winget / scoop)
+#
+# Keep this list as the place you add/remove tools. Editing it re-triggers the
+# run_onchange installer on the next `chezmoi apply`.
+
+packages:
+    # --- core experience: terminal, editor, shell, multiplexer ---
+    - name: wezterm
+      brew: wezterm
+      cask: true
+      apt: ""           # no reliable apt package; install via official repo/AppImage manually
+      pacman: wezterm
+      dnf: ""
+      winget: wez.wezterm
+      scoop: wezterm
+
+    - name: neovim
+      brew: neovim
+      apt: neovim
+      pacman: neovim
+      dnf: neovim
+      winget: Neovim.Neovim
+      scoop: neovim
+
+    - name: nushell
+      brew: nushell
+      apt: ""           # not in default apt; cargo/brew/official repo
+      pacman: nushell
+      dnf: ""
+      winget: Nushell.Nushell
+      scoop: nu
+
+    # --- modern CLI core ---
+    - name: ripgrep
+      brew: ripgrep
+      apt: ripgrep
+      pacman: ripgrep
+      dnf: ripgrep
+      winget: BurntSushi.ripgrep.MSVC
+      scoop: ripgrep
+
+    - name: fd
+      brew: fd
+      apt: fd-find       # binary is `fdfind` on Debian/Ubuntu
+      pacman: fd
+      dnf: fd-find
+      winget: sharkdp.fd
+      scoop: fd
+
+    - name: fzf
+      brew: fzf
+      apt: fzf
+      pacman: fzf
+      dnf: fzf
+      winget: junegunn.fzf
+      scoop: fzf
+
+    - name: bat
+      brew: bat
+      apt: bat           # binary is `batcat` on Debian/Ubuntu
+      pacman: bat
+      dnf: bat
+      winget: sharkdp.bat
+      scoop: bat
+
+    - name: eza
+      brew: eza
+      apt: ""            # not in older apt; cargo/brew/repo
+      pacman: eza
+      dnf: eza
+      winget: eza-community.eza
+      scoop: eza
+
+    - name: zoxide
+      brew: zoxide
+      apt: zoxide
+      pacman: zoxide
+      dnf: zoxide
+      winget: ajeetdsouza.zoxide
+      scoop: zoxide
+
+    - name: starship
+      brew: starship
+      apt: ""            # use official installer; not in apt
+      pacman: starship
+      dnf: ""
+      winget: Starship.Starship
+      scoop: starship
+
+    - name: jq
+      brew: jq
+      apt: jq
+      pacman: jq
+      dnf: jq
+      winget: jqlang.jq
+      scoop: jq
+
+    # --- git experience ---
+    - name: git
+      brew: git
+      apt: git
+      pacman: git
+      dnf: git
+      winget: Git.Git
+      scoop: git
+
+    - name: delta
+      brew: git-delta
+      apt: ""            # `git-delta` not in default apt; cargo/brew/repo
+      pacman: git-delta
+      dnf: git-delta
+      winget: dandavison.delta
+      scoop: delta
+
+    - name: lazygit
+      brew: lazygit
+      apt: ""            # PPA/repo needed; not in default apt
+      pacman: lazygit
+      dnf: lazygit
+      winget: JesseDuffield.lazygit
+      scoop: lazygit
+
+    - name: gh
+      brew: gh
+      apt: gh            # via GitHub apt repo; bootstrap adds it where possible
+      pacman: github-cli
+      dnf: gh
+      winget: GitHub.cli
+      scoop: gh
+
+    # --- font: Nerd Font for prompt/eza/lualine glyphs ---
+    - name: nerd-font
+      brew: font-jetbrains-mono-nerd-font   # cask
+      cask: true
+      apt: fonts-jetbrains-mono             # non-patched; glyphs may be partial
+      pacman: ttf-jetbrains-mono-nerd
+      dnf: ""
+      winget: ""
+      scoop: JetBrainsMono-NF               # needs the nerd-fonts bucket (added by installer)

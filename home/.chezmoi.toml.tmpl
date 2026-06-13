@@ -1,0 +1,7 @@
+{{/* Prompt once for identity used by git; persisted to the local chezmoi config (never committed). */}}
+{{- $name := promptStringOnce . "name" "Full name (for git)" -}}
+{{- $email := promptStringOnce . "email" "Email (for git)" -}}
+
+[data]
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}

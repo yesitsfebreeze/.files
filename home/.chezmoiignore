@@ -1,0 +1,12 @@
+{{- /*
+    Run only the installer script for the current OS:
+    chezmoi would otherwise try to execute the .sh on Windows (and the .ps1 on
+    Unix), which fails. Gate the wrong one out per platform.
+
+    Add other per-OS exclusions here as needed.
+*/ -}}
+{{ if eq .chezmoi.os "windows" }}
+install-packages.sh
+{{ else }}
+install-packages.ps1
+{{ end }}
