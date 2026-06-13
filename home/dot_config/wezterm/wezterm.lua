@@ -18,6 +18,22 @@ local is_windows = triple:find("windows") ~= nil
 local is_mac = triple:find("darwin") ~= nil
 
 local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
+local wz_dir = home .. "/.config/wezterm"
+
+-- Read the first non-empty line of a file, or nil. Used for the font picker's
+-- runtime state files (see CTRL+SHIFT+F below).
+local function read_line(path)
+    local f = io.open(path, "r")
+    if not f then
+        return nil
+    end
+    local line = f:read("*l")
+    f:close()
+    if line and line ~= "" then
+        return line
+    end
+    return nil
+end
 
 -- Launch Nushell with an explicit config dir so the SAME ~/.config/nushell files
 -- are used on every OS, regardless of Nushell's per-platform default config dir.
@@ -38,14 +54,34 @@ config.set_environment_variables = {
 -- Appearance (Catppuccin Mocha)
 -- ---------------------------------------------------------------------------
 config.color_scheme = "Catppuccin Mocha"
-config.font = wezterm.font_with_fallback({
+
+-- Font stack. The guaranteed default (JetBrainsMono Nerd Font) is provisioned by
+-- packages.yaml. The interactive font picker (CTRL+SHIFT+F) may write a chosen
+-- family to active-font.txt; that is RUNTIME USER STATE, deliberately outside the
+-- package manifest, and is layered on top here when present.
+local font_stack = {
     "JetBrainsMono Nerd Font",
     "JetBrains Mono",
     "Cascadia Code",
     "Menlo",
-})
+}
+local active_font = read_line(wz_dir .. "/active-font.txt")
+if active_font then
+    table.insert(font_stack, 1, active_font)
+end
+config.font = wezterm.font_with_fallback(font_stack)
 config.font_size = is_mac and 14.0 or 11.0
 config.line_height = 1.05
+
+-- Search the per-user OS font directory in addition to system fonts, so a font
+-- the picker just installed renders after a config reload without a full restart.
+if is_windows then
+    config.font_dirs = { (os.getenv("LOCALAPPDATA") or (home .. "/AppData/Local")) .. "/Microsoft/Windows/Fonts" }
+elseif is_mac then
+    config.font_dirs = { home .. "/Library/Fonts" }
+else
+    config.font_dirs = { home .. "/.local/share/fonts" }
+end
 
 config.window_background_opacity = 0.97
 config.macos_window_background_blur = 20
@@ -86,6 +122,56 @@ if ok_resurrect then
     wezterm.on("resurrect.error", function(err)
         wezterm.log_error("resurrect: " .. tostring(err))
     end)
+end
+
+-- ---------------------------------------------------------------------------
+-- Nerd-Font picker (CTRL+SHIFT+F).
+-- Spawns the platform helper (fzf over the live Nerd Fonts catalog). Hovering a
+-- font downloads + OS-installs it; a small watch loop here applies it live via
+-- set_config_overrides so you preview your real terminal in that font. Enter
+-- keeps it (persisted to active-font.txt for next launch); Esc reverts.
+-- ---------------------------------------------------------------------------
+local function picker_cmd()
+    if is_windows then
+        return { "pwsh", "-NoProfile", "-File", wz_dir .. "/fontpicker.ps1" }
+    end
+    return { "sh", wz_dir .. "/fontpicker.sh" }
+end
+
+-- Poll the picker's state files and mirror them into the live window. Runs only
+-- while the picker is open; stops itself when picker-closed.txt appears.
+local function start_font_preview_watch(window)
+    local preview_path = wz_dir .. "/preview-font.txt"
+    local closed_path = wz_dir .. "/picker-closed.txt"
+    local last_applied = nil
+
+    local function tick()
+        local preview = read_line(preview_path)
+        if preview and preview ~= last_applied then
+            last_applied = preview
+            window:set_config_overrides({
+                font = wezterm.font_with_fallback({ preview, "JetBrainsMono Nerd Font" }),
+            })
+        end
+
+        local closed = read_line(closed_path)
+        if closed then
+            os.remove(closed_path)
+            os.remove(preview_path)
+            if closed == "REVERT" then
+                -- Drop the override; fall back to the file-driven config (which
+                -- already reflects any persisted active-font.txt at startup).
+                window:set_config_overrides({})
+            end
+            -- KEEP: leave the override in place; active-font.txt persists it for
+            -- the next launch.
+            return
+        end
+
+        wezterm.time.call_after(0.25, tick)
+    end
+
+    tick()
 end
 
 -- ---------------------------------------------------------------------------
@@ -131,6 +217,20 @@ config.keys = {
 
     -- Config reload
     { key = "r", mods = "LEADER", action = act.ReloadConfiguration },
+
+    -- Nerd-Font picker: browse, hover-preview, install, and apply a font.
+    {
+        key = "f",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(window, pane)
+            -- Clear any stale state from a previous run before spawning.
+            os.remove(wz_dir .. "/picker-closed.txt")
+            os.remove(wz_dir .. "/preview-font.txt")
+            os.remove(wz_dir .. "/preview-request.txt")
+            window:perform_action(act.SpawnCommandInNewTab({ args = picker_cmd() }), pane)
+            start_font_preview_watch(window)
+        end),
+    },
 
     -- ---- Sessions / workspaces (tmux-style) ----
     -- Switch session: fuzzy launcher over all live workspaces.
