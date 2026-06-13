@@ -82,8 +82,8 @@ alias rlcfg = chezmoi update --force
 # ---------------------------------------------------------------------------
 # television-powered helpers. tv is the interactive finder (replaces fzf in the
 # shell): Ctrl-T smart autocomplete and Ctrl-R history come from the sourced
-# `tv init nu` integration near the end of this file. These defs add two
-# side-effecting shortcuts on top of the builtin tv channels.
+# `tv init nu` integration near the end of this file. These defs add three
+# shortcuts on top of the builtin tv channels: find-file, fuzzy-cd, live-grep.
 # ---------------------------------------------------------------------------
 
 # Fuzzy-find a file (tv `files` channel, bat preview) and open it in $EDITOR.
