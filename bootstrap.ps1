@@ -4,7 +4,7 @@
 #     ./setup/bootstrap.ps1
 #
 # Or one line (clones into ~\.files, then bootstraps):
-#     git clone https://github.com/yesitsfebreeze/kern.git "$HOME\.files"; & "$HOME\.files\setup\bootstrap.ps1"
+#     git clone https://github.com/yesitsfebreeze/kern.git "$HOME\.files"; & "$HOME\.files\bootstrap.ps1"
 #
 # Installs chezmoi (via winget/scoop), then applies the dotfiles, which in turn
 # install every tool from setup/home/.chezmoidata/packages.yaml.

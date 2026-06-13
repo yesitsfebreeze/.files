@@ -15,13 +15,13 @@ Cross-platform dev environment (Windows / macOS / Linux), managed with
 **macOS / Linux**
 
 ```sh
-git clone https://github.com/yesitsfebreeze/.files.git ~/.files && ~/.files/setup/bootstrap.sh
+git clone https://github.com/yesitsfebreeze/.files.git ~/.files && ~/.files/bootstrap.sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-git clone https://github.com/yesitsfebreeze/.files.git "$HOME\.files"; & "$HOME\.files\setup\bootstrap.ps1"
+git clone https://github.com/yesitsfebreeze/.files.git "$HOME\.files"; & "$HOME\.files\bootstrap.ps1"
 ```
 
 That installs chezmoi (and Homebrew on macOS if missing), asks once for your git

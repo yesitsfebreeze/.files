@@ -5,7 +5,7 @@
 #     ./setup/bootstrap.sh
 #
 # Or one line (clones into ~/.files, then bootstraps):
-#     git clone https://github.com/yesitsfebreeze/kern.git ~/.files && ~/.files/setup/bootstrap.sh
+#     git clone https://github.com/yesitsfebreeze/kern.git ~/.files && ~/.files/bootstrap.sh
 #
 # It installs chezmoi (and Homebrew on macOS if absent), then applies the dotfiles,
 # which in turn installs every tool from setup/home/.chezmoidata/packages.yaml.
