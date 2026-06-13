@@ -7,8 +7,10 @@
 */ -}}
 {{ if eq .chezmoi.os "windows" }}
 install-packages.sh
+generate-shell-init.sh
 {{ else }}
 install-packages.ps1
+generate-shell-init.ps1
 {{ end }}
 {{ if ne .chezmoi.os "darwin" }}
 install-homebrew.sh

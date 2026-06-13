@@ -17,24 +17,19 @@ $env.ENV_CONVERSIONS = {
 # --- PATH additions (cross-platform) ---
 $env.PATH = (
     $env.PATH
-    | prepend ($nu.home-path | path join ".local" "bin")
-    | prepend ($nu.home-path | path join ".cargo" "bin")
+    | prepend ($nu.home-dir | path join ".local" "bin")
+    | prepend ($nu.home-dir | path join ".cargo" "bin")
     | uniq
 )
 
 # --- Standard env ---
-$env.XDG_CONFIG_HOME = ($nu.home-path | path join ".config")
+$env.XDG_CONFIG_HOME = ($nu.home-dir | path join ".config")
 $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
-# --- Generate shell integrations (idempotent; sourced from config.nu) ---
-# Wrapped so a not-yet-installed tool on first launch cannot break the shell.
-let starship_init = ($nu.home-path | path join ".cache" "starship" "init.nu")
-mkdir ($starship_init | path dirname)
-try { ^starship init nu | save -f $starship_init } catch { }
-if not ($starship_init | path exists) { "" | save -f $starship_init }
-
-let zoxide_init = ($nu.home-path | path join ".zoxide.nu")
-try { ^zoxide init nushell | save -f $zoxide_init } catch { }
-if not ($zoxide_init | path exists) { "" | save -f $zoxide_init }
+# --- Shell integrations are GENERATED AT APPLY TIME, not here. ---
+# Starting a shell must never run setup/install work. The starship and zoxide
+# init files are written by the chezmoi run_after script
+# `run_after_generate-shell-init.{sh,ps1}` on every `chezmoi apply`/`update`,
+# and merely *sourced* by config.nu. So nu/WezTerm launch does zero work.

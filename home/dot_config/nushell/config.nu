@@ -31,7 +31,7 @@ $env.config = {
             max_results: 100
         }
     }
-    filesize: { metric: false }
+    filesize: { unit: binary }
     render_right_prompt_on_last_line: false
     use_kitty_protocol: false
 }
@@ -91,7 +91,10 @@ $env.config = ($env.config | upsert keybindings [
 ])
 
 # ---------------------------------------------------------------------------
-# Source generated integrations (created by env.nu; guaranteed to exist).
+# Source shell integrations. These files are GENERATED AT APPLY TIME by the
+# chezmoi run_after script (run_after_generate-shell-init.{sh,ps1}), never at
+# shell start, and are guaranteed to exist after any `chezmoi apply`/`update`.
+# Sourcing only — launching the shell does no setup/install work.
 # ---------------------------------------------------------------------------
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu

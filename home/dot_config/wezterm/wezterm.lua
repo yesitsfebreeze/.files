@@ -167,6 +167,20 @@ config.keys = {
     -- Config reload
     { key = "r", mods = "LEADER", action = act.ReloadConfiguration },
 
+    -- Update WezTerm plugins (e.g. resurrect) in-process via WezTerm's own
+    -- plugin system: no external terminal, no shell script. update_all() does a
+    -- git fast-forward / pull --rebase on each plugin repo, then we reload.
+    {
+        key = "u",
+        mods = "LEADER",
+        action = wezterm.action_callback(function(window, _pane)
+            window:toast_notification("WezTerm", "Updating plugins...", nil, 4000)
+            wezterm.plugin.update_all()
+            window:toast_notification("WezTerm", "Plugins updated - reloading config", nil, 4000)
+            wezterm.reload_configuration()
+        end),
+    },
+
     -- ---- Sessions / workspaces (tmux-style) ----
     -- Switch session: fuzzy launcher over all live workspaces.
     { key = "w", mods = "LEADER", action = act.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }) },
