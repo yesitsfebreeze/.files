@@ -1,27 +1,17 @@
-# config.nu — main Nushell configuration.
-# Launched explicitly by WezTerm via:  nu --config ~/.config/nushell/config.nu
-# Colors follow the terminal palette (Gruvbox Dark Hard, set by WezTerm).
+# config.nu — Nushell config, launched explicitly by WezTerm.
 
-# ---------------------------------------------------------------------------
-# Auto-start Zellij (the multiplexer that owns tabs/panes/session-restore).
-# This is what makes multiplexing live in the SHELL, decoupled from WezTerm:
-# any host terminal that drops us into an interactive Nushell gets Zellij.
-# Replace this shell with the "main" Zellij session, resuming it if it exists.
-# Guards (skip auto-start when):
-#   - already inside Zellij        ('ZELLIJ' env already set) -> avoid recursion
-#   - Zellij isn't installed        (e.g. native Windows -> WSL handles it instead)
-#   - stdout isn't a real terminal  (scripts, `nu -c ...`, pipelines)
-# Placed first so the outer shell does no extra work before handing off; the
-# inner Nushell that Zellij spawns re-runs this file with $env.ZELLIJ set and
-# falls straight through.
-if ('ZELLIJ' not-in $env) and (which zellij | is-not-empty) and (is-terminal --stdout) {
-    exec zellij attach --create main
+# Auto-start burrito (shell-level multiplexer): replace this shell with its
+# spawn-or-attach default session. The recursion guard depends on burrito
+# exporting BURRITO into the shells it spawns (like zellij's $ZELLIJ); without
+# that, every spawned pane would re-exec burrito.
+if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
+    exec burrito
 }
 
 $env.config = {
     show_banner: false
     edit_mode: vi
-    # Block cursor in every mode (terminal applies the blink).
+    # Block cursor in every mode; the terminal applies the blink.
     cursor_shape: {
         vi_insert: block
         vi_normal: block
@@ -50,24 +40,19 @@ $env.config = {
     }
     filesize: { unit: binary }
     use_kitty_protocol: false
-    # Disable OSC 133/633 semantic prompt-zone markers. We run WezTerm hosting
-    # Zellij hosting Nushell, and BOTH WezTerm and Zellij interpret OSC 133. With
-    # the two-line starship prompt ($line_break before $character) the doubled
-    # prompt-start mark is re-emitted on each reedline repaint and the terminal
-    # renders it as a phantom blank line above the input. Turning the markers off
-    # removes the blank lines. Trade-off: loses terminal-side "jump to previous
-    # prompt" / command-status / semantic-zone features, which we don't rely on.
+    # Disable OSC 133/633 prompt-zone markers. With WezTerm hosting burrito
+    # hosting Nushell, both may interpret OSC 133; the two-line starship prompt
+    # re-emits the prompt-start mark on every reedline repaint, which the terminal
+    # then renders as a phantom blank line above the input. We don't use the
+    # terminal's semantic-zone features, so turning the markers off is a clean cut.
     shell_integration: {
         osc133: false
         osc633: false
     }
 }
 
-# ---------------------------------------------------------------------------
-# Aliases — modern CLI replacements.
-# The Unix installer symlinks Debian's `batcat`/`fdfind` to `bat`/`fd`, so these
-# names resolve on every platform.
-# ---------------------------------------------------------------------------
+# Aliases. The Unix installer symlinks Debian's `batcat`/`fdfind` to `bat`/`fd`,
+# so those names resolve on every platform.
 alias ls = eza --icons --group-directories-first
 alias l = eza --icons --group-directories-first
 alias ll = eza -l --icons --group-directories-first --git
@@ -79,66 +64,45 @@ alias g = git
 alias lg = lazygit
 alias v = nvim
 alias vi = nvim
-alias cdi = zi          # zoxide interactive
+alias cdi = zi
 
-# Reload dotfiles: re-pull the source from the already-configured remote and
-# re-apply. --force overwrites local drift without prompting (non-interactive
-# reload). No repo handle baked in here -- chezmoi knows its own source remote.
+# Reload dotfiles: re-pull source and re-apply. --force overwrites local drift
+# without prompting.
 alias rlcfg = chezmoi update --force
 
-# ---------------------------------------------------------------------------
-# television-powered helpers. tv is the interactive finder (replaces fzf in the
-# shell): Ctrl-T smart autocomplete and Ctrl-R history come from the sourced
-# `tv init nu` integration near the end of this file. These defs add three
-# shortcuts on top of the builtin tv channels: find-file, fuzzy-cd, live-grep.
-# ---------------------------------------------------------------------------
-
-# Fuzzy-find a file (tv `files` channel, bat preview) and open it in $EDITOR.
+# television helpers (Ctrl-T autocomplete / Ctrl-R history come from `tv init nu`
+# sourced below). These defs add find-file, fuzzy-cd, and live-grep shortcuts.
 def ff [] {
     let file = (tv files | str trim)
     if ($file | is-not-empty) { ^$env.EDITOR $file }
 }
 
-# Fuzzy-cd into a subdirectory (tv `dirs` channel).
 def --env fcd [] {
     let dir = (tv dirs | str trim)
     if ($dir | is-not-empty) { cd $dir }
 }
 
-# Live-grep across files (tv `text` channel). Enter runs the channel's builtin
-# edit action, opening $EDITOR at the matched line (no stdout round-trip needed).
+# Live-grep; the tv `text` channel's builtin edit action opens $EDITOR at the
+# match directly, so there's no stdout to capture.
 def fg [] {
     tv text
 }
 
-# ---------------------------------------------------------------------------
-# Source shell integrations. These files are GENERATED AT APPLY TIME by the
-# chezmoi run_after script (run_after_generate-shell-init.{sh,ps1}), never at
-# shell start, and are guaranteed to exist after any `chezmoi apply`/`update`.
-# Sourcing only — launching the shell does no setup/install work.
-# ---------------------------------------------------------------------------
+# Source shell integrations. These files are generated at apply time by the
+# chezmoi run_after script, not at shell start, so launching the shell does no
+# setup work.
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
-source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
+source ~/.cache/television/init.nu
 
-# ---------------------------------------------------------------------------
-# Live theme: re-apply the last `theme` pick so it persists into new shells and
-# panes. tinty re-emits OSC palette sequences that retint the terminal's 16 ANSI
-# colors + bg/fg/cursor, so every ANSI-following surface (nushell tables, eza,
-# bat, git output) follows. Stdout is left attached to the terminal on purpose —
-# that IS the re-theming; only stderr is discarded. No-op until you pick a theme
-# (no default-scheme), so the Gruvbox base (theme.yaml -> WezTerm) stands.
-# Runs in the inner, in-Zellij interactive shell (after the exec above), guarded
-# to interactive terminals so scripts/pipelines stay clean.
-# ---------------------------------------------------------------------------
+# Live theme: re-apply the last `theme` pick so it persists into new shells.
+# tinty re-emits OSC palette sequences; stdout is left attached on purpose —
+# that IS the retint. No-op until you pick a theme, so the Gruvbox base stands.
 if (which tinty | is-not-empty) and (is-terminal --stdout) {
-    # `try` swallows a nonzero `tinty init` (e.g. no scheme applied yet) so it
-    # never raises a shell error at startup. Unpiped stdout still reaches the
-    # terminal (that IS the OSC retint); only stderr is discarded. NOTE: do not
-    # use `complete` here — it would capture stdout and eat the escape sequences.
+    # `try` swallows a nonzero exit (no scheme applied yet). Do not use `complete`
+    # here — it would capture stdout and eat the OSC escape sequences.
     try { ^tinty init e> /dev/null }
 }
 
-# Live theme switcher command: `theme` opens a fuzzy picker (television) over the
-# Gogh themes with apply-on-focus preview. Defined in theme.nu (managed here).
+# `theme`: fuzzy picker over the Gogh themes with apply-on-focus preview.
 source ~/.config/nushell/theme.nu

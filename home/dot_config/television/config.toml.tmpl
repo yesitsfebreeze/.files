@@ -1,20 +1,11 @@
-# Television (tv) configuration — rendered by chezmoi from the central theme.
-# Source: home/dot_config/television/config.toml.tmpl  (edit here, not the target).
-#
-# Television is the interactive in-shell fuzzy finder: Ctrl-R history and
-# Ctrl-T smart autocomplete are wired in Nushell via `tv init nu` (generated at
-# apply time by run_after_generate-shell-init.sh and sourced by config.nu).
-#
-# Only theme-coupled values live here; everything else uses tv's sensible
-# defaults. Re-theme the whole machine by editing .chezmoidata/theme.yaml, not
-# this file. `{{ .theme.names.television }}` is a builtin tv theme (no fetch).
+# Television (tv) config, rendered by chezmoi from the central theme. Only
+# theme-coupled values live here; re-theme the machine via .chezmoidata/theme.yaml,
+# not this file. `{{ .theme.names.television }}` is a builtin tv theme (no fetch).
 
 [ui]
-# Gruvbox Dark Hard, matching wezterm / zellij / bat / nvim across the machine.
 theme = "{{ .theme.names.television }}"
 
 [ui.input_bar]
-# Match the shell's rounded aesthetic (Nushell tables use `mode: rounded`).
 border_type = "rounded"
 
 [ui.results_panel]

@@ -1,10 +1,6 @@
-# Central theme definition for the whole machine — single source of truth.
-#
-# Change values here, run `chezmoi apply`, and every tool re-themes together:
-# wezterm, nushell, starship, nvim (colorscheme + lualine), bat, lazygit,
-# git/delta. Templates under home/ read from `.theme`.
-#
-# Active theme: Gruvbox Dark Hard.  Cursor: blinking block everywhere.
+# Central theme — single source of truth. Change values here, run `chezmoi apply`,
+# and every tool re-themes together (wezterm, nushell, starship, nvim, bat, delta).
+# Active: Gruvbox Dark Hard; cursor: blinking block everywhere.
 theme:
   # Theme identifiers consumed by tools that ship the theme themselves
   # (the setup() call in nvim is plugin-specific; see colorscheme.lua.tmpl).
@@ -16,8 +12,8 @@ theme:
     nvim_background: "dark"
     nvim_contrast: "hard"
     lualine: "gruvbox"
-    zellij: "gruvbox-dark"        # built into zellij
     television: "gruvbox-dark"    # built into television (themes/gruvbox-dark.toml)
+    # burrito has no theme of its own; it inherits the terminal palette (above).
 
   # Cursor. wezterm uses CamelCase styles; nvim uses a guicursor spec;
   # nushell only controls shape (the terminal handles blinking).

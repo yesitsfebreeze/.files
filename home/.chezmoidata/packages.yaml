@@ -1,19 +1,9 @@
-# Single source of truth for what the dotfiles install.
-# Each entry maps one logical tool to its package name per manager.
-# An empty string means "no package under this manager" -> the installer skips it.
-#
-# Linux/WSL is the target; macOS is supported via Homebrew. On Windows there is
-# no native install: WezTerm boots straight into WSL Ubuntu and everything is
-# provisioned there with the Linux path.
-#
-# Consumed at render time by:
-#   run_onchange_install-packages.sh.tmpl   (brew / apt / pacman / dnf)
-#
-# Keep this list as the place you add/remove tools. Editing it re-triggers the
-# run_onchange installer on the next `chezmoi apply`.
+# Single source of truth for what the dotfiles install: each entry maps one tool
+# to its package name per manager (empty string = not packaged there, installer
+# skips or falls back). Linux/WSL is the target; macOS via Homebrew; Windows boots
+# into WSL. Editing this re-triggers the run_onchange installer on next apply.
 
 packages:
-    # --- core experience: terminal, editor, shell, multiplexer ---
     - name: wezterm
       brew: wezterm
       cask: true
@@ -21,11 +11,12 @@ packages:
       pacman: wezterm
       dnf: ""
 
-    - name: zellij        # terminal multiplexer (tabs/panes/session-restore), shell-side
-      brew: zellij
-      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
-      pacman: zellij
-      dnf: zellij
+    - name: burrito       # terminal multiplexer (daemon + 9x9 grid nav, tool overlays), shell-side
+      brew: ""            # not packaged on any manager; built from source via cargo (see cargo_git + installer)
+      apt: ""
+      pacman: ""
+      dnf: ""
+      cargo_git: https://github.com/yesitsfebreeze/burrito   # source of truth: `cargo install --git` this repo
 
     - name: neovim
       brew: neovim
@@ -39,7 +30,6 @@ packages:
       pacman: nushell
       dnf: ""
 
-    # --- modern CLI core ---
     - name: ripgrep
       brew: ripgrep
       apt: ripgrep
@@ -100,7 +90,6 @@ packages:
       pacman: python
       dnf: python3
 
-    # --- git experience ---
     - name: git
       brew: git
       apt: git
@@ -131,11 +120,8 @@ packages:
       pacman: ""          # AUR-only (tinty); GitHub-release binary / cargo fallback
       dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
 
-    # --- font: DepartureMono Nerd Font for prompt/eza/lualine glyphs ---
-    # Package-manager coverage is thin for this font, so the installer also fetches
-    # it from the nerd-fonts release when missing (nerdfont_asset, below). That
-    # download path is the "install if not available" guarantee; the per-manager
-    # fields are used where they exist.
+    # Nerd Font: package-manager coverage is thin, so the installer also fetches it
+    # from the nerd-fonts release when missing (nerdfont_asset, below).
     - name: nerd-font
       brew: font-departure-mono-nerd-font   # cask
       cask: true

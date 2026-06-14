@@ -7,7 +7,8 @@ every config into place.
 ## Components
 
 - **WezTerm** — terminal (plain host; no multiplexing)
-- **Zellij** — multiplexer (tabs/panes/sessions); auto-starts in the shell
+- **burrito** — multiplexer (daemon-backed sessions, 9×9 grid navigation, tool
+  overlays); auto-starts in the shell
 - **Nushell** — shell
 - **Neovim** — editor (Lua, lazy.nvim, LSP, Treesitter, Telescope)
 - **Starship** — prompt
@@ -60,7 +61,7 @@ and persists it into new shells, **Esc** reverts to where you started. The Gogh
 catalog is converted to base24 schemes on `chezmoi apply`; the live pick is
 runtime state and never overrides the `theme.yaml` default in the source tree.
 
-Two known limits: inside Zellij, live palette passthrough to WezTerm depends on
+Two known limits: inside burrito, live palette passthrough to WezTerm depends on
 the multiplexer; and the Starship prompt keeps its Gruvbox accents (it isn't
 driven by the live palette yet).
 
@@ -78,5 +79,7 @@ Add/remove tools by editing `home/.chezmoidata/packages.yaml`; the next
 
 ## Keys
 
-WezTerm leader `Ctrl-a`, Neovim leader `Space`. Full keymaps in
-`home/dot_config/wezterm/wezterm.lua` and `home/dot_config/nvim/`.
+burrito leader `Ctrl-Space` (tap twice for the grid navigator), Neovim leader
+`Space`. WezTerm itself is a plain host — only clipboard shortcuts (`Ctrl-V`
+paste, `Ctrl-C` smart copy/interrupt), no leader. Full keymaps in
+`home/dot_config/burrito/config.toml` and `home/dot_config/nvim/`.

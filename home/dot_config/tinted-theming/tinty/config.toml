@@ -1,25 +1,15 @@
-# tinty (Tinted Theming) — the engine behind the live `theme` switcher.
-# Managed by chezmoi; edit here, not the rendered target.
+# tinty (Tinted Theming) — engine behind the live `theme` switcher. Managed by
+# chezmoi. The tinted-shell item emits OSC sequences that retint the terminal's
+# ANSI colors live on `tinty apply`. The scheme catalog is the Gogh themes
+# converted to base24 by run_onchange_after_generate-gogh-themes.
 #
-# Scope is terminal + shell. The tinted-shell item emits OSC escape sequences
-# that retint the terminal's 16 ANSI colors + background/foreground/cursor, so
-# ANSI-following surfaces (nushell tables, eza, bat, git output) re-theme live on
-# `tinty apply`. The scheme catalog is the ~365 Gogh themes converted to base24
-# under custom-schemes/base24 by run_onchange_after_generate-gogh-themes.
+# CAVEAT: this machine runs WezTerm -> burrito -> Nushell. OSC palette sequences
+# emitted inside a burrito pane may be intercepted by the multiplexer instead of
+# forwarded to WezTerm, so WezTerm's own bg/cursor might not follow. The fix is a
+# multiplexer-aware path (burrito passthrough or a WezTerm overlay), not this config.
 #
-# CAVEAT (verify on your stack): this machine runs WezTerm -> Zellij -> Nushell.
-# OSC palette sequences emitted inside a Zellij pane may be intercepted by Zellij
-# rather than forwarded to WezTerm, so WezTerm's own bg/cursor might not follow.
-# If live retint doesn't reach WezTerm, the fix is a multiplexer-aware path
-# (Zellij passthrough or a WezTerm overlay), not this engine config.
-#
-# No `default-scheme` is set on purpose: until you pick a theme, the Gruvbox base
-# rendered from theme.yaml (the WezTerm palette) stands. `tinty init` at nushell
-# startup re-applies your last pick so it persists into new shells and panes.
-#
-# Hooks run in bash (`source` + $VAR expansion). The tinted-shell hook sources
-# the generated script, whose stdout is the controlling terminal — that is the
-# live re-theming.
+# No `default-scheme` on purpose: until you pick a theme, the Gruvbox base from
+# theme.yaml stands. `tinty init` at startup re-applies your last pick.
 
 shell = "bash -c '{}'"
 
