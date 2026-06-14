@@ -4,13 +4,6 @@
 # into WSL. Editing this re-triggers the run_onchange installer on next apply.
 
 packages:
-    - name: wezterm
-      brew: wezterm
-      cask: true
-      apt: ""           # no reliable apt package; install via official repo/AppImage manually
-      pacman: wezterm
-      dnf: ""
-
     - name: burrito       # terminal multiplexer (daemon + 9x9 grid nav, tool overlays), shell-side
       brew: ""            # not packaged on any manager; built from source via cargo (see cargo_git + installer)
       apt: ""
@@ -119,6 +112,13 @@ packages:
       apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
       pacman: ""          # AUR-only (tinty); GitHub-release binary / cargo fallback
       dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
+
+    - name: kern          # self-learning memory daemon + MCP server for AI agents (per-cwd knowledge graph)
+      brew: ""            # not packaged on any manager; installed via GitHub-release binary fallback (see installer)
+      apt: ""
+      pacman: ""
+      dnf: ""             # the crates.io `kern` is an unrelated library, so no cargo fallback
+      gh_release: yesitsfebreeze/relay-kern   # source of truth: prebuilt `kern` binary from this repo's latest release
 
     # Nerd Font: package-manager coverage is thin, so the installer also fetches it
     # from the nerd-fonts release when missing (nerdfont_asset, below).

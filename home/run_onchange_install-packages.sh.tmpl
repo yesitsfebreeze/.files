@@ -188,37 +188,6 @@ if [ "$(uname -s)" = "Linux" ] && ! command -v lazygit >/dev/null 2>&1; then
     fi
 fi
 
-# wezterm — GUI terminal. No apt/dnf package; on x86_64 Linux we drop the
-# self-contained AppImage into ~/.local/bin so `wezterm` resolves (it runs via
-# FUSE, or `wezterm --appimage-extract-and-run` where FUSE is absent). Release
-# tags are date-stamped, which gh_latest_tag handles. The AppImage is x86_64-only;
-# other arches warn. macOS/Arch are covered by brew cask / pacman above.
-if [ "$(uname -s)" = "Linux" ] && ! command -v wezterm >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64) wt_ok=1 ;;
-        *)            wt_ok=0 ;;
-    esac
-    if [ "$wt_ok" = 0 ]; then
-        warn "wezterm: no prebuilt AppImage for $(uname -m); install manually"
-    else
-        wt_tag="$(gh_latest_tag wez/wezterm)"
-        if [ -z "$wt_tag" ]; then
-            warn "wezterm: could not resolve latest release tag; install manually"
-        else
-            log "install wezterm $wt_tag (Ubuntu20.04 AppImage, GitHub release fallback)"
-            mkdir -p "$HOME/.local/bin"
-            if curl -fsSL -o "$HOME/.local/bin/wezterm" \
-                "https://github.com/wez/wezterm/releases/download/$wt_tag/WezTerm-$wt_tag-Ubuntu20.04.AppImage"; then
-                chmod +x "$HOME/.local/bin/wezterm"
-                log "  installed wezterm"
-            else
-                rm -f "$HOME/.local/bin/wezterm"
-                warn "  could not download wezterm AppImage from the GitHub release"
-            fi
-        fi
-    fi
-fi
-
 # tinty — drives the live `theme` switcher. Release assets are tag-agnostic
 # (latest/download) and cover Linux + macOS. Unlike the brew-core tools above,
 # tinty's brew name is a third-party tap (tinted-theming/tinty) that can fail to
@@ -240,6 +209,31 @@ if ! command -v tinty >/dev/null 2>&1; then
             "https://github.com/tinted-theming/tinty/releases/latest/download/tinty-$tinty_target.tar.gz" \
             && log "  installed tinty" \
             || warn "  could not install tinty from the GitHub release"
+    fi
+fi
+
+# kern — self-learning memory daemon / MCP server. Not in any package manager,
+# and the crates.io `kern` is an unrelated library (so no cargo fallback). Fetch
+# the prebuilt binary from its latest GitHub release; the repo is the single
+# source of truth in packages.yaml (gh_release). Release assets cover Linux
+# x86_64 and Apple-Silicon macOS; other targets warn and fall through (build
+# from source). The tarball holds a top-level `kern`, so it drops straight
+# through fetch_tarball_binary. Idempotent: skipped once `kern` is on PATH.
+kern_repo="{{ range .packages }}{{ if hasKey . "gh_release" }}{{ .gh_release }}{{ end }}{{ end }}"
+if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
+    case "$(uname -s)-$(uname -m)" in
+        Linux-x86_64|Linux-amd64)    kern_target=x86_64-unknown-linux-gnu ;;
+        Darwin-arm64|Darwin-aarch64) kern_target=aarch64-apple-darwin ;;
+        *)                           kern_target="" ;;
+    esac
+    if [ -z "$kern_target" ]; then
+        warn "kern: no prebuilt binary for $(uname -s)/$(uname -m); build from source (https://github.com/$kern_repo)"
+    else
+        log "install kern ($kern_target binary, GitHub release fallback)"
+        fetch_tarball_binary kern \
+            "https://github.com/$kern_repo/releases/latest/download/kern-$kern_target.tar.gz" \
+            && log "  installed kern" \
+            || warn "  could not install kern from the GitHub release"
     fi
 fi
 
