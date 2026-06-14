@@ -94,6 +94,12 @@ packages:
       pacman: jq
       dnf: jq
 
+    - name: python3       # required by the Gogh->base24 theme converter (run_onchange);
+      brew: python        # also a common base dep. Stdlib only — no pip packages needed.
+      apt: python3
+      pacman: python
+      dnf: python3
+
     # --- git experience ---
     - name: git
       brew: git

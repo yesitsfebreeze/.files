@@ -132,7 +132,11 @@ source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
 # to interactive terminals so scripts/pipelines stay clean.
 # ---------------------------------------------------------------------------
 if (which tinty | is-not-empty) and (is-terminal --stdout) {
-    ^tinty init e> /dev/null
+    # `try` swallows a nonzero `tinty init` (e.g. no scheme applied yet) so it
+    # never raises a shell error at startup. Unpiped stdout still reaches the
+    # terminal (that IS the OSC retint); only stderr is discarded. NOTE: do not
+    # use `complete` here — it would capture stdout and eat the escape sequences.
+    try { ^tinty init e> /dev/null }
 }
 
 # Live theme switcher command: `theme` opens a fuzzy picker (television) over the

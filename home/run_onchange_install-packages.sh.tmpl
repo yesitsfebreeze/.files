@@ -167,17 +167,21 @@ if [ "$(uname -s)" = "Linux" ] && ! command -v gh >/dev/null 2>&1; then
     fi
 fi
 
-# tinty — musl on x86_64, gnu on aarch64; release assets are tag-agnostic
-# (latest/download). Drives the live `theme` switcher; pulled here because no
-# Linux package manager ships it. macOS is covered by the auto-tapping brew name.
-if [ "$(uname -s)" = "Linux" ] && ! command -v tinty >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  tinty_target=x86_64-unknown-linux-musl ;;
-        aarch64|arm64) tinty_target=aarch64-unknown-linux-gnu ;;
-        *)             tinty_target="" ;;
+# tinty — drives the live `theme` switcher. Release assets are tag-agnostic
+# (latest/download) and cover Linux + macOS. Unlike the brew-core tools above,
+# tinty's brew name is a third-party tap (tinted-theming/tinty) that can fail to
+# fetch, so we keep a release-binary fallback on macOS too — not just Linux —
+# before the cargo last resort.
+if ! command -v tinty >/dev/null 2>&1; then
+    case "$(uname -s)-$(uname -m)" in
+        Linux-x86_64|Linux-amd64)    tinty_target=x86_64-unknown-linux-musl ;;
+        Linux-aarch64|Linux-arm64)   tinty_target=aarch64-unknown-linux-gnu ;;
+        Darwin-x86_64)               tinty_target=x86_64-apple-darwin ;;
+        Darwin-arm64|Darwin-aarch64) tinty_target=aarch64-apple-darwin ;;
+        *)                           tinty_target="" ;;
     esac
     if [ -z "$tinty_target" ]; then
-        warn "tinty: no prebuilt binary for $(uname -m); will rely on cargo fallback"
+        warn "tinty: no prebuilt binary for $(uname -s)/$(uname -m); will rely on cargo fallback"
     else
         log "install tinty ($tinty_target binary, GitHub release fallback)"
         fetch_tarball_binary tinty \

@@ -54,11 +54,15 @@ without editing files:
 theme             # fuzzy-pick from ~365 Gogh themes
 ```
 
-Scroll to preview each theme system-wide (terminal + shell retint instantly via
+Scroll to preview each theme (terminal + shell retint via
 [tinty](https://github.com/tinted-theming/tinty) OSC sequences); **Enter** applies
 and persists it into new shells, **Esc** reverts to where you started. The Gogh
 catalog is converted to base24 schemes on `chezmoi apply`; the live pick is
 runtime state and never overrides the `theme.yaml` default in the source tree.
+
+Two known limits: inside Zellij, live palette passthrough to WezTerm depends on
+the multiplexer; and the Starship prompt keeps its Gruvbox accents (it isn't
+driven by the live palette yet).
 
 ## Develop
 

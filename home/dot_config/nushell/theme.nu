@@ -25,14 +25,15 @@ def --wrapped theme [...rest] {
     let sel = (tv theme ...$rest | str trim)
 
     if ($sel | is-not-empty) {
-        # Persist + canonical apply (tinted-shell OSC). stdout stays on the
-        # terminal so the palette sticks; only stderr is discarded.
-        ^tinty apply $sel e> /dev/null
+        # Persist + canonical apply (tinted-shell OSC). Unpiped stdout stays on
+        # the terminal so the palette sticks; stderr discarded; `try` guards a
+        # nonzero exit (do NOT use `complete` — it would capture the OSC stdout).
+        try { ^tinty apply $sel e> /dev/null }
         print $"theme: ($sel)"
     } else {
         # Esc: browsing applied themes live, so restore the launch state.
         if ($prev | is-not-empty) {
-            ^tinty apply $prev e> /dev/null
+            try { ^tinty apply $prev e> /dev/null }
         } else {
             # No theme was active before: forget the polluted current scheme so
             # new shells stay on the base, and reset the terminal palette now

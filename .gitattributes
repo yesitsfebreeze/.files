@@ -8,3 +8,8 @@
 # PowerShell templates keep CRLF.
 *.tmpl      text eol=lf
 *.ps1.tmpl  text eol=crlf
+
+# Nushell sources and TOML configs are read verbatim too; a stray CR makes
+# Nushell choke on a sourced function and can confuse strict TOML parsers.
+*.nu        text eol=lf
+*.toml      text eol=lf

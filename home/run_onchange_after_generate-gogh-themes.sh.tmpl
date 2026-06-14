@@ -56,7 +56,7 @@ if [ ! -d "$json_dir" ]; then
 fi
 
 log "convert Gogh themes -> base24 schemes in $SCHEMES_DIR"
-python3 - "$json_dir" "$SCHEMES_DIR" <<'PY'
+if python3 - "$json_dir" "$SCHEMES_DIR" <<'PY'
 import json, os, sys, glob
 
 json_dir, out_dir = sys.argv[1], sys.argv[2]
@@ -134,7 +134,18 @@ for path in sorted(glob.glob(os.path.join(json_dir, '*.json'))):
     count += 1
 
 print('  wrote %d base24 schemes' % count)
+sys.exit(0 if count else 1)   # nonzero -> shell leaves the marker unset, retries
 PY
-
-echo "$GOGH_REF" > "$MARKER"
-log "Gogh theme catalog ready."
+then
+    # Marker is written ONLY on a clean, non-empty conversion. set -e is not in
+    # effect, so without this gate a crashed/partial python run (e.g. it wrote 200
+    # of 365 then died) would still fall through and certify an incomplete catalog,
+    # locking out every future re-run. Writing the marker last + conditionally
+    # makes a partial failure self-healing on the next apply.
+    echo "$GOGH_REF" > "$MARKER"
+    log "Gogh theme catalog ready."
+else
+    warn "theme conversion failed or produced nothing; marker left unset so the"
+    warn "next \`chezmoi apply\` retries instead of skipping on a partial catalog."
+    exit 0
+fi
