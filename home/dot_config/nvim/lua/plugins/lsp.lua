@@ -12,14 +12,12 @@ return {
             local lspconfig = require("lspconfig")
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-            -- Diagnostics UI
             vim.diagnostic.config({
                 virtual_text = { prefix = "●" },
                 severity_sort = true,
                 float = { border = "rounded", source = true },
             })
 
-            -- Per-buffer keymaps when a server attaches.
             vim.api.nvim_create_autocmd("LspAttach", {
                 group = vim.api.nvim_create_augroup("lsp_attach", { clear = true }),
                 callback = function(event)

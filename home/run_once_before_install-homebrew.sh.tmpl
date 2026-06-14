@@ -1,9 +1,7 @@
 #!/usr/bin/env sh
 {{- if eq .chezmoi.os "darwin" }}
 # chezmoi run_once (before) — ensure Homebrew exists on macOS before packages.
-# Homebrew is the package manager every macOS cask/formula in packages.yaml
-# relies on, so it must be present before run_onchange_install-packages runs.
-# Gated to macOS in .chezmoiignore; idempotent (skips when brew is present).
+# Every macOS cask/formula in packages.yaml needs it. Idempotent; gated to macOS.
 set -eu
 
 if ! command -v brew >/dev/null 2>&1 \

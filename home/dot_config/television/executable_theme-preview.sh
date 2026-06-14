@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 # television preview command for the `theme` channel (apply-on-focus).
-# Managed by chezmoi; edit the source, not the rendered target.
-#
 # $1 is the focused scheme id, e.g. "base24-3024-night". Two jobs:
-#   1. Apply the scheme LIVE to the real terminal. tinty's hook emits OSC palette
-#      sequences on its stdout; television captures this process's stdout for the
-#      preview panel, so we route the apply to /dev/tty (the controlling terminal)
-#      to retint WezTerm + every ANSI-following surface as you scroll.
+#   1. Apply the scheme LIVE to the terminal. tinty emits OSC palette sequences on
+#      stdout, but television captures this process's stdout for the preview panel,
+#      so we route the apply to /dev/tty to retint WezTerm as you scroll.
 #   2. Print a color swatch to stdout for the preview panel.
 set -u
 

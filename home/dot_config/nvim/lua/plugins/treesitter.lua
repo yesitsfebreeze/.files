@@ -1,4 +1,3 @@
--- Treesitter: syntax-aware highlighting, indentation, text objects.
 return {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",

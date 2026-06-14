@@ -1,4 +1,3 @@
--- Telescope: fuzzy finder for files, grep, buffers, etc.
 return {
     "nvim-telescope/telescope.nvim",
     branch = "0.1.x",

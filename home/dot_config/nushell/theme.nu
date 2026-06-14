@@ -1,11 +1,7 @@
-# theme.nu — the live theme switcher command, sourced by config.nu.
-# Managed by chezmoi; edit the source, not the rendered target.
-#
-# `theme` opens television's `theme` channel over the ~365 Gogh-derived base24
-# schemes. Scrolling previews each theme live (apply-on-focus, terminal + shell).
-# Enter applies and persists the focused theme; Esc reverts to whatever was active
-# when you launched — restoring the previous pick, or resetting to the Gruvbox
-# base (theme.yaml -> WezTerm) if no theme was applied before.
+# theme.nu — the live `theme` switcher, sourced by config.nu. Opens television's
+# `theme` channel over the Gogh-derived base24 schemes with apply-on-focus preview.
+# Enter applies and persists; Esc reverts to the launch state (previous pick, or
+# the Gruvbox base if none was active).
 
 def --wrapped theme [...rest] {
     if (which tinty | is-empty) {

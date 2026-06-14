@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
-# chezmoi run_onchange — generates the live theme switcher's scheme catalog.
-#
-# Converts the Gogh terminal-theme collection (4-bit palettes: 16 ANSI colors +
-# background/foreground) into base24 scheme files that tinty consumes, written to
-# tinty's custom-schemes dir. This is what makes "works with every tool" true:
-# each Gogh theme becomes a complete base24 palette tinty renders through its
-# per-app templates. Re-runs only when this script's content changes (the pinned
-# Gogh ref below is part of that content, so bumping the ref regenerates).
-#
-# Output is runtime state under tinty's data dir — outside the chezmoi-managed
-# tree, so `chezmoi apply` never clobbers it. Idempotent: a ref marker short-
-# circuits the download+convert on every subsequent run.
+# chezmoi run_onchange — generates the live theme switcher's scheme catalog:
+# converts the Gogh terminal themes into base24 scheme files that tinty consumes.
+# Output is runtime state under tinty's data dir, outside the chezmoi tree, so
+# `chezmoi apply` never clobbers it. Idempotent via the ref marker below; bumping
+# the pinned Gogh ref (part of this script's content) regenerates.
 #
 # Gogh ref: {{ "0aee76d9ade318fd9a4fb5a1dbd1cfc866e86307" }}
 set -uo pipefail
@@ -23,7 +16,6 @@ DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty"
 SCHEMES_DIR="$DATA_DIR/custom-schemes/base24"
 MARKER="$SCHEMES_DIR/.gogh-ref"
 
-# Idempotent skip: already generated for this exact Gogh ref.
 if [ -f "$MARKER" ] && [ "$(cat "$MARKER" 2>/dev/null)" = "$GOGH_REF" ]; then
     log "Gogh theme catalog already current ($GOGH_REF); nothing to do."
     exit 0

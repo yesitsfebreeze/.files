@@ -1,15 +1,9 @@
 # television cable channel: `tv theme` — the live theme switcher's picker.
-# Managed by chezmoi; edit here, not the rendered target.
-#
-# source : the Gogh-derived base24 schemes generated under tinty's custom-schemes
-#          dir (run_onchange_after_generate-gogh-themes). Listed directly from the
-#          files so the entry format is deterministic ("base24-<slug>"), regardless
-#          of `tinty list` output formatting across versions.
-# preview: runs on every focus change -> theme-preview.sh applies the scheme live
-#          to the terminal (OSC, routed to /dev/tty) and prints a color swatch.
-#
-# Driven by the `theme` Nushell command (theme.nu): Enter applies/persists the
-# focused scheme, Esc reverts to the theme that was active at launch.
+# source : Gogh-derived base24 schemes under tinty's custom-schemes dir, listed
+#          directly from the files so the entry format ("base24-<slug>") is
+#          deterministic regardless of `tinty list` output across versions.
+# preview: theme-preview.sh applies the scheme live (OSC -> /dev/tty) per focus.
+# Driven by the `theme` Nushell command: Enter persists, Esc reverts to launch state.
 
 [metadata]
 name = "theme"

@@ -1,7 +1,6 @@
--- Colorscheme — the editor half of the unified theme.
--- Theme + cursor are managed centrally in home/.chezmoidata/theme.yaml.
--- NOTE: the setup() call below is specific to {{ .theme.names.nvim_plugin }};
--- swapping to a different theme family means adjusting this spec, not just data.
+-- Colorscheme — the editor half of the unified theme (central data in
+-- home/.chezmoidata/theme.yaml). NOTE: the setup() call below is specific to
+-- {{ .theme.names.nvim_plugin }}; switching theme family means editing this spec, not just data.
 return {
     "{{ .theme.names.nvim_plugin }}",
     priority = 1000,
@@ -15,7 +14,7 @@ return {
         require("gruvbox").setup(opts)
         vim.o.background = "{{ .theme.names.nvim_background }}"
         vim.cmd.colorscheme("{{ .theme.names.nvim_colorscheme }}")
-        -- Blinking block cursor in all modes (see theme.cursor.nvim_guicursor).
+        -- guicursor spec = blinking block in all modes.
         vim.opt.guicursor = "{{ .theme.cursor.nvim_guicursor }}"
     end,
 }

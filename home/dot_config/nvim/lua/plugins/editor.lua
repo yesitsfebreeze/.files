@@ -1,6 +1,5 @@
 -- Smaller editor quality-of-life plugins.
 return {
-    -- Git signs in the gutter.
     {
         "lewis6991/gitsigns.nvim",
         event = { "BufReadPre", "BufNewFile" },
@@ -15,7 +14,6 @@ return {
         },
     },
 
-    -- Keybinding hints.
     {
         "folke/which-key.nvim",
         event = "VeryLazy",
@@ -29,21 +27,18 @@ return {
         },
     },
 
-    -- Auto-close brackets/quotes.
     {
         "windwp/nvim-autopairs",
         event = "InsertEnter",
         config = true,
     },
 
-    -- Commenting (gcc / gc).
     {
         "numToStr/Comment.nvim",
         event = { "BufReadPost", "BufNewFile" },
         config = true,
     },
 
-    -- Formatting on save.
     {
         "stevearc/conform.nvim",
         event = "BufWritePre",

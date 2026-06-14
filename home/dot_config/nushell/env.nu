@@ -1,8 +1,7 @@
-# env.nu — evaluated before config.nu.
-# Launched explicitly by WezTerm via:  nu --env-config ~/.config/nushell/env.nu
-# so this is the single env file used on every OS.
+# env.nu — evaluated before config.nu, launched explicitly by WezTerm so this is
+# the single env file used on every OS.
 
-# --- PATH <-> list conversions (must be present since we override the stock env.nu) ---
+# PATH <-> list conversions — required because we override the stock env.nu.
 $env.ENV_CONVERSIONS = {
     "PATH": {
         from_string: {|s| $s | split row (char esep) | path expand --no-symlink }
@@ -14,7 +13,6 @@ $env.ENV_CONVERSIONS = {
     }
 }
 
-# --- PATH additions (cross-platform) ---
 $env.PATH = (
     $env.PATH
     | prepend ($nu.home-dir | path join ".local" "bin")
@@ -22,14 +20,10 @@ $env.PATH = (
     | uniq
 )
 
-# --- Standard env ---
 $env.XDG_CONFIG_HOME = ($nu.home-dir | path join ".config")
 $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
-# --- Shell integrations are GENERATED AT APPLY TIME, not here. ---
-# Starting a shell must never run setup/install work. The starship and zoxide
-# init files are written by the chezmoi run_after script
-# `run_after_generate-shell-init.{sh,ps1}` on every `chezmoi apply`/`update`,
-# and merely *sourced* by config.nu. So nu/WezTerm launch does zero work.
+# Shell integrations are generated at apply time by the chezmoi run_after script,
+# not here, and merely sourced by config.nu — so shell launch does zero work.

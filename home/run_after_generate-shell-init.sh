@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# chezmoi run_after — regenerate the shell-integration files that Nushell sources.
-# Runs on every `chezmoi apply`/`update` (the run_after_ prefix makes it run last,
-# after the package installer), NEVER at shell start. config.nu only *sources*
-# these files, so launching nu/WezTerm does zero setup work.
+# chezmoi run_after — regenerate the shell-integration files Nushell sources.
+# Runs last on every apply (after the package installer), never at shell start;
+# config.nu only *sources* these files, so launching nu/WezTerm does zero setup.
 set -uo pipefail
 
 # Pick up tools installed earlier in this same apply (brew shellenv / user bins).
@@ -16,7 +15,8 @@ mkdir -p "$(dirname "$starship_init")"
 if command -v starship >/dev/null 2>&1; then
     starship init nu > "$starship_init" 2>/dev/null || true
 fi
-# Guarantee the file exists (empty = harmless no-op) so `source` never fails.
+# Guarantee each init file exists (empty = harmless no-op) so `source` never
+# fails when the tool isn't installed yet. Repeated after each integration below.
 [ -s "$starship_init" ] || : > "$starship_init"
 
 # Zoxide init -> ~/.zoxide.nu
@@ -26,24 +26,18 @@ if command -v zoxide >/dev/null 2>&1; then
 fi
 [ -s "$zoxide_init" ] || : > "$zoxide_init"
 
-# Television (tv) shell integration -> ~/.cache/television/init.nu
-# `tv init nu` emits the Ctrl-T (smart autocomplete) and Ctrl-R (history) Nushell
-# keybindings. Generated here at apply time (never at shell start) and sourced by
-# config.nu. tv replaces fzf as the interactive finder, so config.nu no longer
-# binds Ctrl-R to fzf.
+# Television (tv) -> ~/.cache/television/init.nu. `tv init nu` emits the Ctrl-T
+# (autocomplete) and Ctrl-R (history) Nushell keybindings; tv replaces fzf.
 tv_init="$HOME/.cache/television/init.nu"
 mkdir -p "$(dirname "$tv_init")"
 if command -v tv >/dev/null 2>&1; then
     tv init nu > "$tv_init" 2>/dev/null || true
 fi
-# Guarantee the file exists (empty = harmless no-op) so `source` never fails
-# when tv isn't installed yet.
 [ -s "$tv_init" ] || : > "$tv_init"
 
-# tinty (live `theme` switcher) — clone the configured items (tinted-shell) into
-# tinty's data dir so the first `tinty apply`/`init` works. Reads the chezmoi-
-# managed config.toml applied just before this script. Idempotent: tinty skips
-# items already present. Quiet + non-fatal so a missing network never breaks apply.
+# tinty (live `theme` switcher) — clone the configured items into tinty's data dir
+# so the first `tinty apply` works. Idempotent; quiet + non-fatal so a missing
+# network never breaks apply.
 if command -v tinty >/dev/null 2>&1; then
     tinty install >/dev/null 2>&1 || true
 fi

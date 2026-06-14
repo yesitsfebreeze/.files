@@ -1,4 +1,3 @@
-# GitHub CLI configuration.
 git_protocol: https
 editor: nvim
 prompt: enabled
