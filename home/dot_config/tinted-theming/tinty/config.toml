@@ -1,7 +1,8 @@
 # tinty (Tinted Theming) — engine behind the live `theme` switcher. Managed by
 # chezmoi. The tinted-shell item emits OSC sequences that retint the terminal's
-# ANSI colors live on `tinty apply`. The scheme catalog is the Gogh themes
-# converted to base24 by run_onchange_after_generate-gogh-themes.
+# ANSI colors live on `tinty apply`. The switcher browses tinty's official
+# base16/base24 catalog — the prebuilt tinted-shell scripts that `tinty install`
+# clones — so every listed scheme is one tinty can actually apply.
 #
 # CAVEAT: this machine runs WezTerm -> burrito -> Nushell. OSC palette sequences
 # emitted inside a burrito pane may be intercepted by the multiplexer instead of

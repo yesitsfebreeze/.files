@@ -1,5 +1,5 @@
 # theme.nu — the live `theme` switcher, sourced by config.nu. Opens television's
-# `theme` channel over the Gogh-derived base24 schemes with apply-on-focus preview.
+# `theme` channel over tinty's official base16/base24 catalog with apply-on-focus preview.
 # Enter applies and persists; Esc reverts to the launch state (previous pick, or
 # the Gruvbox base if none was active).
 

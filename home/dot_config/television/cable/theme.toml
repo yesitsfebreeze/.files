@@ -1,17 +1,18 @@
 # television cable channel: `tv theme` — the live theme switcher's picker.
-# source : Gogh-derived base24 schemes under tinty's custom-schemes dir, listed
-#          directly from the files so the entry format ("base24-<slug>") is
-#          deterministic regardless of `tinty list` output across versions.
+# source : tinty's official prebuilt catalog — the tinted-shell scripts under the
+#          tinty data dir. Listing the prebuilt scripts directly guarantees every
+#          entry ("<system>-<slug>", e.g. base16-mocha / base24-alucard) is one
+#          that `tinty apply` can actually apply.
 # preview: theme-preview.sh applies the scheme live (OSC -> /dev/tty) per focus.
 # Driven by the `theme` Nushell command: Enter persists, Esc reverts to launch state.
 
 [metadata]
 name = "theme"
-description = "Live theme switcher — Gogh themes via tinty, apply-on-focus preview"
+description = "Live theme switcher — official base16/base24 schemes via tinty, apply-on-focus preview"
 requirements = ["tinty"]
 
 [source]
-command = "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty/custom-schemes/base24\" 2>/dev/null | grep '\\.yaml$' | sed 's/^/base24-/; s/\\.yaml$//'"
+command = "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty/repos/tinted-shell/scripts\" 2>/dev/null | grep '\\.sh$' | sed 's/\\.sh$//'"
 
 [preview]
 command = "\"$HOME/.config/television/theme-preview.sh\" '{}'"

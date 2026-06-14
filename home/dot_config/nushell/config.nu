@@ -104,5 +104,5 @@ if (which tinty | is-not-empty) and (is-terminal --stdout) {
     try { ^tinty init e> /dev/null }
 }
 
-# `theme`: fuzzy picker over the Gogh themes with apply-on-focus preview.
+# `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.
 source ~/.config/nushell/theme.nu

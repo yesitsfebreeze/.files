@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # television preview command for the `theme` channel (apply-on-focus).
-# $1 is the focused scheme id, e.g. "base24-3024-night". Two jobs:
+# $1 is the focused scheme id, e.g. "base16-mocha" or "base24-alucard". Two jobs:
 #   1. Apply the scheme LIVE to the terminal. tinty emits OSC palette sequences on
 #      stdout, but television captures this process's stdout for the preview panel,
 #      so we route the apply to /dev/tty to retint WezTerm as you scroll.
@@ -9,9 +9,10 @@ set -u
 
 id="${1:-}"
 [ -z "$id" ] && exit 0
-slug="${id#base24-}"
+system="${id%%-*}"
+slug="${id#*-}"
 data="${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty"
-scheme="$data/custom-schemes/base24/$slug.yaml"
+scheme="$data/repos/schemes/$system/$slug.yaml"
 
 # (1) live apply to the terminal device (not our captured stdout).
 if command -v tinty >/dev/null 2>&1; then
