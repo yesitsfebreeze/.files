@@ -16,7 +16,8 @@ every config into place.
 - **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
   Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
 - **Theme** — Gruvbox Dark Hard everywhere, centralized in
-  `home/.chezmoidata/theme.yaml`; edit once, `chezmoi apply`, all tools re-theme
+  `home/.chezmoidata/theme.yaml`; edit once, `chezmoi apply`, all tools re-theme.
+  For live switching, run **`theme`** (see below)
 
 Run from a normal (non-admin) shell in your home directory.
 
@@ -43,6 +44,21 @@ chezmoi apply     # re-apply current source
 chezmoi diff      # preview pending changes
 chezmoi cd        # enter source dir (exit returns)
 ```
+
+## Theme switcher
+
+`theme.yaml` sets the tracked default (Gruvbox Dark Hard). To change theme live,
+without editing files:
+
+```sh
+theme             # fuzzy-pick from ~365 Gogh themes
+```
+
+Scroll to preview each theme system-wide (terminal + shell retint instantly via
+[tinty](https://github.com/tinted-theming/tinty) OSC sequences); **Enter** applies
+and persists it into new shells, **Esc** reverts to where you started. The Gogh
+catalog is converted to base24 schemes on `chezmoi apply`; the live pick is
+runtime state and never overrides the `theme.yaml` default in the source tree.
 
 ## Develop
 
