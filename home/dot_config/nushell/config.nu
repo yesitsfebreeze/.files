@@ -26,7 +26,9 @@ $env.config = {
         max_size: 100_000
         sync_on_enter: true
         file_format: sqlite
-        isolation: true
+        # Shared live history across all panes/sessions (burrito spawns many).
+        # `false` keeps one merged sqlite the Ctrl-R channel always reads in full.
+        isolation: false
     }
     completions: {
         case_sensitive: false
