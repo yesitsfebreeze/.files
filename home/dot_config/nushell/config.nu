@@ -134,3 +134,7 @@ source ~/.cache/television/init.nu   # tv Ctrl-T autocomplete + Ctrl-R history
 if (which tinty | is-not-empty) and (is-terminal --stdout) {
     ^tinty init e> /dev/null
 }
+
+# Live theme switcher command: `theme` opens a fuzzy picker (television) over the
+# Gogh themes with apply-on-focus preview. Defined in theme.nu (managed here).
+source ~/.config/nushell/theme.nu
