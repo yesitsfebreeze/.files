@@ -129,3 +129,12 @@ packages:
       pacman: ""            # AUR-only (otf-departure-mono-nerd); use release fallback
       dnf: ""               # not packaged; release fallback
       nerdfont_asset: DepartureMono         # nerd-fonts release zip basename -> download fallback source
+
+# Claude Code plugins — installed via the `claude` CLI (user scope), not a PATH
+# package manager: they are JS/MCP bundles run by the Node already hosting Claude
+# Code, with no platform matrix. `marketplace` is the GitHub repo to register;
+# the plugin then installs as `name@market`. See run_onchange_install-claude-plugins.
+claude_plugins:
+    - name: git-fs                       # virtual filesystem over a bare git object store for AI-agent swarms (MCP + hooks)
+      marketplace: yesitsfebreeze/git-fs # `claude plugin marketplace add` source (GitHub repo)
+      market: git-fs                     # marketplace name once added; installs as git-fs@git-fs
