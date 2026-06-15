@@ -107,6 +107,12 @@ packages:
       pacman: github-cli
       dnf: gh
 
+    - name: just          # command runner / `.justfile` task automation (casey/just)
+      brew: just
+      apt: just           # in Debian 13+/Ubuntu 24.04+; older releases fall back to cargo
+      pacman: just
+      dnf: just
+
     - name: bubblewrap    # Linux subprocess sandbox (binary: `bwrap`); the `claude` CLI requires it for
       brew: ""            # env scrubbing / plugin installs. macOS uses Seatbelt (sandbox-exec), so no brew pkg.
       apt: bubblewrap
