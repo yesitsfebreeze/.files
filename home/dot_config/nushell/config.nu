@@ -10,7 +10,7 @@
 # infinite nesting. We set BURRITO ourselves just before exec; burrito inherits
 # its environment into every spawned cell, so cells see it and skip this block.
 if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
-    print -n "launch burrito? [enter] yes  [esc] no "
+    print -n "Press [Enter] to launch burrito. Everything else to canel."
     let key = (input listen --types [key])
     print ""
     if ($key.code == "enter") {
