@@ -97,6 +97,53 @@ command -v fdfind >/dev/null 2>&1 && [ ! -e "$HOME/.local/bin/fd" ]  && ln -sf "
 # the prebuilt release binary BEFORE the cargo fallback (keeping cargo last
 # resort). macOS is covered by brew. All guarded by `command -v`, so idempotent.
 
+# neovim — apt/dnf ship a stale release (Ubuntu's 0.9.x) that is too old for the
+# modern config (nvim-lspconfig needs 0.11.3+; native vim.lsp.enable + blink.cmp
+# expect 0.11+). The package install above gives a baseline; here we override it
+# with the official release tarball into ~/.local when nvim is missing or < 0.11.
+# macOS gets a current neovim from brew, so this is Linux-only. The tarball ships
+# a full bin/lib/share tree (nvim resolves its runtime relative to the real
+# binary path), so we extract it whole and symlink the binary into ~/.local/bin.
+nvim_need=0
+if ! command -v nvim >/dev/null 2>&1; then
+    nvim_need=1
+else
+    # Captures the minor for 0.x builds only (e.g. "11" from "NVIM v0.11.3");
+    # 1.x+ leaves it empty and is treated as new enough.
+    nvim_minor="$(nvim --version 2>/dev/null | sed -n '1s/^NVIM v0\.\([0-9]*\).*/\1/p')"
+    [ -n "$nvim_minor" ] && [ "$nvim_minor" -lt 11 ] && nvim_need=1
+fi
+if [ "$(uname -s)" = "Linux" ] && [ "$nvim_need" = 1 ]; then
+    case "$(uname -m)" in
+        x86_64|amd64)  nvim_arch=x86_64 ;;
+        aarch64|arm64) nvim_arch=arm64 ;;
+        *)             nvim_arch="" ;;
+    esac
+    if [ -z "$nvim_arch" ]; then
+        warn "neovim: no prebuilt binary for $(uname -m); install manually"
+    else
+        log "install neovim (official $nvim_arch release tarball -> ~/.local)"
+        nd="$(mktemp -d)"
+        if curl -fsSL -o "$nd/nvim.tar.gz" \
+            "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$nvim_arch.tar.gz" \
+            && tar -xzf "$nd/nvim.tar.gz" -C "$nd" 2>/dev/null; then
+            nvim_src="$(find "$nd" -maxdepth 1 -type d -name 'nvim-linux-*' | head -n1)"
+            if [ -n "$nvim_src" ]; then
+                rm -rf "$HOME/.local/opt/neovim"
+                mkdir -p "$HOME/.local/opt" "$HOME/.local/bin"
+                cp -r "$nvim_src" "$HOME/.local/opt/neovim"
+                ln -sf "$HOME/.local/opt/neovim/bin/nvim" "$HOME/.local/bin/nvim"
+                log "  installed $("$HOME/.local/bin/nvim" --version 2>/dev/null | sed -n '1p')"
+            else
+                warn "  neovim tarball had an unexpected layout"
+            fi
+        else
+            warn "  could not download the neovim release tarball"
+        fi
+        rm -rf "$nd"
+    fi
+fi
+
 # nushell — musl binary; assets are version-stamped, so resolve the tag first.
 if [ "$(uname -s)" = "Linux" ] && ! command -v nu >/dev/null 2>&1; then
     case "$(uname -m)" in

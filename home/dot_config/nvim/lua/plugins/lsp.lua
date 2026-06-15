@@ -1,23 +1,26 @@
--- LSP: mason (server installer) + nvim-lspconfig.
+-- LSP: mason (server installer, mason-org v2) + Neovim 0.11 native LSP.
+-- nvim-lspconfig ships the per-server lsp/*.lua defaults; mason-lspconfig
+-- auto-installs and auto-enables them via vim.lsp.enable(). Per-server tweaks
+-- and capabilities go through the native vim.lsp.config() API.
 return {
     {
         "neovim/nvim-lspconfig",
         event = { "BufReadPre", "BufNewFile" },
         dependencies = {
-            { "williamboman/mason.nvim", config = true },
-            "williamboman/mason-lspconfig.nvim",
-            "hrsh7th/cmp-nvim-lsp",
+            { "mason-org/mason.nvim", opts = {} },
+            "mason-org/mason-lspconfig.nvim",
+            "saghen/blink.cmp",
         },
         config = function()
-            local lspconfig = require("lspconfig")
-            local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
             vim.diagnostic.config({
                 virtual_text = { prefix = "●" },
                 severity_sort = true,
                 float = { border = "rounded", source = true },
             })
 
+            -- Neovim 0.11 ships default LSP maps (grn rename, gra code action,
+            -- grr references, gri implementation, gO symbols, K hover) and
+            -- diagnostic maps (]d, [d). Add only the extra aliases we want.
             vim.api.nvim_create_autocmd("LspAttach", {
                 group = vim.api.nvim_create_augroup("lsp_attach", { clear = true }),
                 callback = function(event)
@@ -25,40 +28,31 @@ return {
                         vim.keymap.set("n", keys, fn, { buffer = event.buf, desc = "LSP: " .. desc })
                     end
                     bmap("gd", vim.lsp.buf.definition, "Goto definition")
-                    bmap("gr", vim.lsp.buf.references, "References")
                     bmap("gI", vim.lsp.buf.implementation, "Goto implementation")
-                    bmap("K", vim.lsp.buf.hover, "Hover docs")
                     bmap("<leader>rn", vim.lsp.buf.rename, "Rename")
                     bmap("<leader>ca", vim.lsp.buf.code_action, "Code action")
-                    bmap("[d", vim.diagnostic.goto_prev, "Prev diagnostic")
-                    bmap("]d", vim.diagnostic.goto_next, "Next diagnostic")
                 end,
             })
 
-            local servers = {
-                lua_ls = {
-                    settings = {
-                        Lua = {
-                            diagnostics = { globals = { "vim" } },
-                            workspace = { checkThirdParty = false },
-                            telemetry = { enable = false },
-                        },
+            -- Capabilities from the completion engine, applied to every server.
+            vim.lsp.config("*", {
+                capabilities = require("blink.cmp").get_lsp_capabilities(),
+            })
+
+            -- Per-server settings (merged over nvim-lspconfig's bundled config).
+            vim.lsp.config("lua_ls", {
+                settings = {
+                    Lua = {
+                        diagnostics = { globals = { "vim" } },
+                        workspace = { checkThirdParty = false },
+                        telemetry = { enable = false },
                     },
                 },
-                bashls = {},
-                pyright = {},
-                rust_analyzer = {},
-            }
+            })
 
+            -- Install + auto-enable. bashls/pyright/rust_analyzer use defaults.
             require("mason-lspconfig").setup({
-                ensure_installed = vim.tbl_keys(servers),
-                handlers = {
-                    function(server_name)
-                        local cfg = servers[server_name] or {}
-                        cfg.capabilities = capabilities
-                        lspconfig[server_name].setup(cfg)
-                    end,
-                },
+                ensure_installed = { "lua_ls", "bashls", "pyright", "rust_analyzer" },
             })
         end,
     },
