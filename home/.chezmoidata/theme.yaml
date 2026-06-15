@@ -9,7 +9,6 @@ theme:
     delta: "gruvbox-dark"         # delta reads bat's theme set
     nvim_plugin: "tinted-theming/tinted-nvim"          # base16 plugin, driven by tinty (the live `theme` switcher)
     nvim_default_scheme: "base16-gruvbox-dark-hard"    # fallback scheme before/without a tinty pick
-    lualine: "auto"                                    # lualine derives its colors from the active colorscheme (follows tinty)
     television: "gruvbox-dark"    # built into television (themes/gruvbox-dark.toml)
     # burrito has no theme of its own; it inherits the terminal palette (above).
 
