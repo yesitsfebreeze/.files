@@ -25,5 +25,10 @@ $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
+# `pass` (password-store): pin the store location to its default explicitly so the
+# Nushell completion (config sources pass.nu) and the apply-time setup check both
+# read the same path. Change this to relocate the store.
+$env.PASSWORD_STORE_DIR = ($nu.home-dir | path join ".password-store")
+
 # Shell integrations are generated at apply time by the chezmoi run_after script,
 # not here, and merely sourced by config.nu — so shell launch does zero work.

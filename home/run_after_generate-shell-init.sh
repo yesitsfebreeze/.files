@@ -41,3 +41,15 @@ fi
 if command -v tinty >/dev/null 2>&1; then
     tinty install >/dev/null 2>&1 || true
 fi
+
+# pass (password-store) — installing the binary does not create a store; that
+# needs a one-time `pass init <gpg-id>` against a GPG key. Detect the unset state
+# (store has no .gpg-id) and point at the README setup section. Purely advisory:
+# never initializes anything (that needs the user's key) and never fails apply.
+if command -v pass >/dev/null 2>&1; then
+    pass_store="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+    if [ ! -f "$pass_store/.gpg-id" ]; then
+        printf '\033[1;33m!!\033[0m %s\n' "pass is installed but no store exists yet ($pass_store)."
+        printf '\033[1;33m!!\033[0m %s\n' "  Set it up: see the \"Password manager\" section in the README (or docs/index.html)."
+    fi
+fi

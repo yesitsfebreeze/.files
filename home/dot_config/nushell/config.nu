@@ -108,3 +108,6 @@ if (which tinty | is-not-empty) and (is-terminal --stdout) {
 
 # `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.
 source ~/.config/nushell/theme.nu
+
+# `pass` (password-store) completion: subcommands + live entry names from the store.
+source ~/.config/nushell/pass.nu
