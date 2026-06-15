@@ -2,14 +2,19 @@
 
 # Start prompt: ask before launching burrito (shell-level multiplexer). Enter
 # replaces this shell with burrito's spawn-or-attach default session; Esc (or any
-# other key) stays in plain Nushell. The recursion guard depends on burrito
-# exporting BURRITO into the shells it spawns (like zellij's $ZELLIJ); without
-# that, every spawned pane would re-prompt.
+# other key) stays in plain Nushell.
+#
+# Recursion guard: burrito does NOT export any marker of its own, and it spawns
+# Nushell in every cell (via $SHELL, set to nu in env.nu). Each cell re-sources
+# this file, so without a guard every cell would re-prompt and re-exec burrito —
+# infinite nesting. We set BURRITO ourselves just before exec; burrito inherits
+# its environment into every spawned cell, so cells see it and skip this block.
 if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
     print -n "launch burrito? [enter] yes  [esc] no "
     let key = (input listen --types [key])
     print ""
     if ($key.code == "enter") {
+        $env.BURRITO = "1"
         exec burrito
     }
 }
