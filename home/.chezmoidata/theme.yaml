@@ -7,20 +7,18 @@ theme:
   names:
     bat: "gruvbox-dark"           # built into bat (no fetch needed)
     delta: "gruvbox-dark"         # delta reads bat's theme set
-    nvim_plugin: "ellisonleao/gruvbox.nvim"
-    nvim_colorscheme: "gruvbox"
-    nvim_background: "dark"
-    nvim_contrast: "hard"
-    lualine: "gruvbox"
+    nvim_plugin: "tinted-theming/tinted-nvim"          # base16 plugin, driven by tinty (the live `theme` switcher)
+    nvim_default_scheme: "base16-gruvbox-dark-hard"    # fallback scheme before/without a tinty pick
+    lualine: "auto"                                    # lualine derives its colors from the active colorscheme (follows tinty)
     television: "gruvbox-dark"    # built into television (themes/gruvbox-dark.toml)
     # burrito has no theme of its own; it inherits the terminal palette (above).
 
-  # Cursor. wezterm uses CamelCase styles; nvim uses a guicursor spec;
-  # nushell only controls shape (the terminal handles blinking).
+  # Cursor. wezterm uses CamelCase styles; nushell only controls shape (the
+  # terminal handles blinking). nvim's cursor is mode-aware and palette-driven
+  # in colorscheme.lua.tmpl, so it has no static spec here.
   cursor:
     wezterm: "BlinkingBlock"
     nushell: "block"
-    nvim_guicursor: "a:block-blinkwait700-blinkon400-blinkoff250"
 
   # Palette — Gruvbox Dark Hard. Raw hex for tools that need explicit colors.
   palette:
