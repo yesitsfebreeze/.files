@@ -25,6 +25,15 @@ $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
+# Advertise Nushell as $SHELL. The login shell in /etc/passwd is still zsh, but
+# every child that spawns "the user's shell" should get nu. burrito relies on this:
+# it has no shell config key and picks each cell's shell by walking its parent
+# process tree for a known shell — but config.nu `exec`s burrito, replacing the nu
+# process, so burrito's parent is WezTerm, the walk finds no shell, and it falls
+# back to $SHELL. Without this line that fallback is zsh; with it, every burrito
+# cell launches nu.
+$env.SHELL = $nu.current-exe
+
 # `pass` (password-store): pin the store location to its default explicitly so the
 # Nushell completion (config sources pass.nu) and the apply-time setup check both
 # read the same path. Change this to relocate the store.
