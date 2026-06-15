@@ -1,11 +1,17 @@
 # config.nu — Nushell config, launched explicitly by WezTerm.
 
-# Auto-start burrito (shell-level multiplexer): replace this shell with its
-# spawn-or-attach default session. The recursion guard depends on burrito
+# Start prompt: ask before launching burrito (shell-level multiplexer). Enter
+# replaces this shell with burrito's spawn-or-attach default session; Esc (or any
+# other key) stays in plain Nushell. The recursion guard depends on burrito
 # exporting BURRITO into the shells it spawns (like zellij's $ZELLIJ); without
-# that, every spawned pane would re-exec burrito.
+# that, every spawned pane would re-prompt.
 if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
-    exec burrito
+    print -n "launch burrito? [enter] yes  [esc] no "
+    let key = (input listen --types [key])
+    print ""
+    if ($key.code == "enter") {
+        exec burrito
+    }
 }
 
 $env.config = {
