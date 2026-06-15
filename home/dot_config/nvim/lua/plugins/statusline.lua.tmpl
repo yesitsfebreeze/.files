@@ -4,9 +4,26 @@
 -- lualine fall back to "auto": we build the theme directly from tinted-nvim's
 -- active palette and rebuild it on every ColorScheme event (keeping the
 -- statusline in lockstep with tinty). Before the palette is ready, we fall back
--- to lualine's own builtin "gruvbox_dark" theme (a real theme file, no
--- nvim-base16 dependency), so the base16 lualine theme is never requested.
-local fallback_theme = "gruvbox_dark"
+-- to a static theme derived from the central palette (home/.chezmoidata/theme.yaml),
+-- so the base16 lualine theme is never requested.
+local fallback_theme = (function()
+    local function s(fg, bg) return { fg = fg, bg = bg } end
+    local bg0 = "{{ .theme.palette.bg0 }}"
+    local b = s("{{ .theme.palette.fg1 }}", "{{ .theme.palette.bg2 }}")
+    local c = s("{{ .theme.palette.fg4 }}", "{{ .theme.palette.bg1 }}")
+    return {
+        normal = { a = s(bg0, "{{ .theme.palette.blue }}"), b = b, c = c },
+        insert = { a = s(bg0, "{{ .theme.palette.green }}"), b = b, c = c },
+        visual = { a = s(bg0, "{{ .theme.palette.purple }}"), b = b, c = c },
+        replace = { a = s(bg0, "{{ .theme.palette.red }}"), b = b, c = c },
+        command = { a = s(bg0, "{{ .theme.palette.yellow }}"), b = b, c = c },
+        inactive = {
+            a = s("{{ .theme.palette.bg3 }}", "{{ .theme.palette.bg1 }}"),
+            b = s("{{ .theme.palette.bg3 }}", "{{ .theme.palette.bg1 }}"),
+            c = s("{{ .theme.palette.bg3 }}", "{{ .theme.palette.bg1 }}"),
+        },
+    }
+end)()
 
 return {
     {
