@@ -26,12 +26,11 @@ $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
 # Advertise Nushell as $SHELL. The login shell in /etc/passwd is still zsh, but
-# every child that spawns "the user's shell" should get nu. burrito relies on this:
-# it has no shell config key and picks each cell's shell by walking its parent
-# process tree for a known shell — but config.nu `exec`s burrito, replacing the nu
-# process, so burrito's parent is WezTerm, the walk finds no shell, and it falls
-# back to $SHELL. Without this line that fallback is zsh; with it, every burrito
-# cell launches nu.
+# every child that spawns "the user's shell" should get nu. This is now a fallback,
+# not the primary path: config.nu launches burrito as a child of nu (no `exec`), so
+# burrito's parent-tree walk finds nu directly and cells launch nu without touching
+# $SHELL. We keep this so that if burrito (or anything else) ever does fall back to
+# $SHELL, it lands on nu rather than zsh.
 $env.SHELL = $nu.current-exe
 
 # `pass` (password-store): pin the store location to its default explicitly so the

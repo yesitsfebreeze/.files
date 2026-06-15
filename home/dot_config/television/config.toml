@@ -1,0 +1,13 @@
+# Television (tv) config. "gruvbox-dark" is a builtin tv theme (no fetch). Only
+# theme-coupled values live here; tv ships the theme, so it is pinned to gruvbox.
+[ui]
+theme = "gruvbox-dark"
+
+[ui.input_bar]
+border_type = "rounded"
+
+[ui.results_panel]
+border_type = "rounded"
+
+[ui.preview_panel]
+border_type = "rounded"

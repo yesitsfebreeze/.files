@@ -399,7 +399,7 @@ if [ -n "$nerdfont_asset" ]; then
 fi
 
 # --- bat: rebuild theme cache ---
-# The active theme ({{ .theme.names.bat }}) is built into bat, so no theme file
+# The active theme (gruvbox-dark) is built into bat, so no theme file
 # is fetched; just rebuild the cache so a fresh install picks it up.
 if command -v bat >/dev/null 2>&1; then
     bat cache --build >/dev/null 2>&1 || true

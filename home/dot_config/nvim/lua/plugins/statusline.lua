@@ -1,8 +1,13 @@
 -- Statusline. lualine's "auto" theme collapses any base16-* colorscheme to its
 -- bundled "base16" theme, which requires the separate nvim-base16 plugin and
--- warns when it is absent. tinted-nvim is not that plugin, so instead we build
--- the lualine theme directly from tinted-nvim's active palette and rebuild it on
--- every ColorScheme event, keeping the statusline in lockstep with tinty.
+-- errors when it is absent. tinted-nvim is not that plugin, so we never let
+-- lualine fall back to "auto": we build the theme directly from tinted-nvim's
+-- active palette and rebuild it on every ColorScheme event (keeping the
+-- statusline in lockstep with tinty). Before the palette is ready, we fall back
+-- to lualine's own builtin "gruvbox_dark" theme (a real theme file, no
+-- nvim-base16 dependency), so the base16 lualine theme is never requested.
+local fallback_theme = "gruvbox_dark"
+
 return {
     {
         "nvim-lualine/lualine.nvim",
@@ -26,9 +31,9 @@ return {
         config = function(_, opts)
             local function lualine_theme()
                 local ok, tn = pcall(require, "tinted-nvim")
-                if not ok then return "auto" end
-                local p = tn.get_palette()
-                if not p then return "auto" end
+                if not ok then return fallback_theme end
+                local got, p = pcall(tn.get_palette)
+                if not got or not p then return fallback_theme end
                 local function s(fg, bg) return { fg = fg, bg = bg } end
                 local b = s(p.base05, p.base02)
                 local c = s(p.base04, p.base01)

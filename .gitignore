@@ -15,3 +15,6 @@
 .DS_Store
 Thumbs.db
 /.mesh/
+
+# git-fs plugin runtime object store — never committed
+/.git-fs/

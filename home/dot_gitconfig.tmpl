@@ -31,19 +31,14 @@
     navigate = true
     line-numbers = true
     side-by-side = false
-    syntax-theme = {{ .theme.names.delta }}
-    # Diff frame accents from the central theme (home/.chezmoidata/theme.yaml).
-    minus-style                   = syntax "{{ .theme.diff.minus_bg }}"
-    minus-non-emph-style          = syntax "{{ .theme.diff.minus_bg }}"
-    minus-emph-style              = syntax "{{ .theme.diff.minus_emph_bg }}"
-    plus-style                    = syntax "{{ .theme.diff.plus_bg }}"
-    plus-non-emph-style           = syntax "{{ .theme.diff.plus_bg }}"
-    plus-emph-style               = syntax "{{ .theme.diff.plus_emph_bg }}"
-    line-numbers-minus-style      = "{{ .theme.palette.red }}"
-    line-numbers-plus-style       = "{{ .theme.palette.green }}"
-    line-numbers-zero-style       = "{{ .theme.palette.gray }}"
-    file-style                    = bold "{{ .theme.palette.fg1 }}"
-    hunk-header-style             = "{{ .theme.palette.blue }}" bold
+    # "gruvbox-dark" is a builtin bat/delta syntax theme (no fetch). Diff frame
+    # accents use standard ANSI color names, so delta follows the terminal's live
+    # (tinty / tinted-shell) palette; diff backgrounds use delta's own defaults.
+    syntax-theme = gruvbox-dark
+    line-numbers-minus-style = red
+    line-numbers-plus-style  = green
+    file-style               = bold
+    hunk-header-style        = blue bold
 
 [merge]
     conflictStyle = zdiff3

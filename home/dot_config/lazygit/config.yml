@@ -1,5 +1,7 @@
-# lazygit configuration — theme managed centrally in
-# home/.chezmoidata/theme.yaml (Gruvbox Dark Hard, orange accent).
+# lazygit configuration. Theme colors use standard ANSI color names, so lazygit
+# is drawn from the terminal's live palette — the shell `theme` switcher (tinty /
+# tinted-shell) retints those ANSI colors and lazygit follows the active scheme.
+# No hardcoded hex, no templating.
 gui:
   nerdFontsVersion: "3"
   scrollHeight: 2
@@ -8,24 +10,24 @@ gui:
   showCommandLog: false
   theme:
     activeBorderColor:
-      - "{{ .theme.palette.orange }}"
+      - "yellow"
       - bold
     inactiveBorderColor:
-      - "{{ .theme.palette.fg4 }}"
+      - "white"
     optionsTextColor:
-      - "{{ .theme.palette.blue }}"
+      - "blue"
     selectedLineBgColor:
-      - "{{ .theme.palette.bg2 }}"
+      - "blue"
     cherryPickedCommitBgColor:
-      - "{{ .theme.palette.bg3 }}"
+      - "cyan"
     cherryPickedCommitFgColor:
-      - "{{ .theme.palette.orange }}"
+      - "yellow"
     unstagedChangesColor:
-      - "{{ .theme.palette.red }}"
+      - "red"
     defaultFgColor:
-      - "{{ .theme.palette.fg1 }}"
+      - "default"
     searchingActiveBorderColor:
-      - "{{ .theme.palette.yellow }}"
+      - "yellow"
 
 git:
   paging:

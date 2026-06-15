@@ -4,18 +4,26 @@
 # replaces this shell with burrito's spawn-or-attach default session; Esc (or any
 # other key) stays in plain Nushell.
 #
+# Launch burrito as a CHILD of this nu process — do NOT `exec` it. burrito has no
+# shell-config key; it picks each cell's shell by walking its parent process tree
+# for a known shell. Running it as a child keeps nu as burrito's parent, so that
+# walk finds nu directly and every cell launches nu. (`exec` would replace this nu
+# process, making burrito's parent WezTerm — the walk finds no shell and burrito
+# falls back to $SHELL.) When burrito exits we exit too, mirroring `exec`.
+#
 # Recursion guard: burrito does NOT export any marker of its own, and it spawns
-# Nushell in every cell (via $SHELL, set to nu in env.nu). Each cell re-sources
-# this file, so without a guard every cell would re-prompt and re-exec burrito —
-# infinite nesting. We set BURRITO ourselves just before exec; burrito inherits
-# its environment into every spawned cell, so cells see it and skip this block.
+# Nushell in every cell. Each cell re-sources this file, so without a guard every
+# cell would re-prompt and re-launch burrito — infinite nesting. We set BURRITO
+# ourselves just before launch; burrito inherits its environment into every
+# spawned cell, so cells see it and skip this block.
 if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
     print -n "Press [Enter] to launch burrito. Everything else to canel."
     let key = (input listen --types [key])
     print ""
     if ($key.code == "enter") {
         $env.BURRITO = "1"
-        exec burrito
+        burrito
+        exit
     }
 }
 
@@ -66,7 +74,6 @@ $env.config = {
 
 # Aliases. The Unix installer symlinks Debian's `batcat`/`fdfind` to `bat`/`fd`,
 # so those names resolve on every platform.
-alias ls = eza --icons --group-directories-first
 alias l = eza --icons --group-directories-first
 alias ll = eza -l --icons --group-directories-first --git
 alias la = eza -la --icons --group-directories-first --git

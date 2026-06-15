@@ -19,7 +19,7 @@ require("lazy").setup({
         { import = "plugins" },
     },
     defaults = { lazy = false, version = false },
-    install = { colorscheme = { "{{ .theme.names.nvim_default_scheme }}" } },
+    install = { colorscheme = { "base16-gruvbox-dark-hard" } },
     checker = { enabled = true, notify = false },
     change_detection = { notify = false },
     performance = {

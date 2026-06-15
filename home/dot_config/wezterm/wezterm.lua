@@ -1,6 +1,8 @@
 -- WezTerm: a plain cross-platform host terminal. Multiplexing lives in the shell
--- via burrito, not here, so the setup is portable to any terminal. Colors/cursor
--- are templated by chezmoi from home/.chezmoidata/theme.yaml.
+-- via burrito, not here, so the setup is portable to any terminal. Colors come
+-- from WezTerm's builtin "Gruvbox dark, hard (base16)" scheme as the base; the
+-- shell's tinty `theme` switcher retints the ANSI palette live on top via
+-- tinted-shell OSC sequences, so WezTerm follows your pick without templating.
 
 local wezterm = require("wezterm")
 local act = wezterm.action
@@ -29,38 +31,9 @@ config.set_environment_variables = {
     XDG_CONFIG_HOME = home .. "/.config",
 }
 
--- Appearance — palette from the central theme.
-config.colors = {
-    foreground = "{{ .theme.palette.fg1 }}",
-    background = "{{ .theme.palette.bg0 }}",
-    cursor_bg = "{{ .theme.palette.fg1 }}",
-    cursor_fg = "{{ .theme.palette.bg0 }}",
-    cursor_border = "{{ .theme.palette.fg1 }}",
-    selection_bg = "{{ .theme.palette.bg2 }}",
-    selection_fg = "{{ .theme.palette.fg1 }}",
-    ansi = {
-        "{{ .theme.palette.bg0 }}",
-        "{{ .theme.palette.red_dim }}",
-        "{{ .theme.palette.green_dim }}",
-        "{{ .theme.palette.yellow_dim }}",
-        "{{ .theme.palette.blue_dim }}",
-        "{{ .theme.palette.purple_dim }}",
-        "{{ .theme.palette.aqua_dim }}",
-        "{{ .theme.palette.fg4 }}",
-    },
-    brights = {
-        "{{ .theme.palette.gray }}",
-        "{{ .theme.palette.red }}",
-        "{{ .theme.palette.green }}",
-        "{{ .theme.palette.yellow }}",
-        "{{ .theme.palette.blue }}",
-        "{{ .theme.palette.purple }}",
-        "{{ .theme.palette.aqua }}",
-        "{{ .theme.palette.fg1 }}",
-    },
-}
-
-config.default_cursor_style = "{{ .theme.cursor.wezterm }}"
+-- Appearance — builtin base16 gruvbox base; tinty retints ANSI live on top.
+config.color_scheme = "Gruvbox dark, hard (base16)"
+config.default_cursor_style = "BlinkingBlock"
 
 -- Font: DepartureMono Nerd Font (installed via packages.yaml `nerd-font`);
 -- the rest are fallbacks.
@@ -99,7 +72,7 @@ config.show_new_tab_button_in_tab_bar = false
 
 wezterm.on("update-right-status", function(window, _pane)
     window:set_right_status(wezterm.format({
-        { Foreground = { Color = "{{ .theme.palette.blue }}" } },
+        { Foreground = { AnsiColor = "Blue" } },
         { Text = "  " .. window:active_workspace() .. "  " },
     }))
 end)

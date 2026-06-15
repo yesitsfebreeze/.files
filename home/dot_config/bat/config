@@ -1,0 +1,6 @@
+# bat config. "gruvbox-dark" is a built-in bat theme (no fetch, no templating).
+# tinty-aware surfaces re-theme live via the `theme` switcher; bat ships this
+# theme itself, so it is pinned to the gruvbox default here.
+--theme="gruvbox-dark"
+--style="numbers,changes,header"
+--paging=auto

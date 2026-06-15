@@ -1,15 +1,15 @@
 -- Colorscheme: tinted-nvim, driven by tinty. The shell `theme` switcher runs
 -- `tinty apply`, which writes the active base16 scheme name to
 -- ~/.local/share/tinted-theming/tinty/current_scheme. The file selector below
--- watches that file and re-themes nvim live. default_scheme is the fallback
--- before any tinty pick (central data in home/.chezmoidata/theme.yaml).
+-- watches that file and re-themes nvim live. default_scheme is the gruvbox
+-- fallback before any tinty pick.
 return {
-    "{{ .theme.names.nvim_plugin }}",
+    "tinted-theming/tinted-nvim",
     priority = 1000,
     lazy = false,
     config = function()
         require("tinted-nvim").setup({
-            default_scheme = "{{ .theme.names.nvim_default_scheme }}",
+            default_scheme = "base16-gruvbox-dark-hard",
             apply_scheme_on_startup = true,
             highlights = {
                 integrations = {

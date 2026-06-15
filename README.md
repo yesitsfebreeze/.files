@@ -18,9 +18,11 @@ every config into place.
 - **CLI core** — ripgrep, fd, fzf, bat, eza, zoxide, jq
 - **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
   Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
-- **Theme** — Gruvbox Dark Hard everywhere, centralized in
-  `home/.chezmoidata/theme.yaml`; edit once, `chezmoi apply`, all tools re-theme.
-  For live switching, run **`theme`** (see below)
+- **Theme** — Gruvbox Dark Hard, live-switchable via
+  [tinty](https://github.com/tinted-theming/tinty) (base16). The terminal palette
+  and Neovim follow your pick; ANSI-aware tools (Starship, lazygit, delta) ride the
+  terminal palette; bat, Television, and WezTerm ship the gruvbox theme themselves.
+  Switch live with **`theme`** (see below)
 
 Run from a normal (non-admin) shell in your home directory.
 
@@ -54,8 +56,9 @@ chezmoi cd        # enter source dir (exit returns)
 
 ## Theme switcher
 
-`theme.yaml` sets the tracked default (Gruvbox Dark Hard). To change theme live,
-without editing files:
+Each tool ships the Gruvbox Dark Hard default — builtin themes (bat, Television,
+WezTerm) or ANSI colors that ride the terminal palette (Starship, lazygit, delta).
+To change theme live, without editing files:
 
 ```sh
 theme             # fuzzy-pick from tinty's official base16/base24 catalog
@@ -65,12 +68,11 @@ Scroll to preview each theme (terminal + shell retint via
 [tinty](https://github.com/tinted-theming/tinty) OSC sequences); **Enter** applies
 and persists it into new shells, **Esc** reverts to where you started. The picker
 lists tinty's prebuilt tinted-shell schemes (~314 base16 + ~187 base24), so every
-entry applies cleanly; the live pick is runtime state and never overrides the
-`theme.yaml` default in the source tree.
+entry applies cleanly; the live pick is runtime state, layered on top of each
+tool's gruvbox default.
 
-Two known limits: inside burrito, live palette passthrough to WezTerm depends on
-the multiplexer; and the Starship prompt keeps its Gruvbox accents (it isn't
-driven by the live palette yet).
+Known limit: inside burrito, live palette passthrough to WezTerm depends on the
+multiplexer (the OSC retint may be intercepted by the mux before WezTerm sees it).
 
 ## Password manager
 

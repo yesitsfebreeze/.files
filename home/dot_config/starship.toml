@@ -1,6 +1,8 @@
 # Starship prompt — identical on Nushell across Linux / WSL / macOS.
-# Palette templated from home/.chezmoidata/theme.yaml; the palette keys below are
-# layout-slot names referenced by the format strings.
+# The palette below maps layout-slot names to standard ANSI color names, so the
+# prompt is drawn from the terminal's live palette: the shell `theme` switcher
+# (tinty / tinted-shell) retints those ANSI colors, and the prompt follows the
+# active scheme with no hardcoded hex and no templating.
 
 "$schema" = "https://starship.rs/config-schema.json"
 
@@ -29,14 +31,14 @@ $character"""
 palette = "theme"
 
 [palettes.theme]
-surface0 = "{{ .theme.palette.bg1 }}"
-peach    = "{{ .theme.palette.orange }}"
-green    = "{{ .theme.palette.green }}"
-teal     = "{{ .theme.palette.aqua }}"
-blue     = "{{ .theme.palette.blue }}"
-crust    = "{{ .theme.palette.bg0 }}"
-text     = "{{ .theme.palette.fg1 }}"
-red      = "{{ .theme.palette.red }}"
+surface0 = "bright-black"
+peach    = "yellow"
+green    = "green"
+teal     = "cyan"
+blue     = "blue"
+crust    = "black"
+text     = "white"
+red      = "red"
 
 [os]
 disabled = false
