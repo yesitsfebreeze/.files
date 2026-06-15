@@ -13,6 +13,8 @@ every config into place.
 - **Neovim** — editor (Lua, lazy.nvim, LSP, Treesitter, Telescope)
 - **Starship** — prompt
 - **Git** — git + delta + lazygit + gh
+- **pass** — password manager (GPG-backed `password-store`), with Nushell
+  completion for subcommands and entry names. One-time setup below
 - **CLI core** — ripgrep, fd, fzf, bat, eza, zoxide, jq
 - **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
   Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
@@ -32,6 +34,10 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesit
 ```
 
 Already have chezmoi? Just `chezmoi init --apply yesitsfebreeze/.files`.
+
+> **Linux requirement:** the Claude CLI needs `bubblewrap` (`bwrap`) for
+> subprocess sandboxing. It is installed automatically with the package set; on
+> macOS the built-in Seatbelt sandbox is used instead, so no extra package.
 
 > **Windows:** there is no native Windows setup. Install WezTerm on Windows, then
 > run the command above inside WSL Ubuntu (`wsl -d Ubuntu`). WezTerm boots straight
@@ -65,6 +71,46 @@ entry applies cleanly; the live pick is runtime state and never overrides the
 Two known limits: inside burrito, live palette passthrough to WezTerm depends on
 the multiplexer; and the Starship prompt keeps its Gruvbox accents (it isn't
 driven by the live palette yet).
+
+## Password manager
+
+[`pass`](https://www.passwordstore.org/) stores each secret as a GPG-encrypted
+file under `~/.password-store`. Installing the tool does **not** create the store
+— that is a one-time step tied to your GPG key, so `chezmoi apply` prints a
+reminder pointing here until it is done. The store itself is private and lives in
+your home dir; it is never tracked by these dotfiles.
+
+Set it up once per machine:
+
+```sh
+# 1. Need a GPG key? Create one (skip if `gpg --list-secret-keys` already lists one).
+gpg --full-generate-key
+
+# 2. Find the key's id (or use the email you gave it).
+gpg --list-secret-keys --keyid-format=long
+
+# 3. Initialise the store for that key. This writes ~/.password-store/.gpg-id.
+pass init <gpg-id-or-email>
+
+# 4. (Optional) version the store with git, then add your own private remote.
+pass git init
+```
+
+Daily use:
+
+```sh
+pass insert email/personal     # add a secret (prompts; nested paths allowed)
+pass generate email/personal 24  # create a random 24-char password
+pass                           # list the store as a tree
+pass show email/personal       # print a secret
+pass -c email/personal         # copy it to the clipboard (clears after ~45s)
+pass edit email/personal       # edit in $EDITOR
+pass rm email/personal         # remove
+```
+
+`PASSWORD_STORE_DIR` is pinned to the default in `env.nu`; change it there to
+relocate the store. Nushell tab-completion offers the subcommands and your live
+entry names (sourced from `pass.nu`).
 
 ## Develop
 
