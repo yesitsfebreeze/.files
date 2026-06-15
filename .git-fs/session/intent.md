@@ -1,7 +1,7 @@
 # Session intent
 
 session: 4bb61e3f-dfe0-4b52-9af1-3a8d1b7f3a01
-model: claude-opus-4-8[1m]
+model: unknown
 
 ## What this session is doing
 
