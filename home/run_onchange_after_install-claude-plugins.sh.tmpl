@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# chezmoi run_onchange — registers Claude Code marketplaces and installs the
-# plugin set via the `claude` CLI at user scope. These are JS/MCP plugins run by
-# the Node hosting Claude Code, not PATH binaries, so they live outside the
+# chezmoi run_onchange (after_) — registers Claude Code marketplaces and installs
+# the plugin set via the `claude` CLI at user scope. These are JS/MCP plugins run
+# by the Node hosting Claude Code, not PATH binaries, so they live outside the
 # package-manager installer (run_onchange_install-packages).
+#
+# The `after_` phase is deliberate: on Linux the `claude` CLI aborts every
+# subcommand unless bubblewrap (`bwrap`) is present for subprocess env scrubbing.
+# bubblewrap is declared in packages.yaml and installed by the main-phase package
+# installer; the after-phase guarantees `bwrap` exists before we invoke `claude`.
 #
 # Re-runs whenever the rendered plugin list below changes. `marketplace add` and
 # `install` are idempotent, so re-running is safe; failures warn but never abort

@@ -107,6 +107,24 @@ packages:
       pacman: github-cli
       dnf: gh
 
+    - name: bubblewrap    # Linux subprocess sandbox (binary: `bwrap`); the `claude` CLI requires it for
+      brew: ""            # env scrubbing / plugin installs. macOS uses Seatbelt (sandbox-exec), so no brew pkg.
+      apt: bubblewrap
+      pacman: bubblewrap
+      dnf: bubblewrap
+
+    - name: gnupg         # GPG (binary: `gpg`) — required backend for `pass`; encrypts each entry
+      brew: gnupg
+      apt: gnupg
+      pacman: gnupg
+      dnf: gnupg2         # Fedora packages GnuPG 2 as `gnupg2` (provides `gpg`)
+
+    - name: pass          # standard unix password manager (gpg-backed password-store)
+      brew: pass
+      apt: pass
+      pacman: pass
+      dnf: pass
+
     - name: tinty         # Tinted Theming CLI — base16/base24 engine behind the live `theme` switcher
       brew: tinted-theming/tinty/tinty   # not in homebrew-core; fully-qualified name auto-taps tinted-theming/tinty
       apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
