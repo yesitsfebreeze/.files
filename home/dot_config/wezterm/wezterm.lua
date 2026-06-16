@@ -147,52 +147,11 @@ wezterm.on("window-resized", center_grid)
 wezterm.on("window-config-reloaded", center_grid)
 wezterm.on("update-status", center_grid)
 
--- Read the active tinty theme at startup and build a WezTerm color table from
--- the base16/base24 YAML palette. Falls back to the builtin gruvbox scheme if
--- no tinty state exists yet.
-local function load_tinty_colors()
-    local artifacts = home .. "/.local/share/tinted-theming/tinty/artifacts"
-    local sf = io.open(artifacts .. "/current_scheme", "r")
-    if not sf then return nil end
-    local scheme = sf:read("*l"); sf:close()
-    if not scheme then return nil end
-
-    local system, name = scheme:match("^(base%d+)-(.+)$")
-    if not system or not name then return nil end
-
-    local yaml_path = home .. "/.local/share/tinted-theming/tinty/repos/schemes/"
-        .. system .. "/" .. name .. ".yaml"
-    local yf = io.open(yaml_path, "r")
-    if not yf then return nil end
-    local yaml = yf:read("*a"); yf:close()
-
-    local c = {}
-    for k, hex in yaml:gmatch('(base%x%x):%s*"#(%x%x%x%x%x%x)"') do
-        c[k:lower()] = "#" .. hex:lower()
-    end
-    if not c.base00 or not c.base05 then return nil end
-
-    return {
-        foreground    = c.base05,
-        background    = c.base00,
-        cursor_bg     = c.base05,
-        cursor_border = c.base05,
-        cursor_fg     = c.base00,
-        selection_bg  = c.base02,
-        selection_fg  = c.base05,
-        ansi = {
-            c.base00, c.base08, c.base0b, c.base0a,
-            c.base0d, c.base0e, c.base0c, c.base05,
-        },
-        brights = {
-            c.base03, c.base08, c.base0b, c.base0a,
-            c.base0d, c.base0e, c.base0c, c.base07,
-        },
-    }
-end
-
-local tinty_colors = load_tinty_colors()
-if tinty_colors then
+-- Colors from the active tinty theme, written by wezterm-colors.sh whenever the
+-- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
+-- (e.g. first run before any theme has been picked).
+local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
+if ok and type(tinty_colors) == "table" then
     config.colors = tinty_colors
 else
     config.color_scheme = "Gruvbox dark, hard (base16)"
