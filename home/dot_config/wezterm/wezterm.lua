@@ -40,14 +40,6 @@ wezterm.on("gui-startup", function(cmd)
     window:gui_window():toggle_fullscreen()
 end)
 
--- Flip to true to log the raw geometry to the WezTerm log (Help > Show Debug
--- Overlay, or the GUI log file). Use this if the grid still looks off: it prints
--- the window pixels, grid cols/rows, recovered cell size and the leftover it
--- couldn't account for. A nonzero residual there means the cell isn't a whole
--- number of pixels (usually fractional display scaling), which no integer
--- padding can perfectly center.
-local CENTER_DEBUG = false
-
 -- Keep the grid centered. WezTerm exposes no cell-pixel API and renders an
 -- integer grid of whole-pixel cells, so we recover the cell size from the window
 -- pixels and the column/row counts, then push the leftover sub-cell pixels into
@@ -94,14 +86,6 @@ local function center_grid(window)
         top = math.floor(gap_y / 2),
         bottom = math.ceil(gap_y / 2),
     }
-
-    if CENTER_DEBUG then
-        wezterm.log_info(string.format(
-            "center_grid: win=%dx%d grid=%dx%d cell=%dx%d residual=%d,%d pad=%d/%d,%d/%d",
-            win.pixel_width, win.pixel_height, grid.cols, grid.viewport_rows,
-            cell_w, cell_h, usable_w % cell_w, usable_h % cell_h,
-            new_pad.left, new_pad.right, new_pad.top, new_pad.bottom))
-    end
 
     -- Idempotency guard: set_config_overrides re-fires this event, so only write
     -- when the padding actually changes to avoid a feedback loop.

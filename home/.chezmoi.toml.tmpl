@@ -1,6 +1,8 @@
 {{/* Prompt once for identity used by git; persisted to the local chezmoi config (never committed). */}}
 {{- $name := promptStringOnce . "name" "Full name (for git)" -}}
 {{- $email := promptStringOnce . "email" "Email (for git)" -}}
+{{/* Wherever this repo is cloned becomes the chezmoi source dir. */}}
+sourceDir = {{ .chezmoi.workingTree | quote }}
 
 [data]
     name = {{ $name | quote }}
