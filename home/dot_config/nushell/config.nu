@@ -82,10 +82,11 @@ alias ba = burrito --attach                       # attach to an existing sessio
 # Vim/editor muscle memory for quitting the shell.
 alias "/exit" = exit
 alias ":q" = exit
+alias q = exit
 
 # Reload dotfiles: re-pull source and re-apply. --force overwrites local drift
 # without prompting.
-alias rlcfg = chezmoi update --force
+alias rr = chezmoi update --force
 
 # television helpers (Ctrl-T autocomplete / Ctrl-R history come from `tv init nu`
 # sourced below). These defs add find-file, fuzzy-cd, and live-grep shortcuts.
