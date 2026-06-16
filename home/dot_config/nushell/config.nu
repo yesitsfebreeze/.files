@@ -53,6 +53,12 @@ $env.config = {
         osc133: false
         osc633: false
     }
+    # Auto-list on directory change. The PWD env_change hook fires on every cd,
+    # zoxide jump, or picker (`fcd`), so listing happens however you move. The
+    # actual `la` closure is appended below, after the `la` alias is defined.
+    hooks: {
+        env_change: { PWD: [] }
+    }
 }
 
 # Aliases. The Unix installer symlinks Debian's `batcat`/`fdfind` to `bat`/`fd`,
@@ -68,6 +74,14 @@ alias lg = lazygit
 alias v = nvim
 alias vi = nvim
 alias cdi = zi
+
+# Convenience aliases.
+alias cc = claude --dangerously-skip-permissions  # skip the per-tool prompts
+alias bb = burrito                                # spawn-or-attach default session
+alias ba = burrito --attach                       # attach to an existing session
+# Vim/editor muscle memory for quitting the shell.
+alias "/exit" = exit
+alias ":q" = exit
 
 # Reload dotfiles: re-pull source and re-apply. --force overwrites local drift
 # without prompting.
@@ -90,6 +104,40 @@ def --env fcd [] {
 def fg [] {
     tv text
 }
+
+# cf — copy a file's contents into the system clipboard. Picks the clipboard
+# tool that matches the current session: pbcopy (macOS), wl-copy (Wayland),
+# xclip (X11), then clip.exe (WSL). Display-var guards keep us from picking a
+# Linux GUI tool that would hang when no compositor/server is attached.
+def cf [file: path] {
+    let f = ($file | path expand)
+    if not ($f | path exists) {
+        error make { msg: $"cf: no such file: ($file)" }
+    }
+    let data = (open --raw $f)
+    if (which pbcopy | is-not-empty) {
+        $data | pbcopy
+    } else if ($env.WAYLAND_DISPLAY? | is-not-empty) and (which wl-copy | is-not-empty) {
+        $data | wl-copy
+    } else if ($env.DISPLAY? | is-not-empty) and (which xclip | is-not-empty) {
+        $data | xclip -selection clipboard
+    } else if (which clip.exe | is-not-empty) {
+        $data | clip.exe
+    } else {
+        error make { msg: "cf: no clipboard tool found (need wl-copy, xclip, clip.exe, or pbcopy)" }
+    }
+    print $"copied ($f) to clipboard"
+}
+
+# Append the auto-list closure now that the `la` alias is in scope. `$before`
+# is null on the first fire at shell start, so we skip that one to keep startup
+# clean; thereafter every real cd lists the new directory in an interactive shell.
+$env.config.hooks.env_change.PWD = (
+    $env.config.hooks.env_change.PWD
+    | append {|before, after|
+        if $before != null and $after != $before and (is-terminal --stdout) { la }
+    }
+)
 
 # Source shell integrations. These files are generated at apply time by the
 # chezmoi run_after script, not at shell start, so launching the shell does no
