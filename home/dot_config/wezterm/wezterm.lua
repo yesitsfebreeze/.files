@@ -59,9 +59,11 @@ local function center_grid(window)
     local pad = overrides.window_padding
         or { left = 0, right = 0, top = 0, bottom = 0 }
 
-    -- Pixels currently handed to the grid = window minus the padding we already
-    -- added. usable / count rounds down to the exact integer cell size, because
-    -- for real terminal geometries the remainder is far smaller than the count.
+    -- Recover the integer cell size from the pixels currently handed to the grid
+    -- (window minus the padding we already added). usable / count rounds down to
+    -- the exact cell size because the sub-cell remainder is far smaller than the
+    -- count. Padding stays bounded below one cell (see gap math), so `usable` is
+    -- always close to the full window and this estimate stays accurate.
     local usable_w = win.pixel_width - pad.left - pad.right
     local usable_h = win.pixel_height - pad.top - pad.bottom
     local cell_w = math.floor(usable_w / grid.cols)
@@ -70,16 +72,15 @@ local function center_grid(window)
         return
     end
 
-    -- The grid tiles cols*cell_w pixels and leaves `usable % cell` unfilled on
-    -- one edge. The total empty space is that residual PLUS the padding we have
-    -- already applied; splitting that whole amount evenly is what centers the
-    -- grid. This is self-correcting: once the padding absorbs the residual the
-    -- usable size is an exact multiple of the cell, the residual is 0, and the
-    -- padding stops changing -- so it converges instead of just looking right by
-    -- coincidence (the old `win.pixel_width % cell_w` ignored the padding offset
-    -- and only matched at steady state).
-    local gap_x = pad.left + pad.right + (usable_w % cell_w)
-    local gap_y = pad.top + pad.bottom + (usable_h % cell_h)
+    -- Center by splitting the leftover that remains when the FULL window is packed
+    -- with whole cells: `full % cell`, bounded to [0, cell). This is computed
+    -- ABSOLUTELY from the constant fullscreen window size, never from the current
+    -- padding -- so it is reversible: a given font always yields the same padding
+    -- regardless of zoom history. (The old `pad + (usable % cell)` folded the
+    -- current padding back in, so padding could only ever grow -- zooming out then
+    -- back in left the grid permanently shrunk. full % cell can't ratchet.)
+    local gap_x = win.pixel_width % cell_w
+    local gap_y = win.pixel_height % cell_h
     local new_pad = {
         left = math.floor(gap_x / 2),
         right = math.ceil(gap_x / 2),
@@ -123,6 +124,13 @@ config.font = wezterm.font_with_fallback({
 -- until the bottom/right edge sits flush, then read rows*cols from the title.
 config.font_size = is_mac and 18.0 or 16.0
 config.line_height = 1.0
+
+-- Keep the fullscreen window fixed when zooming the font. By default WezTerm
+-- resizes the OS window to land on a whole number of cells; fullscreen can't
+-- grow, so it instead leaves a large gap (padding above/below) and the window
+-- appears to change size. Off = window stays put, the grid just reflows and
+-- center_grid only absorbs the sub-cell residual.
+config.adjust_window_size_when_changing_font_size = false
 
 -- Also search the installer's per-user font dir, so a freshly-downloaded font
 -- resolves before the system font cache refreshes.
