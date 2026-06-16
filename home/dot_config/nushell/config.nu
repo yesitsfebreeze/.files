@@ -10,23 +10,6 @@
 # walk finds nu directly and every cell launches nu. (`exec` would replace this nu
 # process, making burrito's parent WezTerm — the walk finds no shell and burrito
 # falls back to $SHELL.) When burrito exits we exit too, mirroring `exec`.
-#
-# Recursion guard: burrito does NOT export any marker of its own, and it spawns
-# Nushell in every cell. Each cell re-sources this file, so without a guard every
-# cell would re-prompt and re-launch burrito — infinite nesting. We set BURRITO
-# ourselves just before launch; burrito inherits its environment into every
-# spawned cell, so cells see it and skip this block.
-if ('BURRITO' not-in $env) and (which burrito | is-not-empty) and (is-terminal --stdout) {
-    print -n "Press [Enter] to launch burrito. Everything else to canel."
-    let key = (input listen --types [key])
-    print ""
-    if ($key.code == "enter") {
-        $env.BURRITO = "1"
-        burrito
-        exit
-    }
-}
-
 $env.config = {
     show_banner: false
     edit_mode: vi
