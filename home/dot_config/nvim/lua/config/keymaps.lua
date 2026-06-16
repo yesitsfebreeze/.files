@@ -38,3 +38,26 @@ map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
 
 map("x", "<leader>p", [["_dP]], { desc = "Paste (keep register)" })
+
+-- Shift+arrow starts/extends a visual selection (editor-style). The system
+-- clipboard is shared (clipboard=unnamedplus), so copy/paste crosses between
+-- nvim and the terminal transparently.
+map("n", "<S-Up>", "v<Up>", { desc = "Select up" })
+map("n", "<S-Down>", "v<Down>", { desc = "Select down" })
+map("n", "<S-Left>", "v<Left>", { desc = "Select left" })
+map("n", "<S-Right>", "v<Right>", { desc = "Select right" })
+
+map("v", "<S-Up>", "<Up>", { desc = "Extend selection up" })
+map("v", "<S-Down>", "<Down>", { desc = "Extend selection down" })
+map("v", "<S-Left>", "<Left>", { desc = "Extend selection left" })
+map("v", "<S-Right>", "<Right>", { desc = "Extend selection right" })
+
+map("i", "<S-Up>", "<Esc>v<Up>", { desc = "Select up" })
+map("i", "<S-Down>", "<Esc>v<Down>", { desc = "Select down" })
+map("i", "<S-Left>", "<Esc>v<Left>", { desc = "Select left" })
+map("i", "<S-Right>", "<Esc>lv<Right>", { desc = "Select right" })
+
+-- Ctrl+C copies the selection to the clipboard and leaves visual mode;
+-- Ctrl+V pastes over the selection without clobbering the clipboard.
+map("v", "<C-c>", "y", { desc = "Copy to clipboard" })
+map("v", "<C-v>", [["_dP]], { desc = "Paste over selection" })
