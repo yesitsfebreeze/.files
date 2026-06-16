@@ -109,6 +109,9 @@ def fg [] {
 # tool that matches the current session: pbcopy (macOS), wl-copy (Wayland),
 # xclip (X11), then clip.exe (WSL). Display-var guards keep us from picking a
 # Linux GUI tool that would hang when no compositor/server is attached.
+#
+# The `path`-typed argument gives filesystem tab-completion for free —
+# nushell completes files/dirs, nested paths, `~`, and quoting on <Tab>.
 def cf [file: path] {
     let f = ($file | path expand)
     if not ($f | path exists) {
