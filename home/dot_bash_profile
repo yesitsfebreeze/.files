@@ -1,0 +1,4 @@
+# Login shells read .bash_profile (if present) instead of .profile.
+# Defer to .profile so PATH (~/.local/bin) and .bashrc are set up the same
+# way for login shells — e.g. WSL launches from WezTerm via `bash -lic`.
+[ -f "$HOME/.profile" ] && . "$HOME/.profile"
