@@ -147,8 +147,56 @@ wezterm.on("window-resized", center_grid)
 wezterm.on("window-config-reloaded", center_grid)
 wezterm.on("update-status", center_grid)
 
--- Appearance — builtin base16 gruvbox base; tinty retints ANSI live on top.
-config.color_scheme = "Gruvbox dark, hard (base16)"
+-- Read the active tinty theme at startup and build a WezTerm color table from
+-- the base16/base24 YAML palette. Falls back to the builtin gruvbox scheme if
+-- no tinty state exists yet.
+local function load_tinty_colors()
+    local artifacts = home .. "/.local/share/tinted-theming/tinty/artifacts"
+    local sf = io.open(artifacts .. "/current_scheme", "r")
+    if not sf then return nil end
+    local scheme = sf:read("*l"); sf:close()
+    if not scheme then return nil end
+
+    local system, name = scheme:match("^(base%d+)-(.+)$")
+    if not system or not name then return nil end
+
+    local yaml_path = home .. "/.local/share/tinted-theming/tinty/repos/schemes/"
+        .. system .. "/" .. name .. ".yaml"
+    local yf = io.open(yaml_path, "r")
+    if not yf then return nil end
+    local yaml = yf:read("*a"); yf:close()
+
+    local c = {}
+    for k, hex in yaml:gmatch('(base%x%x):%s*"#(%x%x%x%x%x%x)"') do
+        c[k:lower()] = "#" .. hex:lower()
+    end
+    if not c.base00 or not c.base05 then return nil end
+
+    return {
+        foreground    = c.base05,
+        background    = c.base00,
+        cursor_bg     = c.base05,
+        cursor_border = c.base05,
+        cursor_fg     = c.base00,
+        selection_bg  = c.base02,
+        selection_fg  = c.base05,
+        ansi = {
+            c.base00, c.base08, c.base0b, c.base0a,
+            c.base0d, c.base0e, c.base0c, c.base05,
+        },
+        brights = {
+            c.base03, c.base08, c.base0b, c.base0a,
+            c.base0d, c.base0e, c.base0c, c.base07,
+        },
+    }
+end
+
+local tinty_colors = load_tinty_colors()
+if tinty_colors then
+    config.colors = tinty_colors
+else
+    config.color_scheme = "Gruvbox dark, hard (base16)"
+end
 config.default_cursor_style = "BlinkingBlock"
 
 -- Font: DepartureMono Nerd Font (installed via packages.yaml `nerd-font`);
@@ -186,8 +234,6 @@ end
 -- thin translucent border frame around the grid. Starts at 0 so center_grid has
 -- a clean baseline to measure the cell size from on the first resize.
 config.window_background_opacity = 0.95
-config.macos_window_background_blur = 20
-config.win32_system_backdrop = "Acrylic"
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
