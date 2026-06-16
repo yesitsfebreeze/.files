@@ -44,7 +44,11 @@ end)
 -- exposes no cell-pixel API, so we recover it from the window pixels and the
 -- column/row counts), then split the sub-cell remainder evenly into padding.
 -- This adapts to any font size, DPI, or screen resolution automatically.
-local function center_grid(window, pane)
+local function center_grid(window)
+    local pane = window:active_pane()
+    if not pane then
+        return
+    end
     local win = window:get_dimensions()
     local grid = pane:get_dimensions()
     if not win or grid.cols == 0 or grid.viewport_rows == 0 then
@@ -81,7 +85,15 @@ local function center_grid(window, pane)
     end
 end
 
+-- Recenter on anything that can change the grid geometry: window/screen size
+-- (window-resized, including dragging between differently-sized monitors), config
+-- or font-size edits (window-config-reloaded), and interactive font zoom — which
+-- fires neither of those, so the periodic update-status catches it within ~1s.
+-- The padding guard inside center_grid keeps these cheap (no write unless the
+-- computed padding actually changes).
 wezterm.on("window-resized", center_grid)
+wezterm.on("window-config-reloaded", center_grid)
+wezterm.on("update-status", center_grid)
 
 -- Appearance — builtin base16 gruvbox base; tinty retints ANSI live on top.
 config.color_scheme = "Gruvbox dark, hard (base16)"
