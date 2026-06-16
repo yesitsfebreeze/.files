@@ -40,10 +40,18 @@ wezterm.on("gui-startup", function(cmd)
     window:gui_window():toggle_fullscreen()
 end)
 
--- Keep the grid centered: derive the intrinsic cell size at runtime (WezTerm
--- exposes no cell-pixel API, so we recover it from the window pixels and the
--- column/row counts), then split the sub-cell remainder evenly into padding.
--- This adapts to any font size, DPI, or screen resolution automatically.
+-- Flip to true to log the raw geometry to the WezTerm log (Help > Show Debug
+-- Overlay, or the GUI log file). Use this if the grid still looks off: it prints
+-- the window pixels, grid cols/rows, recovered cell size and the leftover it
+-- couldn't account for. A nonzero residual there means the cell isn't a whole
+-- number of pixels (usually fractional display scaling), which no integer
+-- padding can perfectly center.
+local CENTER_DEBUG = false
+
+-- Keep the grid centered. WezTerm exposes no cell-pixel API and renders an
+-- integer grid of whole-pixel cells, so we recover the cell size from the window
+-- pixels and the column/row counts, then push the leftover sub-cell pixels into
+-- symmetric padding. Adapts to any font size, DPI or resolution automatically.
 local function center_grid(window)
     local pane = window:active_pane()
     if not pane then
@@ -55,19 +63,31 @@ local function center_grid(window)
         return
     end
 
-    local pad = (window:get_config_overrides() or {}).window_padding
+    local overrides = window:get_config_overrides() or {}
+    local pad = overrides.window_padding
         or { left = 0, right = 0, top = 0, bottom = 0 }
 
-    -- usable / count rounds down to the exact integer cell size, because the
-    -- remainder is always far smaller than the column/row count.
-    local cell_w = math.floor((win.pixel_width - pad.left - pad.right) / grid.cols)
-    local cell_h = math.floor((win.pixel_height - pad.top - pad.bottom) / grid.viewport_rows)
+    -- Pixels currently handed to the grid = window minus the padding we already
+    -- added. usable / count rounds down to the exact integer cell size, because
+    -- for real terminal geometries the remainder is far smaller than the count.
+    local usable_w = win.pixel_width - pad.left - pad.right
+    local usable_h = win.pixel_height - pad.top - pad.bottom
+    local cell_w = math.floor(usable_w / grid.cols)
+    local cell_h = math.floor(usable_h / grid.viewport_rows)
     if cell_w <= 0 or cell_h <= 0 then
         return
     end
 
-    local gap_x = win.pixel_width % cell_w
-    local gap_y = win.pixel_height % cell_h
+    -- The grid tiles cols*cell_w pixels and leaves `usable % cell` unfilled on
+    -- one edge. The total empty space is that residual PLUS the padding we have
+    -- already applied; splitting that whole amount evenly is what centers the
+    -- grid. This is self-correcting: once the padding absorbs the residual the
+    -- usable size is an exact multiple of the cell, the residual is 0, and the
+    -- padding stops changing -- so it converges instead of just looking right by
+    -- coincidence (the old `win.pixel_width % cell_w` ignored the padding offset
+    -- and only matched at steady state).
+    local gap_x = pad.left + pad.right + (usable_w % cell_w)
+    local gap_y = pad.top + pad.bottom + (usable_h % cell_h)
     local new_pad = {
         left = math.floor(gap_x / 2),
         right = math.ceil(gap_x / 2),
@@ -75,11 +95,18 @@ local function center_grid(window)
         bottom = math.ceil(gap_y / 2),
     }
 
+    if CENTER_DEBUG then
+        wezterm.log_info(string.format(
+            "center_grid: win=%dx%d grid=%dx%d cell=%dx%d residual=%d,%d pad=%d/%d,%d/%d",
+            win.pixel_width, win.pixel_height, grid.cols, grid.viewport_rows,
+            cell_w, cell_h, usable_w % cell_w, usable_h % cell_h,
+            new_pad.left, new_pad.right, new_pad.top, new_pad.bottom))
+    end
+
     -- Idempotency guard: set_config_overrides re-fires this event, so only write
     -- when the padding actually changes to avoid a feedback loop.
     if new_pad.left ~= pad.left or new_pad.right ~= pad.right
         or new_pad.top ~= pad.top or new_pad.bottom ~= pad.bottom then
-        local overrides = window:get_config_overrides() or {}
         overrides.window_padding = new_pad
         window:set_config_overrides(overrides)
     end
