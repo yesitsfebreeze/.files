@@ -1,0 +1,57 @@
+[settings]
+poll_interval_ms = 4
+show_status = true
+status_position = "top"
+
+[colors]
+active_border = "idx:10"
+inactive_border = "default"
+
+[border]
+vertical = "│"
+horizontal = "─"
+vertical_fill = 0.35
+horizontal_fill = 0.5
+
+[binds]
+leader = "shift+f12"
+move = "m"
+fullscreen = "+"
+fullscreen_exit = "-"
+
+[picker]
+position = ["center", "center"]
+active = "⬤"
+inactive = "🞮"
+
+[[commands]]
+bind = "ll"
+command = "ls -la"          # inline: types into active pane
+
+[[commands]]
+bind = "gs"
+command = "git status"      # inline
+
+[[commands]]
+bind = "tp"
+command = "!htop"           # popup float; Esc cancels the process
+
+[[commands]]
+bind = "fz"
+command = "!fzf"            # popup that returns a result -> float auto-closes on exit
+
+[[commands]]
+bind = "f"
+command = "!@tv"            # finder: tv in a popup, then p/e/s on the pick
+name = "Find (television)"
+description = "Fuzzy-find a path, then pipe / edit / shell"
+
+[[commands]]
+bind = "q"
+command = ":quit"           # builtin
+
+[[commands]]
+bind = ","
+command = ":config"         # builtin: inline $EDITOR <config>
+name = "Edit config"
+

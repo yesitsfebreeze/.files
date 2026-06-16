@@ -162,7 +162,7 @@ config.font = wezterm.font_with_fallback({
 })
 -- Larger size for fullscreen WQHD (2560x1440). Fine-tune live with Ctrl/Cmd +/-
 -- until the bottom/right edge sits flush, then read rows*cols from the title.
-config.font_size = is_mac and 16.0 or 14.0
+config.font_size = is_mac and 14.0 or 12.0
 config.line_height = 1.0
 
 -- Keep the fullscreen window fixed when zooming the font. By default WezTerm
@@ -185,8 +185,9 @@ end
 -- Translucent window; the centered padding (set live by center_grid) becomes a
 -- thin translucent border frame around the grid. Starts at 0 so center_grid has
 -- a clean baseline to measure the cell size from on the first resize.
-config.window_background_opacity = 0.875
+config.window_background_opacity = 0.95
 config.macos_window_background_blur = 20
+config.win32_system_backdrop = "Acrylic"
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }

@@ -1,0 +1,5 @@
+{"header":{"v":2,"project":"/home/feb/dev/.files/home/dot_config/wezterm","created_ms":1781630756780,"created_day":"2026-06-16"}}
+{"v":5,"ts_ms":1781630756779,"kind":"log","key":"log","payload":{"level":"TRACE","msg":"registering event source with poller: token=Token(1), interests=READABLE","src":"kern","target":"log"}}
+{"v":5,"ts_ms":1781630756782,"kind":"log","key":"kern","payload":{"level":"INFO","msg":"re-pinned cwd to project root (nearest ancestor with .kern)","src":"kern","target":"kern"}}
+{"v":5,"ts_ms":1781630756782,"kind":"log","key":"log","payload":{"level":"TRACE","msg":"registering event source with poller: token=Token(94706166864256), interests=READABLE | WRITABLE","src":"kern","target":"log"}}
+{"v":5,"ts_ms":1781630756782,"kind":"log","key":"kern.mcp_proxy","payload":{"level":"INFO","msg":"attached to running daemon — proxy mode","src":"kern","target":"kern.mcp_proxy"}}
