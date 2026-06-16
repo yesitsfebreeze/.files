@@ -38,5 +38,16 @@ $env.SHELL = $nu.current-exe
 # read the same path. Change this to relocate the store.
 $env.PASSWORD_STORE_DIR = ($nu.home-dir | path join ".password-store")
 
+# Default working directory: open every interactive shell in ~/dev (the dev
+# workspace) instead of $HOME. `mkdir` is idempotent, so it's created on first
+# launch and the `cd` never fails. Guarded on an interactive stdout so a
+# non-interactive `nu -c ...` caller keeps its own cwd. burrito cells read this
+# env.nu too, so every pane also lands here.
+if (is-terminal --stdout) {
+    let dev_dir = ($nu.home-dir | path join "dev")
+    mkdir $dev_dir
+    cd $dev_dir
+}
+
 # Shell integrations are generated at apply time by the chezmoi run_after script,
 # not here, and merely sourced by config.nu — so shell launch does zero work.
