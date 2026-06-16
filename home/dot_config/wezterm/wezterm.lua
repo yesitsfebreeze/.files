@@ -46,8 +46,17 @@ end)
 -- cells fit the window, and push the leftover into symmetric padding. Adapts to
 -- any font size, DPI or resolution automatically (resize, zoom, monitor swap).
 local function center_grid(window)
-    local pane = window:active_pane()
-    if not pane then
+    -- Reach the tab through the mux window, not window:active_pane():tab(): an
+    -- overlay (debug overlay, char select, launcher) makes the active pane a
+    -- detached one whose :tab() is nil, which crashed center_grid mid-flight and
+    -- left the stale padding in place. mux_window():active_tab() always resolves
+    -- the real underlying tab, so update-status keeps centering even over overlays.
+    local mux_win = window:mux_window()
+    if not mux_win then
+        return
+    end
+    local mux_tab = mux_win:active_tab()
+    if not mux_tab then
         return
     end
     local win = window:get_dimensions()
@@ -58,7 +67,7 @@ local function center_grid(window)
     -- which matters under fractional DPI (the cell isn't a whole pixel) and during
     -- the multi-frame settle after a font zoom, where the old reconstruction read
     -- stale padding and produced a wrong cell size.
-    local tab = pane:tab():get_size()
+    local tab = mux_tab:get_size()
     if not win or not tab or tab.cols == 0 or tab.rows == 0
         or tab.pixel_width == 0 or tab.pixel_height == 0 then
         return
