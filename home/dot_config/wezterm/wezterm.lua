@@ -110,6 +110,15 @@ local function center_grid(window)
         bottom = tot_y - math.floor(tot_y / 2),
     }
 
+    -- TEMP DEBUG: dump the live geometry so we can see why a gap survives. View it
+    -- with the debug overlay (CTRL+SHIFT+L) and look for "CENTER_GRID" lines.
+    wezterm.log_info(string.format(
+        "CENTER_GRID win=%dx%d tab=%dx%d(%dc x %dr) cell=%.3fx%.3f chrome_h=%d availh=%d rows=%d gap=%.2fx%.2f pad{l=%d r=%d t=%d b=%d}",
+        win.pixel_width, win.pixel_height,
+        tab.pixel_width, tab.pixel_height, tab.cols, tab.rows,
+        cell_w, cell_h, chrome_h, avail_h, rows, gap_x, gap_y,
+        new_pad.left, new_pad.right, new_pad.top, new_pad.bottom))
+
     -- Idempotency guard: set_config_overrides re-fires this event, so only write
     -- when the padding actually changes to avoid a feedback loop.
     if new_pad.left ~= pad.left or new_pad.right ~= pad.right
