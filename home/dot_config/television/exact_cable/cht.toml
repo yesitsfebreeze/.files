@@ -20,7 +20,7 @@ command = """printf '%s\\n' \
   golang python javascript typescript nodejs deno rust c cpp objc \
   java kotlin scala swift ruby php perl lua elixir erlang clojure \
   haskell ocaml fsharp csharp dart julia r matlab groovy zig nim \
-  bash zsh fish powershell sql solidity \
+  bash fish powershell sql solidity \
   awk sed grep ripgrep find fd xargs cut sort uniq tr tee \
   tar zip gzip rsync scp ssh curl wget \
   git docker docker-compose kubectl helm terraform ansible \

@@ -25,12 +25,11 @@ $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"
 
-# Advertise Nushell as $SHELL. The login shell in /etc/passwd is still zsh, but
-# every child that spawns "the user's shell" should get nu. This is now a fallback,
-# not the primary path: config.nu launches burrito as a child of nu (no `exec`), so
-# burrito's parent-tree walk finds nu directly and cells launch nu without touching
-# $SHELL. We keep this so that if burrito (or anything else) ever does fall back to
-# $SHELL, it lands on nu rather than zsh.
+# Advertise Nushell as $SHELL so any child that spawns "the user's shell" gets nu.
+# This is a fallback, not the primary path: config.nu launches burrito as a child
+# of nu (no `exec`), so burrito's parent-tree walk finds nu directly and cells
+# launch nu without touching $SHELL. We keep this so anything that does fall back
+# to $SHELL still lands on nu.
 $env.SHELL = $nu.current-exe
 
 # `pass` (password-store): pin the store location to its default explicitly so the
