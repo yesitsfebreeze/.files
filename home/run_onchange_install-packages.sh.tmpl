@@ -337,6 +337,38 @@ if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
     fi
 fi
 
+# docker buildx — the modern (BuildKit) builder, shipped as a CLI plugin. The
+# native apt path above already pulls docker-buildx-plugin, but the WSL + Docker
+# Desktop case does NOT: Desktop only injects a Linux `docker` CLI, no Linux
+# buildx, so `docker build` silently falls back to the deprecated legacy builder
+# (which SIGBUS-crashes on memory-pressured WSL2). So whenever `docker` resolves
+# but `docker buildx` does not, drop the prebuilt Linux buildx binary into the
+# per-user CLI-plugins dir. Idempotent: skipped once `docker buildx` works.
+if [ -n "$docker_in_packages" ] && command -v docker >/dev/null 2>&1 \
+    && ! docker buildx version >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)  bx_arch=amd64 ;;
+        aarch64|arm64) bx_arch=arm64 ;;
+        *)             bx_arch="" ;;
+    esac
+    bx_tag="$(gh_latest_tag docker/buildx)"
+    if [ -z "$bx_arch" ]; then
+        warn "docker buildx: no prebuilt binary for $(uname -m); install manually"
+    elif [ -z "$bx_tag" ]; then
+        warn "docker buildx: could not resolve latest release tag; install manually"
+    else
+        log "install docker buildx $bx_tag ($bx_arch CLI plugin)"
+        mkdir -p "$HOME/.docker/cli-plugins"
+        if curl -fsSL -o "$HOME/.docker/cli-plugins/docker-buildx" \
+            "https://github.com/docker/buildx/releases/download/$bx_tag/buildx-$bx_tag.linux-$bx_arch"; then
+            chmod +x "$HOME/.docker/cli-plugins/docker-buildx"
+            log "  installed docker buildx"
+        else
+            warn "  could not download docker buildx $bx_tag"
+        fi
+    fi
+fi
+
 # cargo fallback for tools the native manager could not provide.
 bin_for() {
     case "$1" in
