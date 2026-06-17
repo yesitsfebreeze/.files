@@ -284,6 +284,59 @@ if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
     fi
 fi
 
+# docker — special-cased: "windows ?? local". On WSL where a Windows Docker
+# Desktop CLI is reachable (docker.exe on PATH), we do NOT install a second engine
+# inside the distro — we shim `docker` (+ compose) to the Windows binary, which
+# talks to the Desktop engine over the shared socket. When Desktop's WSL
+# integration is already mounted, `docker` is on PATH and this whole block is
+# skipped. Off WSL (or no Windows Docker), install Docker Engine natively: add
+# Docker's official apt repo, install the engine + CLI + compose plugin, enable
+# the service, and add the user to the docker group. Idempotent: skipped once
+# `docker` resolves. Only scripted for apt/brew/pacman/dnf via the lists above;
+# the native path here is apt-only (Debian/Ubuntu, the WSL/Linux target).
+docker_in_packages="{{ range .packages }}{{ if eq .name "docker" }}yes{{ end }}{{ end }}"
+if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
+    is_wsl=0
+    grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null && is_wsl=1
+    win_docker="$(command -v docker.exe 2>/dev/null || true)"
+    if [ "$is_wsl" = 1 ] && [ -n "$win_docker" ]; then
+        log "docker: WSL + Windows Docker Desktop detected -> shim to $win_docker"
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$win_docker" "$HOME/.local/bin/docker"
+        win_compose="$(command -v docker-compose.exe 2>/dev/null || true)"
+        [ -n "$win_compose" ] && ln -sf "$win_compose" "$HOME/.local/bin/docker-compose"
+        log "  docker -> Windows Docker Desktop (windows)"
+    elif [ "$MGR" = apt ]; then
+        log "install Docker Engine natively (Docker official apt repo) (local)"
+        if sudo install -m 0755 -d /etc/apt/keyrings \
+            && curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+                | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg \
+            && sudo chmod a+r /etc/apt/keyrings/docker.gpg; then
+            arch="$(dpkg --print-architecture)"
+            codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-stable}")"
+            echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $codename stable" \
+                | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+            if sudo apt-get update -y >/dev/null 2>&1 \
+                && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null 2>&1; then
+                # systemd-managed where available (Ubuntu 24.04 WSL has systemd); else
+                # fall back to the SysV service wrapper. Neither failing is fatal.
+                sudo systemctl enable --now docker >/dev/null 2>&1 \
+                    || sudo service docker start >/dev/null 2>&1 || true
+                # rootless-friendly: run docker without sudo after the next login.
+                sudo usermod -aG docker "$USER" >/dev/null 2>&1 || true
+                log "  installed docker $("$(command -v docker || echo docker)" --version 2>/dev/null | sed -n '1p')"
+                warn "  log out/in (or 'newgrp docker') for the docker group to take effect"
+            else
+                warn "  could not install Docker Engine packages via apt"
+            fi
+        else
+            warn "  could not set up Docker's apt repo (keyring/gpg step failed)"
+        fi
+    else
+        warn "docker: native install only scripted for apt; install manually on $MGR"
+    fi
+fi
+
 # cargo fallback for tools the native manager could not provide.
 bin_for() {
     case "$1" in

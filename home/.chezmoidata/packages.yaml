@@ -144,6 +144,12 @@ packages:
       dnf: ""             # the crates.io `kern` is an unrelated library, so no cargo fallback
       gh_release: yesitsfebreeze/relay-kern   # source of truth: prebuilt `kern` binary from this repo's latest release
 
+    - name: docker        # container engine. Special-cased in the installer (see the "docker" block):
+      brew: ""            # WSL + Windows Docker Desktop reachable -> shim `docker` to it (windows ?? local);
+      apt: ""             # otherwise install Docker Engine natively from Docker's official apt repo, enable
+      pacman: docker      # the service, and add the user to the docker group. apt is handled by the block;
+      dnf: docker         # pacman/dnf just get the plain package as a baseline (no WSL there anyway).
+
     # Nerd Font: package-manager coverage is thin, so the installer also fetches it
     # from the nerd-fonts release when missing (nerdfont_asset, below).
     - name: nerd-font
@@ -153,12 +159,3 @@ packages:
       pacman: ""            # AUR-only (otf-departure-mono-nerd); use release fallback
       dnf: ""               # not packaged; release fallback
       nerdfont_asset: DepartureMono         # nerd-fonts release zip basename -> download fallback source
-
-# Claude Code plugins — installed via the `claude` CLI (user scope), not a PATH
-# package manager: they are JS/MCP bundles run by the Node already hosting Claude
-# Code, with no platform matrix. `marketplace` is the GitHub repo to register;
-# the plugin then installs as `name@market`. See run_onchange_install-claude-plugins.
-claude_plugins:
-    - name: git-fs                       # virtual filesystem over a bare git object store for AI-agent swarms (MCP + hooks)
-      marketplace: yesitsfebreeze/git-fs # `claude plugin marketplace add` source (GitHub repo)
-      market: git-fs                     # marketplace name once added; installs as git-fs@git-fs
