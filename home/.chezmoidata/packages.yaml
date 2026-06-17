@@ -144,6 +144,13 @@ packages:
       dnf: ""             # the crates.io `kern` is an unrelated library, so no cargo fallback
       gh_release: yesitsfebreeze/relay-kern   # source of truth: prebuilt `kern` binary from this repo's latest release
 
+    - name: pi            # pi coding agent (earendil-works) — npm-published CLI (binary: `pi`)
+      brew: ""            # not on any package manager; installed globally via npm (see installer)
+      apt: ""
+      pacman: ""
+      dnf: ""
+      npm: "@earendil-works/pi-coding-agent"   # source of truth: global npm package name
+
     - name: docker        # container engine. Special-cased in the installer (see the "docker" block):
       brew: ""            # WSL + Windows Docker Desktop reachable -> shim `docker` to it (windows ?? local);
       apt: ""             # otherwise install Docker Engine natively from Docker's official apt repo, enable

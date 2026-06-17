@@ -284,6 +284,63 @@ if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
     fi
 fi
 
+# nvm + Node.js — npm CLIs (pi below) need a Node toolchain, which isn't in the
+# package lists. Install it via nvm (Node Version Manager): bootstrap nvm from its
+# latest release when missing, then install the latest Node ("nvm install node").
+# Finally symlink node/npm/npx into ~/.local/bin so they're on PATH in every shell
+# — nushell included, since nvm.sh is a bash function nu can't source — matching
+# how the rest of this script routes binaries through ~/.local. Idempotent: nvm
+# bootstrap skipped once ~/.nvm exists; Node install skipped once `node` resolves.
+export NVM_DIR="$HOME/.nvm"
+if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+    nvm_tag="$(gh_latest_tag nvm-sh/nvm)"
+    if [ -z "$nvm_tag" ]; then
+        warn "nvm: could not resolve latest release tag; install manually (https://github.com/nvm-sh/nvm)"
+    else
+        log "install nvm $nvm_tag (Node Version Manager)"
+        curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$nvm_tag/install.sh" | bash >/dev/null 2>&1 \
+            && log "  installed nvm" \
+            || warn "  could not install nvm"
+    fi
+fi
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$NVM_DIR/nvm.sh"
+    if ! command -v node >/dev/null 2>&1; then
+        log "install latest Node.js (nvm install node)"
+        nvm install node >/dev/null 2>&1 && nvm alias default node >/dev/null 2>&1 \
+            && log "  installed Node.js $(node --version 2>/dev/null)" \
+            || warn "  could not install Node.js via nvm"
+    fi
+    # Expose node/npm/npx on PATH for every shell by symlinking the active version's
+    # binaries into ~/.local/bin (nvm's own PATH wiring is bash-only).
+    nvm_bin="$(dirname "$(command -v node 2>/dev/null)" 2>/dev/null)"
+    if [ -n "$nvm_bin" ] && [ -d "$nvm_bin" ]; then
+        mkdir -p "$HOME/.local/bin"
+        for b in node npm npx; do
+            [ -x "$nvm_bin/$b" ] && ln -sf "$nvm_bin/$b" "$HOME/.local/bin/$b"
+        done
+    fi
+fi
+
+# pi — the pi coding agent (earendil-works). Published only to npm, so install it
+# globally with npm; the package name is the single source of truth in
+# packages.yaml (npm). Run with --ignore-scripts (pi needs no dependency lifecycle
+# scripts) and route the global prefix through ~/.local so the install needs no
+# sudo and the `pi` binary lands on the PATH set above. Needs node/npm: warns and
+# skips if absent. Idempotent: skipped once `pi` is on PATH.
+pi_npm_pkg="{{ range .packages }}{{ if hasKey . "npm" }}{{ .npm }}{{ end }}{{ end }}"
+if [ -n "$pi_npm_pkg" ] && ! command -v pi >/dev/null 2>&1; then
+    if command -v npm >/dev/null 2>&1; then
+        log "install pi ($pi_npm_pkg, global npm package -> ~/.local)"
+        npm install -g --ignore-scripts --prefix "$HOME/.local" "$pi_npm_pkg" >/dev/null 2>&1 \
+            && log "  installed pi" \
+            || warn "  could not install pi via npm"
+    else
+        warn "pi: npm not found; install Node.js/npm and re-run (https://github.com/earendil-works/pi)"
+    fi
+fi
+
 # docker — special-cased: "windows ?? local". On WSL where a Windows Docker
 # Desktop CLI is reachable (docker.exe on PATH), we do NOT install a second engine
 # inside the distro — we shim `docker` (+ compose) to the Windows binary, which
