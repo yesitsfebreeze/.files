@@ -136,10 +136,20 @@ def cf [file: path] {
 # Append the auto-list closure now that the `la` alias is in scope. `$before`
 # is null on the first fire at shell start, so we skip that one to keep startup
 # clean; thereafter every real cd lists the new directory in an interactive shell.
+#
+# `stty sane` first: a cd may arrive via a full-screen TUI (television in `fcd`,
+# zoxide, the theme picker) that crashed or exited without restoring cooked-mode
+# output. With `onlcr` off, eza's `\n` line breaks drop a row without returning
+# to column 0 and the listing staircases. Restoring sane mode right before we
+# print makes the auto-list immune to whatever left the terminal half-raw. It is
+# a no-op in the normal case (terminal is already cooked between commands).
 $env.config.hooks.env_change.PWD = (
     $env.config.hooks.env_change.PWD
     | append {|before, after|
-        if $before != null and $after != $before and (is-terminal --stdout) { la }
+        if $before != null and $after != $before and (is-terminal --stdout) {
+            ^stty sane e> /dev/null
+            la
+        }
     }
 )
 
