@@ -313,9 +313,12 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
             || warn "  could not install Node.js via nvm"
     fi
     # Expose node/npm/npx on PATH for every shell by symlinking the active version's
-    # binaries into ~/.local/bin (nvm's own PATH wiring is bash-only).
-    nvm_bin="$(dirname "$(command -v node 2>/dev/null)" 2>/dev/null)"
-    if [ -n "$nvm_bin" ] && [ -d "$nvm_bin" ]; then
+    # binaries into ~/.local/bin (nvm's own PATH wiring is bash-only). Resolve the
+    # real version dir via `nvm which` — NOT `command -v node`, which (with ~/.local
+    # /bin first on PATH) would resolve to the symlink we manage here and link each
+    # file to itself.
+    nvm_bin="$(dirname "$(nvm which current 2>/dev/null)" 2>/dev/null)"
+    if [ -n "$nvm_bin" ] && [ -d "$nvm_bin" ] && [ "$nvm_bin" != "$HOME/.local/bin" ]; then
         mkdir -p "$HOME/.local/bin"
         for b in node npm npx; do
             [ -x "$nvm_bin/$b" ] && ln -sf "$nvm_bin/$b" "$HOME/.local/bin/$b"
