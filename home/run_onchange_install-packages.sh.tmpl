@@ -331,9 +331,12 @@ fi
 # packages.yaml (npm). Run with --ignore-scripts (pi needs no dependency lifecycle
 # scripts) and route the global prefix through ~/.local so the install needs no
 # sudo and the `pi` binary lands on the PATH set above. Needs node/npm: warns and
-# skips if absent. Idempotent: skipped once `pi` is on PATH.
+# skips if absent. Idempotent: guard on the install target ~/.local/bin/pi rather
+# than `command -v pi` — on WSL a Windows-global `pi` npm shim leaks onto PATH via
+# interop (/mnt/c/.../npm/pi), which would otherwise fool the guard into skipping
+# the Linux install while leaving only the broken Windows shim reachable.
 pi_npm_pkg="{{ range .packages }}{{ if hasKey . "npm" }}{{ .npm }}{{ end }}{{ end }}"
-if [ -n "$pi_npm_pkg" ] && ! command -v pi >/dev/null 2>&1; then
+if [ -n "$pi_npm_pkg" ] && [ ! -x "$HOME/.local/bin/pi" ]; then
     if command -v npm >/dev/null 2>&1; then
         log "install pi ($pi_npm_pkg, global npm package -> ~/.local)"
         npm install -g --ignore-scripts --prefix "$HOME/.local" "$pi_npm_pkg" >/dev/null 2>&1 \
