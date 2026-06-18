@@ -11,7 +11,7 @@ return {
         require("tinted-nvim").setup({
             default_scheme = "base16-gruvbox-dark-hard",
             apply_scheme_on_startup = true,
-            transparent_background = true,
+            ui = { transparent = true },
             highlights = {
                 integrations = {
                     blink = true,
