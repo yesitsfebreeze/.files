@@ -90,15 +90,16 @@ alias rr = chezmoi update --force
 
 # cl — start a goal-loop Claude on your task.
 #
-# `cl clean the codebase up` launches cc with the task baked into the /goal loop
-# prompt, which claude executes as its first message. Runs claude directly in the
-# current terminal, so it always renders — including inside burrito.
+# `cl clean the codebase up` launches cc, then auto-types two seeds: `/goal is the
+# loop. Cancel loop if archived`, then `/loop <task>` (both submitted).
+# Driven by cl.py, which runs claude in-place under a pty —
+# no multiplexer, no attach — so it always renders, including inside burrito.
 def cl [...task: string] {
     let text = ($task | str join " ")
     if ($text | is-empty) {
         error make { msg: "cl: needs a task, e.g. `cl clean the codebase up`" }
     }
-    claude --dangerously-skip-permissions $"/goal ($text). Loop until done. Cancel loop when done. wait for /loop"
+    python3 ([$nu.default-config-dir cl.py] | path join) $text
 }
 
 # television helpers (Ctrl-T autocomplete / Ctrl-R history come from `tv init nu`
