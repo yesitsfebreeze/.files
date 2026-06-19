@@ -4,8 +4,11 @@
   "use strict";
 
   var url = "http://localhost:8787/stats";
+  var POLL_MS = 1000;     // target cadence
+  var FETCH_TIMEOUT = 2500; // abort a hung request before it stalls the cadence
   var pollTimer = null;
   var failStreak = 0;
+  var inFlight = false;   // guard: never let a slow/hung fetch stack up another
 
   var el = function (id) { return document.getElementById(id); };
   var statusEl = el("status");
@@ -105,7 +108,16 @@
   }
 
   function poll() {
-    fetch(url, { cache: "no-store" })
+    // skip this tick if the previous request is still outstanding — keeps the
+    // cadence regular instead of stacking overlapping in-flight fetches
+    if (inFlight) return;
+    inFlight = true;
+
+    // abort a request that outlives the timeout so it can't wedge the loop
+    var ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var killer = ctl ? setTimeout(function () { ctl.abort(); }, FETCH_TIMEOUT) : null;
+
+    fetch(url, { cache: "no-store", signal: ctl ? ctl.signal : undefined })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (s) {
         failStreak = 0;
@@ -120,14 +132,26 @@
           statusEl.className = "status";
           statusEl.textContent = "helper offline — run wpstats (" + url + ")";
         }
+      })
+      .then(function () {
+        if (killer) clearTimeout(killer);
+        inFlight = false;
       });
   }
 
   function restart() {
     if (pollTimer) clearInterval(pollTimer);
     poll();
-    pollTimer = setInterval(poll, 1000);
+    pollTimer = setInterval(poll, POLL_MS);
   }
+
+  // re-sync the moment the wallpaper regains focus or the network returns,
+  // instead of waiting out the rest of the interval
+  function kick() { inFlight = false; poll(); }
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) kick();
+  });
+  window.addEventListener("online", kick);
 
   // ---- FPS meter ----
   var frames = 0, lastFpsT = performance.now();

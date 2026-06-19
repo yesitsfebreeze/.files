@@ -199,22 +199,13 @@
       "show_clock": { "order": 54, "text": "Show clock + uptime",   "type": "bool", "value": true },
       "show_fps":   { "order": 55, "text": "Show render FPS",       "type": "bool", "value": true },
 
-      "fx_intensity": {
-        "order": 60,
-        "text": "Shader FX strength (image/video backgrounds only)",
-        "type": "slider",
-        "value": 100,
-        "min": 0,
-        "max": 100,
-        "step": 1
-      },
-      "fx_chroma":   { "order": 61, "text": "FX · Chromatic aberration", "type": "bool", "value": false },
-      "fx_grain":    { "order": 62, "text": "FX · Film grain",          "type": "bool", "value": false },
-      "fx_vhs":      { "order": 63, "text": "FX · VHS",                 "type": "bool", "value": false },
-      "fx_ripple":   { "order": 64, "text": "FX · Water ripple",        "type": "bool", "value": false },
-      "fx_vignette": { "order": 65, "text": "FX · Vignette",            "type": "bool", "value": false },
-      "fx_pixelate": { "order": 66, "text": "FX · Pixelate",            "type": "bool", "value": false },
-      "fx_glitch":   { "order": 67, "text": "FX · Glitch",              "type": "bool", "value": false }
+      "fx_chroma":   { "order": 61, "text": "FX · Chromatic aberration (image/video only)", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_grain":    { "order": 62, "text": "FX · Film grain",   "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vhs":      { "order": 63, "text": "FX · VHS",          "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_ripple":   { "order": 64, "text": "FX · Water ripple", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vignette": { "order": 65, "text": "FX · Vignette",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_pixelate": { "order": 66, "text": "FX · Pixelate",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_glitch":   { "order": 67, "text": "FX · Glitch",       "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 }
     }
   }
 }

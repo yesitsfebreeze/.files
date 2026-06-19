@@ -30,9 +30,9 @@
     "}"
   ].join("\n");
 
-  // Single pass: each effect is gated by a uniform (0 = off). u_k is a global
-  // 0..1 intensity. Effects are applied in an order that reads well visually:
-  // geometry/UV distortions first, then sampling, then color/film grading.
+  // Single pass: each effect has its OWN strength uniform (0 = off, 1 = full).
+  // Effects are applied in an order that reads well visually: geometry/UV
+  // distortions first, then sampling, then color/film grading.
   var FRAG = [
     "precision highp float;",
     "varying vec2 v_uv;",
@@ -40,38 +40,36 @@
     "uniform vec2 u_res;",      // canvas pixel size
     "uniform vec2 u_cover;",    // object-fit: cover crop scale (<=1 per axis)
     "uniform float u_time;",
-    "uniform float u_k;",       // global intensity 0..1",
-    "uniform float u_chroma, u_grain, u_vhs, u_ripple, u_vignette, u_pixelate, u_glitch;",
+    "uniform float u_chroma, u_grain, u_vhs, u_ripple, u_vignette, u_pixelate, u_glitch;", // per-effect strengths
     "",
     "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }",
     "",
     "void main(){",
     "  vec2 uv = (v_uv - 0.5) * u_cover + 0.5;",  // emulate object-fit: cover
     "  float t = u_time;",
-    "  float k = u_k;",
     "",
-    "  if (u_pixelate > 0.5) {",
-    "    float bs = mix(2.0, 14.0, k);",            // block size in px
+    "  if (u_pixelate > 0.0) {",
+    "    float bs = mix(2.0, 14.0, u_pixelate);",  // block size in px
     "    vec2 grid = max(u_res / bs, vec2(1.0));",
     "    uv = (floor(uv * grid) + 0.5) / grid;",
     "  }",
     "",
-    "  if (u_ripple > 0.5) {",
-    "    float amp = 0.006 * k;",
+    "  if (u_ripple > 0.0) {",
+    "    float amp = 0.006 * u_ripple;",
     "    uv.x += sin(uv.y * 40.0 + t * 2.0) * amp;",
     "    uv.y += cos(uv.x * 40.0 + t * 1.7) * amp;",
     "  }",
     "",
-    "  if (u_glitch > 0.5) {",
+    "  if (u_glitch > 0.0) {",
     "    float band = floor(uv.y * 24.0);",
     "    float n = hash(vec2(band, floor(t * 12.0)));",
-    "    uv.x += step(0.96 - 0.3 * k, n) * (n - 0.5) * 0.12 * k;",
+    "    uv.x += step(0.96 - 0.3 * u_glitch, n) * (n - 0.5) * 0.12 * u_glitch;",
     "  }",
     "",
     "  vec3 col;",
-    "  if (u_chroma > 0.5) {",
+    "  if (u_chroma > 0.0) {",
     "    vec2 dir = uv - 0.5;",
-    "    float off = 0.004 * k;",
+    "    float off = 0.004 * u_chroma;",
     "    col.r = texture2D(u_tex, uv + dir * off).r;",
     "    col.g = texture2D(u_tex, uv).g;",
     "    col.b = texture2D(u_tex, uv - dir * off).b;",
@@ -79,26 +77,26 @@
     "    col = texture2D(u_tex, uv).rgb;",
     "  }",
     "",
-    "  if (u_vhs > 0.5) {",
-    "    col *= 1.0 - sin(uv.y * u_res.y * 1.5) * 0.06 * k;",        // scanlines
-    "    col += step(0.995, hash(vec2(floor(t * 30.0), floor(uv.y * 120.0)))) * 0.15 * k;", // dropout lines
-    "    col.r *= 1.0 + 0.05 * k;",                                  // warm bleed
+    "  if (u_vhs > 0.0) {",
+    "    col *= 1.0 - sin(uv.y * u_res.y * 1.5) * 0.06 * u_vhs;",        // scanlines
+    "    col += step(0.995, hash(vec2(floor(t * 30.0), floor(uv.y * 120.0)))) * 0.15 * u_vhs;", // dropout lines
+    "    col.r *= 1.0 + 0.05 * u_vhs;",                                  // warm bleed
     "  }",
     "",
-    "  if (u_grain > 0.5) {",
-    "    col += (hash(uv * u_res + t * 60.0) - 0.5) * 0.13 * k;",
+    "  if (u_grain > 0.0) {",
+    "    col += (hash(uv * u_res + t * 60.0) - 0.5) * 0.13 * u_grain;",
     "  }",
     "",
-    "  if (u_vignette > 0.5) {",
+    "  if (u_vignette > 0.0) {",
     "    float v = smoothstep(0.85, 0.35, length(uv - 0.5) * 1.4);",
-    "    col *= mix(1.0, v, k);",
+    "    col *= mix(1.0, v, u_vignette);",
     "  }",
     "",
     "  gl_FragColor = vec4(col, 1.0);",
     "}"
   ].join("\n");
 
-  // Effect uniform names, in the order properties.js feeds flags.
+  // Effect uniform names, in the order properties.js feeds strengths.
   var EFFECTS = ["chroma", "grain", "vhs", "ripple", "vignette", "pixelate", "glitch"];
 
   var bg = document.getElementById("bg");
@@ -106,14 +104,13 @@
   var uni = {};                       // cached uniform locations
   var source = null;                  // the <img> / <video> being sampled
   var sourceKind = "";                // "img" | "video"
-  var flags = {};                     // { chroma:true, ... }
-  var intensity = 1;                  // 0..1
+  var strength = {};                  // per-effect 0..1, e.g. { chroma: 0.5, ... }
   var raf = 0;
   var start = 0;                      // first-frame timestamp, for u_time
   var warned = false;                 // tainted-source notice, shown once
 
   function anyEnabled() {
-    for (var i = 0; i < EFFECTS.length; i++) if (flags[EFFECTS[i]]) return true;
+    for (var i = 0; i < EFFECTS.length; i++) if (strength[EFFECTS[i]] > 0) return true;
     return false;
   }
 
@@ -154,7 +151,7 @@
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-    ["u_tex","u_res","u_cover","u_time","u_k",
+    ["u_tex","u_res","u_cover","u_time",
      "u_chroma","u_grain","u_vhs","u_ripple","u_vignette","u_pixelate","u_glitch"]
       .forEach(function (n) { uni[n] = gl.getUniformLocation(prog, n); });
 
@@ -215,9 +212,8 @@
     gl.uniform2f(uni.u_res, cw, ch);
     gl.uniform2f(uni.u_cover, cover[0], cover[1]);
     gl.uniform1f(uni.u_time, (ts - start) / 1000);
-    gl.uniform1f(uni.u_k, intensity);
     EFFECTS.forEach(function (n) {
-      gl.uniform1f(uni["u_" + n], flags[n] ? 1 : 0);
+      gl.uniform1f(uni["u_" + n], strength[n] || 0);
     });
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -240,7 +236,7 @@
     if (source) source.style.visibility = "";
   }
 
-  // Decide active vs dormant from the current source + flags.
+  // Decide active vs dormant from the current source + effect strengths.
   function reconcile() {
     if (source && anyEnabled()) activate();
     else deactivate();
@@ -260,11 +256,10 @@
       }
       reconcile();
     },
-    // setEffects({ flags:{chroma,...}, intensity:0..1 }): from properties.js.
-    setEffects: function (cfg) {
-      cfg = cfg || {};
-      flags = cfg.flags || {};
-      if (typeof cfg.intensity === "number") intensity = Math.max(0, Math.min(1, cfg.intensity));
+    // setEffects(strengths): per-effect 0..1, e.g. { chroma: 0.5, vhs: 1 }.
+    // An effect at 0 (or absent) is off. From properties.js.
+    setEffects: function (strengths) {
+      strength = strengths || {};
       reconcile();
     }
   };

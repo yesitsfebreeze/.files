@@ -54,12 +54,9 @@
   var bgVideoPick = ""; // from the WE file picker (webm/ogg)
   var bgVideoPath = ""; // from the pasted path/URL box (mp4 ok)
 
-  // Shader effects — stackable toggles + one global intensity. Properties arrive
-  // incrementally, so keep the full state here and re-send it on any change.
-  var fx = {
-    flags: { chroma: false, grain: false, vhs: false, ripple: false, vignette: false, pixelate: false, glitch: false },
-    intensity: 1
-  };
+  // Shader effects — each effect has its own strength (0 = off). Properties
+  // arrive incrementally, so keep the full state here and re-send on any change.
+  var fx = { chroma: 0, grain: 0, vhs: 0, ripple: 0, vignette: 0, pixelate: 0, glitch: 0 };
   var fxKeys = {
     fx_chroma: "chroma", fx_grain: "grain", fx_vhs: "vhs", fx_ripple: "ripple",
     fx_vignette: "vignette", fx_pixelate: "pixelate", fx_glitch: "glitch"
@@ -139,12 +136,11 @@
         overlay.className = "pos-" + p.overlaypos.value;
       }
 
-      // shader effects — stackable toggles + global intensity
+      // shader effects — each effect its own strength slider (0 = off)
       var fxChanged = false;
       for (var fk in fxKeys) {
-        if (has(p, fk)) { fx.flags[fxKeys[fk]] = !!p[fk].value; fxChanged = true; }
+        if (has(p, fk)) { fx[fxKeys[fk]] = Number(p[fk].value) / 100; fxChanged = true; }
       }
-      if (has(p, "fx_intensity")) { fx.intensity = Number(p.fx_intensity.value) / 100; fxChanged = true; }
       if (fxChanged && window.WP_FX) window.WP_FX.setEffects(fx);
 
       // group toggles
