@@ -207,6 +207,31 @@ def cf [file: path] {
     print $"copied ($f) to clipboard"
 }
 
+# o — open a location in the host file manager, à la macOS `open`. WSL only: hand
+# the path to Windows Explorer, which pops a File Explorer window at a folder (or
+# opens a file in its default Windows app). We guard on explorer.exe (same WSL
+# test as `cf`'s clip.exe) so a non-WSL shell gets a clear error, not a hang.
+#
+# Named `o`, not `open`: Nushell's builtin `open` reads/parses files and is used
+# above by the history (sqlite), cf (--raw), and theme readers. A custom `open`
+# def or alias hoists across the whole config scope and would shadow the builtin
+# for those readers too — so we leave `open` alone and add the launcher as `o`.
+#
+# explorer.exe wants a Windows path (wslpath translates) and exits 1 even on
+# success, so we capture and drop its status to avoid a spurious nu error.
+def o [path?: path] {
+    if (which explorer.exe | is-empty) {
+        error make { msg: "o: not on WSL (no explorer.exe) — nothing to open" }
+    }
+    let target = (if ($path | is-empty) { $env.PWD } else { $path | path expand })
+    if not ($target | path exists) {
+        error make { msg: $"o: no such path: ($target)" }
+    }
+    let win = (do { wslpath -w $target } | complete)
+    let arg = (if $win.exit_code == 0 { $win.stdout | str trim } else { $target })
+    ^explorer.exe $arg | complete | ignore
+}
+
 # Append the auto-list closure now that the `la` alias is in scope. `$before`
 # is null on the first fire at shell start, so we skip that one to keep startup
 # clean; thereafter every real cd lists the new directory in an interactive shell.

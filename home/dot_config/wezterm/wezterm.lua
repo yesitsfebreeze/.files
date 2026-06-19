@@ -238,6 +238,27 @@ end)
 -- spawned a visible conhost window per call — flashing terminals on every launch.
 -- Keybindings are terminal-level only; burrito owns the grid (its leader is
 -- ctrl+space), so there's no leader or mux emulation here.
+-- Solo the terminal: minimize every OTHER window, keeping WezTerm focused. The
+-- OS-level part can't be expressed in Lua, so we shell out to a per-OS helper
+-- that lives beside this config (the WSL run_after hook mirrors this dir into
+-- the Windows profile, so the .vbs/.ps1 are there too). Used by both the
+-- Ctrl+Shift+M binding and the window-focus-changed event below.
+local function solo_window(window)
+    local sep = is_windows and "\\" or "/"
+    local dir = wezterm.config_dir
+    if is_windows then
+        -- wscript is a GUI-subsystem host: launching the .vbs allocates no
+        -- console, so there's no conhost flash — the same reason os.execute
+        -- is banned above. The .vbs in turn runs the P/Invoke .ps1 hidden.
+        wezterm.background_child_process({ "wscript", dir .. sep .. "solo-window.vbs" })
+    elseif is_mac then
+        wezterm.background_child_process({ "osascript", dir .. sep .. "solo-window.applescript" })
+    else
+        wezterm.background_child_process({ "bash", dir .. sep .. "solo-window.sh" })
+    end
+    window:focus()
+end
+
 config.keys = {
     { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
     -- CTRL-C copies when a selection exists, otherwise falls through to the
@@ -266,21 +287,19 @@ config.keys = {
         key = "m",
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(function(window, _pane)
-            local sep = is_windows and "\\" or "/"
-            local dir = wezterm.config_dir
-            if is_windows then
-                -- wscript is a GUI-subsystem host: launching the .vbs allocates no
-                -- console, so there's no conhost flash — the same reason os.execute
-                -- is banned above. The .vbs in turn runs the P/Invoke .ps1 hidden.
-                wezterm.background_child_process({ "wscript", dir .. sep .. "solo-window.vbs" })
-            elseif is_mac then
-                wezterm.background_child_process({ "osascript", dir .. sep .. "solo-window.applescript" })
-            else
-                wezterm.background_child_process({ "bash", dir .. sep .. "solo-window.sh" })
-            end
-            window:focus()
+            solo_window(window)
         end),
     },
 }
+
+-- Re-solo whenever WezTerm gains focus, so switching back to the terminal
+-- minimizes everything else just like the Ctrl+Shift+M binding does. The event
+-- also fires on focus LOSS, so gate on is_focused() to act only when we're the
+-- foreground window.
+wezterm.on("window-focus-changed", function(window, _pane)
+    if window:is_focused() then
+        solo_window(window)
+    end
+end)
 
 return config
