@@ -88,6 +88,7 @@ def main():
             pass
         time.sleep(0.3)  # small settle once input is live
         submit("/goal is the loop. Cancel loop if archived")
+        time.sleep(between)  # let claude settle, else /loop's prefix gets eaten
         submit("/loop " + task)
 
     threading.Thread(target=inject, daemon=True).start()

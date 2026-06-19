@@ -233,6 +233,32 @@ config.keys = {
             end
         end),
     },
+    -- Solo the terminal: minimize every OTHER window, keeping WezTerm focused.
+    -- The binding only fires while WezTerm already has focus, so the foreground
+    -- window IS this terminal; each platform minimizes all windows EXCEPT it, so
+    -- WezTerm is never minimized and there's no fragile re-raise to time. The
+    -- OS-level part can't be expressed in Lua, so we shell out to a per-OS helper
+    -- that lives beside this config (the WSL run_after hook mirrors this dir into
+    -- the Windows profile, so the .vbs/.ps1 are there too). Rebind the key freely.
+    {
+        key = "m",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(window, _pane)
+            local sep = is_windows and "\\" or "/"
+            local dir = wezterm.config_dir
+            if is_windows then
+                -- wscript is a GUI-subsystem host: launching the .vbs allocates no
+                -- console, so there's no conhost flash — the same reason os.execute
+                -- is banned above. The .vbs in turn runs the P/Invoke .ps1 hidden.
+                wezterm.background_child_process({ "wscript", dir .. sep .. "solo-window.vbs" })
+            elseif is_mac then
+                wezterm.background_child_process({ "osascript", dir .. sep .. "solo-window.applescript" })
+            else
+                wezterm.background_child_process({ "bash", dir .. sep .. "solo-window.sh" })
+            end
+            window:focus()
+        end),
+    },
 }
 
 return config

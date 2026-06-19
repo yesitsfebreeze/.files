@@ -120,6 +120,29 @@ def fg [] {
     tv text
 }
 
+# Shift+Up: history search scoped to the CURRENT directory, vs Ctrl-R which spans
+# all of it. Same television UI, but the candidate list is pre-filtered by cwd
+# straight from the sqlite history (which records a `cwd` per command), then piped
+# into tv on stdin. The Shift+Up reedline binding is appended after `tv init nu`
+# is sourced below, so it lands on top of television's own keymap. WezTerm already
+# emits ESC[1;2A for Shift+Up and reedline decodes it as a real Shift+Up, so this
+# needs nothing at the terminal layer.
+def tv_history_local [] {
+    let cur = (commandline | str substring 0..(commandline get-cursor))
+    let out = (
+        open $"($env.HOME)/.config/nushell/history.sqlite3"
+        | query db "SELECT command_line FROM history WHERE cwd = :cwd GROUP BY command_line ORDER BY max(id) DESC LIMIT 5000" --params { cwd: $env.PWD }
+        | get command_line
+        | str join (char newline)
+        | tv --no-status-bar --inline --input $cur
+        | str trim
+    )
+    if ($out | is-not-empty) {
+        commandline edit --replace $out
+        commandline set-cursor --end
+    }
+}
+
 # cf — copy a file's contents into the system clipboard. Picks the clipboard
 # tool that matches the current session: pbcopy (macOS), wl-copy (Wayland),
 # xclip (X11), then clip.exe (WSL). Display-var guards keep us from picking a
@@ -173,6 +196,21 @@ $env.config.hooks.env_change.PWD = (
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu
+
+# Bind Shift+Up to the cwd-scoped history picker (def above). Appended after the
+# television init so it rides on top of tv's Ctrl-R/Ctrl-T bindings rather than
+# being overwritten by them.
+$env.config = (
+    $env.config | upsert keybindings (
+        $env.config.keybindings | append {
+            name: tv_history_local
+            modifier: shift
+            keycode: up
+            mode: [vi_normal vi_insert emacs]
+            event: { send: executehostcommand, cmd: "tv_history_local" }
+        }
+    )
+)
 
 # Live theme: re-apply the last `theme` pick so it persists into new shells.
 # tinty re-emits OSC palette sequences; stdout is left attached on purpose —
