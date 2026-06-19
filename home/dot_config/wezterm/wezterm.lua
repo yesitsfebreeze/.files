@@ -152,6 +152,11 @@ wezterm.on("update-status", center_grid)
 -- (e.g. first run before any theme has been picked).
 local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
 if ok and type(tinty_colors) == "table" then
+    -- Drop tinty's background so window_background_opacity below governs. A solid
+    -- colors.background paints an opaque layer over the translucent window, killing
+    -- the transparency; WezTerm falls back to a transparent default without it. The
+    -- ANSI/fg/cursor palette still retints live — only the canvas stays see-through.
+    tinty_colors.background = nil
     config.colors = tinty_colors
 else
     config.color_scheme = "Gruvbox dark, hard (base16)"
