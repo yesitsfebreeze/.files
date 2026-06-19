@@ -48,14 +48,41 @@ def main():
 
     # Background injector.
     #
-    # The real gotcha: until claude switches the pty to raw mode, the kernel line
-    # discipline is canonical — it buffers our text and converts CR->NL, so the
-    # first Enter is mangled and both lines merge into one. A fixed sleep races
-    # claude's boot. Instead we poll the SLAVE's termios and wait until ICANON is
-    # cleared (claude's input is live), THEN type. After that, `\r` is a discrete
-    # Enter, so each line submits on its own.
-    gap = float(os.environ.get("CL_GAP", "0.3"))          # text -> Enter
-    between = float(os.environ.get("CL_BETWEEN", "1.5"))  # command -> command
+    # Two timing gotchas, both about typing before claude is ready:
+    #
+    # 1. Raw mode. Until claude switches the pty to raw mode the kernel line
+    #    discipline is canonical — it buffers our text and converts CR->NL, so the
+    #    first Enter is mangled and both seeds merge into one. We poll the SLAVE's
+    #    termios and wait until ICANON is cleared before typing anything.
+    #
+    # 2. Busy claude. Raw mode is reached early — long before claude is actually
+    #    idle at the prompt. claude runs a SessionStart turn (loads skills, runs
+    #    hooks) and then processes the first seed (`/goal`), staying busy for tens
+    #    of seconds. A fixed sleep between the two seeds (the old CL_BETWEEN) fires
+    #    the second one straight into that busy window, where its Enter does NOT
+    #    submit — so `/goal` lands but `/loop` is silently dropped. The fix is to
+    #    gate every submit on output QUIESCENCE: claude streams spinner frames
+    #    continuously while it works, so "no pty output for `quiet` seconds" is a
+    #    reliable "idle at prompt, safe to type" signal. We wait for that before
+    #    each seed instead of guessing a delay.
+    gap = float(os.environ.get("CL_GAP", "0.3"))           # text -> Enter
+    quiet = float(os.environ.get("CL_QUIET", "1.2"))       # silence => idle
+    settle_to = float(os.environ.get("CL_SETTLE", "120"))  # max wait for idle
+    react = float(os.environ.get("CL_REACT", "0.4"))       # let a submit register
+
+    # last_rx[0] is bumped by the main loop on every chunk read from claude; the
+    # injector reads it to tell whether output has gone silent. A lock keeps the
+    # float read/write coherent across the two threads.
+    last_rx = [time.time()]
+    rx_lock = threading.Lock()
+
+    def bump_rx():
+        with rx_lock:
+            last_rx[0] = time.time()
+
+    def idle_for():
+        with rx_lock:
+            return time.time() - last_rx[0]
 
     def wait_until_raw(timeout=30.0):
         end = time.time() + timeout
@@ -67,10 +94,21 @@ def main():
                 return
             time.sleep(0.05)
 
+    # Block until claude's output has been silent for `quiet` seconds (idle at the
+    # prompt), or until `timeout` elapses — in which case we submit anyway as a
+    # best effort rather than dropping the seed.
+    def wait_idle(timeout):
+        end = time.time() + timeout
+        while time.time() < end:
+            if idle_for() >= quiet:
+                return True
+            time.sleep(0.05)
+        return False
+
     # Type the line, pause, then send Enter. No bracketed-paste markers: claude
     # treats input right after a paste-end as still-pasting and swallows the
-    # following `\r`, which merged both seeds into one line. Once the pty is in raw
-    # mode (wait_until_raw above) a plain `\r` is a clean Enter that submits.
+    # following `\r`. Once the pty is raw AND claude is idle, a plain `\r` is a
+    # clean Enter that submits on its own.
     def submit(line):
         os.write(fd, line.encode())
         time.sleep(gap)
@@ -84,9 +122,10 @@ def main():
             os.close(slave)
         except Exception:
             pass
-        time.sleep(0.3)  # small settle once input is live
+        wait_idle(settle_to)               # wait out boot / SessionStart
         submit("/goal is the loop. Cancel loop if archived")
-        time.sleep(between)  # let claude settle, else /loop's prefix gets eaten
+        time.sleep(react)                  # let claude react and start its turn
+        wait_idle(settle_to)               # wait out the /goal turn -> idle again
         submit("/loop " + task)
 
     threading.Thread(target=inject, daemon=True).start()
@@ -112,6 +151,7 @@ def main():
                     data = b""
                 if not data:
                     break  # claude exited
+                bump_rx()  # output seen => claude busy; resets the idle timer
                 os.write(sys.stdout.fileno(), data)
             if sys.stdin.fileno() in r:
                 data = os.read(sys.stdin.fileno(), 65536)
