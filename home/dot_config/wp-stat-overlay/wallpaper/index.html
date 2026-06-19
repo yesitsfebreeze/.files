@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stat Overlay</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Background layer: holds a <video>, <iframe>, or <img> chosen at runtime.
+       Blur / brightness / opacity CSS filters are applied to #bg only, so the
+       overlay stays crisp. -->
+  <div id="bg"></div>
+
+  <!-- Stats overlay -->
+  <div id="overlay" class="pos-tl">
+    <section class="card" data-group="clock">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="sub" id="date">—</div>
+      <div class="sub" id="uptime">up —</div>
+    </section>
+
+    <section class="card" data-group="cpu">
+      <div class="row"><span class="lbl">CPU</span><span class="val" id="cpu">—</span></div>
+      <div class="bar"><i id="cpuBar"></i></div>
+      <div class="cores" id="cores"></div>
+      <div class="row sub"><span class="lbl">RAM</span><span class="val" id="mem">—</span></div>
+      <div class="bar"><i id="memBar"></i></div>
+      <div class="row sub" id="cpuTempRow" hidden><span class="lbl">CPU °C</span><span class="val" id="cpuTemp">—</span></div>
+    </section>
+
+    <section class="card" data-group="gpu" hidden>
+      <div class="row"><span class="lbl" id="gpuName">GPU</span><span class="val" id="gpu">—</span></div>
+      <div class="bar"><i id="gpuBar"></i></div>
+      <div class="row sub"><span class="lbl">VRAM</span><span class="val" id="vram">—</span></div>
+      <div class="bar"><i id="vramBar"></i></div>
+      <div class="row sub"><span class="lbl">GPU °C</span><span class="val" id="gpuTemp">—</span></div>
+    </section>
+
+    <section class="card" data-group="net">
+      <div class="row"><span class="lbl">▼ down</span><span class="val" id="netDown">—</span></div>
+      <div class="row"><span class="lbl">▲ up</span><span class="val" id="netUp">—</span></div>
+      <div class="row sub"><span class="lbl">disk R</span><span class="val" id="diskRead">—</span></div>
+      <div class="row sub"><span class="lbl">disk W</span><span class="val" id="diskWrite">—</span></div>
+    </section>
+
+    <section class="card mini" data-group="fps">
+      <div class="row"><span class="lbl">FPS</span><span class="val" id="fps">—</span></div>
+    </section>
+
+    <div id="status" class="status">connecting to helper…</div>
+  </div>
+
+  <script src="js/background.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/properties.js"></script>
+</body>
+</html>

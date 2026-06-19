@@ -127,6 +127,8 @@ def main():
         # fire both lines back to back — first line + Enter, second line + Enter.
         submit("/goal is the loop. Cancel loop if archived")
         time.sleep(react)                  # let the first submit register
+        os.write(fd, b"\x1b")              # ESC between submits
+        time.sleep(react)                  # let the ESC register
         submit("/loop " + task)
 
     threading.Thread(target=inject, daemon=True).start()

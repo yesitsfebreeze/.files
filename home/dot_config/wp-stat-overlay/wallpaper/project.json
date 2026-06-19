@@ -1,0 +1,123 @@
+{
+  "title": "Stat Overlay — wrap any wallpaper",
+  "type": "web",
+  "file": "index.html",
+  "preview": "preview.jpg",
+  "description": "A universal system-stats overlay you can lay over any video / web / image background, with live blur and brightness controls. Requires the wpstats helper running on the host for CPU/GPU/RAM/net/disk.",
+  "tags": ["Web", "Stats", "Abstract"],
+  "general": {
+    "properties": {
+      "schemecolor": {
+        "order": 0,
+        "text": "Accent color",
+        "type": "color",
+        "value": "0.36 0.78 1"
+      },
+      "helperurl": {
+        "order": 10,
+        "text": "Stats helper URL",
+        "type": "textinput",
+        "value": "http://localhost:8787/stats"
+      },
+
+      "bgtype": {
+        "order": 20,
+        "text": "Background source type",
+        "type": "combo",
+        "value": "none",
+        "options": [
+          { "label": "None (transparent)", "value": "none" },
+          { "label": "Video file", "value": "video" },
+          { "label": "Web page / web wallpaper (iframe)", "value": "web" },
+          { "label": "Image", "value": "image" }
+        ]
+      },
+      "bgvideo": {
+        "order": 21,
+        "text": "Background video file",
+        "type": "file",
+        "fileType": "video",
+        "value": ""
+      },
+      "bgimage": {
+        "order": 22,
+        "text": "Background image file",
+        "type": "file",
+        "fileType": "image",
+        "value": ""
+      },
+      "bgweburl": {
+        "order": 23,
+        "text": "Background web URL (or index.html)",
+        "type": "textinput",
+        "value": ""
+      },
+
+      "blur": {
+        "order": 30,
+        "text": "Background blur",
+        "type": "slider",
+        "value": 0,
+        "min": 0,
+        "max": 40,
+        "step": 1
+      },
+      "brightness": {
+        "order": 31,
+        "text": "Background brightness",
+        "type": "slider",
+        "value": 100,
+        "min": 0,
+        "max": 200,
+        "step": 1
+      },
+      "bgopacity": {
+        "order": 32,
+        "text": "Background opacity",
+        "type": "slider",
+        "value": 100,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+
+      "overlayopacity": {
+        "order": 40,
+        "text": "Overlay opacity",
+        "type": "slider",
+        "value": 90,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "overlayscale": {
+        "order": 41,
+        "text": "Overlay size",
+        "type": "slider",
+        "value": 100,
+        "min": 50,
+        "max": 200,
+        "step": 1
+      },
+      "overlaypos": {
+        "order": 42,
+        "text": "Overlay position",
+        "type": "combo",
+        "value": "tl",
+        "options": [
+          { "label": "Top left", "value": "tl" },
+          { "label": "Top right", "value": "tr" },
+          { "label": "Bottom left", "value": "bl" },
+          { "label": "Bottom right", "value": "br" }
+        ]
+      },
+
+      "show_cpu":   { "order": 50, "text": "Show CPU + RAM",        "type": "bool", "value": true },
+      "show_cores": { "order": 51, "text": "Show per-core bars",    "type": "bool", "value": true },
+      "show_net":   { "order": 52, "text": "Show network + disk",   "type": "bool", "value": true },
+      "show_gpu":   { "order": 53, "text": "Show GPU (NVIDIA)",     "type": "bool", "value": true },
+      "show_clock": { "order": 54, "text": "Show clock + uptime",   "type": "bool", "value": true },
+      "show_fps":   { "order": 55, "text": "Show render FPS",       "type": "bool", "value": true }
+    }
+  }
+}

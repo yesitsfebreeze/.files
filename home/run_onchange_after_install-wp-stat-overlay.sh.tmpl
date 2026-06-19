@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# chezmoi run_onchange hook — install the "Stat Overlay" Wallpaper Engine
+# wallpaper + its cross-platform stats helper wherever WE runs.
+#
+# Source of truth is ~/.config/wp-stat-overlay (deployed by chezmoi just before
+# this script). This re-runs whenever any of those sources change, because their
+# hashes are embedded below:
+#   project.json: {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/project.json") | sha256sum }}
+#   index.html:   {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/index.html") | sha256sum }}
+#   style.css:    {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/css/style.css") | sha256sum }}
+#   background:   {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/js/background.js") | sha256sum }}
+#   stats:        {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/js/stats.js") | sha256sum }}
+#   properties:   {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/wallpaper/js/properties.js") | sha256sum }}
+#   main.go:      {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/helper/main.go") | sha256sum }}
+#   go.mod:       {{ include (joinPath .chezmoi.sourceDir "dot_config/wp-stat-overlay/helper/go.mod") | sha256sum }}
+set -euo pipefail
+
+SRC="$HOME/.config/wp-stat-overlay"
+WALL="$SRC/wallpaper"
+HELP="$SRC/helper"
+NAME="stat-overlay"
+
+[ -d "$WALL" ] || { echo ":: wp-stat-overlay: source missing, skip"; exit 0; }
+
+# --- locate a Go toolchain (chezmoi may run with a minimal PATH) ----------
+find_go() {
+  command -v go 2>/dev/null && return 0
+  for c in "$HOME/go-install/go/bin/go" /usr/local/go/bin/go /snap/bin/go \
+           /opt/go/bin/go "$HOME/.local/go/bin/go"; do
+    [ -x "$c" ] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+GO="$(find_go || true)"
+[ -n "$GO" ] || { echo ":: wp-stat-overlay: no Go toolchain found — install Go, then 'chezmoi apply'"; exit 0; }
+
+is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
+
+# Find the WE myprojects dir under any of the given steam roots.
+find_we_projects() {
+  local root sub
+  for root in "$@"; do
+    [ -d "$root" ] || continue
+    sub="$root/steamapps/common/wallpaper_engine/projects/myprojects"
+    [ -d "$root/steamapps/common/wallpaper_engine" ] && { echo "$sub"; return 0; }
+  done
+  return 1
+}
+
+###########################################################################
+# WSL -> Windows host (the common case: develop in WSL, WE runs on Windows)
+###########################################################################
+if is_wsl; then
+  winhome="$(wslpath "$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')" 2>/dev/null)" || true
+  [ -n "${winhome:-}" ] && [ -d "$winhome" ] || { echo ":: wp-stat-overlay: can't resolve Windows home, skip"; exit 0; }
+
+  # Candidate Steam libraries on the Windows side.
+  we="$(find_we_projects \
+        "/mnt/c/Program Files (x86)/Steam" \
+        "/mnt/c/Program Files/Steam" \
+        "/mnt/d/Steam" "/mnt/d/SteamLibrary" \
+        "/mnt/e/Steam" "/mnt/e/SteamLibrary" \
+        "$winhome/scoop/persist/steam" || true)"
+  if [ -z "${we:-}" ]; then
+    echo ":: wp-stat-overlay: Wallpaper Engine not found on Windows — skipping install (source still tracked)"
+    exit 0
+  fi
+
+  dest="$we/$NAME"
+  mkdir -p "$dest"
+
+  # Stop any running helper FIRST — Windows locks the running exe, so a rebuild
+  # would fail with "permission denied" while it's alive.
+  powershell.exe -NoProfile -NonInteractive -Command \
+    "Get-Process wpstats -ErrorAction SilentlyContinue | Stop-Process -Force" \
+    >/dev/null 2>&1 || true
+
+  # Deploy wallpaper files (content only; no unix perms over DrvFs).
+  cp -rf "$WALL/." "$dest/"
+  echo ":: wp-stat-overlay: wallpaper -> $dest"
+
+  # Cross-build the Windows helper as a GUI-subsystem exe (no console window).
+  echo ":: wp-stat-overlay: building wpstats.exe ..."
+  ( cd "$HELP" && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
+      "$GO" build -ldflags "-s -w -H windowsgui" -o "$dest/wpstats.exe" . )
+  echo ":: wp-stat-overlay: helper -> $dest/wpstats.exe"
+
+  exe_win="$(wslpath -w "$dest/wpstats.exe")"
+
+  # Autostart: minimized Startup shortcut (no admin, no registry).
+  startup="$winhome/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
+  if [ -d "$startup" ]; then
+    lnk_win="$(wslpath -w "$startup/wpstats.lnk")"
+    powershell.exe -NoProfile -NonInteractive -Command \
+      "\$s=(New-Object -ComObject WScript.Shell).CreateShortcut('$lnk_win'); \$s.TargetPath='$exe_win'; \$s.WindowStyle=7; \$s.Description='wpstats — Wallpaper Engine stats helper'; \$s.Save()" \
+      >/dev/null 2>&1 && echo ":: wp-stat-overlay: autostart shortcut installed" \
+      || echo ":: wp-stat-overlay: WARN could not create Startup shortcut"
+  fi
+
+  # Launch now so it works without a re-login (already stopped above).
+  powershell.exe -NoProfile -NonInteractive -Command \
+    "Start-Process '$exe_win'" \
+    >/dev/null 2>&1 && echo ":: wp-stat-overlay: helper launched" || true
+
+  echo ":: wp-stat-overlay: done. In Wallpaper Engine, pick 'Stat Overlay' from your own wallpapers."
+  exit 0
+fi
+
+###########################################################################
+# Native Linux (WE for Linux via Steam) — best effort
+###########################################################################
+we="$(find_we_projects \
+      "$HOME/.steam/steam" "$HOME/.local/share/Steam" \
+      "$HOME/.var/app/com.valvesoftware.Steam/data/Steam" || true)"
+if [ -z "${we:-}" ]; then
+  echo ":: wp-stat-overlay: Wallpaper Engine not found — skipping install (source still tracked)"
+  exit 0
+fi
+dest="$we/$NAME"
+mkdir -p "$dest"
+cp -rf "$WALL/." "$dest/"
+echo ":: wp-stat-overlay: building native helper ..."
+( cd "$HELP" && CGO_ENABLED=0 "$GO" build -ldflags "-s -w" -o "$dest/wpstats" . )
+echo ":: wp-stat-overlay: wallpaper + helper -> $dest"
+
+# Autostart via a user systemd service when available.
+if command -v systemctl >/dev/null 2>&1; then
+  unitdir="$HOME/.config/systemd/user"
+  mkdir -p "$unitdir"
+  cat > "$unitdir/wpstats.service" <<EOF
+[Unit]
+Description=wpstats — Wallpaper Engine stats helper
+After=graphical-session.target
+
+[Service]
+ExecStart=$dest/wpstats
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+  systemctl --user enable --now wpstats.service >/dev/null 2>&1 \
+    && echo ":: wp-stat-overlay: wpstats.service enabled" \
+    || echo ":: wp-stat-overlay: enable wpstats.service manually (systemctl --user enable --now wpstats)"
+fi
+echo ":: wp-stat-overlay: done."
