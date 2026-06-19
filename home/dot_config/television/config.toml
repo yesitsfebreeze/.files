@@ -1,7 +1,10 @@
-# Television (tv) config. "gruvbox-dark" is a builtin tv theme (no fetch). Only
-# theme-coupled values live here; tv ships the theme, so it is pinned to gruvbox.
+# Television (tv) config. "default" is the builtin tv theme whose colors are ANSI
+# names (bright-blue, white, …) with no fixed `background`, so tv inherits the
+# terminal's 16 ANSI slots — exactly what tinty retints via OSC. That makes tv
+# follow the live `theme` switcher; the hex themes (gruvbox-dark, television, …)
+# bake their palette and never follow tinty.
 [ui]
-theme = "gruvbox-dark"
+theme = "default"
 
 [ui.input_bar]
 border_type = "rounded"
