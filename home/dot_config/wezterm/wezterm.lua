@@ -204,13 +204,13 @@ config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
--- Render as fast as the hardware allows. WebGpu is WezTerm's fastest front end
--- (Vulkan/Metal/D3D12 under the hood); HighPerformance steers it onto the discrete
--- GPU on hybrid machines. max_fps is uncapped to 255 (WezTerm's ceiling) so frames
--- are presented as quickly as they're produced, and animation_fps matches so
--- cursor blink / smooth-scroll never throttle below the main loop.
-config.front_end = "WebGpu"
-config.webgpu_power_preference = "HighPerformance"
+-- OpenGL, not WebGpu: WebGpu does not honor window_background_opacity on the
+-- Windows/D3D12 backend (this config's host -- WSL launches into the Windows
+-- wezterm.exe), so a translucent window renders as solid black. OpenGL composites
+-- the transparent canvas correctly and is still GPU-accelerated. max_fps is
+-- uncapped to 255 (WezTerm's ceiling) so frames present as fast as produced, and
+-- animation_fps matches so cursor blink / smooth-scroll never throttle below it.
+config.front_end = "OpenGL"
 config.max_fps = 255
 config.animation_fps = 255
 
