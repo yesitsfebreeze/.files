@@ -123,9 +123,10 @@ def main():
         except Exception:
             pass
         wait_idle(settle_to)               # wait out boot / SessionStart
+        # No waiting for claude to become responsive again between seeds: just
+        # fire both lines back to back — first line + Enter, second line + Enter.
         submit("/goal is the loop. Cancel loop if archived")
-        time.sleep(react)                  # let claude react and start its turn
-        wait_idle(settle_to)               # wait out the /goal turn -> idle again
+        time.sleep(react)                  # let the first submit register
         submit("/loop " + task)
 
     threading.Thread(target=inject, daemon=True).start()

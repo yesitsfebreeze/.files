@@ -88,6 +88,23 @@ alias q = exit
 # without prompting.
 alias rr = chezmoi update --force
 
+# cd that creates missing directories. Existing paths behave exactly like the
+# builtin (and still fire the PWD auto-list hook below); a non-existent target is
+# `mkdir`-ed first, so `cd some/new/path` + Enter just makes and enters it. `cd`
+# (home) and `cd -` (previous dir) are passed straight through.
+#
+# The wrapper is named `mkcd` and `cd` is aliased to it *after* the def, so the
+# `cd $target` in the body still resolves to the builtin (no recursion); the
+# alias only redirects the names typed at the prompt.
+def --env mkcd [dir?: path] {
+    let target = if ($dir | is-empty) { $env.HOME
+    } else if $dir == "-" { "-"
+    } else { $dir | path expand }
+    if $target != "-" and not ($target | path exists) { mkdir $target }
+    cd $target
+}
+alias cd = mkcd
+
 # cl — start a goal-loop Claude on your task.
 #
 # `cl clean the codebase up` launches cc, then auto-types two seeds: `/goal is the
