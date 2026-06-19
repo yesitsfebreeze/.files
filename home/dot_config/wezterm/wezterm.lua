@@ -192,7 +192,7 @@ end
 -- Translucent window; the centered padding (set live by center_grid) becomes a
 -- thin translucent border frame around the grid. Starts at 0 so center_grid has
 -- a clean baseline to measure the cell size from on the first resize.
-config.window_background_opacity = 0.95
+config.window_background_opacity = 0.0
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
