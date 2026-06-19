@@ -301,18 +301,27 @@ config.keys = {
 -- minimizes everything else just like the Ctrl+Shift+M binding does. The event
 -- also fires on focus LOSS, so gate on is_focused() to act only when we're the
 -- foreground window.
--- Solo only on a real unfocused -> focused EDGE. window-focus-changed also fires
--- on internal focus churn (and once more right after we solo), so without this
--- edge guard it re-triggers while WezTerm is already focused and the screen
--- flashes constantly. Keyed by window id so multiple windows stay independent.
-local was_focused = {}
+-- Solo when WezTerm gains focus, but debounce hard. Soloing minimizes the other
+-- windows, which itself makes the compositor emit a defocus->refocus burst of
+-- window-focus-changed events; a plain edge guard treats each as a fresh refocus
+-- and re-solos, flashing the screen forever. So after one solo we swallow ALL
+-- focus events for SOLO_COOLDOWN seconds (covers the self-inflicted burst), and
+-- only re-arm for the NEXT genuine refocus once that window has elapsed.
+-- Keyed by window id so multiple windows stay independent. Cooldown is in whole
+-- seconds (os.time resolution); bump it if a slow machine still double-fires.
+local SOLO_COOLDOWN = 2
+local last_solo = {}
 wezterm.on("window-focus-changed", function(window, _pane)
-    local id = window:window_id()
-    local focused = window:is_focused()
-    if focused and not was_focused[id] then
-        solo_window(window, false)
+    if not window:is_focused() then
+        return
     end
-    was_focused[id] = focused
+    local id = window:window_id()
+    local now = os.time()
+    if last_solo[id] and now - last_solo[id] < SOLO_COOLDOWN then
+        return
+    end
+    last_solo[id] = now
+    solo_window(window, false)
 end)
 
 return config
