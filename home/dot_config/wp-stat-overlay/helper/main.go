@@ -19,6 +19,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,14 +93,78 @@ func main() {
 			log.Printf("encode: %v", err)
 		}
 	})
+	// /file?p=<abs path> — serve a local media file over http so the wallpaper
+	// (a file:// origin) can load images/videos that Chromium would otherwise
+	// block as cross-origin local resources. http.ServeFile gives correct
+	// content types and HTTP range support (so video seeking works). Bound to
+	// 127.0.0.1 in main(), so only local processes can reach it.
+	mux.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		p := r.URL.Query().Get("p")
+		if p == "" {
+			http.Error(w, "missing p", http.StatusBadRequest)
+			return
+		}
+		// Set an explicit media content type by extension — Go has no built-in
+		// mp4/webm mapping, so ServeFile would otherwise fall back to sniffing
+		// or octet-stream and the browser would refuse to play the video.
+		if ct := mediaType(p); ct != "" {
+			w.Header().Set("Content-Type", ct)
+		}
+		http.ServeFile(w, r, p)
+	})
+	// /video?p=<path> — like /file, but transcodes non-web formats (mp4/…) to
+	// cached webm so WE's codec-less Chromium can play them.
+	mux.HandleFunc("/video", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		p := r.URL.Query().Get("p")
+		if p == "" {
+			http.Error(w, "missing p", http.StatusBadRequest)
+			return
+		}
+		serveVideo(w, r, p)
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Write([]byte("wpstats ok — try /stats\n"))
+		w.Write([]byte("wpstats ok — try /stats, /file?p=<path>, /video?p=<path>\n"))
 	})
 
 	log.Printf("wpstats listening on http://%s/stats", *addr)
 	srv := &http.Server{Addr: *addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	log.Fatal(srv.ListenAndServe())
+}
+
+// mediaType maps a file extension to a browser-friendly MIME type, so /file
+// serves videos/images the wallpaper can actually play. Empty = let ServeFile
+// decide.
+func mediaType(p string) string {
+	switch strings.ToLower(filepath.Ext(p)) {
+	case ".mp4", ".m4v":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".ogv", ".ogg":
+		return "video/ogg"
+	case ".mov":
+		return "video/quicktime"
+	case ".mkv":
+		return "video/x-matroska"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".avif":
+		return "image/avif"
+	case ".bmp":
+		return "image/bmp"
+	case ".svg":
+		return "image/svg+xml"
+	}
+	return ""
 }
 
 func (s *sampler) sample() Stats {

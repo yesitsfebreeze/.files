@@ -8,6 +8,11 @@
   var root = document.documentElement;
   var overlay = document.getElementById("overlay");
 
+  // Font: the default cross-platform stack, plus the user's combo/custom choice.
+  var systemFont = '"Segoe UI", system-ui, -apple-system, sans-serif';
+  var fontChoice = "system";
+  var fontCustom = "";
+
   // Track which stat groups the user wants visible; resolved against data
   // availability (GPU) by applyShow().
   var show = { clock: true, cpu: true, cores: true, net: true, gpu: true, fps: true };
@@ -41,6 +46,29 @@
 
   function has(p, k) { return p && p[k] && typeof p[k].value !== "undefined"; }
 
+  // ---- background source (mutually exclusive checkboxes) ----
+  // Exactly one of image/video/web is active. Checking one supersedes the
+  // others; each source keeps its own value so toggling back is lossless.
+  var bgEnabled = { image: false, video: false, web: false };
+  var bgValue = { image: "", video: "", web: "" };
+  var bgVideoPick = ""; // from the WE file picker (webm/ogg)
+  var bgVideoPath = ""; // from the pasted path/URL box (mp4 ok)
+
+  // Turning a source on clears the others, so only one is ever active.
+  function bgToggle(kind, on) {
+    if (on) { bgEnabled = { image: false, video: false, web: false }; bgEnabled[kind] = true; }
+    else { bgEnabled[kind] = false; }
+  }
+
+  function applyBg() {
+    var active = "none", value = "";
+    ["image", "video", "web"].forEach(function (k) {
+      if (bgEnabled[k]) { active = k; value = bgValue[k]; }
+    });
+    if (!value) active = "none";
+    if (window.WP_BG) window.WP_BG.apply(active, value);
+  }
+
   window.wallpaperPropertyListener = {
     applyUserProperties: function (p) {
       // accent
@@ -49,14 +77,39 @@
         if (c) { root.style.setProperty("--accent", c.rgb); root.style.setProperty("--accent-dim", c.dim); }
       }
 
-      // helper url
-      if (has(p, "helperurl") && window.WP_STATS) window.WP_STATS.setUrl(String(p.helperurl.value).trim());
+      // font — "system" uses the default stack; "custom" reads fontcustom.
+      if (has(p, "fontfamily") || has(p, "fontcustom")) {
+        if (has(p, "fontfamily")) fontChoice = p.fontfamily.value;
+        if (has(p, "fontcustom")) fontCustom = String(p.fontcustom.value).trim();
+        var fam = systemFont;
+        if (fontChoice === "custom") { if (fontCustom) fam = fontCustom; }
+        else if (fontChoice && fontChoice !== "system") fam = fontChoice;
+        root.style.setProperty("--font", fam);
+      }
 
-      // background source
-      if (has(p, "bgtype")  && window.WP_BG) window.WP_BG.setType(p.bgtype.value);
-      if (has(p, "bgvideo") && window.WP_BG) window.WP_BG.setVideo(p.bgvideo.value);
-      if (has(p, "bgimage") && window.WP_BG) window.WP_BG.setImage(p.bgimage.value);
-      if (has(p, "bgweburl")&& window.WP_BG) window.WP_BG.setWeb(String(p.bgweburl.value).trim());
+      // helper url — drives both stats polling and /file media routing
+      if (has(p, "helperurl")) {
+        var hu = String(p.helperurl.value).trim();
+        if (window.WP_STATS) window.WP_STATS.setUrl(hu);
+        if (window.WP_BG) window.WP_BG.setHelper(hu.replace(/\/stats\/?$/i, ""));
+      }
+
+      // background source — checkboxes (exclusive) + each source's value
+      if (has(p, "bg_image")) bgToggle("image", !!p.bg_image.value);
+      if (has(p, "bg_video")) bgToggle("video", !!p.bg_video.value);
+      if (has(p, "bg_web"))   bgToggle("web",   !!p.bg_web.value);
+      if (has(p, "bgimage"))  bgValue.image = p.bgimage.value;
+      // video: a pasted path/URL (bgvideopath) wins over the webm-only picker,
+      // so you can point at an mp4 the WE picker would filter out.
+      if (has(p, "bgvideo"))     bgVideoPick = p.bgvideo.value;
+      if (has(p, "bgvideopath")) bgVideoPath = String(p.bgvideopath.value).trim();
+      if (has(p, "bgvideo") || has(p, "bgvideopath")) bgValue.video = bgVideoPath || bgVideoPick;
+      if (has(p, "bgweburl")) bgValue.web   = String(p.bgweburl.value).trim();
+      applyBg();
+
+      // panel corner radius + background opacity
+      if (has(p, "cardradius"))   root.style.setProperty("--card-radius", Number(p.cardradius.value) + "px");
+      if (has(p, "panelopacity")) root.style.setProperty("--panel-opacity", Number(p.panelopacity.value) / 100);
 
       // background look — blur / brightness / opacity
       if (has(p, "blur"))       root.style.setProperty("--bg-blur", Number(p.blur.value) + "px");

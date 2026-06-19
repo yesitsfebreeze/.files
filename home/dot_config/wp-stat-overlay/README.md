@@ -25,6 +25,9 @@ The background is a single `#bg` layer holding a `<video>`, `<iframe>`, or
 the overlay stays crisp. "Wrap another live wallpaper" = point the iframe at its
 `index.html`, or the video layer at its `.mp4`/`.webm`.
 
+Looking for backgrounds to wrap? <https://motionbgs.com> has a big library of
+free live/motion wallpapers (grab a video URL or download the `.mp4`).
+
 ## Install (automatic via chezmoi)
 
 `chezmoi apply` runs `run_onchange_after_install-wp-stat-overlay.sh`, which:

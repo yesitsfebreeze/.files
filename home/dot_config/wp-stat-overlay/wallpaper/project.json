@@ -3,15 +3,61 @@
   "type": "web",
   "file": "index.html",
   "preview": "preview.jpg",
-  "description": "A universal system-stats overlay you can lay over any video / web / image background, with live blur and brightness controls. Requires the wpstats helper running on the host for CPU/GPU/RAM/net/disk.",
+  "description": "A universal system-stats overlay you can lay over any video / web / image background, with live blur and brightness controls. Requires the wpstats helper running on the host for CPU/GPU/RAM/net/disk. Need a background to wrap? Grab live ones from https://motionbgs.com",
   "tags": ["Web", "Stats", "Abstract"],
   "general": {
     "properties": {
       "schemecolor": {
         "order": 0,
-        "text": "Accent color",
+        "text": "Accent color (bars & highlights)",
         "type": "color",
         "value": "0.36 0.78 1"
+      },
+      "cardradius": {
+        "order": 3,
+        "text": "Corner radius (all elements)",
+        "type": "slider",
+        "value": 10,
+        "min": 0,
+        "max": 28,
+        "step": 1
+      },
+      "panelopacity": {
+        "order": 4,
+        "text": "Panel background opacity",
+        "type": "slider",
+        "value": 42,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "fontfamily": {
+        "order": 1,
+        "text": "Overlay font",
+        "type": "combo",
+        "value": "system",
+        "options": [
+          { "label": "System default", "value": "system" },
+          { "label": "Segoe UI", "value": "\"Segoe UI\", sans-serif" },
+          { "label": "Arial", "value": "Arial, sans-serif" },
+          { "label": "Verdana", "value": "Verdana, sans-serif" },
+          { "label": "Tahoma", "value": "Tahoma, sans-serif" },
+          { "label": "Calibri", "value": "Calibri, sans-serif" },
+          { "label": "Georgia (serif)", "value": "Georgia, serif" },
+          { "label": "Times New Roman (serif)", "value": "\"Times New Roman\", serif" },
+          { "label": "Consolas (mono)", "value": "Consolas, monospace" },
+          { "label": "Cascadia Code (mono)", "value": "\"Cascadia Code\", \"Cascadia Mono\", monospace" },
+          { "label": "Courier New (mono)", "value": "\"Courier New\", monospace" },
+          { "label": "Comic Sans MS", "value": "\"Comic Sans MS\", cursive" },
+          { "label": "Custom (type below)", "value": "custom" }
+        ]
+      },
+      "fontcustom": {
+        "order": 2,
+        "text": "    ↳ custom font family",
+        "type": "textinput",
+        "value": "",
+        "condition": "fontfamily.value == \"custom\""
       },
       "helperurl": {
         "order": 10,
@@ -20,37 +66,53 @@
         "value": "http://localhost:8787/stats"
       },
 
-      "bgtype": {
+      "bg_image": {
         "order": 20,
-        "text": "Background source type",
-        "type": "combo",
-        "value": "none",
-        "options": [
-          { "label": "None (transparent)", "value": "none" },
-          { "label": "Video file", "value": "video" },
-          { "label": "Web page / web wallpaper (iframe)", "value": "web" },
-          { "label": "Image", "value": "image" }
-        ]
-      },
-      "bgvideo": {
-        "order": 21,
-        "text": "Background video file",
-        "type": "file",
-        "fileType": "video",
-        "value": ""
+        "text": "Use image background",
+        "type": "bool",
+        "value": false
       },
       "bgimage": {
-        "order": 22,
-        "text": "Background image file",
+        "order": 21,
+        "text": "    ↳ image file",
         "type": "file",
         "fileType": "image",
-        "value": ""
+        "value": "",
+        "condition": "bg_image.value == true"
+      },
+      "bg_video": {
+        "order": 22,
+        "text": "Use video background",
+        "type": "bool",
+        "value": false
+      },
+      "bgvideo": {
+        "order": 23,
+        "text": "    ↳ video file (webm/ogg picker)",
+        "type": "file",
+        "fileType": "video",
+        "value": "",
+        "condition": "bg_video.value == true"
+      },
+      "bgvideopath": {
+        "order": 24,
+        "text": "    ↳ or paste mp4/video path or URL (auto-converts mp4)",
+        "type": "textinput",
+        "value": "",
+        "condition": "bg_video.value == true"
+      },
+      "bg_web": {
+        "order": 26,
+        "text": "Use web page background",
+        "type": "bool",
+        "value": false
       },
       "bgweburl": {
-        "order": 23,
-        "text": "Background web URL (or index.html)",
+        "order": 27,
+        "text": "    ↳ URL: YouTube / Vimeo / video / image / any page",
         "type": "textinput",
-        "value": ""
+        "value": "",
+        "condition": "bg_web.value == true"
       },
 
       "blur": {

@@ -199,6 +199,16 @@ config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
+-- Render as fast as the hardware allows. WebGpu is WezTerm's fastest front end
+-- (Vulkan/Metal/D3D12 under the hood); HighPerformance steers it onto the discrete
+-- GPU on hybrid machines. max_fps is uncapped to 255 (WezTerm's ceiling) so frames
+-- are presented as quickly as they're produced, and animation_fps matches so
+-- cursor blink / smooth-scroll never throttle below the main loop.
+config.front_end = "WebGpu"
+config.webgpu_power_preference = "HighPerformance"
+config.max_fps = 255
+config.animation_fps = 255
+
 -- Kitty keyboard protocol: lets the shell see the FULL modifier set on a key, so
 -- e.g. Ctrl+Shift+R arrives distinct from Ctrl+R (a legacy terminal collapses both
 -- to ^R, dropping shift on ctrl+letter). Pairs with nushell's `use_kitty_protocol`
