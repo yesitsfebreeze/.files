@@ -54,6 +54,17 @@
   var bgVideoPick = ""; // from the WE file picker (webm/ogg)
   var bgVideoPath = ""; // from the pasted path/URL box (mp4 ok)
 
+  // Shader effects — stackable toggles + one global intensity. Properties arrive
+  // incrementally, so keep the full state here and re-send it on any change.
+  var fx = {
+    flags: { chroma: false, grain: false, vhs: false, ripple: false, vignette: false, pixelate: false, glitch: false },
+    intensity: 1
+  };
+  var fxKeys = {
+    fx_chroma: "chroma", fx_grain: "grain", fx_vhs: "vhs", fx_ripple: "ripple",
+    fx_vignette: "vignette", fx_pixelate: "pixelate", fx_glitch: "glitch"
+  };
+
   // Turning a source on clears the others, so only one is ever active.
   function bgToggle(kind, on) {
     if (on) { bgEnabled = { image: false, video: false, web: false }; bgEnabled[kind] = true; }
@@ -117,15 +128,32 @@
       if (has(p, "bgopacity"))  root.style.setProperty("--bg-opacity", Number(p.bgopacity.value) / 100);
 
       // overlay look
+      if (has(p, "show_overlay")) overlay.hidden = !p.show_overlay.value;
+      if (has(p, "overlaycolor")) {
+        var oc = weColor(p.overlaycolor.value);
+        if (oc) root.style.setProperty("--overlay-color", oc.rgb);
+      }
       if (has(p, "overlayopacity")) root.style.setProperty("--overlay-opacity", Number(p.overlayopacity.value) / 100);
       if (has(p, "overlayscale"))   root.style.setProperty("--overlay-scale", Number(p.overlayscale.value) / 100);
       if (has(p, "overlaypos")) {
         overlay.className = "pos-" + p.overlaypos.value;
       }
 
+      // shader effects — stackable toggles + global intensity
+      var fxChanged = false;
+      for (var fk in fxKeys) {
+        if (has(p, fk)) { fx.flags[fxKeys[fk]] = !!p[fk].value; fxChanged = true; }
+      }
+      if (has(p, "fx_intensity")) { fx.intensity = Number(p.fx_intensity.value) / 100; fxChanged = true; }
+      if (fxChanged && window.WP_FX) window.WP_FX.setEffects(fx);
+
       // group toggles
       if (has(p, "show_cpu"))   show.cpu = !!p.show_cpu.value;
       if (has(p, "show_cores")) show.cores = !!p.show_cores.value;
+      if (has(p, "cores_horizontal")) {
+        var coresBox = document.getElementById("cores");
+        if (coresBox) coresBox.classList.toggle("horizontal", !!p.cores_horizontal.value);
+      }
       if (has(p, "show_net"))   show.net = !!p.show_net.value;
       if (has(p, "show_gpu"))   show.gpu = !!p.show_gpu.value;
       if (has(p, "show_clock")) show.clock = !!p.show_clock.value;

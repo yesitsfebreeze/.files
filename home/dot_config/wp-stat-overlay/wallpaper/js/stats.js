@@ -74,9 +74,14 @@
     // per-core bars
     if (s.cpuCore && s.cpuCore.length) {
       ensureCores(s.cpuCore.length);
-      var fills = el("cores").querySelectorAll(".core > i");
+      var box = el("cores");
+      var horiz = box.classList.contains("horizontal"); // bars grow by width, not height
+      var fills = box.querySelectorAll(".core > i");
       for (var i = 0; i < fills.length; i++) {
-        fills[i].style.height = Math.max(0, Math.min(100, s.cpuCore[i] || 0)) + "%";
+        var v = Math.max(0, Math.min(100, s.cpuCore[i] || 0)) + "%";
+        // clear the inactive axis so a leftover inline value can't fight the CSS
+        fills[i].style.height = horiz ? "" : v;
+        fills[i].style.width = horiz ? v : "";
       }
     }
 

@@ -1,6 +1,7 @@
 :root {
   --accent: #5cc7ff;
   --accent-dim: rgba(92, 199, 255, 0.25);
+  --overlay-color: #ffffff;
   --overlay-opacity: 0.9;
   --overlay-scale: 1;
   --bg-blur: 0px;
@@ -37,7 +38,8 @@ html, body {
 }
 #bg > video,
 #bg > img,
-#bg > iframe {
+#bg > iframe,
+#bg > canvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -45,6 +47,8 @@ html, body {
   object-fit: cover;
   border: 0;
 }
+/* The shader canvas sits on top of the raw media it samples from. */
+#bg > canvas { z-index: 1; }
 
 /* ---- Overlay ---- */
 #overlay {
@@ -54,15 +58,29 @@ html, body {
   flex-direction: column;
   gap: 12px;
   padding: 28px;
+  color: var(--overlay-color);
   opacity: var(--overlay-opacity);
   transform: scale(var(--overlay-scale));
   transition: opacity 0.2s linear;
   max-width: 320px;
 }
+#overlay[hidden] { display: none; }
+/* 3×3 thirds grid: vertical = top / middle (center) / bottom,
+   horizontal = left / center / right. Center columns span the axis and let
+   flex alignment center the cards; max-width is lifted there so the container
+   actually fills the width it centers within. */
+#overlay.pos-tc, #overlay.pos-cc, #overlay.pos-bc { left: 0; right: 0; max-width: none; align-items: center; }
+#overlay.pos-ml, #overlay.pos-cc, #overlay.pos-mr { top: 0; bottom: 0; justify-content: center; }
+
 #overlay.pos-tl { top: 0; left: 0; align-items: flex-start; transform-origin: top left; }
-#overlay.pos-tr { top: 0; right: 0; align-items: flex-end;   transform-origin: top right; }
+#overlay.pos-tc { top: 0;                                   transform-origin: top center; }
+#overlay.pos-tr { top: 0; right: 0; align-items: flex-end;  transform-origin: top right; }
+#overlay.pos-ml { left: 0; align-items: flex-start;         transform-origin: center left; }
+#overlay.pos-cc {                                           transform-origin: center; }
+#overlay.pos-mr { right: 0; align-items: flex-end;          transform-origin: center right; }
 #overlay.pos-bl { bottom: 0; left: 0; align-items: flex-start; transform-origin: bottom left; }
-#overlay.pos-br { bottom: 0; right: 0; align-items: flex-end;   transform-origin: bottom right; }
+#overlay.pos-bc { bottom: 0;                                transform-origin: bottom center; }
+#overlay.pos-br { bottom: 0; right: 0; align-items: flex-end;  transform-origin: bottom right; }
 
 .card {
   width: 260px;
@@ -83,7 +101,7 @@ html, body {
   font-size: 14px;
   margin: 2px 0;
 }
-.row.sub, .sub { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+.row.sub, .sub { font-size: 12px; color: var(--overlay-color); opacity: 0.7; }
 .lbl { letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; opacity: 0.85; }
 .val { font-variant-numeric: tabular-nums; font-weight: 600; }
 
@@ -124,6 +142,16 @@ html, body {
   bottom: 0; left: 0; right: 0;
   background: var(--accent);
   transition: height 0.4s ease;
+}
+
+/* Horizontal mode: stack full-width bars that fill left→right instead of the
+   bottom-up column grid. JS sets width (not height) on the fill in this mode. */
+.cores.horizontal { grid-template-columns: 1fr; gap: 4px; }
+.cores.horizontal .core { height: 8px; }
+.cores.horizontal .core > i {
+  top: 0; bottom: 0; left: 0; right: auto; width: 0%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 0.4s ease;
 }
 
 .status {

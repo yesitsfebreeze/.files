@@ -143,6 +143,18 @@
         "step": 1
       },
 
+      "show_overlay": {
+        "order": 39,
+        "text": "Show stats overlay (per-monitor: enable only where you want it)",
+        "type": "bool",
+        "value": true
+      },
+      "overlaycolor": {
+        "order": 43,
+        "text": "Overlay font color",
+        "type": "color",
+        "value": "1 1 1"
+      },
       "overlayopacity": {
         "order": 40,
         "text": "Overlay opacity",
@@ -168,18 +180,41 @@
         "value": "tl",
         "options": [
           { "label": "Top left", "value": "tl" },
+          { "label": "Top center", "value": "tc" },
           { "label": "Top right", "value": "tr" },
+          { "label": "Middle left", "value": "ml" },
+          { "label": "Center", "value": "cc" },
+          { "label": "Middle right", "value": "mr" },
           { "label": "Bottom left", "value": "bl" },
+          { "label": "Bottom center", "value": "bc" },
           { "label": "Bottom right", "value": "br" }
         ]
       },
 
       "show_cpu":   { "order": 50, "text": "Show CPU + RAM",        "type": "bool", "value": true },
       "show_cores": { "order": 51, "text": "Show per-core bars",    "type": "bool", "value": true },
+      "cores_horizontal": { "order": 56, "text": "Per-core bars horizontal", "type": "bool", "value": true },
       "show_net":   { "order": 52, "text": "Show network + disk",   "type": "bool", "value": true },
       "show_gpu":   { "order": 53, "text": "Show GPU (NVIDIA)",     "type": "bool", "value": true },
       "show_clock": { "order": 54, "text": "Show clock + uptime",   "type": "bool", "value": true },
-      "show_fps":   { "order": 55, "text": "Show render FPS",       "type": "bool", "value": true }
+      "show_fps":   { "order": 55, "text": "Show render FPS",       "type": "bool", "value": true },
+
+      "fx_intensity": {
+        "order": 60,
+        "text": "Shader FX strength (image/video backgrounds only)",
+        "type": "slider",
+        "value": 100,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "fx_chroma":   { "order": 61, "text": "FX · Chromatic aberration", "type": "bool", "value": false },
+      "fx_grain":    { "order": 62, "text": "FX · Film grain",          "type": "bool", "value": false },
+      "fx_vhs":      { "order": 63, "text": "FX · VHS",                 "type": "bool", "value": false },
+      "fx_ripple":   { "order": 64, "text": "FX · Water ripple",        "type": "bool", "value": false },
+      "fx_vignette": { "order": 65, "text": "FX · Vignette",            "type": "bool", "value": false },
+      "fx_pixelate": { "order": 66, "text": "FX · Pixelate",            "type": "bool", "value": false },
+      "fx_glitch":   { "order": 67, "text": "FX · Glitch",              "type": "bool", "value": false }
     }
   }
 }

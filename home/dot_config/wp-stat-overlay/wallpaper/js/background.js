@@ -26,10 +26,24 @@
   // by Chromium from a file:// origin, so route absolute local paths through the
   // helper's /file endpoint (an http origin). Remote URLs and in-project relative
   // paths load directly.
+  // stripQuotes — paths pasted from a file manager (Windows "Copy as path",
+  // shells) arrive wrapped in surrounding quotes; drop a matching pair so the
+  // path resolves instead of being treated as a literal quoted string.
+  function stripQuotes(s) {
+    s = String(s == null ? "" : s).trim();
+    if (s.length >= 2) {
+      var q = s.charAt(0);
+      if ((q === '"' || q === "'") && s.charAt(s.length - 1) === q) {
+        s = s.slice(1, -1).trim();
+      }
+    }
+    return s;
+  }
+
   function resolveMedia(value, endpoint) {
     endpoint = endpoint || "/file";
     if (!value) return "";
-    var s = String(value).trim();
+    var s = stripQuotes(value);
     if (/^(https?:|data:)/i.test(s)) return s; // remote / inline — direct
 
     // strip a file:// prefix, then URL-decode: WE hands paths with chars like
@@ -60,6 +74,7 @@
       v.addEventListener("error", function () { report("video failed to play (codec?): " + url, true); });
       bg.appendChild(v);
       v.src = url;
+      if (window.WP_FX) window.WP_FX.setSource(v);
     }
 
     var isHelper = url.indexOf(helperBase + "/video") === 0;
@@ -140,6 +155,9 @@
 
   function rebuild() {
     clear();
+    // Reset the shader layer up front; the image/video branches re-attach it to
+    // the new source. web / none / error paths simply leave it dormant.
+    if (window.WP_FX) window.WP_FX.setSource(null);
     token++; // invalidate any in-flight transcode polling from a prior source
     var myToken = token;
     // images go through the helper when local; video is handled by playVideo
@@ -156,10 +174,11 @@
         img.onerror = function () { report("image blocked/not found: " + src, true); };
         img.src = src;
         bg.appendChild(img);
+        if (window.WP_FX) window.WP_FX.setSource(img);
         report("loading image…");
         break;
       case "web":
-        var url = String(state.value || "").trim();
+        var url = stripQuotes(state.value);
         if (!url) { report("web selected but no URL set", true); return; }
         var web = buildWeb(url);
         bg.appendChild(web.el);
