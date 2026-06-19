@@ -67,14 +67,12 @@ def main():
                 return
             time.sleep(0.05)
 
-    # claude enables bracketed paste (DECSET 2004) and uses input timing to guess
-    # paste-vs-typing — a bare `\r` sent right after bulk text gets absorbed and
-    # never submits. Wrapping the text in explicit paste markers tells claude where
-    # the paste ENDS, so the following `\r` is an unambiguous Enter that submits.
-    PASTE = (b"\x1b[200~", b"\x1b[201~")
-
+    # Type the line, pause, then send Enter. No bracketed-paste markers: claude
+    # treats input right after a paste-end as still-pasting and swallows the
+    # following `\r`, which merged both seeds into one line. Once the pty is in raw
+    # mode (wait_until_raw above) a plain `\r` is a clean Enter that submits.
     def submit(line):
-        os.write(fd, PASTE[0] + line.encode() + PASTE[1])
+        os.write(fd, line.encode())
         time.sleep(gap)
         os.write(fd, b"\r")
 

@@ -120,27 +120,47 @@ def fg [] {
     tv text
 }
 
-# Shift+Up: history search scoped to the CURRENT directory, vs Ctrl-R which spans
-# all of it. Same television UI, but the candidate list is pre-filtered by cwd
-# straight from the sqlite history (which records a `cwd` per command), then piped
-# into tv on stdin. The Shift+Up reedline binding is appended after `tv init nu`
-# is sourced below, so it lands on top of television's own keymap. WezTerm already
-# emits ESC[1;2A for Shift+Up and reedline decodes it as a real Shift+Up, so this
-# needs nothing at the terminal layer.
+# Local history, two ways. The sqlite history records a `cwd` per command, so we
+# can scope both the Ctrl-R picker and the Up/Down cycle to the current directory.
+# Bindings (appended after `tv init nu` below): Ctrl-R = local picker, Ctrl-Shift-R
+# = global picker (tv's own def); Up/Down = local cycle, Shift+Up/Down = global.
+# The cwd query, shared by both defs.
+def _hist_cwd [] {
+    open $"($env.HOME)/.config/nushell/history.sqlite3"
+    | query db "SELECT command_line FROM history WHERE cwd = :cwd GROUP BY command_line ORDER BY max(id) DESC LIMIT 5000" --params { cwd: $env.PWD }
+    | get command_line
+}
+
+# Ctrl-R: television history picker, candidates pre-filtered to this directory and
+# piped in on stdin (vs Ctrl-Shift-R which uses tv's global `tv_shell_history`).
 def tv_history_local [] {
     let cur = (commandline | str substring 0..(commandline get-cursor))
-    let out = (
-        open $"($env.HOME)/.config/nushell/history.sqlite3"
-        | query db "SELECT command_line FROM history WHERE cwd = :cwd GROUP BY command_line ORDER BY max(id) DESC LIMIT 5000" --params { cwd: $env.PWD }
-        | get command_line
-        | str join (char newline)
-        | tv --no-status-bar --inline --input $cur
-        | str trim
-    )
+    let out = (_hist_cwd | str join (char newline) | tv --no-status-bar --inline --input $cur | str trim)
     if ($out | is-not-empty) {
         commandline edit --replace $out
         commandline set-cursor --end
     }
+}
+
+# Up/Down: inline cwd-scoped history cycle. reedline's native traversal is
+# global-only (no cwd filter), so this re-implements the cycle over just this
+# directory's commands, newest-first, tracking position in $env across keypresses.
+# Typing anything (buffer no longer matches what we last injected) resets to the
+# newest entry. Shift+Up/Down keep reedline's native global traversal.
+def --env _hist_local [--down] {
+    let dir = (if $down { -1 } else { 1 })
+    let buf = (commandline)
+    let last = ($env._HIST_LOCAL_LAST? | default "")
+    let pos = (if $buf != $last { -1 } else { $env._HIST_LOCAL_POS? | default (-1) })
+    let cmds = (_hist_cwd)
+    let n = ($cmds | length)
+    if $n == 0 { return }
+    let np = ([([($pos + $dir) 0] | math max) ($n - 1)] | math min)
+    let pick = ($cmds | get $np)
+    commandline edit --replace $pick
+    commandline set-cursor --end
+    $env._HIST_LOCAL_POS = $np
+    $env._HIST_LOCAL_LAST = $pick
 }
 
 # cf — copy a file's contents into the system clipboard. Picks the clipboard
@@ -197,18 +217,64 @@ source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu
 
-# Bind Shift+Up to the cwd-scoped history picker (def above). Appended after the
-# television init so it rides on top of tv's Ctrl-R/Ctrl-T bindings rather than
-# being overwritten by them.
+# History keymap, appended after the television init so it overrides tv's own
+# Ctrl-R binding (reedline keys the map by (modifier,keycode); a later entry wins).
+#   Ctrl-R        local picker        Ctrl-Shift-R  global picker (tv's def)
+#   Up/Down       local inline cycle  Shift+Up/Down native global traversal
+# Each arrow falls through to menu nav first (`until` tries menuup/menudown, which
+# no-op when no menu is open, then runs ours), so completion menus still work.
+#
+# use_kitty_protocol: without it a terminal collapses Ctrl-Shift-R to the same byte
+# as Ctrl-R (shift is lost on control+letter), so the two pickers couldn't coexist.
+# The kitty keyboard protocol carries the full modifier set; WezTerm negotiates it,
+# and reedline only uses it when the terminal acks, so it's a safe no-op elsewhere.
+$env.config.use_kitty_protocol = true
 $env.config = (
     $env.config | upsert keybindings (
-        $env.config.keybindings | append {
-            name: tv_history_local
-            modifier: shift
-            keycode: up
-            mode: [vi_normal vi_insert emacs]
-            event: { send: executehostcommand, cmd: "tv_history_local" }
-        }
+        $env.config.keybindings | append [
+            {
+                name: hist_picker_local
+                modifier: control
+                keycode: char_r
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "tv_history_local" }
+            }
+            {
+                name: hist_picker_global
+                modifier: control_shift
+                keycode: char_r
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "tv_shell_history" }
+            }
+            {
+                name: hist_up_local
+                modifier: none
+                keycode: up
+                mode: [vi_normal vi_insert emacs]
+                event: { until: [{ send: menuup } { send: executehostcommand, cmd: "_hist_local" }] }
+            }
+            {
+                name: hist_down_local
+                modifier: none
+                keycode: down
+                mode: [vi_normal vi_insert emacs]
+                event: { until: [{ send: menudown } { send: executehostcommand, cmd: "_hist_local --down" }] }
+            }
+            {
+                name: hist_up_global
+                modifier: shift
+                keycode: up
+                mode: [vi_normal vi_insert emacs]
+                event: { until: [{ send: menuup } { send: previoushistory }] }
+            }
+            {
+                name: hist_down_global
+                modifier: shift
+                keycode: down
+                mode: [vi_normal vi_insert emacs]
+                event: { until: [{ send: menudown } { send: nexthistory }] }
+            }
+        ]
     )
 )
 

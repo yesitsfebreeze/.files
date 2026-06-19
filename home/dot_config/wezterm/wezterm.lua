@@ -199,6 +199,13 @@ config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
+-- Kitty keyboard protocol: lets the shell see the FULL modifier set on a key, so
+-- e.g. Ctrl+Shift+R arrives distinct from Ctrl+R (a legacy terminal collapses both
+-- to ^R, dropping shift on ctrl+letter). Pairs with nushell's `use_kitty_protocol`
+-- in config.nu, which keys local vs global history pickers off exactly that
+-- distinction. Defaults to false in WezTerm, so it must be opted into here.
+config.enable_kitty_keyboard = true
+
 config.use_fancy_tab_bar = false
 config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
