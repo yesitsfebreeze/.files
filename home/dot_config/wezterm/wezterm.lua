@@ -243,7 +243,7 @@ end)
 -- that lives beside this config (the WSL run_after hook mirrors this dir into
 -- the Windows profile, so the .vbs/.ps1 are there too). Used by both the
 -- Ctrl+Shift+M binding and the window-focus-changed event below.
-local function solo_window(window)
+local function solo_window(window, raise)
     local sep = is_windows and "\\" or "/"
     local dir = wezterm.config_dir
     if is_windows then
@@ -256,7 +256,12 @@ local function solo_window(window)
     else
         wezterm.background_child_process({ "bash", dir .. sep .. "solo-window.sh" })
     end
-    window:focus()
+    -- Only re-raise when explicitly asked (the keybinding). On the focus-changed
+    -- path we are ALREADY the focused window, so calling focus() there just emits
+    -- another window-focus-changed -> solo -> focus loop, flashing the screen.
+    if raise then
+        window:focus()
+    end
 end
 
 config.keys = {
@@ -287,7 +292,7 @@ config.keys = {
         key = "m",
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(function(window, _pane)
-            solo_window(window)
+            solo_window(window, true)
         end),
     },
 }
@@ -296,10 +301,18 @@ config.keys = {
 -- minimizes everything else just like the Ctrl+Shift+M binding does. The event
 -- also fires on focus LOSS, so gate on is_focused() to act only when we're the
 -- foreground window.
+-- Solo only on a real unfocused -> focused EDGE. window-focus-changed also fires
+-- on internal focus churn (and once more right after we solo), so without this
+-- edge guard it re-triggers while WezTerm is already focused and the screen
+-- flashes constantly. Keyed by window id so multiple windows stay independent.
+local was_focused = {}
 wezterm.on("window-focus-changed", function(window, _pane)
-    if window:is_focused() then
-        solo_window(window)
+    local id = window:window_id()
+    local focused = window:is_focused()
+    if focused and not was_focused[id] then
+        solo_window(window, false)
     end
+    was_focused[id] = focused
 end)
 
 return config
