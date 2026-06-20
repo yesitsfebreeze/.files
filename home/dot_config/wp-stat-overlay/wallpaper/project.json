@@ -13,24 +13,6 @@
         "type": "color",
         "value": "0.36 0.78 1"
       },
-      "cardradius": {
-        "order": 3,
-        "text": "Corner radius (all elements)",
-        "type": "slider",
-        "value": 10,
-        "min": 0,
-        "max": 28,
-        "step": 1
-      },
-      "panelopacity": {
-        "order": 4,
-        "text": "Panel background opacity",
-        "type": "slider",
-        "value": 42,
-        "min": 0,
-        "max": 100,
-        "step": 1
-      },
       "fontfamily": {
         "order": 1,
         "text": "Overlay font",
@@ -59,6 +41,43 @@
         "value": "",
         "condition": "fontfamily.value == \"custom\""
       },
+      "cardradius": {
+        "order": 3,
+        "text": "Corner radius (all elements)",
+        "type": "slider",
+        "value": 10,
+        "min": 0,
+        "max": 28,
+        "step": 1
+      },
+      "cardradius_typing": {
+        "order": 4,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 10,
+        "min": 0,
+        "max": 28,
+        "step": 1
+      },
+      "panelopacity": {
+        "order": 5,
+        "text": "Panel background opacity",
+        "type": "slider",
+        "value": 42,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "panelopacity_typing": {
+        "order": 6,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 42,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+
       "helperurl": {
         "order": 10,
         "text": "Stats helper URL",
@@ -124,8 +143,17 @@
         "max": 40,
         "step": 1
       },
-      "brightness": {
+      "blur_typing": {
         "order": 31,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 0,
+        "min": 0,
+        "max": 40,
+        "step": 1
+      },
+      "brightness": {
+        "order": 32,
         "text": "Background brightness",
         "type": "slider",
         "value": 100,
@@ -133,9 +161,27 @@
         "max": 200,
         "step": 1
       },
+      "brightness_typing": {
+        "order": 33,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 100,
+        "min": 0,
+        "max": 200,
+        "step": 1
+      },
       "bgopacity": {
-        "order": 32,
+        "order": 34,
         "text": "Background opacity",
+        "type": "slider",
+        "value": 100,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "bgopacity_typing": {
+        "order": 35,
+        "text": "    ↳ when typing",
         "type": "slider",
         "value": 100,
         "min": 0,
@@ -144,19 +190,19 @@
       },
 
       "show_overlay": {
-        "order": 39,
+        "order": 40,
         "text": "Show stats overlay (per-monitor: enable only where you want it)",
         "type": "bool",
         "value": true
       },
       "overlaycolor": {
-        "order": 43,
+        "order": 41,
         "text": "Overlay font color",
         "type": "color",
         "value": "1 1 1"
       },
       "overlayopacity": {
-        "order": 40,
+        "order": 42,
         "text": "Overlay opacity",
         "type": "slider",
         "value": 90,
@@ -164,8 +210,17 @@
         "max": 100,
         "step": 1
       },
+      "overlayopacity_typing": {
+        "order": 43,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 90,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
       "overlayscale": {
-        "order": 41,
+        "order": 44,
         "text": "Overlay size",
         "type": "slider",
         "value": 100,
@@ -173,8 +228,17 @@
         "max": 200,
         "step": 1
       },
+      "overlayscale_typing": {
+        "order": 45,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 100,
+        "min": 50,
+        "max": 200,
+        "step": 1
+      },
       "overlaypos": {
-        "order": 42,
+        "order": 46,
         "text": "Overlay position",
         "type": "combo",
         "value": "tl",
@@ -193,37 +257,30 @@
 
       "show_cpu":   { "order": 50, "text": "Show CPU + RAM",        "type": "bool", "value": true },
       "show_cores": { "order": 51, "text": "Show per-core bars",    "type": "bool", "value": true },
-      "cores_horizontal": { "order": 56, "text": "Per-core bars horizontal", "type": "bool", "value": true },
-      "show_net":   { "order": 52, "text": "Show network + disk",   "type": "bool", "value": true },
-      "show_gpu":   { "order": 53, "text": "Show GPU (NVIDIA)",     "type": "bool", "value": true },
-      "show_clock": { "order": 54, "text": "Show clock + uptime",   "type": "bool", "value": true },
-      "show_fps":   { "order": 55, "text": "Show render FPS",       "type": "bool", "value": true },
+      "cores_horizontal": { "order": 52, "text": "Per-core bars horizontal", "type": "bool", "value": true },
+      "show_net":   { "order": 53, "text": "Show network + disk",   "type": "bool", "value": true },
+      "show_gpu":   { "order": 54, "text": "Show GPU (NVIDIA)",     "type": "bool", "value": true },
+      "show_clock": { "order": 55, "text": "Show clock + uptime",   "type": "bool", "value": true },
+      "show_fps":   { "order": 56, "text": "Show render FPS",       "type": "bool", "value": true },
 
-      "fx_chroma":   { "order": 61, "text": "FX · Chromatic aberration (image/video only)", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_grain":    { "order": 62, "text": "FX · Film grain",   "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vhs":      { "order": 63, "text": "FX · VHS",          "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_ripple":   { "order": 64, "text": "FX · Water ripple", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vignette": { "order": 65, "text": "FX · Vignette",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_pixelate": { "order": 66, "text": "FX · Pixelate",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_glitch":   { "order": 67, "text": "FX · Glitch",       "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_chroma":          { "order": 60, "text": "FX · Chromatic aberration (image/video only)", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_chroma_typing":   { "order": 61, "text": "    ↳ when typing",                            "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_grain":           { "order": 62, "text": "FX · Film grain",   "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_grain_typing":    { "order": 63, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vhs":             { "order": 64, "text": "FX · VHS",          "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vhs_typing":      { "order": 65, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_ripple":          { "order": 66, "text": "FX · Water ripple", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_ripple_typing":   { "order": 67, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vignette":        { "order": 68, "text": "FX · Vignette",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_vignette_typing": { "order": 69, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_pixelate":        { "order": 70, "text": "FX · Pixelate",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_pixelate_typing": { "order": 71, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_glitch":          { "order": 72, "text": "FX · Glitch",       "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+      "fx_glitch_typing":   { "order": 73, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
 
-      "typingstartdelay":      { "order": 68, "text": "Typing — start delay sec (before fade in)",  "type": "slider", "value": 0.01, "min": 0.01, "max": 60, "step": 0.01 },
-      "typingease":            { "order": 69, "text": "Typing — transition speed sec",              "type": "slider", "value": 0.6,  "min": 0.01, "max": 60, "step": 0.01 },
-      "typingrevertdelay":     { "order": 70, "text": "Typing — revert delay sec (before fade out)", "type": "slider", "value": 0.6,  "min": 0.01, "max": 60, "step": 0.01 },
-      "blur_typing":           { "order": 71, "text": "Typing — background blur",            "type": "slider", "value": 0,   "min": 0, "max": 40,  "step": 1 },
-      "brightness_typing":     { "order": 72, "text": "Typing — background brightness",      "type": "slider", "value": 100, "min": 0, "max": 200, "step": 1 },
-      "bgopacity_typing":      { "order": 73, "text": "Typing — background opacity",         "type": "slider", "value": 100, "min": 0, "max": 100, "step": 1 },
-      "panelopacity_typing":   { "order": 74, "text": "Typing — panel background opacity",   "type": "slider", "value": 42,  "min": 0, "max": 100, "step": 1 },
-      "cardradius_typing":     { "order": 75, "text": "Typing — corner radius",              "type": "slider", "value": 10,  "min": 0, "max": 28,  "step": 1 },
-      "overlayopacity_typing": { "order": 76, "text": "Typing — overlay opacity",            "type": "slider", "value": 90,  "min": 0, "max": 100, "step": 1 },
-      "overlayscale_typing":   { "order": 77, "text": "Typing — overlay size",               "type": "slider", "value": 100, "min": 50, "max": 200, "step": 1 },
-      "fx_chroma_typing":      { "order": 81, "text": "Typing — FX · Chromatic aberration",  "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_grain_typing":       { "order": 82, "text": "Typing — FX · Film grain",            "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_vhs_typing":         { "order": 83, "text": "Typing — FX · VHS",                   "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_ripple_typing":      { "order": 84, "text": "Typing — FX · Water ripple",          "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_vignette_typing":    { "order": 85, "text": "Typing — FX · Vignette",              "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_pixelate_typing":    { "order": 86, "text": "Typing — FX · Pixelate",              "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
-      "fx_glitch_typing":      { "order": 87, "text": "Typing — FX · Glitch",                "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 }
+      "typingstartdelay":  { "order": 90, "text": "Typing transition · start delay sec (before fade in)",  "type": "slider", "value": 0.01, "min": 0.01, "max": 60, "step": 0.01 },
+      "typingease":        { "order": 91, "text": "Typing transition · speed sec",                         "type": "slider", "value": 0.6,  "min": 0.01, "max": 60, "step": 0.01 },
+      "typingrevertdelay": { "order": 92, "text": "Typing transition · revert delay sec (before fade out)", "type": "slider", "value": 0.6,  "min": 0.01, "max": 60, "step": 0.01 }
     }
   }
 }
