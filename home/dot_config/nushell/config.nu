@@ -100,7 +100,14 @@ def --env mkcd [dir?: path] {
     let target = if ($dir | is-empty) { $env.HOME
     } else if $dir == "-" { "-"
     } else { $dir | path expand }
-    if $target != "-" and not ($target | path exists) { mkdir $target }
+    if $target != "-" and not ($target | path exists) {
+        let ans = (input $"($target) does not exist. create it? [y/N] ")
+        if ($ans | str downcase | str trim) not-in ["y" "yes"] {
+            print "aborted"
+            return
+        }
+        mkdir $target
+    }
     cd $target
 }
 alias cd = mkcd
