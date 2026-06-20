@@ -39,7 +39,7 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: #000; /* curvature pulls the corners in; this is the CRT bezel */
+  background: #000; /* backdrop behind the wrapped source */
 }
 
 /* ---- Background layer ---- */
@@ -102,7 +102,7 @@ html, body {
 
 /* ---- CRT shader overlays ----
    Full-screen layers stacked above the content but inside #screen, so the #crt
-   curvature bends them with the picture. Each is gated by a strength var (0 =
+   filter warps them with the picture. Each is gated by a strength var (0 =
    invisible). They never eat input. */
 .fx-layer {
   position: absolute;

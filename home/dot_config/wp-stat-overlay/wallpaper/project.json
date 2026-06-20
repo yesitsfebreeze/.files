@@ -263,8 +263,6 @@
       "show_clock": { "order": 55, "text": "Show clock + uptime",   "type": "bool", "value": true },
       "show_fps":   { "order": 56, "text": "Show render FPS",       "type": "bool", "value": true },
 
-      "fx_curvature":       { "order": 58, "text": "FX · CRT curvature", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_curvature_typing":{ "order": 59, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
       "fx_chroma":          { "order": 60, "text": "FX · Chromatic aberration", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
       "fx_chroma_typing":   { "order": 61, "text": "    ↳ when typing",                            "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
       "fx_grain":           { "order": 62, "text": "FX · Film grain",   "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },

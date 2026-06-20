@@ -27,8 +27,8 @@ video layer at its `.mp4`/`.webm`.
 
 **CRT effect layer (`fx.js`).** `#bg` and the stats overlay live together inside
 `#screen`, and a CSS/SVG filter (`#crt`) plus three overlay layers post-process
-that whole subtree — so curvature, chromatic aberration, water ripple, film
-grain, scanlines/VHS and vignette land on the background **and** the overlay at
+that whole subtree — so chromatic aberration, water ripple, film grain,
+scanlines/VHS and vignette land on the background **and** the overlay at
 once. Because it's a CSS/SVG filter (not WebGL, which can only sample
 `<img>`/`<video>`), the effects also apply to a cross-origin `<iframe>` — i.e. a
 wrapped web page or another live wallpaper. Each effect is a 0–100 slider with a

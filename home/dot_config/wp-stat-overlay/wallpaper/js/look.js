@@ -34,7 +34,7 @@
   // Shader-fx channels: channel name -> key in the WP_FX strengths object.
   // Raw WE value is 0..100; WP_FX wants 0..1. Tweened in JS.
   var FX = {
-    fx_curvature: "curvature", fx_chroma: "chroma", fx_grain: "grain",
+    fx_chroma: "chroma", fx_grain: "grain",
     fx_vhs: "vhs", fx_ripple: "ripple", fx_vignette: "vignette"
   };
 

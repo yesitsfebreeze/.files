@@ -96,11 +96,13 @@
     })();
   }
 
-  // ytEmbed — the player URL for a known video id (looped, muted, chromeless).
-  function ytEmbed(id) {
-    return "https://www.youtube.com/embed/" + id +
-      "?autoplay=1&mute=1&loop=1&playlist=" + id +
-      "&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0";
+  // ytEmbed — the player URL for a known video id (muted, chromeless). A LIVE
+  // stream must NOT get loop/playlist: you can't loop a live broadcast and YT's
+  // player errors out (blank) if you try — so only VOD ids are looped.
+  function ytEmbed(id, live) {
+    var src = "https://www.youtube.com/embed/" + id +
+      "?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0";
+    return live ? src : src + "&loop=1&playlist=" + id;
   }
 
   // resolveYouTubeLive — channel "live" URLs (youtube.com/@NASA/live,
@@ -125,7 +127,7 @@
   function toEmbed(url) {
     // direct video id: watch / shorts / embed / live/<id> / youtu.be
     var yt = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/i);
-    if (yt) return { kind: "youtube", src: ytEmbed(yt[1]) };
+    if (yt) return { kind: "youtube", src: ytEmbed(yt[1], /\/live\//i.test(url)) };
 
     // channel live by channel id: youtube.com/channel/UC.../live → live_stream
     var ytCh = url.match(/youtube\.com\/channel\/(UC[\w-]{22})\/live/i);
@@ -183,7 +185,7 @@
       // No id in the URL yet — ask the helper, then point the iframe at the
       // live player once it answers.
       resolveYouTubeLive(url, function (id, err) {
-        if (id) { f.src = ytEmbed(id); report(""); }
+        if (id) { f.src = ytEmbed(id, true); report(""); }
         else { report("couldn't resolve YouTube live (" + (err || "no live video") + "): " + url, true); }
       });
       return { el: f, note: "resolving YouTube live stream…" };
