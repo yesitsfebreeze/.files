@@ -71,14 +71,21 @@ export def --env finder [
 # list<stage> ending in the confirmed final stage, or [] on a clean abort.
 def _finder_loop [] {
     mut committed = []
+    # `pending` forces ONE re-run of a specific channel (set by ctrl-o back-nav).
+    # When null, the loop top fuzzy-picks a channel as usual.
+    mut pending = null
     loop {
         let carry = (if ($committed | is-empty) { null } else { $committed | last })
 
-        let channel = (_finder_pick_channel $committed)
+        let channel = (if $pending != null { $pending } else { (_finder_pick_channel $committed) })
+        $pending = null   # consume: only forces a single re-run
         if ($channel | is-empty) {
             # esc/empty at channel-pick: step back if we have history, else abort.
+            # With a non-empty stack, pop and re-run the prior stage (consistent w/ ctrl-o).
             if ($committed | is-empty) { return [] }
+            let back = ($committed | last)
             $committed = ($committed | drop 1)
+            $pending = $back.channel
             continue
         }
 
@@ -92,13 +99,21 @@ def _finder_loop [] {
             }
             "ctrl-a" => {
                 # chain forward: commit this stage; loop re-runs picker scoped by it.
-                $committed = ($committed | append $stage)
+                # Guard (BUG 3): an empty-entry stage must not commit — chaining off it
+                # would scope the next stage to nothing. Treat as a no-op (re-run same).
+                if ($stage.results | is-empty) {
+                    $pending = $channel
+                } else {
+                    $committed = ($committed | append $stage)
+                }
             }
             "ctrl-o" => {
-                # back: pop the most recent committed stage and re-run it fresh with the
-                # carry from the stage below it (moves exactly one stage upstream).
+                # back: pop the most-recent committed stage and RE-RUN that channel fresh
+                # with the carry from the stage now below it (moves exactly one upstream).
                 if ($committed | is-empty) { break }
+                let back = ($committed | last)
                 $committed = ($committed | drop 1)
+                $pending = $back.channel
             }
             _ => { break }   # quit / esc inside the channel
         }
@@ -132,24 +147,16 @@ def _finder_run_channel [channel: string, carry, committed: list] {
     let breadcrumb = (_finder_breadcrumb $committed)
     let scope = (_finder_scope $channel $carry)
 
-    let out = if ($scope.source_cmd | is-empty) {
-        (
-            tv $channel
-                --input-header $breadcrumb
-                --keybindings 'enter="confirm_selection";tab="toggle_selection"'
-                --expect 'ctrl-a;ctrl-o'
-            | complete
-        )
-    } else {
-        (
-            tv $channel
-                --input-header $breadcrumb
-                --keybindings 'enter="confirm_selection";tab="toggle_selection"'
-                --expect 'ctrl-a;ctrl-o'
-                --source-command $scope.source_cmd
-            | complete
-        )
+    # Single invocation: common flags, plus --source-command only when scoped.
+    mut args = [
+        "--input-header" $breadcrumb
+        "--keybindings" 'enter="confirm_selection";tab="toggle_selection"'
+        "--expect" 'ctrl-a;ctrl-o'
+    ]
+    if not ($scope.source_cmd | is-empty) {
+        $args = ($args | append ["--source-command" $scope.source_cmd])
     }
+    let out = (tv $channel ...$args | complete)
 
     if $out.exit_code != 0 {
         return { key: "abort", entries: [] }
@@ -161,7 +168,12 @@ def _finder_run_channel [channel: string, carry, committed: list] {
 # Contract (tv 0.15.8): with --expect, line 1 is the pressed key; a plain enter emits
 # an empty first line. So an empty/whitespace first line means a normal enter-confirm.
 def _finder_parse [raw: string] {
-    let lines = ($raw | str trim | lines)
+    # Parse the RAW stdout — the leading empty line under --expect signals a plain enter,
+    # so we must NOT strip it. Only drop a single trailing empty line (the final newline).
+    mut lines = ($raw | lines)
+    if (($lines | length) > 0) and (($lines | last | str trim) | is-empty) {
+        $lines = ($lines | drop 1)
+    }
     if ($lines | is-empty) {
         return { key: "abort", entries: [] }
     }
@@ -218,7 +230,9 @@ def _finder_type [channel: string] {
 # Returns { source_cmd: string } — empty string means run fresh.
 # Only the v1-locked edges are scoped: files/dirs→text and files→git-log.
 def _finder_scope [channel: string, carry] {
-    if $carry == null { return { source_cmd: "" } }
+    # Empty carry must NOT scope to the whole tree: a null carry, or one with no
+    # results, means there are no paths to restrict to → run fresh (unscoped).
+    if ($carry == null) or ($carry.results | is-empty) { return { source_cmd: "" } }
 
     let info = (_finder_type $channel)
     if not ($carry.produces in $info.accepts) {
@@ -232,12 +246,12 @@ def _finder_scope [channel: string, carry] {
         # v1 edge: files/dirs → text — restrict the rg path set, same output shape.
         ["text", "FileList"] | ["text", "DirList"] => {
             let paths = (_finder_shquote_list $abs)
-            $"rg . --no-heading --line-number --color=always -- ($paths)"
+            $"rg . --no-heading --line-number --color=never -- ($paths)"
         }
         # v1 edge: files → git-log — same pretty/graph format, scoped to the paths.
         ["git-log", "FileList"] => {
             let paths = (_finder_shquote_list $abs)
-            $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=always -- ($paths)"
+            $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)"
         }
         _ => { "" }   # not a v1-scoped pair → fresh
     }
@@ -246,6 +260,8 @@ def _finder_scope [channel: string, carry] {
 }
 
 # _finder_shquote: POSIX single-quote one path (everything inside '' is literal).
+# NOTE: this is POSIX-shell quoting (sh/bash/zsh), NOT Windows cmd/PowerShell — tv runs
+# the --source-command through a POSIX shell on the supported targets (Linux/WSL2/macOS).
 def _finder_shquote [p: string] {
     "'" + ($p | str replace -a "'" "'\\''") + "'"
 }
