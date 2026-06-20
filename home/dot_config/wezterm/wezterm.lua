@@ -31,6 +31,18 @@ config.set_environment_variables = {
     XDG_CONFIG_HOME = home .. "/.config",
 }
 
+-- A GUI-launched WezTerm inherits launchd's minimal PATH (/usr/bin:/bin:/usr/sbin:
+-- /sbin), which lacks Homebrew — so the bare `nu` in default_prog above can't be
+-- found and the window dies with "No viable candidates found in PATH". Seed the
+-- Homebrew + user bin dirs here so the nu binary resolves at spawn time; env.nu
+-- then owns PATH inside the shell. macOS only — Linux/WSL already have nu on PATH.
+if is_mac then
+    config.set_environment_variables.PATH =
+        "/opt/homebrew/bin:/opt/homebrew/sbin:"
+        .. home .. "/.local/bin:" .. home .. "/.cargo/bin:"
+        .. (os.getenv("PATH") or "")
+end
+
 -- Always launch fullscreen. WezTerm renders an integer grid of cells and never
 -- stretches glyphs, so the grid almost never divides the screen exactly; the
 -- leftover sub-cell pixels would sit as an uneven gap on the right/bottom. We
