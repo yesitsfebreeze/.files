@@ -129,6 +129,11 @@
         }
         if (has(p, "typingease")) L.setEase(p.typingease.value);
       }
+      // typing timings: start delay (fade in) + revert delay (fade out)
+      if (window.WP_TYPING) {
+        if (has(p, "typingstartdelay"))  WP_TYPING.setStartDelay(p.typingstartdelay.value);
+        if (has(p, "typingrevertdelay")) WP_TYPING.setRevertDelay(p.typingrevertdelay.value);
+      }
 
       // overlay look — visibility / color / position aren't typing-reactive
       if (has(p, "show_overlay")) overlay.hidden = !p.show_overlay.value;
