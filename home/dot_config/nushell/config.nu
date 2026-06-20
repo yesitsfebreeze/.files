@@ -375,3 +375,6 @@ source ~/.config/nushell/theme.nu
 
 # `pass` (password-store) completion: subcommands + live entry names from the store.
 source ~/.config/nushell/pass.nu
+
+# `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data.
+source ~/.config/nushell/finder.nu
