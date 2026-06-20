@@ -53,12 +53,6 @@ packages:
       pacman: bat
       dnf: bat
 
-    - name: eza
-      brew: eza
-      apt: ""            # not in older apt; cargo/brew/repo
-      pacman: eza
-      dnf: eza
-
     - name: zoxide
       brew: zoxide
       apt: zoxide

@@ -1,98 +1,27 @@
 {
-  "title": "Stat Overlay — wrap any wallpaper",
+  "title": "Wallpaper — wrap any source",
   "type": "web",
   "file": "index.html",
   "preview": "preview.jpg",
-  "description": "A universal system-stats overlay you can lay over any video / web / image background, with live blur and brightness controls. Requires the wpstats helper running on the host for CPU/GPU/RAM/net/disk. Need a background to wrap? Grab live ones from https://motionbgs.com",
-  "tags": ["Web", "Stats", "Abstract"],
+  "description": "Wrap any video / web / image background with typing-reactive blur, brightness, opacity, zoom and vignette. The wpstats helper is only needed for the keyboard-activity (typing) reaction and for local-file / mp4 backgrounds. Need a background? Grab live ones from https://motionbgs.com",
+  "tags": ["Web", "Abstract"],
   "general": {
     "properties": {
-      "schemecolor": {
-        "order": 0,
-        "text": "Accent color (bars & highlights)",
-        "type": "color",
-        "value": "0.36 0.78 1"
-      },
-      "fontfamily": {
-        "order": 1,
-        "text": "Overlay font",
-        "type": "combo",
-        "value": "system",
-        "options": [
-          { "label": "System default", "value": "system" },
-          { "label": "Segoe UI", "value": "\"Segoe UI\", sans-serif" },
-          { "label": "Arial", "value": "Arial, sans-serif" },
-          { "label": "Verdana", "value": "Verdana, sans-serif" },
-          { "label": "Tahoma", "value": "Tahoma, sans-serif" },
-          { "label": "Calibri", "value": "Calibri, sans-serif" },
-          { "label": "Georgia (serif)", "value": "Georgia, serif" },
-          { "label": "Times New Roman (serif)", "value": "\"Times New Roman\", serif" },
-          { "label": "Consolas (mono)", "value": "Consolas, monospace" },
-          { "label": "Cascadia Code (mono)", "value": "\"Cascadia Code\", \"Cascadia Mono\", monospace" },
-          { "label": "Courier New (mono)", "value": "\"Courier New\", monospace" },
-          { "label": "Comic Sans MS", "value": "\"Comic Sans MS\", cursive" },
-          { "label": "Custom (type below)", "value": "custom" }
-        ]
-      },
-      "fontcustom": {
-        "order": 2,
-        "text": "    ↳ custom font family",
-        "type": "textinput",
-        "value": "",
-        "condition": "fontfamily.value == \"custom\""
-      },
-      "cardradius": {
-        "order": 3,
-        "text": "Corner radius (all elements)",
-        "type": "slider",
-        "value": 10,
-        "min": 0,
-        "max": 28,
-        "step": 1
-      },
-      "cardradius_typing": {
-        "order": 4,
-        "text": "    ↳ when typing",
-        "type": "slider",
-        "value": 10,
-        "min": 0,
-        "max": 28,
-        "step": 1
-      },
-      "panelopacity": {
-        "order": 5,
-        "text": "Panel background opacity",
-        "type": "slider",
-        "value": 42,
-        "min": 0,
-        "max": 100,
-        "step": 1
-      },
-      "panelopacity_typing": {
-        "order": 6,
-        "text": "    ↳ when typing",
-        "type": "slider",
-        "value": 42,
-        "min": 0,
-        "max": 100,
-        "step": 1
-      },
-
       "helperurl": {
-        "order": 10,
-        "text": "Stats helper URL",
+        "order": 0,
+        "text": "Helper URL (keyboard activity + local files)",
         "type": "textinput",
         "value": "http://localhost:8787/stats"
       },
 
       "bg_image": {
-        "order": 20,
+        "order": 10,
         "text": "Use image background",
         "type": "bool",
         "value": false
       },
       "bgimage": {
-        "order": 21,
+        "order": 11,
         "text": "    ↳ image file",
         "type": "file",
         "fileType": "image",
@@ -100,13 +29,13 @@
         "condition": "bg_image.value == true"
       },
       "bg_video": {
-        "order": 22,
+        "order": 12,
         "text": "Use video background",
         "type": "bool",
         "value": false
       },
       "bgvideo": {
-        "order": 23,
+        "order": 13,
         "text": "    ↳ video file (webm/ogg picker)",
         "type": "file",
         "fileType": "video",
@@ -114,20 +43,20 @@
         "condition": "bg_video.value == true"
       },
       "bgvideopath": {
-        "order": 24,
+        "order": 14,
         "text": "    ↳ or paste mp4/video path or URL (auto-converts mp4)",
         "type": "textinput",
         "value": "",
         "condition": "bg_video.value == true"
       },
       "bg_web": {
-        "order": 26,
+        "order": 15,
         "text": "Use web page background",
         "type": "bool",
         "value": false
       },
       "bgweburl": {
-        "order": 27,
+        "order": 16,
         "text": "    ↳ URL: YouTube / Vimeo / video / image / any page",
         "type": "textinput",
         "value": "",
@@ -136,7 +65,7 @@
 
       "blur": {
         "order": 30,
-        "text": "Background blur",
+        "text": "Blur",
         "type": "slider",
         "value": 0,
         "min": 0,
@@ -154,7 +83,7 @@
       },
       "brightness": {
         "order": 32,
-        "text": "Background brightness",
+        "text": "Brightness",
         "type": "slider",
         "value": 100,
         "min": 0,
@@ -172,7 +101,7 @@
       },
       "bgopacity": {
         "order": 34,
-        "text": "Background opacity",
+        "text": "Opacity",
         "type": "slider",
         "value": 100,
         "min": 0,
@@ -188,91 +117,42 @@
         "max": 100,
         "step": 1
       },
-
-      "show_overlay": {
-        "order": 40,
-        "text": "Show stats overlay (per-monitor: enable only where you want it)",
-        "type": "bool",
-        "value": true
-      },
-      "overlaycolor": {
-        "order": 41,
-        "text": "Overlay font color",
-        "type": "color",
-        "value": "1 1 1"
-      },
-      "overlayopacity": {
-        "order": 42,
-        "text": "Overlay opacity",
+      "zoom": {
+        "order": 36,
+        "text": "Zoom",
         "type": "slider",
-        "value": 90,
+        "value": 100,
+        "min": 100,
+        "max": 250,
+        "step": 1
+      },
+      "zoom_typing": {
+        "order": 37,
+        "text": "    ↳ when typing",
+        "type": "slider",
+        "value": 100,
+        "min": 100,
+        "max": 250,
+        "step": 1
+      },
+      "vignette": {
+        "order": 38,
+        "text": "Vignette",
+        "type": "slider",
+        "value": 0,
         "min": 0,
         "max": 100,
         "step": 1
       },
-      "overlayopacity_typing": {
-        "order": 43,
+      "vignette_typing": {
+        "order": 39,
         "text": "    ↳ when typing",
         "type": "slider",
-        "value": 90,
+        "value": 0,
         "min": 0,
         "max": 100,
         "step": 1
       },
-      "overlayscale": {
-        "order": 44,
-        "text": "Overlay size",
-        "type": "slider",
-        "value": 100,
-        "min": 50,
-        "max": 200,
-        "step": 1
-      },
-      "overlayscale_typing": {
-        "order": 45,
-        "text": "    ↳ when typing",
-        "type": "slider",
-        "value": 100,
-        "min": 50,
-        "max": 200,
-        "step": 1
-      },
-      "overlaypos": {
-        "order": 46,
-        "text": "Overlay position",
-        "type": "combo",
-        "value": "tl",
-        "options": [
-          { "label": "Top left", "value": "tl" },
-          { "label": "Top center", "value": "tc" },
-          { "label": "Top right", "value": "tr" },
-          { "label": "Middle left", "value": "ml" },
-          { "label": "Center", "value": "cc" },
-          { "label": "Middle right", "value": "mr" },
-          { "label": "Bottom left", "value": "bl" },
-          { "label": "Bottom center", "value": "bc" },
-          { "label": "Bottom right", "value": "br" }
-        ]
-      },
-
-      "show_cpu":   { "order": 50, "text": "Show CPU + RAM",        "type": "bool", "value": true },
-      "show_cores": { "order": 51, "text": "Show per-core bars",    "type": "bool", "value": true },
-      "cores_horizontal": { "order": 52, "text": "Per-core bars horizontal", "type": "bool", "value": true },
-      "show_net":   { "order": 53, "text": "Show network + disk",   "type": "bool", "value": true },
-      "show_gpu":   { "order": 54, "text": "Show GPU (NVIDIA)",     "type": "bool", "value": true },
-      "show_clock": { "order": 55, "text": "Show clock + uptime",   "type": "bool", "value": true },
-      "show_fps":   { "order": 56, "text": "Show render FPS",       "type": "bool", "value": true },
-
-      "fx_chroma":          { "order": 60, "text": "FX · Chromatic aberration", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_chroma_typing":   { "order": 61, "text": "    ↳ when typing",                            "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_grain":           { "order": 62, "text": "FX · Film grain",   "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_grain_typing":    { "order": 63, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vhs":             { "order": 64, "text": "FX · VHS",          "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vhs_typing":      { "order": 65, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_ripple":          { "order": 66, "text": "FX · Water ripple", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_ripple_typing":   { "order": 67, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vignette":        { "order": 68, "text": "FX · Vignette",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_vignette_typing": { "order": 69, "text": "    ↳ when typing",  "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
 
       "typingstartdelay":  { "order": 90, "text": "Typing transition · start delay sec (before fade in)",  "type": "slider", "value": 0.01, "min": 0.01, "max": 60, "step": 0.01 },
       "typingease":        { "order": 91, "text": "Typing transition · speed sec",                         "type": "slider", "value": 0.6,  "min": 0.01, "max": 60, "step": 0.01 },

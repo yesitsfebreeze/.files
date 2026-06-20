@@ -63,10 +63,44 @@ $env.config = {
 
 # Aliases. The Unix installer symlinks Debian's `batcat`/`fdfind` to `bat`/`fd`,
 # so those names resolve on every platform.
-alias l = eza --icons --group-directories-first
-alias ll = eza -l --icons --group-directories-first --git
-alias la = eza -la --icons --group-directories-first --git
-alias lt = eza --tree --level=2 --icons --group-directories-first
+# Native `ls` with Nerd Font icons. Nushell's builtin `ls` returns a structured
+# table (name/type/size/modified) but no glyphs, so we add an `icon` column from
+# an extension → glyph map (directory and generic-file fallbacks). `sort-by type
+# modified` keeps dirs grouped and lists newest last, so the freshest files sit
+# closest to the prompt.
+const LS_ICONS = {
+    rs: "", js: "", mjs: "", cjs: "", ts: "", tsx: "", jsx: "",
+    py: "", go: "", lua: "", rb: "", php: "", java: "", c: "", h: "",
+    cpp: "", hpp: "", cc: "", cs: "", swift: "", kt: "", scala: "", clj: "",
+    ex: "", exs: "", vim: "",
+    json: "", jsonc: "", toml: "", yaml: "", yml: "", ini: "", conf: "", cfg: "",
+    md: "", markdown: "", txt: "", pdf: "", log: "", sql: "", csv: "",
+    sh: "", bash: "", zsh: "", fish: "", nu: "", ps1: "",
+    html: "", htm: "", css: "", scss: "", sass: "", vue: "", svelte: "",
+    png: "", jpg: "", jpeg: "", gif: "", bmp: "", svg: "", webp: "", ico: "",
+    mp3: "", wav: "", flac: "", ogg: "", mp4: "", mkv: "", mov: "", webm: "",
+    zip: "", tar: "", gz: "", xz: "", zst: "", bz2: "", "7z": "", rar: "",
+    lock: "", db: "", sqlite: "", sqlite3: "",
+}
+
+# Decorate an `ls` table: sort (dirs first, newest last), prefix an icon column.
+def decorate-ls []: table -> table {
+    sort-by type modified
+    | insert icon {|row|
+        if $row.type == "dir" {
+            ""
+        } else {
+            $LS_ICONS
+            | get --optional ($row.name | path parse | get extension | str downcase)
+            | default ""
+        }
+    }
+    | move icon --before name
+}
+
+def l  [path: string = "."] { ls    $path | decorate-ls }
+def ll [path: string = "."] { ls -l $path | decorate-ls }
+def la [path: string = "."] { ls -a $path | decorate-ls }
 alias cat = bat --paging=never
 alias grep = rg
 alias g = git
@@ -245,8 +279,8 @@ def o [path?: path] {
 #
 # `stty sane` first: a cd may arrive via a full-screen TUI (television in `fcd`,
 # zoxide, the theme picker) that crashed or exited without restoring cooked-mode
-# output. With `onlcr` off, eza's `\n` line breaks drop a row without returning
-# to column 0 and the listing staircases. Restoring sane mode right before we
+# output. With `onlcr` off, the table's `\n` line breaks drop a row without
+# returning to column 0 and the listing staircases. Restoring sane mode before we
 # print makes the auto-list immune to whatever left the terminal half-raw. It is
 # a no-op in the normal case (terminal is already cooked between commands).
 $env.config.hooks.env_change.PWD = (

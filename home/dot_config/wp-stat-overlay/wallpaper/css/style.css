@@ -1,20 +1,12 @@
 :root {
-  --accent: #5cc7ff;
-  --accent-dim: rgba(92, 199, 255, 0.25);
-  --overlay-color: #ffffff;
-  --overlay-opacity: 0.9;
-  --overlay-scale: 1;
+  /* Look channels — driven by look.js, eased by the CSS transitions below.
+     Each has a resting and a typing value; typing.js flips between them. */
   --bg-blur: 0px;
   --bg-brightness: 1;
   --bg-opacity: 1;
-  /* CRT shader-overlay strengths (0..1), driven by fx.js */
-  --fx-grain: 0;
-  --fx-scanline: 0;
-  --fx-vignette: 0;
-  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
-  --card-radius: 10px;
-  --panel-opacity: 0.42;
-  /* duration of the eased morph between resting and typing looks (typing.js) */
+  --bg-zoom: 1;
+  --vignette: 0;
+  /* duration of the eased morph between resting and typing looks */
   --look-ease: 0.6s;
 }
 
@@ -25,39 +17,30 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
-  font-family: var(--font);
   color: #fff;
   user-select: none;
 }
 
-/* ---- Screen wrapper ----
-   Holds the background AND the overlay so the #crt SVG filter (fx.js) and the
-   CRT overlay layers warp them as one. When fx.js sets `filter: url(#crt)` here
-   it becomes the containing block for the fixed children, but since #screen is
-   itself a full-viewport box that changes nothing about their placement. */
-#screen {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: #000; /* backdrop behind the wrapped source */
-}
-
-/* ---- Background layer ---- */
+/* ---- Background layer ----
+   The single wrapped source (video / image / iframe). blur, brightness,
+   opacity and zoom are CSS vars; CSS transitions ease them for free when
+   look.js swaps the resting/typing targets. */
 #bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   filter: blur(var(--bg-blur)) brightness(var(--bg-brightness));
   opacity: var(--bg-opacity);
-  transition: filter var(--look-ease) ease, opacity var(--look-ease) ease;
-  /* slight overscan so blur edges don't show the black background */
-  transform: scale(1.06);
+  transform: scale(var(--bg-zoom));
   transform-origin: center;
+  transition:
+    filter var(--look-ease) ease,
+    opacity var(--look-ease) ease,
+    transform var(--look-ease) ease;
 }
 #bg > video,
 #bg > img,
-#bg > iframe,
-#bg > canvas {
+#bg > iframe {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -65,169 +48,33 @@ html, body {
   object-fit: cover;
   border: 0;
 }
-/* The shader canvas sits on top of the raw media it samples from. */
-#bg > canvas { z-index: 1; }
 
-/* ---- Overlay ---- */
-#overlay {
+/* ---- Vignette ----
+   Darkened corners that deepen with strength. Pure CSS overlay, never eats
+   input; opacity is the eased channel. */
+#vignette {
   position: fixed;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 28px;
-  color: var(--overlay-color);
-  opacity: var(--overlay-opacity);
-  transform: scale(var(--overlay-scale));
-  transition: opacity var(--look-ease) ease, transform var(--look-ease) ease;
-  max-width: 320px;
-}
-#overlay[hidden] { display: none; }
-/* 3×3 thirds grid: vertical = top / middle (center) / bottom,
-   horizontal = left / center / right. Center columns span the axis and let
-   flex alignment center the cards; max-width is lifted there so the container
-   actually fills the width it centers within. */
-#overlay.pos-tc, #overlay.pos-cc, #overlay.pos-bc { left: 0; right: 0; max-width: none; align-items: center; }
-#overlay.pos-ml, #overlay.pos-cc, #overlay.pos-mr { top: 0; bottom: 0; justify-content: center; }
-
-#overlay.pos-tl { top: 0; left: 0; align-items: flex-start; transform-origin: top left; }
-#overlay.pos-tc { top: 0;                                   transform-origin: top center; }
-#overlay.pos-tr { top: 0; right: 0; align-items: flex-end;  transform-origin: top right; }
-#overlay.pos-ml { left: 0; align-items: flex-start;         transform-origin: center left; }
-#overlay.pos-cc {                                           transform-origin: center; }
-#overlay.pos-mr { right: 0; align-items: flex-end;          transform-origin: center right; }
-#overlay.pos-bl { bottom: 0; left: 0; align-items: flex-start; transform-origin: bottom left; }
-#overlay.pos-bc { bottom: 0;                                transform-origin: bottom center; }
-#overlay.pos-br { bottom: 0; right: 0; align-items: flex-end;  transform-origin: bottom right; }
-
-/* ---- CRT shader overlays ----
-   Full-screen layers stacked above the content but inside #screen, so the #crt
-   filter warps them with the picture. Each is gated by a strength var (0 =
-   invisible). They never eat input. */
-.fx-layer {
-  position: absolute;
   inset: 0;
-  z-index: 12;            /* above #overlay (z-index 10) */
+  z-index: 1;
   pointer-events: none;
-}
-
-/* Film grain: a tiling desaturated turbulence, shimmered by stepping the
-   background-position. mix-blend keeps it reading as sensor noise, not a haze. */
-#fx-grain {
-  opacity: calc(var(--fx-grain) * 0.5);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-  background-size: 140px 140px;
-  mix-blend-mode: overlay;
-  animation: fx-grain-shift 0.6s steps(4) infinite;
-}
-@keyframes fx-grain-shift {
-  0%   { background-position: 0 0; }
-  25%  { background-position: -28px 14px; }
-  50%  { background-position: 18px -22px; }
-  75%  { background-position: -12px -8px; }
-  100% { background-position: 24px 20px; }
-}
-
-/* Scanlines + a slow VHS roll. */
-#fx-scanline {
-  opacity: calc(var(--fx-scanline) * 0.8);
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.45) 0, rgba(0, 0, 0, 0.45) 1px,
-    transparent 1px, transparent 3px);
-  mix-blend-mode: multiply;
-  animation: fx-scan-roll 8s linear infinite;
-}
-@keyframes fx-scan-roll {
-  0%   { background-position: 0 0; }
-  100% { background-position: 0 100px; }
-}
-
-/* Vignette: darkened corners that deepen with strength. */
-#fx-vignette {
-  opacity: var(--fx-vignette);
+  opacity: var(--vignette);
   background: radial-gradient(ellipse at center,
     transparent 52%, rgba(0, 0, 0, 0.75) 100%);
+  transition: opacity var(--look-ease) ease;
 }
 
-.card {
-  width: 260px;
-  background: rgba(10, 14, 20, var(--panel-opacity));
-  backdrop-filter: blur(8px);
-  border: 0;
-  border-radius: var(--card-radius);
-  padding: 12px 14px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, calc(var(--panel-opacity) * 0.83));
-  transition: background var(--look-ease) ease, border-radius var(--look-ease) ease, box-shadow var(--look-ease) ease;
-}
-.card.mini { width: auto; padding: 6px 12px; }
-.card[hidden] { display: none; }
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 14px;
-  margin: 2px 0;
-}
-.row.sub, .sub { font-size: 12px; color: var(--overlay-color); opacity: 0.7; }
-.lbl { letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; opacity: 0.85; }
-.val { font-variant-numeric: tabular-nums; font-weight: 600; }
-
-.bar {
-  height: 6px;
-  border-radius: var(--card-radius);
-  background: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  margin: 5px 0 9px;
-}
-.bar > i {
-  display: block;
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  border-radius: var(--card-radius);
-  transition: width 0.4s ease;
-}
-
-.clock { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
-
-.cores {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 3px;
-  margin: 6px 0 9px;
-}
-.cores[hidden] { display: none; }
-.core {
-  height: 22px;
-  border-radius: var(--card-radius);
-  background: rgba(255, 255, 255, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-.core > i {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  background: var(--accent);
-  transition: height 0.4s ease;
-}
-
-/* Horizontal mode: stack full-width bars that fill left→right instead of the
-   bottom-up column grid. JS sets width (not height) on the fill in this mode. */
-.cores.horizontal { grid-template-columns: 1fr; gap: 4px; }
-.cores.horizontal .core { height: 8px; }
-.cores.horizontal .core > i {
-  top: 0; bottom: 0; left: 0; right: auto; width: 0%;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  transition: width 0.4s ease;
-}
-
+/* ---- Background load status ----
+   Surfaces a silently-failing local file path / unreachable helper. */
 .status {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  font-family: system-ui, -apple-system, sans-serif;
   font-size: 11px;
   color: rgba(255, 200, 120, 0.9);
   padding: 4px 8px;
-  border-radius: var(--card-radius);
+  border-radius: 8px;
   background: rgba(40, 30, 10, 0.5);
 }
-.status.ok { display: none; }
+.status[hidden] { display: none; }

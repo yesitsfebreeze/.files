@@ -74,7 +74,6 @@
       v.addEventListener("error", function () { report("video failed to play (codec?): " + url, true); });
       bg.appendChild(v);
       v.src = url;
-      if (window.WP_FX) window.WP_FX.setSource(v);
     }
 
     var isHelper = url.indexOf(helperBase + "/video") === 0;
@@ -200,9 +199,6 @@
 
   function rebuild() {
     clear();
-    // Reset the shader layer up front; the image/video branches re-attach it to
-    // the new source. web / none / error paths simply leave it dormant.
-    if (window.WP_FX) window.WP_FX.setSource(null);
     token++; // invalidate any in-flight transcode polling from a prior source
     var myToken = token;
     // images go through the helper when local; video is handled by playVideo
@@ -219,7 +215,6 @@
         img.onerror = function () { report("image blocked/not found: " + src, true); };
         img.src = src;
         bg.appendChild(img);
-        if (window.WP_FX) window.WP_FX.setSource(img);
         report("loading image…");
         break;
       case "web":

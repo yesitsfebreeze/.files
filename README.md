@@ -15,7 +15,7 @@ every config into place.
 - **Git** — git + delta + lazygit + gh
 - **pass** — password manager (GPG-backed `password-store`), with Nushell
   completion for subcommands and entry names. One-time setup below
-- **CLI core** — ripgrep, fd, fzf, bat, eza, zoxide, jq
+- **CLI core** — ripgrep, fd, fzf, bat, zoxide, jq
 - **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
   Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
 - **Theme** — Gruvbox Dark Hard, live-switchable via

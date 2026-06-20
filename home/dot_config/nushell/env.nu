@@ -17,7 +17,7 @@ $env.ENV_CONVERSIONS = {
 # `path_helper` (reading /etc/paths and /etc/paths.d/*), but path_helper only runs
 # from /etc/zprofile and /etc/profile — bash/zsh. Nushell never runs it, so when nu
 # is the login shell (chsh) launched by a GUI WezTerm, /opt/homebrew/bin and the
-# system dirs are absent and tools like eza/bat/rg/starship/tv/lazygit go missing.
+# system dirs are absent and tools like bat/rg/starship/tv/lazygit go missing.
 # We `append` them (lower priority than the user dirs prepended below) and `uniq`
 # to keep this a no-op whenever the parent already provided them.
 $env.PATH = (
