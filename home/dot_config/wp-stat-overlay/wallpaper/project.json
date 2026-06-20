@@ -205,7 +205,23 @@
       "fx_ripple":   { "order": 64, "text": "FX · Water ripple", "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
       "fx_vignette": { "order": 65, "text": "FX · Vignette",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
       "fx_pixelate": { "order": 66, "text": "FX · Pixelate",     "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
-      "fx_glitch":   { "order": 67, "text": "FX · Glitch",       "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 }
+      "fx_glitch":   { "order": 67, "text": "FX · Glitch",       "type": "slider", "value": 0, "min": 0, "max": 100, "step": 1 },
+
+      "typingease":            { "order": 70, "text": "Typing — transition seconds",        "type": "slider", "value": 0.6, "min": 0, "max": 5,   "step": 0.1 },
+      "blur_typing":           { "order": 71, "text": "Typing — background blur",            "type": "slider", "value": 0,   "min": 0, "max": 40,  "step": 1 },
+      "brightness_typing":     { "order": 72, "text": "Typing — background brightness",      "type": "slider", "value": 100, "min": 0, "max": 200, "step": 1 },
+      "bgopacity_typing":      { "order": 73, "text": "Typing — background opacity",         "type": "slider", "value": 100, "min": 0, "max": 100, "step": 1 },
+      "panelopacity_typing":   { "order": 74, "text": "Typing — panel background opacity",   "type": "slider", "value": 42,  "min": 0, "max": 100, "step": 1 },
+      "cardradius_typing":     { "order": 75, "text": "Typing — corner radius",              "type": "slider", "value": 10,  "min": 0, "max": 28,  "step": 1 },
+      "overlayopacity_typing": { "order": 76, "text": "Typing — overlay opacity",            "type": "slider", "value": 90,  "min": 0, "max": 100, "step": 1 },
+      "overlayscale_typing":   { "order": 77, "text": "Typing — overlay size",               "type": "slider", "value": 100, "min": 50, "max": 200, "step": 1 },
+      "fx_chroma_typing":      { "order": 81, "text": "Typing — FX · Chromatic aberration",  "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_grain_typing":       { "order": 82, "text": "Typing — FX · Film grain",            "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_vhs_typing":         { "order": 83, "text": "Typing — FX · VHS",                   "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_ripple_typing":      { "order": 84, "text": "Typing — FX · Water ripple",          "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_vignette_typing":    { "order": 85, "text": "Typing — FX · Vignette",              "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_pixelate_typing":    { "order": 86, "text": "Typing — FX · Pixelate",              "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 },
+      "fx_glitch_typing":      { "order": 87, "text": "Typing — FX · Glitch",                "type": "slider", "value": 0,   "min": 0, "max": 100, "step": 1 }
     }
   }
 }

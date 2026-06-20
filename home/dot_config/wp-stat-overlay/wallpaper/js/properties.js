@@ -54,13 +54,13 @@
   var bgVideoPick = ""; // from the WE file picker (webm/ogg)
   var bgVideoPath = ""; // from the pasted path/URL box (mp4 ok)
 
-  // Shader effects — each effect has its own strength (0 = off). Properties
-  // arrive incrementally, so keep the full state here and re-send on any change.
-  var fx = { chroma: 0, grain: 0, vhs: 0, ripple: 0, vignette: 0, pixelate: 0, glitch: 0 };
-  var fxKeys = {
-    fx_chroma: "chroma", fx_grain: "grain", fx_vhs: "vhs", fx_ripple: "ripple",
-    fx_vignette: "vignette", fx_pixelate: "pixelate", fx_glitch: "glitch"
-  };
+  // Continuous look + shader-fx settings that WP_LOOK eases between a resting and
+  // a typing value. Each also has a "<name>_typing" property for the typing value.
+  var LOOK_KEYS = [
+    "blur", "brightness", "bgopacity", "panelopacity", "cardradius",
+    "overlayopacity", "overlayscale",
+    "fx_chroma", "fx_grain", "fx_vhs", "fx_ripple", "fx_vignette", "fx_pixelate", "fx_glitch"
+  ];
 
   // Turning a source on clears the others, so only one is ever active.
   function bgToggle(kind, on) {
@@ -95,11 +95,12 @@
         root.style.setProperty("--font", fam);
       }
 
-      // helper url — drives both stats polling and /file media routing
+      // helper url — drives stats polling, /file media routing, and the typing poll
       if (has(p, "helperurl")) {
         var hu = String(p.helperurl.value).trim();
         if (window.WP_STATS) window.WP_STATS.setUrl(hu);
         if (window.WP_BG) window.WP_BG.setHelper(hu.replace(/\/stats\/?$/i, ""));
+        if (window.WP_TYPING) window.WP_TYPING.setUrl(hu);
       }
 
       // background source — checkboxes (exclusive) + each source's value
@@ -115,33 +116,29 @@
       if (has(p, "bgweburl")) bgValue.web   = String(p.bgweburl.value).trim();
       applyBg();
 
-      // panel corner radius + background opacity
-      if (has(p, "cardradius"))   root.style.setProperty("--card-radius", Number(p.cardradius.value) + "px");
-      if (has(p, "panelopacity")) root.style.setProperty("--panel-opacity", Number(p.panelopacity.value) / 100);
+      // Continuous look + shader-fx settings are owned by WP_LOOK, which holds a
+      // resting and a typing value for each and eases between them (typing.js
+      // flips the state). We feed it both values here; "<name>_typing" is the
+      // typing variant. The eased transition time comes from "typingease".
+      if (window.WP_LOOK) {
+        var L = window.WP_LOOK;
+        for (var li = 0; li < LOOK_KEYS.length; li++) {
+          var lk = LOOK_KEYS[li];
+          if (has(p, lk))            L.setIdle(lk, p[lk].value);
+          if (has(p, lk + "_typing")) L.setTyping(lk, p[lk + "_typing"].value);
+        }
+        if (has(p, "typingease")) L.setEase(p.typingease.value);
+      }
 
-      // background look — blur / brightness / opacity
-      if (has(p, "blur"))       root.style.setProperty("--bg-blur", Number(p.blur.value) + "px");
-      if (has(p, "brightness")) root.style.setProperty("--bg-brightness", Number(p.brightness.value) / 100);
-      if (has(p, "bgopacity"))  root.style.setProperty("--bg-opacity", Number(p.bgopacity.value) / 100);
-
-      // overlay look
+      // overlay look — visibility / color / position aren't typing-reactive
       if (has(p, "show_overlay")) overlay.hidden = !p.show_overlay.value;
       if (has(p, "overlaycolor")) {
         var oc = weColor(p.overlaycolor.value);
         if (oc) root.style.setProperty("--overlay-color", oc.rgb);
       }
-      if (has(p, "overlayopacity")) root.style.setProperty("--overlay-opacity", Number(p.overlayopacity.value) / 100);
-      if (has(p, "overlayscale"))   root.style.setProperty("--overlay-scale", Number(p.overlayscale.value) / 100);
       if (has(p, "overlaypos")) {
         overlay.className = "pos-" + p.overlaypos.value;
       }
-
-      // shader effects — each effect its own strength slider (0 = off)
-      var fxChanged = false;
-      for (var fk in fxKeys) {
-        if (has(p, fk)) { fx[fxKeys[fk]] = Number(p[fk].value) / 100; fxChanged = true; }
-      }
-      if (fxChanged && window.WP_FX) window.WP_FX.setEffects(fx);
 
       // group toggles
       if (has(p, "show_cpu"))   show.cpu = !!p.show_cpu.value;

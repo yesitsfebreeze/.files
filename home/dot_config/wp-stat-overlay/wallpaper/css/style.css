@@ -10,6 +10,8 @@
   --font: "Segoe UI", system-ui, -apple-system, sans-serif;
   --card-radius: 10px;
   --panel-opacity: 0.42;
+  /* duration of the eased morph between resting and typing looks (typing.js) */
+  --look-ease: 0.6s;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,7 +33,7 @@ html, body {
   z-index: 0;
   filter: blur(var(--bg-blur)) brightness(var(--bg-brightness));
   opacity: var(--bg-opacity);
-  transition: filter 0.15s linear, opacity 0.15s linear;
+  transition: filter var(--look-ease) ease, opacity var(--look-ease) ease;
   /* slight overscan so blur edges don't show the black background */
   transform: scale(1.06);
   transform-origin: center;
@@ -61,7 +63,7 @@ html, body {
   color: var(--overlay-color);
   opacity: var(--overlay-opacity);
   transform: scale(var(--overlay-scale));
-  transition: opacity 0.2s linear;
+  transition: opacity var(--look-ease) ease, transform var(--look-ease) ease;
   max-width: 320px;
 }
 #overlay[hidden] { display: none; }
@@ -90,6 +92,7 @@ html, body {
   border-radius: var(--card-radius);
   padding: 12px 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, calc(var(--panel-opacity) * 0.83));
+  transition: background var(--look-ease) ease, border-radius var(--look-ease) ease, box-shadow var(--look-ease) ease;
 }
 .card.mini { width: auto; padding: 6px 12px; }
 .card[hidden] { display: none; }

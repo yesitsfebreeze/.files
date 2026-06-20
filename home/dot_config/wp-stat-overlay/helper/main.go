@@ -124,9 +124,21 @@ func main() {
 		}
 		serveVideo(w, r, p)
 	})
+	// /typing reports keyboard-activity only: milliseconds since the last
+	// keystroke (system-wide). The wallpaper polls this fast to fade between its
+	// resting and typing looks. keyIdleMs is provided per-OS (keyboard_*.go); it
+	// records that a key was pressed and when — never which key.
+	mux.HandleFunc("/typing", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		if err := json.NewEncoder(w).Encode(map[string]int64{"keyIdleMs": keyIdleMs()}); err != nil {
+			log.Printf("encode: %v", err)
+		}
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Write([]byte("wpstats ok — try /stats, /file?p=<path>, /video?p=<path>\n"))
+		w.Write([]byte("wpstats ok — try /stats, /typing, /file?p=<path>, /video?p=<path>\n"))
 	})
 
 	log.Printf("wpstats listening on http://%s/stats", *addr)
