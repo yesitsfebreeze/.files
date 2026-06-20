@@ -325,20 +325,24 @@ def _finder_decode [stage] {
                 let segs = ($line | split row ":")
                 {
                     file: ($segs | get -o 0 | default "" | path expand)
-                    line: (($segs | get -o 1 | default "0" | into int))
+                    # guard `into int`: a path containing `:` mis-splits and lands a
+                    # non-numeric in this slot — fall back to 0 rather than hard-erroring.
+                    line: (try { $segs | get -o 1 | default "0" | into int } catch { 0 })
                     text: ($segs | skip 2 | str join ":")
                 }
             }
         }
         "Commits" => {
             # git-log output: "* <hash> - <subject ...>"; hash at space-split index 1.
+            # `--graph` also emits art-only continuation rows (`| *`, `|/`, `* `) whose
+            # index-1 token is not a hash — drop any row whose hash isn't a hex sha.
             $results | each { |line|
                 let fields = ($line | str trim | split row " ")
                 {
                     hash: ($fields | get -o 1 | default "")
                     subject: $line
                 }
-            }
+            } | where { |r| $r.hash =~ '^[0-9a-f]{7,}$' }
         }
         _ => $results
     }
