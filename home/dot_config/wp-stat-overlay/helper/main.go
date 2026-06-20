@@ -16,10 +16,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -136,14 +140,80 @@ func main() {
 			log.Printf("encode: %v", err)
 		}
 	})
+	// /yt?u=<youtube url> — resolve a channel "live" URL (e.g.
+	// youtube.com/@NASA/live or youtube.com/nasa/live) to the id of the video
+	// currently streaming. Those URLs carry no video id, so the wallpaper can't
+	// build an /embed link from them client-side; we fetch the page server-side
+	// (no CORS limit here) and read the live videoId out of the HTML.
+	mux.HandleFunc("/yt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		u := r.URL.Query().Get("u")
+		if u == "" {
+			http.Error(w, "missing u", http.StatusBadRequest)
+			return
+		}
+		id, err := resolveYouTubeLive(u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		if id == "" {
+			http.Error(w, "no live video found on that page", http.StatusNotFound)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]string{"videoId": id})
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Write([]byte("wpstats ok — try /stats, /typing, /file?p=<path>, /video?p=<path>\n"))
+		w.Write([]byte("wpstats ok — try /stats, /typing, /file?p=<path>, /video?p=<path>, /yt?u=<url>\n"))
 	})
 
 	log.Printf("wpstats listening on http://%s/stats", *addr)
 	srv := &http.Server{Addr: *addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	log.Fatal(srv.ListenAndServe())
+}
+
+// ytVideoIDRe pulls the first 11-char video id out of a YouTube page. On a
+// channel "/live" URL the page is the live watch page, whose own videoId leads
+// the HTML, so the first match is the active stream.
+var ytVideoIDRe = regexp.MustCompile(`"videoId":"([A-Za-z0-9_-]{11})"`)
+
+var ytClient = &http.Client{Timeout: 8 * time.Second}
+
+// resolveYouTubeLive fetches a YouTube URL and returns the live video id it
+// renders. Restricted to youtube hosts so it can't be used as a generic proxy.
+func resolveYouTubeLive(rawurl string) (string, error) {
+	pu, err := url.Parse(rawurl)
+	if err != nil {
+		return "", fmt.Errorf("bad url: %w", err)
+	}
+	host := strings.ToLower(pu.Hostname())
+	if host != "youtube.com" && host != "youtu.be" && !strings.HasSuffix(host, ".youtube.com") {
+		return "", fmt.Errorf("not a youtube url")
+	}
+	req, err := http.NewRequest(http.MethodGet, rawurl, nil)
+	if err != nil {
+		return "", err
+	}
+	// A desktop UA gets the full watch markup; the bare Go UA gets a stub.
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "+
+		"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	resp, err := ytClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20)) // 4 MB cap
+	if err != nil {
+		return "", err
+	}
+	if m := ytVideoIDRe.FindSubmatch(body); m != nil {
+		return string(m[1]), nil
+	}
+	return "", nil
 }
 
 // mediaType maps a file extension to a browser-friendly MIME type, so /file

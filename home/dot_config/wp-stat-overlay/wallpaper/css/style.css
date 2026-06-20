@@ -7,6 +7,10 @@
   --bg-blur: 0px;
   --bg-brightness: 1;
   --bg-opacity: 1;
+  /* CRT shader-overlay strengths (0..1), driven by fx.js */
+  --fx-grain: 0;
+  --fx-scanline: 0;
+  --fx-vignette: 0;
   --font: "Segoe UI", system-ui, -apple-system, sans-serif;
   --card-radius: 10px;
   --panel-opacity: 0.42;
@@ -24,6 +28,18 @@ html, body {
   font-family: var(--font);
   color: #fff;
   user-select: none;
+}
+
+/* ---- Screen wrapper ----
+   Holds the background AND the overlay so the #crt SVG filter (fx.js) and the
+   CRT overlay layers warp them as one. When fx.js sets `filter: url(#crt)` here
+   it becomes the containing block for the fixed children, but since #screen is
+   itself a full-viewport box that changes nothing about their placement. */
+#screen {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000; /* curvature pulls the corners in; this is the CRT bezel */
 }
 
 /* ---- Background layer ---- */
@@ -83,6 +99,56 @@ html, body {
 #overlay.pos-bl { bottom: 0; left: 0; align-items: flex-start; transform-origin: bottom left; }
 #overlay.pos-bc { bottom: 0;                                transform-origin: bottom center; }
 #overlay.pos-br { bottom: 0; right: 0; align-items: flex-end;  transform-origin: bottom right; }
+
+/* ---- CRT shader overlays ----
+   Full-screen layers stacked above the content but inside #screen, so the #crt
+   curvature bends them with the picture. Each is gated by a strength var (0 =
+   invisible). They never eat input. */
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;            /* above #overlay (z-index 10) */
+  pointer-events: none;
+}
+
+/* Film grain: a tiling desaturated turbulence, shimmered by stepping the
+   background-position. mix-blend keeps it reading as sensor noise, not a haze. */
+#fx-grain {
+  opacity: calc(var(--fx-grain) * 0.5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  animation: fx-grain-shift 0.6s steps(4) infinite;
+}
+@keyframes fx-grain-shift {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -28px 14px; }
+  50%  { background-position: 18px -22px; }
+  75%  { background-position: -12px -8px; }
+  100% { background-position: 24px 20px; }
+}
+
+/* Scanlines + a slow VHS roll. */
+#fx-scanline {
+  opacity: calc(var(--fx-scanline) * 0.8);
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.45) 0, rgba(0, 0, 0, 0.45) 1px,
+    transparent 1px, transparent 3px);
+  mix-blend-mode: multiply;
+  animation: fx-scan-roll 8s linear infinite;
+}
+@keyframes fx-scan-roll {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+/* Vignette: darkened corners that deepen with strength. */
+#fx-vignette {
+  opacity: var(--fx-vignette);
+  background: radial-gradient(ellipse at center,
+    transparent 52%, rgba(0, 0, 0, 0.75) 100%);
+}
 
 .card {
   width: 260px;

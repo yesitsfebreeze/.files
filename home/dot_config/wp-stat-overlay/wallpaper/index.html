@@ -7,13 +7,19 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Background layer: holds a <video>, <iframe>, or <img> chosen at runtime.
-       Blur / brightness / opacity CSS filters are applied to #bg only, so the
-       overlay stays crisp. -->
-  <div id="bg"></div>
+  <!-- #screen wraps BOTH the background and the overlay. The CRT effect layer
+       (fx.js) applies the SVG #crt filter and the grain/scanline/vignette CSS
+       overlays to this whole subtree, so every source — including a cross-origin
+       <iframe> wrapping another live wallpaper or a YouTube embed — and the stats
+       overlay all get the same curvature and shaders. (WebGL could only ever
+       sample <img>/<video>; a CSS/SVG filter composites over anything.) -->
+  <div id="screen">
+    <!-- Background layer: holds a <video>, <iframe>, or <img> chosen at runtime.
+         Blur / brightness / opacity CSS filters are applied to #bg only. -->
+    <div id="bg"></div>
 
-  <!-- Stats overlay -->
-  <div id="overlay" class="pos-tl">
+    <!-- Stats overlay -->
+    <div id="overlay" class="pos-tl">
     <section class="card" data-group="clock">
       <div class="clock" id="clock">--:--:--</div>
       <div class="sub" id="date">—</div>
@@ -48,11 +54,54 @@
       <div class="row"><span class="lbl">FPS</span><span class="val" id="fps">—</span></div>
     </section>
 
-    <div id="status" class="status">connecting to helper…</div>
-    <div id="bgstatus" class="status" hidden></div>
+      <div id="status" class="status">connecting to helper…</div>
+      <div id="bgstatus" class="status" hidden></div>
+    </div>
+
+    <!-- CRT shader overlays. They live INSIDE #screen, so the #crt SVG filter
+         curves them along with the content — scanlines bend with the glass.
+         Each is driven by a CSS var (0 = off) set from fx.js. -->
+    <div id="fx-grain" class="fx-layer"></div>
+    <div id="fx-scanline" class="fx-layer"></div>
+    <div id="fx-vignette" class="fx-layer"></div>
   </div>
 
-  <script src="js/shaders.js"></script>
+  <!-- SVG filter primitives for the optical effects that must warp the actual
+       pixels (curvature, water ripple, chromatic aberration). fx.js sets the
+       displacement-map image and animates the strengths. -->
+  <svg id="fx-defs" width="0" height="0" aria-hidden="true"
+       style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <filter id="crt" x="-6%" y="-6%" width="112%" height="112%"
+              color-interpolation-filters="sRGB">
+        <!-- barrel curvature: displace the source by a radial map (href set by fx.js) -->
+        <feImage id="fx-curve-map" result="curvemap"
+                 x="0" y="0" width="100%" height="100%" preserveAspectRatio="none"/>
+        <feDisplacementMap id="fx-curve" in="SourceGraphic" in2="curvemap"
+                           scale="0" xChannelSelector="R" yChannelSelector="G"
+                           result="curved"/>
+        <!-- water ripple: animated turbulence displacement -->
+        <feTurbulence id="fx-ripple-noise" type="turbulence"
+                      baseFrequency="0.012" numOctaves="2" seed="7" result="rnoise"/>
+        <feDisplacementMap id="fx-ripple" in="curved" in2="rnoise"
+                           scale="0" xChannelSelector="R" yChannelSelector="G"
+                           result="rippled"/>
+        <!-- chromatic aberration: split R/B channels and shove them apart -->
+        <feColorMatrix in="rippled" type="matrix" result="ch-r"
+          values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
+        <feColorMatrix in="rippled" type="matrix" result="ch-g"
+          values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
+        <feColorMatrix in="rippled" type="matrix" result="ch-b"
+          values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+        <feOffset id="fx-chroma-r" in="ch-r" dx="0" dy="0" result="ch-ro"/>
+        <feOffset id="fx-chroma-b" in="ch-b" dx="0" dy="0" result="ch-bo"/>
+        <feBlend in="ch-ro" in2="ch-g" mode="screen" result="ch-rg"/>
+        <feBlend in="ch-rg" in2="ch-bo" mode="screen"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <script src="js/fx.js"></script>
   <script src="js/background.js"></script>
   <script src="js/look.js"></script>
   <script src="js/typing.js"></script>

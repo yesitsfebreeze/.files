@@ -96,19 +96,52 @@
     })();
   }
 
+  // ytEmbed — the player URL for a known video id (looped, muted, chromeless).
+  function ytEmbed(id) {
+    return "https://www.youtube.com/embed/" + id +
+      "?autoplay=1&mute=1&loop=1&playlist=" + id +
+      "&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0";
+  }
+
+  // resolveYouTubeLive — channel "live" URLs (youtube.com/@NASA/live,
+  // youtube.com/nasa/live, /c/x/live, /user/x/live) carry no video id, so we
+  // can't build an /embed link from them here. The helper fetches the page
+  // server-side (no CORS wall) and reads out the current live videoId; cb(id) on
+  // success, cb(null, err) otherwise.
+  function resolveYouTubeLive(url, cb) {
+    var api = helperBase + "/yt?u=" + encodeURIComponent(url);
+    fetch(api, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) { r.text().then(function (t) { cb(null, "helper " + r.status + (t ? " " + t.trim() : "")); }); return null; }
+      return r.json();
+    }).then(function (j) {
+      if (j) cb(j.videoId || null, j.videoId ? null : "no live video");
+    }).catch(function () {
+      cb(null, "helper unreachable — is wpstats running?");
+    });
+  }
+
   // toEmbed — turn a pasted page URL into something that actually embeds and
   // plays as a wallpaper. Watch/share URLs don't embed; their player URLs do.
   function toEmbed(url) {
+    // direct video id: watch / shorts / embed / live/<id> / youtu.be
     var yt = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/i);
-    if (yt) {
-      var id = yt[1];
+    if (yt) return { kind: "youtube", src: ytEmbed(yt[1]) };
+
+    // channel live by channel id: youtube.com/channel/UC.../live → live_stream
+    var ytCh = url.match(/youtube\.com\/channel\/(UC[\w-]{22})\/live/i);
+    if (ytCh) {
       return {
         kind: "youtube",
-        src: "https://www.youtube.com/embed/" + id +
-          "?autoplay=1&mute=1&loop=1&playlist=" + id +
-          "&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0"
+        src: "https://www.youtube.com/embed/live_stream?channel=" + ytCh[1] +
+          "&autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0"
       };
     }
+
+    // channel live by handle/custom name: youtube.com/@NASA/live, /nasa/live,
+    // /c/x/live, /user/x/live — no id in the URL, resolve via the helper.
+    var ytLive = url.match(/youtube\.com\/(?:@|c\/|user\/)?[\w.-]+\/live\/?(?:$|\?)/i);
+    if (ytLive) return { kind: "youtube-resolve", src: url };
+
     var vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
     if (vm) {
       return {
@@ -138,7 +171,7 @@
     }
     var e = toEmbed(url);
     var f = document.createElement("iframe");
-    f.src = e.src; f.setAttribute("scrolling", "no");
+    f.setAttribute("scrolling", "no");
     f.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
     f.onload = function () {
       // A cross-origin page that refuses framing (X-Frame-Options/CSP) still
@@ -146,6 +179,16 @@
       // note for media embeds; warn gently for arbitrary pages.
       report(e.kind === "page" ? "" : "");
     };
+    if (e.kind === "youtube-resolve") {
+      // No id in the URL yet — ask the helper, then point the iframe at the
+      // live player once it answers.
+      resolveYouTubeLive(url, function (id, err) {
+        if (id) { f.src = ytEmbed(id); report(""); }
+        else { report("couldn't resolve YouTube live (" + (err || "no live video") + "): " + url, true); }
+      });
+      return { el: f, note: "resolving YouTube live stream…" };
+    }
+    f.src = e.src;
     return { el: f, note: "loading " + e.kind + "…" };
   }
 

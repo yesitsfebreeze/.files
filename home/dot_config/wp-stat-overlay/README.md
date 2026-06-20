@@ -20,10 +20,24 @@ once a second and renders. That is what makes it work on *any* machine — the
 helper is the portable, OS-aware piece (gopsutil for CPU/RAM/net/disk/temps,
 `nvidia-smi` for GPU when present).
 
-The background is a single `#bg` layer holding a `<video>`, `<iframe>`, or
-`<img>`; `blur` / `brightness` / `bgopacity` are CSS filters applied to it, so
-the overlay stays crisp. "Wrap another live wallpaper" = point the iframe at its
-`index.html`, or the video layer at its `.mp4`/`.webm`.
+The background is a `#bg` layer holding a `<video>`, `<iframe>`, or `<img>`;
+`blur` / `brightness` / `bgopacity` are CSS filters applied to it. "Wrap another
+live wallpaper" = point the iframe at its `index.html` (or any web URL), or the
+video layer at its `.mp4`/`.webm`.
+
+**CRT effect layer (`fx.js`).** `#bg` and the stats overlay live together inside
+`#screen`, and a CSS/SVG filter (`#crt`) plus three overlay layers post-process
+that whole subtree — so curvature, chromatic aberration, water ripple, film
+grain, scanlines/VHS and vignette land on the background **and** the overlay at
+once. Because it's a CSS/SVG filter (not WebGL, which can only sample
+`<img>`/`<video>`), the effects also apply to a cross-origin `<iframe>` — i.e. a
+wrapped web page or another live wallpaper. Each effect is a 0–100 slider with a
+typing-reactive twin.
+
+**YouTube.** Paste a watch / `youtu.be` / `live/<id>` URL, or a channel live URL
+(`youtube.com/@handle/live`, `youtube.com/name/live`). The latter carries no
+video id, so the helper's `/yt` endpoint fetches the page server-side and
+resolves the currently-live video for the embed.
 
 Looking for backgrounds to wrap? <https://motionbgs.com> has a big library of
 free live/motion wallpapers (grab a video URL or download the `.mp4`).

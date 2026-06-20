@@ -59,7 +59,7 @@
   var LOOK_KEYS = [
     "blur", "brightness", "bgopacity", "panelopacity", "cardradius",
     "overlayopacity", "overlayscale",
-    "fx_chroma", "fx_grain", "fx_vhs", "fx_ripple", "fx_vignette", "fx_pixelate", "fx_glitch"
+    "fx_curvature", "fx_chroma", "fx_grain", "fx_vhs", "fx_ripple", "fx_vignette"
   ];
 
   // Turning a source on clears the others, so only one is ever active.
