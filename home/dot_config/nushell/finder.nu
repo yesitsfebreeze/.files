@@ -126,15 +126,14 @@ def _finder_loop [] {
 # _finder_pick_channel: fuzzy-pick a tv channel name. Single-select, enter confirms.
 def _finder_pick_channel [committed: list] {
     let breadcrumb = $"(_finder_breadcrumb $committed) pick channel"
-    let out = (
-        tv
-            --source-command "tv list-channels"
-            --input-header $breadcrumb
-            --keybindings 'enter="confirm_selection"'
-        | complete
-    )
-    if $out.exit_code != 0 { return "" }
-    let lines = ($out.stdout | str trim | lines)
+    # Capture tv's stdout DIRECTLY — never `| complete`. `complete` also captures stderr,
+    # which detaches tv's controlling terminal so it panics "Failed to create TUI instance
+    # (os error 6)". Plain capture leaves stdin/stderr on the tty and the picker renders
+    # (the same pattern the ff/fcd/fg helpers use). Esc/abort yields empty output.
+    let raw = (try {
+        tv --source-command "tv list-channels" --input-header $breadcrumb --keybindings 'enter="confirm_selection"'
+    } catch { "" })
+    let lines = ($raw | str trim | lines)
     if ($lines | is-empty) { return "" }
     $lines | first | str trim
 }
@@ -156,12 +155,11 @@ def _finder_run_channel [channel: string, carry, committed: list] {
     if not ($scope.source_cmd | is-empty) {
         $args = ($args | append ["--source-command" $scope.source_cmd])
     }
-    let out = (tv $channel ...$args | complete)
-
-    if $out.exit_code != 0 {
-        return { key: "abort", entries: [] }
-    }
-    _finder_parse $out.stdout
+    # Direct capture (NOT `| complete`) so tv keeps the controlling terminal — see
+    # _finder_pick_channel. Keep the RAW stdout (no trim): the leading empty line under
+    # --expect signals a plain enter, which _finder_parse relies on. Esc → empty → abort.
+    let raw = (try { tv $channel ...$args } catch { "" })
+    _finder_parse $raw
 }
 
 # _finder_parse: decode tv's --expect stdout into { key, entries }.
