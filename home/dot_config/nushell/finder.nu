@@ -23,13 +23,13 @@
 #     `--keybindings 'enter="confirm_selection"'`. NOTE the CLI `--keybindings` grammar
 #     is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file
 #     `action = "key"` form. Verified: the config-file form is rejected by the CLI flag.
-#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-a;ctrl-o'`). Comma, space,
+#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-n;ctrl-b'`). Comma, space,
 #     and repeated flags are all rejected by tv 0.15.8.
 #   - With `--expect`, confirming prints the pressed key as line 1, then the entries.
 #     A PLAIN enter prints an EMPTY first line (""), then the entries (per tv docs).
-#   - chain key = ctrl-a, back key = ctrl-o. ctrl-o also being git-log's checkout action
-#     is harmless: a key listed in `--expect` is intercepted as a confirm key, so our
-#     use wins over the channel's own binding.
+#   - filter/next key = ctrl-n, back key = ctrl-b. A key listed in `--expect` is
+#     intercepted by tv as a confirm key, overriding any channel- or default-binding it
+#     would otherwise have (e.g. ctrl-n's usual select-next), so our use wins.
 
 # ── public entrypoint ────────────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ def _finder_loop [
     pending_seed: any = null    # a channel to re-run immediately (resume = re-enter last search)
 ] {
     mut committed = $committed_seed
-    # `pending` forces ONE re-run of a specific channel (set by ctrl-o back-nav, or by
+    # `pending` forces ONE re-run of a specific channel (set by ctrl-b back-nav, or by
     # resume to drop straight back into the last search). When null, fuzzy-pick a channel.
     mut pending = $pending_seed
     loop {
@@ -92,7 +92,7 @@ def _finder_loop [
         $pending = null   # consume: only forces a single re-run
         if ($channel | is-empty) {
             # esc/empty at channel-pick: step back if we have history, else abort.
-            # With a non-empty stack, pop and re-run the prior stage (consistent w/ ctrl-o).
+            # With a non-empty stack, pop and re-run the prior stage (consistent w/ ctrl-b).
             if ($committed | is-empty) { return [] }
             let back = ($committed | last)
             $committed = ($committed | drop 1)
@@ -108,8 +108,9 @@ def _finder_loop [
                 $committed = ($committed | append $stage)
                 break
             }
-            "ctrl-a" => {
-                # chain forward: commit this stage; loop re-runs picker scoped by it.
+            "ctrl-n" => {
+                # add a new filter (chain forward): commit this stage; loop re-runs the
+                # picker scoped by it, showing only channels that accept this output type.
                 # Two no-op guards (re-run the same stage instead of committing):
                 #   - empty selection: chaining off nothing would scope the next stage to
                 #     nothing.
@@ -124,7 +125,7 @@ def _finder_loop [
                     $committed = ($committed | append $stage)
                 }
             }
-            "ctrl-o" => {
+            "ctrl-b" => {
                 # back: pop the most-recent committed stage and RE-RUN that channel fresh
                 # with the carry from the stage now below it (moves exactly one upstream).
                 if ($committed | is-empty) { break }
@@ -171,14 +172,16 @@ def _finder_pick_channel [committed: list, carry] {
 # _finder_run_channel: run `channel`, scoped by `carry`, capturing the confirm key
 # and selected entries. Returns { key: string, entries: list<string> }.
 def _finder_run_channel [channel: string, carry, committed: list] {
-    let breadcrumb = $"(_finder_breadcrumb $committed)(_finder_legend)"
+    # Header = the whole input chain so far + the channel we're in now + the key legend.
+    let crumb = (_finder_breadcrumb $committed)
+    let breadcrumb = $"($crumb) ($channel)(_finder_legend)"
     let scope = (_finder_scope $channel $carry)
 
     # Single invocation: common flags, plus --source-command only when scoped.
     mut args = [
         "--input-header" $breadcrumb
         "--keybindings" 'enter="confirm_selection";tab="toggle_selection"'
-        "--expect" 'ctrl-a;ctrl-o'
+        "--expect" 'ctrl-n;ctrl-b'
     ]
     if not ($scope.source_cmd | is-empty) {
         $args = ($args | append ["--source-command" $scope.source_cmd])
@@ -204,7 +207,7 @@ def _finder_parse [raw: string] {
         return { key: "abort", entries: [] }
     }
     let head = ($lines | first | str trim)
-    let known = ["ctrl-a" "ctrl-o" "enter" "esc"]
+    let known = ["ctrl-n" "ctrl-b" "enter" "esc"]
     if $head in $known {
         { key: $head, entries: ($lines | skip 1) }
     } else if ($head | is-empty) {
@@ -227,18 +230,21 @@ def _finder_mk_stage [channel: string, entries: list] {
 
 # ── breadcrumb (data we SET; always works) ───────────────────────────────────
 
+# _finder_breadcrumb: the whole input chain so far, shown up top in every header. Each
+# committed stage renders as `channel[N]` (N = how many entries it carries forward), so
+# you can always see the full pipeline that led here. Trailing ` >` joins to the current.
 def _finder_breadcrumb [committed: list] {
     if ($committed | is-empty) {
         ""
     } else {
-        ($committed | get channel | str join " > ") + " >"
+        ($committed | each { |s| $"($s.channel)[($s.results | length)]" } | str join " > ") + " >"
     }
 }
 
 # _finder_legend: the always-visible key hint. tv never advertises our --expect keys,
 # so without this the chain/back shortcuts are undiscoverable. Shown in every header.
 def _finder_legend [] {
-    "  [enter] done   [ctrl-a] chain+   [ctrl-o] back"
+    "    [enter] done   [ctrl-n] filter+   [ctrl-b] back"
 }
 
 # ── type table (accepts / produces) ──────────────────────────────────────────
