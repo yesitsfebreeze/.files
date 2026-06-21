@@ -44,20 +44,28 @@ export def --env finder [
         error make { msg: "finder: `tv` (television) is not installed — required dependency" }
     }
 
-    # Resume handling: offer the persisted stack unless told otherwise.
+    # Resume handling: re-ENTER the saved chain, don't just reprint its result. We seed
+    # the loop with the prior stages (so the breadcrumb shows how we got there) and re-run
+    # the last channel fresh, scoped by the stage below it — dropping you back INTO the
+    # last search rather than dumping its output. (tv can't restore the live query/marks,
+    # so "resume the same search" means re-open that channel with the same scope.)
     let persisted = (_finder_load)
-    if ($persisted != null) and (not $fresh) {
+    let resume_stack = if ($persisted != null) and (not $fresh) {
         let do_resume = if $resume {
             true
         } else {
-            (input "resume last finder result? (y/N) " | str trim | str downcase) in ["y" "yes"]
+            (input "resume last finder search? (y/N) " | str trim | str downcase) in ["y" "yes"]
         }
-        if $do_resume {
-            return (_finder_decode ($persisted.stack | last))
-        }
+        if $do_resume { $persisted.stack } else { null }
+    } else { null }
+
+    let committed = if ($resume_stack != null) and (($resume_stack | length) > 0) {
+        let last = ($resume_stack | last)
+        _finder_loop ($resume_stack | drop 1) $last.channel
+    } else {
+        _finder_loop
     }
 
-    let committed = (_finder_loop)
     if ($committed | is-empty) {
         return []
     }
@@ -69,11 +77,14 @@ export def --env finder [
 
 # _finder_loop: drive the channel-pick / run / branch cycle. Returns the committed
 # list<stage> ending in the confirmed final stage, or [] on a clean abort.
-def _finder_loop [] {
-    mut committed = []
-    # `pending` forces ONE re-run of a specific channel (set by ctrl-o back-nav).
-    # When null, the loop top fuzzy-picks a channel as usual.
-    mut pending = null
+def _finder_loop [
+    committed_seed: list = []   # prior chain to resume on top of (breadcrumb shows it)
+    pending_seed: any = null    # a channel to re-run immediately (resume = re-enter last search)
+] {
+    mut committed = $committed_seed
+    # `pending` forces ONE re-run of a specific channel (set by ctrl-o back-nav, or by
+    # resume to drop straight back into the last search). When null, fuzzy-pick a channel.
+    mut pending = $pending_seed
     loop {
         let carry = (if ($committed | is-empty) { null } else { $committed | last })
 
@@ -125,7 +136,7 @@ def _finder_loop [] {
 
 # _finder_pick_channel: fuzzy-pick a tv channel name. Single-select, enter confirms.
 def _finder_pick_channel [committed: list] {
-    let breadcrumb = $"(_finder_breadcrumb $committed) pick channel"
+    let breadcrumb = $"(_finder_breadcrumb $committed) pick channel   [enter] open   [esc] back"
     # Capture tv's stdout DIRECTLY — never `| complete`. `complete` also captures stderr,
     # which detaches tv's controlling terminal so it panics "Failed to create TUI instance
     # (os error 6)". Plain capture leaves stdin/stderr on the tty and the picker renders
@@ -143,7 +154,7 @@ def _finder_pick_channel [committed: list] {
 # _finder_run_channel: run `channel`, scoped by `carry`, capturing the confirm key
 # and selected entries. Returns { key: string, entries: list<string> }.
 def _finder_run_channel [channel: string, carry, committed: list] {
-    let breadcrumb = (_finder_breadcrumb $committed)
+    let breadcrumb = $"(_finder_breadcrumb $committed)(_finder_legend)"
     let scope = (_finder_scope $channel $carry)
 
     # Single invocation: common flags, plus --source-command only when scoped.
@@ -205,6 +216,12 @@ def _finder_breadcrumb [committed: list] {
     } else {
         ($committed | get channel | str join " > ") + " >"
     }
+}
+
+# _finder_legend: the always-visible key hint. tv never advertises our --expect keys,
+# so without this the chain/back shortcuts are undiscoverable. Shown in every header.
+def _finder_legend [] {
+    "  [enter] done   [ctrl-a] chain+   [ctrl-o] back"
 }
 
 # ── type table (accepts / produces) ──────────────────────────────────────────
