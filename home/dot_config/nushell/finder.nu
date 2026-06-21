@@ -88,7 +88,7 @@ def _finder_loop [
     loop {
         let carry = (if ($committed | is-empty) { null } else { $committed | last })
 
-        let channel = (if $pending != null { $pending } else { (_finder_pick_channel $committed) })
+        let channel = (if $pending != null { $pending } else { (_finder_pick_channel $committed $carry) })
         $pending = null   # consume: only forces a single re-run
         if ($channel | is-empty) {
             # esc/empty at channel-pick: step back if we have history, else abort.
@@ -110,9 +110,15 @@ def _finder_loop [
             }
             "ctrl-a" => {
                 # chain forward: commit this stage; loop re-runs picker scoped by it.
-                # Guard (BUG 3): an empty-entry stage must not commit — chaining off it
-                # would scope the next stage to nothing. Treat as a no-op (re-run same).
+                # Two no-op guards (re-run the same stage instead of committing):
+                #   - empty selection: chaining off nothing would scope the next stage to
+                #     nothing.
+                #   - dead-end type: this stage's output type has no channel that accepts
+                #     it (e.g. GrepList, or an untyped channel like `env`), so there is
+                #     nothing to chain into — don't commit a stage you can't build on.
                 if ($stage.results | is-empty) {
+                    $pending = $channel
+                } else if ((_finder_compatible $stage) | is-empty) {
                     $pending = $channel
                 } else {
                     $committed = ($committed | append $stage)
@@ -135,14 +141,25 @@ def _finder_loop [
 # ── channel picker (channel-list-as-picker) ──────────────────────────────────
 
 # _finder_pick_channel: fuzzy-pick a tv channel name. Single-select, enter confirms.
-def _finder_pick_channel [committed: list] {
+# First pick (no carry) lists ALL tv channels. A CHAIN pick (carry present) lists only
+# the channels the carry can flow into — so nonsense chains (e.g. `env > text`) are never
+# offered. Returns "" on esc/abort.
+def _finder_pick_channel [committed: list, carry] {
     let breadcrumb = $"(_finder_breadcrumb $committed) pick channel   [enter] open   [esc] back"
+    let source = if ($carry == null) {
+        "tv list-channels"
+    } else {
+        # chain pick: restrict to channels with a typed edge from this carry.
+        let names = (_finder_compatible $carry)
+        if ($names | is-empty) { return "" }
+        $"printf '%s\\n' ($names | str join ' ')"
+    }
     # Capture tv's stdout DIRECTLY — never `| complete`. `complete` also captures stderr,
     # which detaches tv's controlling terminal so it panics "Failed to create TUI instance
     # (os error 6)". Plain capture leaves stdin/stderr on the tty and the picker renders
     # (the same pattern the ff/fcd/fg helpers use). Esc/abort yields empty output.
     let raw = (try {
-        tv --source-command "tv list-channels" --input-header $breadcrumb --keybindings 'enter="confirm_selection"'
+        tv --source-command $source --input-header $breadcrumb --keybindings 'enter="confirm_selection"'
     } catch { "" })
     let lines = ($raw | str trim | lines)
     if ($lines | is-empty) { return "" }
@@ -239,6 +256,22 @@ def _finder_type [channel: string] {
     $table | get -o $channel | default { produces: "Any", accepts: [] }
 }
 
+# _finder_channels: the channels finder knows how to TYPE (and so can chain). Used as
+# the candidate set when filtering the chain picker. First-pick lists all tv channels;
+# only these can appear as a *chain* target because only these have typed scope edges.
+def _finder_channels [] {
+    ["files" "dirs" "text" "git-log"]
+}
+
+# _finder_compatible: channels you can chain INTO from this carry — exactly those for
+# which _finder_scope yields a real scoped command. Deriving the picker list from the
+# scope edges (not a separate `accepts` table) means the two can never drift: if a
+# channel shows up in the chain picker, the carry is guaranteed to flow into it.
+def _finder_compatible [carry] {
+    if ($carry == null) or (($carry.results | default [] | is-empty)) { return [] }
+    _finder_channels | where { |ch| not ((_finder_scope $ch $carry).source_cmd | is-empty) }
+}
+
 # ── scoping dispatch ─────────────────────────────────────────────────────────
 
 # _finder_scope: given a channel + carry, build the scoped --source-command (or none).
@@ -258,17 +291,27 @@ def _finder_scope [channel: string, carry] {
     let abs = ($carry.results | each { |p| $p | path expand })
 
     let scoped = match [$channel, $carry.produces] {
-        # v1 edge: files/dirs → text — restrict the rg path set, same output shape.
+        # dirs → files — list files under the carried directories (mirrors files.toml `fd -t f`).
+        ["files", "DirList"] => {
+            let paths = (_finder_shquote_list $abs)
+            $"fd -t f --color=never . ($paths)"
+        }
+        # dirs → dirs — descend into subdirs of the carried directories (mirrors dirs.toml).
+        ["dirs", "DirList"] => {
+            let paths = (_finder_shquote_list $abs)
+            $"fd -t d --color=never . ($paths)"
+        }
+        # files/dirs → text — restrict the rg path set, same output shape.
         ["text", "FileList"] | ["text", "DirList"] => {
             let paths = (_finder_shquote_list $abs)
             $"rg . --no-heading --line-number --color=never -- ($paths)"
         }
-        # v1 edge: files → git-log — same pretty/graph format, scoped to the paths.
+        # files → git-log — same pretty/graph format, scoped to the paths.
         ["git-log", "FileList"] => {
             let paths = (_finder_shquote_list $abs)
             $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)"
         }
-        _ => { "" }   # not a v1-scoped pair → fresh
+        _ => { "" }   # no typed edge → not chainable from this carry
     }
 
     { source_cmd: $scoped }
