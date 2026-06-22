@@ -163,6 +163,8 @@ wezterm.on("update-status", center_grid)
 -- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
 -- (e.g. first run before any theme has been picked).
 local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
+-- Capture the theme background before it's nil'd below; the macOS glass reuses it.
+local tinty_bg = (ok and type(tinty_colors) == "table") and tinty_colors.background or nil
 if ok and type(tinty_colors) == "table" then
     -- Drop tinty's background so window_background_opacity below governs. A solid
     -- colors.background paints an opaque layer over the translucent window, killing
@@ -212,6 +214,15 @@ end
 config.window_background_opacity = 0.0
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
+
+-- macOS frosted-dark glass: blur the desktop behind the window, tinted with the
+-- active tinty background at < 1 opacity. macOS only; Windows/Linux stay clear.
+if is_mac then
+    config.colors = config.colors or {}
+    config.colors.background = tinty_bg or "#000000"
+    config.window_background_opacity = 0.45
+    config.macos_window_background_blur = 30
+end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
