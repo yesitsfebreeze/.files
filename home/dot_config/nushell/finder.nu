@@ -139,32 +139,72 @@ def _finder_loop [
     $committed
 }
 
-# ── channel picker (channel-list-as-picker) ──────────────────────────────────
+# ── channel picker (type-to-narrow, autofire on unique prefix) ────────────────
 
-# _finder_pick_channel: fuzzy-pick a tv channel name. Single-select, enter confirms.
-# First pick (no carry) lists ALL tv channels. A CHAIN pick (carry present) lists only
-# the channels the carry can flow into — so nonsense chains (e.g. `env > text`) are never
-# offered. Returns "" on esc/abort.
+# _finder_pick_channel: choose a tv channel by typing its name's unique prefix. No fuzzy
+# multiselect — you type the first distinguishing letters and the instant exactly one
+# channel still matches, it fires (e.g. `f` -> files). First pick (no carry) ranges over
+# ALL tv channels; a CHAIN pick (carry present) ranges only over channels the carry can
+# flow into, so nonsense chains are never offered. Returns "" on esc/abort.
 def _finder_pick_channel [committed: list, carry] {
-    let breadcrumb = $"(_finder_breadcrumb $committed) pick channel   [enter] open   [esc] back"
-    let source = if ($carry == null) {
-        "tv list-channels"
+    let crumb = (_finder_breadcrumb $committed)
+    let names = if ($carry == null) {
+        tv list-channels | lines | each { |l| $l | str trim } | where { |l| $l != "" }
     } else {
-        # chain pick: restrict to channels with a typed edge from this carry.
-        let names = (_finder_compatible $carry)
-        if ($names | is-empty) { return "" }
-        $"printf '%s\\n' ($names | str join ' ')"
+        _finder_compatible $carry
     }
-    # Capture tv's stdout DIRECTLY — never `| complete`. `complete` also captures stderr,
-    # which detaches tv's controlling terminal so it panics "Failed to create TUI instance
-    # (os error 6)". Plain capture leaves stdin/stderr on the tty and the picker renders
-    # (capturing tv's stdout directly). Esc/abort yields empty output.
-    let raw = (try {
-        tv --source-command $source --input-header $breadcrumb --keybindings 'enter="confirm_selection"'
-    } catch { "" })
-    let lines = ($raw | str trim | lines)
-    if ($lines | is-empty) { return "" }
-    $lines | first | str trim
+    if ($names | is-empty) { return "" }
+    _finder_prefix_pick $names $crumb
+}
+
+# _finder_prefix_pick: type-to-narrow selector over `names`. Holds a typed prefix buffer,
+# shows only the names starting with it (case-insensitive), and AUTOFIRES the moment a
+# single candidate remains. A keystroke that would empty the set is rejected (dead-end
+# guard), so the buffer always matches ≥1 name. backspace deletes, enter takes the first
+# remaining, esc / ctrl-c abort. Renders in place on one line (CR + erase-line).
+def _finder_prefix_pick [names: list, crumb: string] {
+    if not (is-terminal --stdin) { return ($names | first) }   # non-interactive: first
+    if (($names | length) == 1) { return ($names | first) }    # nothing to disambiguate
+    mut buf = ""
+    mut result = ""
+    loop {
+        let pre = ($buf | str downcase)
+        let matches = ($names | where { |n| ($n | str downcase | str starts-with $pre) })
+        if (($matches | length) == 1) { $result = ($matches | first); break }   # autofire
+        _finder_prefix_render $crumb $buf $matches
+        let k = (input listen --types [key])
+        if ($k.code == "esc") { break }                                          # -> ""
+        if ($k.code == "c") and ("keymodifiers(control)" in $k.modifiers) { break }
+        if ($k.code == "enter") {
+            if ($matches | is-not-empty) { $result = ($matches | first) }
+            break
+        }
+        if ($k.code == "backspace") {
+            let n = ($buf | str length)
+            $buf = (if ($n <= 1) { "" } else { $buf | str substring 0..<($n - 1) })
+            continue
+        }
+        if ($k.key_type == "char") {
+            let nb = $"($buf)($k.code)"
+            if ($names | any { |n| ($n | str downcase | str starts-with ($nb | str downcase)) }) {
+                $buf = $nb
+            }
+            # else: dead-end char rejected — buffer unchanged.
+        }
+    }
+    print ""   # close the in-place status line with a newline
+    $result
+}
+
+# _finder_prefix_render: redraw the one-line selector in place — typed prefix + a block
+# cursor, then the remaining candidates (capped, with a +N overflow tag). `\e[2K\r` clears
+# the line and returns the cursor so each keystroke overwrites the previous frame.
+def _finder_prefix_render [crumb: string, buf: string, matches: list] {
+    let head = (if ($crumb | is-empty) { "find" } else { $crumb })
+    let cap = 14
+    let shown = ($matches | take $cap | str join " ")
+    let overflow = (if (($matches | length) > $cap) { $" +(($matches | length) - $cap)" } else { "" })
+    print -n $"\u{1b}[2K\r(ansi green_bold)($head)(ansi reset) (ansi yellow_bold)($buf)(ansi reset)▌  (ansi dark_gray)($shown)($overflow)(ansi reset)"
 }
 
 # ── run one channel + parse --expect output ──────────────────────────────────
