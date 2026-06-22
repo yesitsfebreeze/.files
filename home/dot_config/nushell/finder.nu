@@ -23,13 +23,13 @@
 #     `--keybindings 'enter="confirm_selection"'`. NOTE the CLI `--keybindings` grammar
 #     is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file
 #     `action = "key"` form. Verified: the config-file form is rejected by the CLI flag.
-#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-n;ctrl-b'`). Comma, space,
+#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-p;ctrl-b'`). Comma, space,
 #     and repeated flags are all rejected by tv 0.15.8.
 #   - With `--expect`, confirming prints the pressed key as line 1, then the entries.
 #     A PLAIN enter prints an EMPTY first line (""), then the entries (per tv docs).
-#   - filter/next key = ctrl-n, back key = ctrl-b. A key listed in `--expect` is
+#   - pipe/next key = ctrl-p, back key = ctrl-b. A key listed in `--expect` is
 #     intercepted by tv as a confirm key, overriding any channel- or default-binding it
-#     would otherwise have (e.g. ctrl-n's usual select-next), so our use wins.
+#     would otherwise have (e.g. ctrl-p's usual select-prev), so our use wins.
 
 # ── public entrypoint ────────────────────────────────────────────────────────
 
@@ -108,9 +108,9 @@ def _finder_loop [
                 $committed = ($committed | append $stage)
                 break
             }
-            "ctrl-n" => {
-                # add a new filter (chain forward): commit this stage; loop re-runs the
-                # picker scoped by it, showing only channels that accept this output type.
+            "ctrl-p" => {
+                # pipe forward (chain): commit this stage; loop re-runs the prefix picker
+                # scoped by it, showing only channels that accept this output type.
                 # Two no-op guards (re-run the same stage instead of committing):
                 #   - empty selection: chaining off nothing would scope the next stage to
                 #     nothing.
@@ -157,6 +157,31 @@ def _finder_pick_channel [committed: list, carry] {
     _finder_prefix_pick $names $crumb
 }
 
+# ── prefix-pick: pure narrowing logic (testable) ──────────────────────────────
+# These three pure helpers are the entire input model of the prefix picker; the
+# interactive loop below is just I/O around them. Kept separate so they can be unit
+# tested headless (see tests/nushell/finder-test.nu).
+
+# _finder_prefix_filter: names whose value case-insensitively starts with `buf`. The
+# narrowing heart of the picker — 1 match means autofire, 0 matches means dead end.
+def _finder_prefix_filter [names: list, buf: string] {
+    let pre = ($buf | str downcase)
+    $names | where { |n| ($n | str downcase | str starts-with $pre) }
+}
+
+# _finder_prefix_advance: `buf + ch`, but only if that still matches ≥1 name — a
+# dead-end keystroke is swallowed and the buffer is returned unchanged.
+def _finder_prefix_advance [names: list, buf: string, ch: string] {
+    let nb = $"($buf)($ch)"
+    if (_finder_prefix_filter $names $nb | is-not-empty) { $nb } else { $buf }
+}
+
+# _finder_prefix_backspace: drop the last char of `buf` (empty/1-char -> empty).
+def _finder_prefix_backspace [buf: string] {
+    let n = ($buf | str length)
+    if ($n <= 1) { "" } else { $buf | str substring 0..<($n - 1) }
+}
+
 # _finder_prefix_pick: type-to-narrow selector over `names`. Holds a typed prefix buffer,
 # shows only the names starting with it (case-insensitive), and AUTOFIRES the moment a
 # single candidate remains. A keystroke that would empty the set is rejected (dead-end
@@ -168,8 +193,7 @@ def _finder_prefix_pick [names: list, crumb: string] {
     mut buf = ""
     mut result = ""
     loop {
-        let pre = ($buf | str downcase)
-        let matches = ($names | where { |n| ($n | str downcase | str starts-with $pre) })
+        let matches = (_finder_prefix_filter $names $buf)
         if (($matches | length) == 1) { $result = ($matches | first); break }   # autofire
         _finder_prefix_render $crumb $buf $matches
         let k = (input listen --types [key])
@@ -179,18 +203,8 @@ def _finder_prefix_pick [names: list, crumb: string] {
             if ($matches | is-not-empty) { $result = ($matches | first) }
             break
         }
-        if ($k.code == "backspace") {
-            let n = ($buf | str length)
-            $buf = (if ($n <= 1) { "" } else { $buf | str substring 0..<($n - 1) })
-            continue
-        }
-        if ($k.key_type == "char") {
-            let nb = $"($buf)($k.code)"
-            if ($names | any { |n| ($n | str downcase | str starts-with ($nb | str downcase)) }) {
-                $buf = $nb
-            }
-            # else: dead-end char rejected — buffer unchanged.
-        }
+        if ($k.code == "backspace") { $buf = (_finder_prefix_backspace $buf); continue }
+        if ($k.key_type == "char")  { $buf = (_finder_prefix_advance $names $buf $k.code) }
     }
     print ""   # close the in-place status line with a newline
     $result
@@ -221,7 +235,7 @@ def _finder_run_channel [channel: string, carry, committed: list] {
     mut args = [
         "--input-header" $breadcrumb
         "--keybindings" 'enter="confirm_selection";tab="toggle_selection"'
-        "--expect" 'ctrl-n;ctrl-b'
+        "--expect" 'ctrl-p;ctrl-b'
     ]
     if not ($scope.source_cmd | is-empty) {
         $args = ($args | append ["--source-command" $scope.source_cmd])
@@ -247,7 +261,7 @@ def _finder_parse [raw: string] {
         return { key: "abort", entries: [] }
     }
     let head = ($lines | first | str trim)
-    let known = ["ctrl-n" "ctrl-b" "enter" "esc"]
+    let known = ["ctrl-p" "ctrl-b" "enter" "esc"]
     if $head in $known {
         { key: $head, entries: ($lines | skip 1) }
     } else if ($head | is-empty) {
@@ -284,7 +298,7 @@ def _finder_breadcrumb [committed: list] {
 # _finder_legend: the always-visible key hint. tv never advertises our --expect keys,
 # so without this the chain/back shortcuts are undiscoverable. Shown in every header.
 def _finder_legend [] {
-    "    [enter] done   [ctrl-n] filter+   [ctrl-b] back"
+    "    [enter] done   [ctrl-p] pipe   [ctrl-b] back"
 }
 
 # ── type table (accepts / produces) ──────────────────────────────────────────

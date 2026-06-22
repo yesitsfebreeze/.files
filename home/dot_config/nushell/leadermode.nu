@@ -28,8 +28,10 @@
 # _leader_menu: the leader keymap tree. Edit this to bind your own shortcuts.
 def _leader_menu [] {
     [
-        { key: "f", desc: "find",   find: {|| finder } }
-        { key: "r", desc: "resume", find: {|| finder --resume } }
+        # f resumes the last search by default (refind); shift-F starts fresh. `input
+        # listen` reports the shifted key as code "F", so the two rows never collide.
+        { key: "f", desc: "find (resume)", find: {|| finder --resume } }
+        { key: "F", desc: "find (new)",    find: {|| finder --fresh } }
         { key: "g", desc: "git", menu: [
             { key: "s", desc: "status", run: {|| ^git status } }
             { key: "l", desc: "log",    run: {|| ^git log --oneline -20 } }

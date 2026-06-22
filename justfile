@@ -1,5 +1,7 @@
 cwd := justfile_directory()
 
+# `just` with no args = push (the first recipe is just's default — keep push here so
+# bare `just` keeps meaning "apply + commit + push" as it always has).
 push:
   @chezmoi init --source "{{cwd}}" --force
   @chezmoi apply --force
@@ -8,3 +10,7 @@ push:
   @git push
   @sleep 5
   @chezmoi update --force
+
+# Headless unit tests for the nushell config (pure functions only; tty parts excluded).
+test:
+  @nu tests/nushell/finder-test.nu

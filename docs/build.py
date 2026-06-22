@@ -39,9 +39,10 @@ SOURCES = [
     (".claude/output-styles/*.md", "Output styles", 3),
     (".claude/agents/*.md", "Agents", 4),
     (".claude/skills/**/*.md", "Skills", 5),
+    ("docs/concepts/*.md", "Concepts", 6),
 ]
 
-CATEGORY_ORDER = ["Guide", "Project layer", "Rules", "Output styles", "Agents", "Skills"]
+CATEGORY_ORDER = ["Guide", "Project layer", "Rules", "Output styles", "Agents", "Skills", "Concepts"]
 
 
 # --------------------------------------------------------------------------
