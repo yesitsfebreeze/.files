@@ -220,8 +220,8 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 if is_mac then
     config.colors = config.colors or {}
     config.colors.background = tinty_bg or "#000000"
-    config.window_background_opacity = 0.75
-    config.macos_window_background_blur = 50
+    config.window_background_opacity = 0.95
+    config.macos_window_background_blur = 30
 end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
