@@ -340,11 +340,13 @@ $env.config = (
                 event: { until: [{ send: menudown } { send: nexthistory }] }
             }
             {
-                # leader: one chord opens the leadermode overlay (which-key style);
+                # leader: shift+space opens the leadermode overlay (which-key style);
                 # keys are then swallowed by its `input listen` loop. See leadermode.nu.
+                # shift+space is only distinguishable from plain space under the kitty
+                # keyboard protocol (use_kitty_protocol above), which WezTerm negotiates.
                 name: leader
-                modifier: control
-                keycode: char_f
+                modifier: shift
+                keycode: space
                 mode: [vi_normal vi_insert emacs]
                 event: { send: executehostcommand, cmd: "leader" }
             }
