@@ -135,8 +135,8 @@ def --env mkcd [dir?: path] {
     } else if $dir == "-" { "-"
     } else { $dir | path expand }
     if $target != "-" and not ($target | path exists) {
-        let ans = (input $"($target) does not exist. create it? [y/N] ")
-        if ($ans | str downcase | str trim) not-in ["y" "yes"] {
+        let ans = (input $"Create '($target)' ? Enter to confirm. All else will cancel. ")
+        if ($ans | str trim) != "" {
             print "aborted"
             return
         }
