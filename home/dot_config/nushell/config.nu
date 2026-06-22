@@ -54,7 +54,7 @@ $env.config = {
         osc633: false
     }
     # Auto-list on directory change. The PWD env_change hook fires on every cd,
-    # zoxide jump, or picker (`fcd`), so listing happens however you move. The
+    # zoxide jump, or picker (`finder`), so listing happens however you move. The
     # actual `la` closure is appended below, after the `la` alias is defined.
     hooks: {
         env_change: { PWD: [] }
@@ -160,24 +160,6 @@ def cl [...task: string] {
     python3 ([$nu.default-config-dir cl.py] | path join) $text
 }
 
-# television helpers (Ctrl-T autocomplete / Ctrl-R history come from `tv init nu`
-# sourced below). These defs add find-file, fuzzy-cd, and live-grep shortcuts.
-def ff [] {
-    let file = (tv files | str trim)
-    if ($file | is-not-empty) { ^$env.EDITOR $file }
-}
-
-def --env fcd [] {
-    let dir = (tv dirs | str trim)
-    if ($dir | is-not-empty) { cd $dir }
-}
-
-# Live-grep; the tv `text` channel's builtin edit action opens $EDITOR at the
-# match directly, so there's no stdout to capture.
-def fg [] {
-    tv text
-}
-
 # Local history, two ways. The sqlite history records a `cwd` per command, so we
 # can scope both the Ctrl-R picker and the Up/Down cycle to the current directory.
 # Bindings (appended after `tv init nu` below): Ctrl-R = local picker, Ctrl-Shift-R
@@ -277,7 +259,7 @@ def o [path?: path] {
 # is null on the first fire at shell start, so we skip that one to keep startup
 # clean; thereafter every real cd lists the new directory in an interactive shell.
 #
-# `stty sane` first: a cd may arrive via a full-screen TUI (television in `fcd`,
+# `stty sane` first: a cd may arrive via a full-screen TUI (television in `finder`,
 # zoxide, the theme picker) that crashed or exited without restoring cooked-mode
 # output. With `onlcr` off, the table's `\n` line breaks drop a row without
 # returning to column 0 and the listing staircases. Restoring sane mode before we
@@ -357,6 +339,15 @@ $env.config = (
                 mode: [vi_normal vi_insert emacs]
                 event: { until: [{ send: menudown } { send: nexthistory }] }
             }
+            {
+                # leader: one chord opens the leadermode overlay (which-key style);
+                # keys are then swallowed by its `input listen` loop. See leadermode.nu.
+                name: leader
+                modifier: control
+                keycode: char_f
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "leader" }
+            }
         ]
     )
 )
@@ -378,3 +369,7 @@ source ~/.config/nushell/pass.nu
 
 # `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data.
 source ~/.config/nushell/finder.nu
+
+# `leader`: which-key style overlay — one chord opens it, keys are swallowed and
+# dispatched (all routes go through `finder`). Bound to the leader chord below.
+source ~/.config/nushell/leadermode.nu

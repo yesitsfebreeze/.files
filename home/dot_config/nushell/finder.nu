@@ -158,7 +158,7 @@ def _finder_pick_channel [committed: list, carry] {
     # Capture tv's stdout DIRECTLY — never `| complete`. `complete` also captures stderr,
     # which detaches tv's controlling terminal so it panics "Failed to create TUI instance
     # (os error 6)". Plain capture leaves stdin/stderr on the tty and the picker renders
-    # (the same pattern the ff/fcd/fg helpers use). Esc/abort yields empty output.
+    # (capturing tv's stdout directly). Esc/abort yields empty output.
     let raw = (try {
         tv --source-command $source --input-header $breadcrumb --keybindings 'enter="confirm_selection"'
     } catch { "" })
