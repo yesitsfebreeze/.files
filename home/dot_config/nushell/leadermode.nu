@@ -5,7 +5,7 @@
 # tree, and no community plugin provides one. We emulate a leader the only way the
 # runtime allows:
 #
-#   1. ONE reedline chord (shift+space) is bound to `executehostcommand: leader`
+#   1. ONE reedline chord (ctrl+space) is bound to `executehostcommand: leader`
 #      (see config.nu).
 #   2. `leader` draws an inline overlay and enters an `input listen` loop that
 #      SWALLOWS every keypress — each key either dispatches a row or is ignored.
@@ -94,7 +94,7 @@ def --env _leader_run [menu: list, crumb: string] {
     }
 }
 
-# leader: open the overlay at the root menu. Bound to shift+space via
+# leader: open the overlay at the root menu. Bound to ctrl+space via
 # executehostcommand in config.nu. --env so cd survives upward to the shell.
 export def --env leader [] {
     if not (is-terminal --stdin) { return }   # interactive-only; input listen needs a tty
