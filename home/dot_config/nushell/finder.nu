@@ -44,11 +44,11 @@ export def --env finder [
         error make { msg: "finder: `tv` (television) is not installed — required dependency" }
     }
 
-    # Resume handling: re-ENTER the saved chain, don't just reprint its result. We seed
-    # the loop with the prior stages (so the breadcrumb shows how we got there) and re-run
-    # the last channel fresh, scoped by the stage below it — dropping you back INTO the
-    # last search rather than dumping its output. (tv can't restore the live query/marks,
-    # so "resume the same search" means re-open that channel with the same scope.)
+    # Resume handling: re-ENTER the saved chain, don't just reprint its result. We seed the
+    # loop with the prior stages (breadcrumb shows how we got there), re-run the last channel
+    # scoped by the stage below it, and PREFILL the prompt with that stage's saved query — so
+    # you drop back INTO the search ready to adjust it. (tv restores only the query text, at
+    # the cursor end, with no selection; `--fresh`/leader `F` gives a clean slate instead.)
     let persisted = (_finder_load)
     let resume_stack = if ($persisted != null) and (not $fresh) {
         let do_resume = if $resume {
@@ -61,7 +61,7 @@ export def --env finder [
 
     let committed = if ($resume_stack != null) and (($resume_stack | length) > 0) {
         let last = ($resume_stack | last)
-        _finder_loop ($resume_stack | drop 1) $last.channel
+        _finder_loop ($resume_stack | drop 1) $last.channel ($last.query? | default "")
     } else {
         _finder_loop
     }
@@ -80,28 +80,33 @@ export def --env finder [
 def _finder_loop [
     committed_seed: list = []   # prior chain to resume on top of (breadcrumb shows it)
     pending_seed: any = null    # a channel to re-run immediately (resume = re-enter last search)
+    prefill_seed: string = ""   # query to prefill the prompt on the first (resumed) run
 ] {
     mut committed = $committed_seed
     # `pending` forces ONE re-run of a specific channel (set by ctrl-b back-nav, or by
     # resume to drop straight back into the last search). When null, fuzzy-pick a channel.
     mut pending = $pending_seed
+    # `prefill` seeds tv's prompt for ONE run (the resumed/back-nav re-entry), then clears.
+    mut prefill = $prefill_seed
     loop {
         let carry = (if ($committed | is-empty) { null } else { $committed | last })
 
         let channel = (if $pending != null { $pending } else { (_finder_pick_channel $committed $carry) })
         $pending = null   # consume: only forces a single re-run
         if ($channel | is-empty) {
-            # esc/empty at channel-pick: step back if we have history, else abort.
-            # With a non-empty stack, pop and re-run the prior stage (consistent w/ ctrl-b).
+            # esc/empty at channel-pick: step back if we have history, else abort. With a
+            # non-empty stack, pop and re-run the prior stage prefilled with its query.
             if ($committed | is-empty) { return [] }
             let back = ($committed | last)
             $committed = ($committed | drop 1)
             $pending = $back.channel
+            $prefill = ($back.query? | default "")
             continue
         }
 
-        let res = (_finder_run_channel $channel $carry $committed)
-        let stage = (_finder_mk_stage $channel $res.entries)
+        let res = (_finder_run_channel $channel $carry $committed $prefill)
+        $prefill = ""   # consume: only the resumed/back-nav re-entry is prefilled
+        let stage = (_finder_mk_stage $channel $res.entries $res.query)
 
         match $res.key {
             "enter" => {
@@ -126,12 +131,14 @@ def _finder_loop [
                 }
             }
             "ctrl-b" => {
-                # back: pop the most-recent committed stage and RE-RUN that channel fresh
-                # with the carry from the stage now below it (moves exactly one upstream).
+                # back: pop the most-recent committed stage and RE-RUN that channel with the
+                # carry from the stage now below it (one step upstream), prefilled with its
+                # saved query so you re-enter that search ready to adjust it.
                 if ($committed | is-empty) { break }
                 let back = ($committed | last)
                 $committed = ($committed | drop 1)
                 $pending = $back.channel
+                $prefill = ($back.query? | default "")
             }
             _ => { break }   # quit / esc inside the channel
         }
@@ -223,9 +230,24 @@ def _finder_prefix_render [crumb: string, buf: string, matches: list] {
 
 # ── run one channel + parse --expect output ──────────────────────────────────
 
-# _finder_run_channel: run `channel`, scoped by `carry`, capturing the confirm key
-# and selected entries. Returns { key: string, entries: list<string> }.
-def _finder_run_channel [channel: string, carry, committed: list] {
+# _finder_history_query: the most recent query tv logged for `channel`, read from its
+# channel-scoped search history ($XDG_DATA_HOME/television/history.json — entries are
+# { query, channel, timestamp }). tv has no --print-query, so this is how we recover the
+# term you typed after tv exits, to prefill it on resume. "" when there is no entry.
+def _finder_history_query [channel: string] {
+    let base = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
+    let f = ($base | path join "television" "history.json")
+    if not ($f | path exists) { return "" }
+    try {
+        let hits = (open $f | where channel == $channel)
+        if ($hits | is-empty) { "" } else { $hits | sort-by timestamp | last | get query }
+    } catch { "" }
+}
+
+# _finder_run_channel: run `channel`, scoped by `carry`, optionally prefilling the prompt
+# with `prefill` (resume/back-nav). Captures the confirm key, selected entries, and the
+# typed query (recovered from tv history). Returns { key, entries, query }.
+def _finder_run_channel [channel: string, carry, committed: list, prefill: string = ""] {
     # Header = the whole input chain so far + the channel we're in now + the key legend.
     let crumb = (_finder_breadcrumb $committed)
     let breadcrumb = $"($crumb) ($channel)(_finder_legend)"
@@ -240,11 +262,17 @@ def _finder_run_channel [channel: string, carry, committed: list] {
     if not ($scope.source_cmd | is-empty) {
         $args = ($args | append ["--source-command" $scope.source_cmd])
     }
+    # Resume prefill: seed tv's prompt with the prior query (cursor lands at end — tv has no
+    # text selection, so this is for adjusting/extending; --fresh skips it for a clean slate).
+    if not ($prefill | is-empty) {
+        $args = ($args | append ["--input" $prefill])
+    }
     # Direct capture (NOT `| complete`) so tv keeps the controlling terminal — see
     # _finder_pick_channel. Keep the RAW stdout (no trim): the leading empty line under
     # --expect signals a plain enter, which _finder_parse relies on. Esc → empty → abort.
     let raw = (try { tv $channel ...$args } catch { "" })
-    _finder_parse $raw
+    # Read the query tv just logged for this channel and attach it to the parsed result.
+    (_finder_parse $raw) | merge { query: (_finder_history_query $channel) }
 }
 
 # _finder_parse: decode tv's --expect stdout into { key, entries }.
@@ -273,12 +301,14 @@ def _finder_parse [raw: string] {
     }
 }
 
-# _finder_mk_stage: build a stage record from a channel + its confirmed entries.
-def _finder_mk_stage [channel: string, entries: list] {
+# _finder_mk_stage: build a stage record from a channel + its confirmed entries + the typed
+# query (persisted so a resumed/back-nav re-entry can prefill the prompt).
+def _finder_mk_stage [channel: string, entries: list, query: string = ""] {
     {
         channel: $channel
         results: $entries
         produces: (_finder_type $channel).produces
+        query: $query
     }
 }
 

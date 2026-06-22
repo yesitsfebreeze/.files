@@ -9,22 +9,8 @@
 # is resolved relative to THIS file's directory, so cwd does not matter. Exits non-zero
 # if any test fails, so it can gate commits.
 
+source harness.nu
 source ../../home/dot_config/nushell/finder.nu
-
-# ── tiny assert kit (no std dep) ──────────────────────────────────────────────
-def "check eq" [actual, expected, msg: string] {
-    if $actual != $expected {
-        error make { msg: $"($msg)\n    expected: ($expected | to nuon)\n    got:      ($actual | to nuon)" }
-    }
-}
-def "check true" [cond: bool, msg: string] {
-    if not $cond { error make { msg: $"($msg): expected true" } }
-}
-def "check has" [haystack: string, needle: string, msg: string] {
-    if not ($haystack | str contains $needle) {
-        error make { msg: $"($msg): ($haystack | to nuon) does not contain ($needle | to nuon)" }
-    }
-}
 
 # ── tests ─────────────────────────────────────────────────────────────────────
 let tests = [
@@ -126,11 +112,13 @@ let tests = [
     }}
 
     # _finder_mk_stage --------------------------------------------------------
-    { name: "mk_stage tags produced type", run: {||
+    { name: "mk_stage tags produced type and stores query", run: {||
         let s = (_finder_mk_stage "files" ["/a" "/b"])
         check eq $s.channel "files" "channel set"
         check eq ($s.results | length) 2 "results carried"
         check eq $s.produces "FileList" "produces derived from type table"
+        check eq $s.query "" "query defaults empty"
+        check eq (_finder_mk_stage "text" ["x"] "func" | get query) "func" "query stored when given"
     }}
 
     # _finder_prefix_filter ---------------------------------------------------
@@ -202,24 +190,29 @@ let tests = [
         check true ($f | str ends-with "finder/stack.nuon") "path under finder/"
         check true ($f | str starts-with $dir) "rooted at the configured XDG_STATE_HOME"
     }}
+
+    # _finder_history_query (tv query recovery for resume prefill) -------------
+    { name: "history_query returns latest query for the channel", run: {||
+        let dir = (mktemp -d | str trim)
+        let hist = ($dir | path join "television")
+        mkdir $hist
+        [
+            { query: "old",   channel: "files", timestamp: 1 }
+            { query: "new",   channel: "files", timestamp: 9 }
+            { query: "other", channel: "text",  timestamp: 5 }
+        ] | to json | save -f ($hist | path join "history.json")
+        let qf = (with-env { XDG_DATA_HOME: $dir } { _finder_history_query "files" })
+        let qz = (with-env { XDG_DATA_HOME: $dir } { _finder_history_query "zzz" })
+        rm -r -f $dir
+        check eq $qf "new" "latest-by-timestamp for that channel"
+        check eq $qz "" "unknown channel -> empty"
+    }}
+    { name: "history_query is empty when no history file", run: {||
+        let dir = (mktemp -d | str trim)
+        let q = (with-env { XDG_DATA_HOME: $dir } { _finder_history_query "files" })
+        rm -r -f $dir
+        check eq $q "" "missing history.json -> empty"
+    }}
 ]
 
-# ── runner ────────────────────────────────────────────────────────────────────
-mut pass = 0
-mut fail = 0
-for t in $tests {
-    # try/catch's blocks are closures (no mutable capture), so return a record and
-    # tally outside the closure.
-    let res = (try { do $t.run; { ok: true, err: "" } } catch { |e| { ok: false, err: $e.msg } })
-    if $res.ok {
-        print $"  (ansi green)✓(ansi reset) ($t.name)"
-        $pass += 1
-    } else {
-        print $"  (ansi red)✗(ansi reset) ($t.name)"
-        print $"      ($res.err)"
-        $fail += 1
-    }
-}
-print ""
-print $"finder.nu: (ansi green_bold)($pass) passed(ansi reset), (if $fail > 0 { $'(ansi red_bold)($fail) failed(ansi reset)' } else { '0 failed' })"
-if $fail > 0 { exit 1 }
+run-suite "finder.nu" $tests

@@ -13,4 +13,10 @@ push:
 
 # Headless unit tests for the nushell config (pure functions only; tty parts excluded).
 test:
-  @nu tests/nushell/finder-test.nu
+  @nu tests/nushell/run.nu
+
+# Local quality gate: parse the nushell libs (load-check), then run every test suite.
+# Run before pushing to catch regressions; `just gate && just`.
+gate:
+  @nu -c 'source home/dot_config/nushell/finder.nu; source home/dot_config/nushell/leadermode.nu'
+  @nu tests/nushell/run.nu

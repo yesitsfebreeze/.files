@@ -135,7 +135,7 @@ def --env mkcd [dir?: path] {
     } else if $dir == "-" { "-"
     } else { $dir | path expand }
     if $target != "-" and not ($target | path exists) {
-        let ans = (input $"Create '($target)' ? Enter to confirm. All else will cancel. ")
+        let ans = (input --numchar 1 $"Create '($target)' ? Enter to confirm. All else will cancel. ")
         if ($ans | str trim) != "" {
             print "aborted"
             return

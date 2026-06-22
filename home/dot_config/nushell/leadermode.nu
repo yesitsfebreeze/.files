@@ -71,6 +71,25 @@ def --env _leader_open [sel: list] {
     }
 }
 
+# ── pure dispatch logic (testable) ────────────────────────────────────────────
+# _leader_resolve and _leader_kind are the entire key→row→action decision; the loop
+# below is just I/O around them. Kept pure so they can be unit tested headless (see
+# tests/nushell/leadermode-test.nu).
+
+# _leader_resolve: the row in `menu` bound to key `code`, or null. (input listen reports
+# the pressed char in .code; a shifted letter arrives as its uppercase char, e.g. "F".)
+def _leader_resolve [menu: list, code: string] {
+    $menu | where key == $code | get -o 0
+}
+
+# _leader_kind: classify a row by the field it carries — "menu" (submenu), "find" (a
+# finder action acted on by _leader_open) or "run" (an arbitrary closure). Check order
+# matches the dispatch precedence in _leader_run.
+def _leader_kind [row: record] {
+    let cols = ($row | columns)
+    if ("menu" in $cols) { "menu" } else if ("find" in $cols) { "find" } else { "run" }
+}
+
 # _leader_run: render a menu level, swallow keys, dispatch. Returns "back" when esc
 # is pressed at this level (caller re-renders its own level) or "done" when an
 # action fired anywhere below (caller exits too). Recursive => --env all the way so
@@ -80,18 +99,16 @@ def --env _leader_run [menu: list, crumb: string] {
         _leader_prompt $menu $crumb
         let k = (input listen --types [key])
         if ($k.code == "esc") { return "back" }
-        let hit = ($menu | where key == $k.code | get -o 0)
+        let hit = (_leader_resolve $menu $k.code)
         if ($hit == null) { continue }      # unknown key: swallowed, keep listening
-        let cols = ($hit | columns)
-        if ("menu" in $cols) {
-            if ((_leader_run $hit.menu $"($crumb) ($hit.key)") == "done") { return "done" }
-            continue                         # submenu esc'd back -> re-render this level
-        } else if ("find" in $cols) {
-            _leader_open (do $hit.find)
-            return "done"
-        } else {
-            do $hit.run
-            return "done"
+        match (_leader_kind $hit) {
+            "menu" => {
+                # submenu esc'd back -> re-render this level; an action below -> exit too
+                if ((_leader_run $hit.menu $"($crumb) ($hit.key)") == "done") { return "done" }
+                continue
+            }
+            "find" => { _leader_open (do $hit.find); return "done" }
+            _      => { do $hit.run; return "done" }
         }
     }
 }

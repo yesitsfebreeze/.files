@@ -106,11 +106,18 @@ records, not strings to re-parse.
 
 ## Persistence & resume
 
-A committed chain is saved as versioned NUON under `$XDG_STATE_HOME/finder/`.
-`finder --resume` re-enters the saved chain — it re-runs the last channel scoped
-by the stage below it, dropping you back *into* that search rather than just
-reprinting its result (tv cannot restore a live query, so "resume" means
-"re-open that channel with the same scope").
+A committed chain is saved as versioned NUON under `$XDG_STATE_HOME/finder/`, each
+stage carrying its `channel`, `results`, `produces`, and the typed `query`.
+`finder --resume` re-enters the saved chain — it re-runs the last channel scoped by
+the stage below it **and prefills the prompt with that stage's saved query**, so you
+drop back *into* the search ready to adjust it rather than just reprinting its
+result. The same prefill happens on `ctrl-b` back-nav.
+
+tv has no `--print-query`, so the query is recovered *after the fact* from tv's own
+channel-scoped history (`$XDG_DATA_HOME/television/history.json`) via
+`_finder_history_query`. The prefill lands with the cursor at the end and **no
+selection** (tv's prompt has no text selection), so resume is for adjusting or
+extending; `--fresh` (leader `F`) skips the prefill for a clean slate.
 
 ## Hard constraints (tv 0.15.8)
 
