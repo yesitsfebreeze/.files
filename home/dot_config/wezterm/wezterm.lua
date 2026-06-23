@@ -19,10 +19,11 @@ local nu_config = home .. "/.config/nushell/config.nu"
 local nu_env = home .. "/.config/nushell/env.nu"
 
 if is_windows then
-    -- Windows is a thin host: launch into WSL. The login shell (-lic) sets PATH
-    -- so `nu` resolves; `|| exec bash` keeps the terminal usable if nu isn't
-    -- installed in WSL yet.
-    config.default_prog = { "wsl.exe", "-d", "Ubuntu", "--cd", "~", "-e", "bash", "-lic", "exec nu || exec bash" }
+    -- Windows is a thin host: launch into WSL. A login (-l) bash sets PATH so `nu`
+    -- resolves, then immediately execs it; `|| exec bash` keeps the terminal usable
+    -- if nu isn't installed yet. NOT interactive (-i): that sources ~/.bashrc (nvm,
+    -- etc.) — ~1-2s of work for a bash we replace instantly. -l alone is ~0.04s.
+    config.default_prog = { "wsl.exe", "-d", "Ubuntu", "--cd", "~", "-e", "bash", "-lc", "exec nu || exec bash" }
 else
     config.default_prog = { "nu", "--config", nu_config, "--env-config", nu_env }
 end

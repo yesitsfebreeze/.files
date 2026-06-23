@@ -22,7 +22,11 @@ mkdir -p "$dst"
 # Skip dirs that aren't config any Windows app reads and would make the cross-FS
 # copy pathological: ~/.config/assembly alone is ~910MB. Add to this list rather
 # than mirror runtime caches / build output over the slow /mnt/c 9p bridge.
-excludes=(assembly opencode go .git "*/cache" "*/Cache" "*.sock" node_modules)
+# `chezmoi`: its generated config pins sourceDir to the WSL repo path
+# (/home/feb/dev/.files); on Windows that resolves to a nonexistent C:\home\... and
+# breaks `chezmoi`. WSL is the single source of truth — Windows is never
+# chezmoi-managed, so its config must not leak across.
+excludes=(assembly opencode go .git chezmoi "*/cache" "*/Cache" "*.sock" node_modules)
 
 if command -v rsync >/dev/null 2>&1; then
   args=()

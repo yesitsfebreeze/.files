@@ -1,15 +1,4 @@
 # config.nu — Nushell config, launched explicitly by WezTerm.
-
-# Start prompt: ask before launching burrito (shell-level multiplexer). Enter
-# replaces this shell with burrito's spawn-or-attach default session; Esc (or any
-# other key) stays in plain Nushell.
-#
-# Launch burrito as a CHILD of this nu process — do NOT `exec` it. burrito has no
-# shell-config key; it picks each cell's shell by walking its parent process tree
-# for a known shell. Running it as a child keeps nu as burrito's parent, so that
-# walk finds nu directly and every cell launches nu. (`exec` would replace this nu
-# process, making burrito's parent WezTerm — the walk finds no shell and burrito
-# falls back to $SHELL.) When burrito exits we exit too, mirroring `exec`.
 $env.config = {
     show_banner: false
     edit_mode: vi
@@ -83,6 +72,11 @@ const LS_ICONS = {
     lock: "", db: "", sqlite: "", sqlite3: "",
 }
 
+# Capture the builtin `ls` under a second name BEFORE we shadow `ls` below — alias
+# targets resolve at parse time, so `core-ls` stays bound to the builtin and the
+# wrappers can reach it without recursing.
+alias core-ls = ls
+
 # Decorate an `ls` table: sort (dirs first, newest last), swap each directory's
 # inode size (a flat ~4 KB) for its recursive on-disk size, prefix an icon column.
 # One `du` spawn covers every dir in the listing (names passed as args, matched
@@ -119,9 +113,11 @@ def decorate-ls []: table -> table {
     | move icon --before name
 }
 
-def l  [path: string = "."] { ls    $path | decorate-ls }
-def ll [path: string = "."] { ls -l $path | decorate-ls }
-def la [path: string = "."] { ls -a $path | decorate-ls }
+# Shadow `ls` so a bare `ls` (and l/ll/la) all show recursive folder sizes + icons.
+def --wrapped ls [...args] { core-ls ...$args | decorate-ls }
+def l  [path: string = "."] { core-ls    $path | decorate-ls }
+def ll [path: string = "."] { core-ls -l $path | decorate-ls }
+def la [path: string = "."] { core-ls -a $path | decorate-ls }
 alias cat = bat --paging=never
 alias grep = rg
 alias g = git
@@ -305,16 +301,17 @@ source ~/.cache/television/init.nu
 
 # History keymap, appended after the television init so it overrides tv's own
 # Ctrl-R binding (reedline keys the map by (modifier,keycode); a later entry wins).
-#   Ctrl-R        local picker        Ctrl-Shift-R  global picker (tv's def)
+#   Ctrl-R        local picker        Alt-R         global picker
 #   Up/Down       local inline cycle  Shift+Up/Down native global traversal
 # Each arrow falls through to menu nav first (`until` tries menuup/menudown, which
 # no-op when no menu is open, then runs ours), so completion menus still work.
 #
-# use_kitty_protocol: without it a terminal collapses Ctrl-Shift-R to the same byte
-# as Ctrl-R (shift is lost on control+letter), so the two pickers couldn't coexist.
-# The kitty keyboard protocol carries the full modifier set; WezTerm negotiates it,
-# and reedline only uses it when the terminal acks, so it's a safe no-op elsewhere.
-$env.config.use_kitty_protocol = true
+# use_kitty_protocol stays OFF: with it on, reedline fires the kitty support query
+# twice at startup and the WSL2<->WezTerm PTY returns the reply too late to consume,
+# so it leaks as `^[[?0u` above the prompt. The only thing kitty bought us was
+# telling Ctrl-Shift-R apart from Ctrl-R (shift is lost on control+letter); the
+# global picker now uses Alt-R, which is byte-distinct without kitty.
+$env.config.use_kitty_protocol = false
 $env.config = (
     $env.config | upsert keybindings (
         $env.config.keybindings | append [
@@ -327,7 +324,7 @@ $env.config = (
             }
             {
                 name: hist_picker_global
-                modifier: control_shift
+                modifier: alt
                 keycode: char_r
                 mode: [vi_normal vi_insert emacs]
                 event: { send: executehostcommand, cmd: "tv_shell_history" }
