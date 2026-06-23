@@ -261,31 +261,6 @@ end)
 -- spawned a visible conhost window per call — flashing terminals on every launch.
 -- Keybindings are terminal-level only; burrito owns the grid (its leader is
 -- ctrl+space), so there's no leader or mux emulation here.
--- Solo the terminal: minimize every OTHER window, keeping WezTerm focused. The
--- OS-level part can't be expressed in Lua, so we shell out to a per-OS helper
--- that lives beside this config (the WSL run_after hook mirrors this dir into
--- the Windows profile, so the .vbs/.ps1 are there too). Used by both the
--- Ctrl+Shift+M binding and the window-focus-changed event below.
-local function solo_window(window, raise)
-    local sep = is_windows and "\\" or "/"
-    local dir = wezterm.config_dir
-    if is_windows then
-        -- wscript is a GUI-subsystem host: launching the .vbs allocates no
-        -- console, so there's no conhost flash — the same reason os.execute
-        -- is banned above. The .vbs in turn runs the P/Invoke .ps1 hidden.
-        wezterm.background_child_process({ "wscript", dir .. sep .. "solo-window.vbs" })
-    elseif is_mac then
-        wezterm.background_child_process({ "osascript", dir .. sep .. "solo-window.applescript" })
-    else
-        wezterm.background_child_process({ "bash", dir .. sep .. "solo-window.sh" })
-    end
-    -- Only re-raise when explicitly asked (the keybinding). On the focus-changed
-    -- path we are ALREADY the focused window, so calling focus() there just emits
-    -- another window-focus-changed -> solo -> focus loop, flashing the screen.
-    if raise then
-        window:focus()
-    end
-end
 
 config.keys = {
     { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
@@ -304,47 +279,6 @@ config.keys = {
             end
         end),
     },
-    -- Solo the terminal: minimize every OTHER window, keeping WezTerm focused.
-    -- The binding only fires while WezTerm already has focus, so the foreground
-    -- window IS this terminal; each platform minimizes all windows EXCEPT it, so
-    -- WezTerm is never minimized and there's no fragile re-raise to time. The
-    -- OS-level part can't be expressed in Lua, so we shell out to a per-OS helper
-    -- that lives beside this config (the WSL run_after hook mirrors this dir into
-    -- the Windows profile, so the .vbs/.ps1 are there too). Rebind the key freely.
-    {
-        key = "m",
-        mods = "CTRL|SHIFT",
-        action = wezterm.action_callback(function(window, _pane)
-            solo_window(window, true)
-        end),
-    },
 }
-
--- Re-solo whenever WezTerm gains focus, so switching back to the terminal
--- minimizes everything else just like the Ctrl+Shift+M binding does. The event
--- also fires on focus LOSS, so gate on is_focused() to act only when we're the
--- foreground window.
--- Solo when WezTerm gains focus, but debounce hard. Soloing minimizes the other
--- windows, which itself makes the compositor emit a defocus->refocus burst of
--- window-focus-changed events; a plain edge guard treats each as a fresh refocus
--- and re-solos, flashing the screen forever. So after one solo we swallow ALL
--- focus events for SOLO_COOLDOWN seconds (covers the self-inflicted burst), and
--- only re-arm for the NEXT genuine refocus once that window has elapsed.
--- Keyed by window id so multiple windows stay independent. Cooldown is in whole
--- seconds (os.time resolution); bump it if a slow machine still double-fires.
-local SOLO_COOLDOWN = 2
-local last_solo = {}
-wezterm.on("window-focus-changed", function(window, _pane)
-    if not window:is_focused() then
-        return
-    end
-    local id = window:window_id()
-    local now = os.time()
-    if last_solo[id] and now - last_solo[id] < SOLO_COOLDOWN then
-        return
-    end
-    last_solo[id] = now
-    solo_window(window, false)
-end)
 
 return config
