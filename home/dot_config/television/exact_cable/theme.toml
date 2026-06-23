@@ -11,8 +11,11 @@ name = "theme"
 description = "Live theme switcher — official base16/base24 schemes via tinty, apply-on-focus preview"
 requirements = ["tinty"]
 
+# NB: use a ( ) subshell, NOT a { } brace group — television treats unquoted
+# "{...}" as its own placeholder template and mangles the command (the resulting
+# garble is what surfaced as a "nu::parser ... 2>/dev/null" error).
 [source]
-command = "{ tinty list; tinty list --custom-schemes; } 2>/dev/null | sort -u"
+command = "( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u"
 
 [preview]
 command = "\"$HOME/.config/television/theme-preview.sh\" '{}'"
