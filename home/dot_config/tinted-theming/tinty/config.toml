@@ -9,10 +9,13 @@
 # forwarded to WezTerm, so WezTerm's own bg/cursor might not follow. The fix is a
 # multiplexer-aware path (burrito passthrough or a WezTerm overlay), not this config.
 #
-# No `default-scheme` on purpose: until you pick a theme, the builtin gruvbox
-# base each tool ships (WezTerm scheme, bat/tv/delta themes) stands. `tinty
-# init` at startup re-applies your last pick.
+# `default-scheme` is our own `base16-feb` — the custom scheme shipped by chezmoi
+# to custom-schemes/base16/feb.yaml in the data-dir. `tinty init` (run from
+# config.nu at every shell/WezTerm start) applies it whenever no scheme has been
+# picked yet, so a fresh machine lands on feb instead of each tool's builtin base.
+# Pick anything via the `theme` switcher and that choice persists over this default.
 
+default-scheme = "base16-feb"
 shell = "bash -c '{}'"
 
 [[items]]
