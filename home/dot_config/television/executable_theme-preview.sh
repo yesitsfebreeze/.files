@@ -13,6 +13,9 @@ system="${id%%-*}"
 slug="${id#*-}"
 data="${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty"
 scheme="$data/repos/schemes/$system/$slug.yaml"
+# Custom schemes (base24-feb, the converted base24-gogh-*) live outside the
+# catalog clone — fall back to the custom-schemes dir for their swatch/name.
+[ -f "$scheme" ] || scheme="$data/custom-schemes/$system/$slug.yaml"
 
 # (1) live apply to the terminal device (not our captured stdout).
 if command -v tinty >/dev/null 2>&1; then

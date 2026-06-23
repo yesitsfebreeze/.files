@@ -57,6 +57,13 @@ for src in "$tinty_cfg"/feb.*.yaml; do
     cp -f "$src" "$tinty_data/custom-schemes/$sys/feb.yaml"
 done
 
+# Convert Gogh's terminal themes into base24 custom-schemes so they show up in the
+# `theme` switcher alongside the tinty catalog. Self-contained, HEAD-stamped, and
+# non-fatal — it only does real work when Gogh updates upstream.
+if [ -x "$tinty_cfg/gogh-to-base24.sh" ]; then
+    bash "$tinty_cfg/gogh-to-base24.sh" || true
+fi
+
 # WezTerm colors.lua is generated HERE, at apply time — not on shell/WezTerm
 # launch. config.nu only re-emits the live OSC retint; a terminal start should
 # never be what writes colors.lua. Resolve the active scheme (a prior `theme`

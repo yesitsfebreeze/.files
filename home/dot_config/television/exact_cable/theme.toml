@@ -1,8 +1,8 @@
 # television cable channel: `tv theme` — the live theme switcher's picker.
-# source : tinty's official prebuilt catalog — the tinted-shell scripts under the
-#          tinty data dir. Listing the prebuilt scripts directly guarantees every
-#          entry ("<system>-<slug>", e.g. base16-mocha / base24-alucard) is one
-#          that `tinty apply` can actually apply.
+# source : every scheme tinty knows — the official base16/base24 catalog
+#          (`tinty list`) plus our custom-schemes (`tinty list --custom-schemes`:
+#          base24-feb and the converted base24-gogh-* themes). Each entry is a
+#          "<system>-<slug>" id that `tinty apply` can build + apply on demand.
 # preview: theme-preview.sh applies the scheme live (OSC -> /dev/tty) per focus.
 # Driven by the `theme` Nushell command: Enter persists, Esc reverts to launch state.
 
@@ -12,7 +12,7 @@ description = "Live theme switcher — official base16/base24 schemes via tinty,
 requirements = ["tinty"]
 
 [source]
-command = "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty/repos/tinted-shell/scripts\" 2>/dev/null | grep '\\.sh$' | sed 's/\\.sh$//'"
+command = "{ tinty list; tinty list --custom-schemes; } 2>/dev/null | sort -u"
 
 [preview]
 command = "\"$HOME/.config/television/theme-preview.sh\" '{}'"
