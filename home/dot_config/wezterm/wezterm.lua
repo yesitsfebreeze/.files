@@ -26,11 +26,13 @@ local nu_env = home .. "/.config/nushell/env.nu"
 -- when idle). WezTerm has no native idle event, so we poll the active pane on the
 -- update-status tick and detect activity by a change in a cheap fingerprint (cursor
 -- + scrollback). STATUS_MS is the tick period; after IDLE_MS of an unchanged
--- fingerprint we ease the overlay/blur opacity to 0; FADE_STEP per tick gives a
--- stepped ~0.4s transition (1.0 / 0.25 = 4 ticks * 100ms).
+-- fingerprint we ease the overlay/blur opacity toward 0. The two directions are
+-- asymmetric: idle -> sharp is a very slow drift (FADE_OUT_STEP per tick), while the
+-- first activity tick SNAPS straight back to fully blurred (no ease-in) so typing
+-- instantly restores the working background.
 local IDLE_MS = 10000
 local STATUS_MS = 100
-local FADE_STEP = 0.25
+local FADE_OUT_STEP = 0.01
 
 if is_windows then
     -- Windows is a thin host: launch into WSL. A login (-l) bash sets PATH so `nu`
@@ -366,22 +368,18 @@ local function on_update_status(window, pane)
         bg_state[id] = state
     end
 
-    local target
     if fp ~= state.fp then
-        -- Activity this tick: reset the idle clock and aim back to fully active.
+        -- Activity this tick: reset the idle clock and SNAP straight back to fully
+        -- blurred -- typing must instantly restore the working background, no ease-in.
         state.fp = fp
         state.idle_ms = 0
-        target = 1.0
+        state.fade = 1.0
     else
         state.idle_ms = state.idle_ms + STATUS_MS
-        target = (state.idle_ms >= IDLE_MS) and 0.0 or 1.0
-    end
-
-    -- Step the eased opacity toward the target, clamped to [0,1].
-    if state.fade < target then
-        state.fade = math.min(target, state.fade + FADE_STEP)
-    elseif state.fade > target then
-        state.fade = math.max(target, state.fade - FADE_STEP)
+        -- Idle: very slow drift toward the sharp original, clamped at 0.
+        if state.idle_ms >= IDLE_MS then
+            state.fade = math.max(0.0, state.fade - FADE_OUT_STEP)
+        end
     end
 
     -- Only rewrite the background while the fade is actually moving; once it settles
