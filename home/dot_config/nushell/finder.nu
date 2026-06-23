@@ -333,24 +333,30 @@ def _finder_legend [] {
 
 # ── type table (accepts / produces) ──────────────────────────────────────────
 
-# Known channels and the typed value each produces / can scope on. Anything not listed
-# is `Any` with no accepts → runs fresh. v1 scopes ONLY the edges files/dirs→text and
-# files→git-log; every other pairing drops the carry and runs fresh.
-def _finder_type [channel: string] {
-    let table = {
+# Known channels and the typed value each produces / can scope on. The single source
+# of truth for both _finder_type (lookup) and _finder_channels (key set) — add a typed
+# channel here once. v1 scopes ONLY the edges files/dirs→text and files→git-log; every
+# other pairing drops the carry and runs fresh.
+def _finder_type_table [] {
+    {
         files:     { produces: "FileList", accepts: ["DirList"] }
         dirs:      { produces: "DirList",  accepts: ["DirList"] }
         text:      { produces: "GrepList", accepts: ["FileList" "DirList"] }
         "git-log": { produces: "Commits",  accepts: ["FileList"] }
     }
-    $table | get -o $channel | default { produces: "Any", accepts: [] }
 }
 
-# _finder_channels: the channels finder knows how to TYPE (and so can chain). Used as
-# the candidate set when filtering the chain picker. First-pick lists all tv channels;
-# only these can appear as a *chain* target because only these have typed scope edges.
+# _finder_type: the typed value a channel produces / accepts. Anything not in the table
+# is `Any` with no accepts → runs fresh.
+def _finder_type [channel: string] {
+    (_finder_type_table) | get -o $channel | default { produces: "Any", accepts: [] }
+}
+
+# _finder_channels: the channels finder knows how to TYPE (and so can chain) — the table
+# keys. Used as the candidate set when filtering the chain picker. First-pick lists all
+# tv channels; only these can appear as a *chain* target (only these have scope edges).
 def _finder_channels [] {
-    ["files" "dirs" "text" "git-log"]
+    _finder_type_table | columns
 }
 
 # _finder_compatible: channels you can chain INTO from this carry — exactly those for
