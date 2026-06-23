@@ -66,6 +66,8 @@ so the picker list and the scoping can never drift apart.
  branch ───▶│ enter → commit & finish                       │
             │ ctrl-p → pipe: commit, re-pick (scoped)       │
             │ ctrl-b → back: pop, re-run upstream           │
+            │ ctrl-n → fwd: redo the stage back left behind │
+            │ ctrl-r → reset: tear the pipe down, re-pick   │
             └───────────────┬──────────────────────────────┘
                             ▼
             ┌──────────────────────────────────────────────┐
@@ -84,10 +86,13 @@ on a chain pick they are only the channels the carry can flow into.
 ### Pipe — chaining with `ctrl-p`
 
 Inside the result list, `ctrl-p` **commits the current selection as a stage and
-re-opens the picker**, now filtered to channels that accept this stage's type and
-scoped to its paths. So `files` → `ctrl-p` → `text` greps *only the files you
-selected*. `ctrl-b` steps back one stage. `enter` ends the chain. The whole
-input chain is shown as a breadcrumb (`files[3] > text[1] >`) in every header.
+re-opens the picker** (a fresh tv remote), now filtered to channels that accept
+this stage's type and scoped to its paths. So `files` → `ctrl-p` → `text` greps
+*only the files you selected*. `ctrl-b` steps back one stage; `ctrl-n` walks
+forward again, re-entering the stage a `ctrl-b` left behind (browser back/forward).
+`ctrl-r` resets — tears the whole pipe down to a fresh channels pick. `enter` ends
+the chain. The whole input chain is shown as a breadcrumb (`files[3] > text[1] >`)
+in every header, above the input.
 
 ### Decode — the payoff
 
@@ -124,7 +129,8 @@ extending; `--fresh` (leader `F`) skips the prefill for a clean slate.
 - Capture tv's stdout **directly**, never `| complete` — `complete` also grabs
   stderr, detaching tv's controlling terminal (it then panics, os error 6).
 - `--keybindings` uses `key="action"`; `--expect` takes a **semicolon**-separated
-  key list. The pipe/back keys are `ctrl-p` / `ctrl-b`.
+  key list. The chain keys are `ctrl-p` (pipe) / `ctrl-b` (back) / `ctrl-n`
+  (forward) / `ctrl-r` (reset).
 - Scoped paths are **POSIX single-quoted** before splicing into a source command
   (tv runs it through a POSIX shell on Linux/WSL2/macOS).
 - finder is **interactive-only** — it drives a TUI and must not be called

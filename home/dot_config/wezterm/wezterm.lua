@@ -162,6 +162,13 @@ wezterm.on("update-status", center_grid)
 -- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
 -- (e.g. first run before any theme has been picked).
 local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
+-- Live preview: the tinty `theme` switcher rewrites colors.lua on every focus, so
+-- watch it and let WezTerm auto-reload. That refreshes the bits only the config can
+-- set — window background / overlay wash, cursor, selection — across the whole
+-- window (the ANSI palette already retints live via tinted-shell OSC). On the
+-- WSL→Windows host config_dir is the Windows profile copy, which wezterm-colors.sh
+-- mirrors to, so the running wezterm.exe reloads too.
+wezterm.add_to_config_reload_watch_list(wezterm.config_dir .. "/colors.lua")
 -- Capture the theme background; the background overlay layer (below) uses it as the
 -- heavy wash over the blurred image, and the no-image fallback paints it solid.
 local tinty_bg = (ok and type(tinty_colors) == "table") and tinty_colors.background or nil

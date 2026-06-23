@@ -75,3 +75,37 @@ fi
 # Also write to the deployed location for immediate effect on Linux
 mkdir -p "$HOME/.config/wezterm"
 echo "$lua_content" > "$HOME/.config/wezterm/colors.lua"
+
+# WSL: the running terminal is the native wezterm.exe, which reads its config from
+# the Windows profile, not this Linux $HOME. Mirror colors.lua there too so its
+# config-reload watch (wezterm.lua) re-reads it and refreshes bg/cursor/overlay live
+# as the `theme` switcher previews each scheme. The Windows-dir derivation matches
+# run_after_mirror-config-to-windows.sh and is CACHED — cmd.exe is ~100ms and the
+# picker rewrites this file on every focus, so we resolve it once. Strict guards
+# (drive letter + absolute wslpath result) keep a failed cmd.exe from writing under
+# the wrong dir.
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    cache="$HOME/.cache/tinty-wezterm-win-dir"
+    if [[ -s "$cache" ]]; then
+        win_dir="$(cat "$cache")"
+    else
+        win_dir=""
+        up="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')"
+        case "$up" in
+            [A-Za-z]:*)
+                winhome="$(wslpath -u "$up" 2>/dev/null)" || winhome=""
+                case "$winhome" in
+                    /*) [[ -d "$winhome" ]] && win_dir="$winhome/.config/wezterm" ;;
+                esac
+                ;;
+        esac
+        if [[ -n "$win_dir" ]]; then
+            mkdir -p "$(dirname "$cache")"
+            printf '%s\n' "$win_dir" > "$cache"
+        fi
+    fi
+    if [[ -n "$win_dir" ]]; then
+        mkdir -p "$win_dir"
+        echo "$lua_content" > "$win_dir/colors.lua"
+    fi
+fi

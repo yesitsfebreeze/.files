@@ -25,13 +25,16 @@
 #     `--keybindings 'enter="confirm_selection"'`. NOTE the CLI `--keybindings` grammar
 #     is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file
 #     `action = "key"` form. Verified: the config-file form is rejected by the CLI flag.
-#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-p;ctrl-b'`). Comma, space,
-#     and repeated flags are all rejected by tv 0.15.8.
+#   - `--expect` takes a SEMICOLON-separated key list (`'ctrl-p;ctrl-b;ctrl-n;ctrl-r'`).
+#     Comma, space, and repeated flags are all rejected by tv 0.15.8.
 #   - With `--expect`, confirming prints the pressed key as line 1, then the entries.
 #     A PLAIN enter prints an EMPTY first line (""), then the entries (per tv docs).
-#   - pipe/next key = ctrl-p, back key = ctrl-b. A key listed in `--expect` is
-#     intercepted by tv as a confirm key, overriding any channel- or default-binding it
-#     would otherwise have (e.g. ctrl-p's usual select-prev), so our use wins.
+#   - chain keys: ctrl-p = pipe forward (open a fresh tv remote scoped to compatible
+#     channels), ctrl-b = back one stage, ctrl-n = forward/redo the stage a back left
+#     behind (browser back/forward), ctrl-r = reset the whole pipe to a fresh channels
+#     pick. A key listed in `--expect` is intercepted by tv as a confirm key, overriding
+#     any channel- or default-binding it would otherwise have (e.g. tv's ctrl-n select-
+#     next / ctrl-r history), so our use wins.
 
 # ── public entrypoint ────────────────────────────────────────────────────────
 
@@ -95,6 +98,10 @@ def _finder_loop [
     mut pending = $pending_seed
     # `prefill` seeds tv's prompt for ONE run (the resumed/back-nav re-entry), then clears.
     mut prefill = $prefill_seed
+    # `forward` is the redo stack: stages a ctrl-b left behind, that ctrl-n re-enters
+    # (browser back/forward). Any divergent move — pipe to a new channel (ctrl-p), reset
+    # (ctrl-r), or esc-back at the picker — clears it: you cannot redo down an abandoned branch.
+    mut forward = []
     loop {
         let carry = (if ($committed | is-empty) { null } else { $committed | last })
 
@@ -102,10 +109,12 @@ def _finder_loop [
         $pending = null   # consume: only forces a single re-run
         if ($channel | is-empty) {
             # esc/empty at channel-pick: step back if we have history, else abort. With a
-            # non-empty stack, pop and re-run the prior stage prefilled with its query.
+            # non-empty stack, pop and re-run the prior stage prefilled with its query. This is
+            # a divergent back (no live stage to redo into), so the redo stack is dropped.
             if ($committed | is-empty) { return [] }
             let back = ($committed | last)
             $committed = ($committed | drop 1)
+            $forward = []
             $pending = $back.channel
             $prefill = ($back.query? | default "")
             continue
@@ -134,18 +143,46 @@ def _finder_loop [
                 } else if ((_finder_compatible $stage) | is-empty) {
                     $pending = $channel
                 } else {
+                    # pipe to a NEW channel: this diverges from any redo trail, so drop it.
                     $committed = ($committed | append $stage)
+                    $forward = []
+                }
+            }
+            "ctrl-n" => {
+                # forward (redo): re-enter the channel a prior ctrl-b left behind. Commit the
+                # current stage first so it scopes the channel we step forward into, then re-run
+                # that channel prefilled with its saved query. Empty redo stack => re-run the
+                # current channel (no-op move, never falls through to quit).
+                if ($forward | is-empty) {
+                    $pending = $channel
+                } else {
+                    let fwd = ($forward | last)
+                    $forward = ($forward | drop 1)
+                    $committed = ($committed | append $stage)
+                    $pending = $fwd.channel
+                    $prefill = ($fwd.query? | default "")
                 }
             }
             "ctrl-b" => {
-                # back: pop the most-recent committed stage and RE-RUN that channel with the
-                # carry from the stage now below it (one step upstream), prefilled with its
-                # saved query so you re-enter that search ready to adjust it.
+                # back: leave the current channel (remember it on the redo stack so ctrl-n can
+                # re-enter it), then pop the most-recent committed stage and RE-RUN that channel
+                # with the carry from the stage now below it (one step upstream), prefilled with
+                # its saved query so you re-enter that search ready to adjust it.
                 if ($committed | is-empty) { break }
+                $forward = ($forward | append $stage)
                 let back = ($committed | last)
                 $committed = ($committed | drop 1)
                 $pending = $back.channel
                 $prefill = ($back.query? | default "")
+            }
+            "ctrl-r" => {
+                # reset: tear the whole pipe down to nothing and drop back to a fresh channels
+                # pick (a new tv remote with an empty carry). The redo trail is meaningless once
+                # the chain is gone, so clear it too.
+                $committed = []
+                $forward = []
+                $pending = null
+                $prefill = ""
             }
             _ => { break }   # quit / esc inside the channel
         }
@@ -210,7 +247,7 @@ def _finder_run_channel [channel: string, carry, committed: list, prefill: strin
     mut args = [
         "--input-header" $breadcrumb
         "--keybindings" 'enter="confirm_selection";tab="toggle_selection"'
-        "--expect" 'ctrl-p;ctrl-b'
+        "--expect" 'ctrl-p;ctrl-b;ctrl-n;ctrl-r'
     ]
     if not ($scope.source_cmd | is-empty) {
         $args = ($args | append ["--source-command" $scope.source_cmd])
@@ -242,7 +279,7 @@ def _finder_parse [raw: string] {
         return { key: "abort", entries: [] }
     }
     let head = ($lines | first | str trim)
-    let known = ["ctrl-p" "ctrl-b" "enter" "esc"]
+    let known = ["ctrl-p" "ctrl-b" "ctrl-n" "ctrl-r" "enter" "esc"]
     if $head in $known {
         { key: $head, entries: ($lines | skip 1) }
     } else if ($head | is-empty) {
@@ -281,7 +318,7 @@ def _finder_breadcrumb [committed: list] {
 # _finder_legend: the always-visible key hint. tv never advertises our --expect keys,
 # so without this the chain/back shortcuts are undiscoverable. Shown in every header.
 def _finder_legend [] {
-    "    [enter] done   [ctrl-p] pipe   [ctrl-b] back"
+    "    [enter] done   [ctrl-p] pipe   [ctrl-b] back   [ctrl-n] fwd   [ctrl-r] reset"
 }
 
 # ── channel definitions (produces / accepts / scope recipe, co-located) ───────

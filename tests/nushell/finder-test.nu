@@ -46,6 +46,38 @@ let tests = [
         check eq (_finder_decode { produces: "Any", results: ["x" "y"] }) ["x" "y"] "passthrough"
     }}
 
+    # _finder_parse (--expect stdout decode: key on line 1, then entries) ------
+    { name: "parse ctrl-p key with entries", run: {||
+        let r = (_finder_parse "ctrl-p\n/a/b\n/c/d")
+        check eq $r.key "ctrl-p" "key is ctrl-p"
+        check eq $r.entries ["/a/b" "/c/d"] "entries follow the key line"
+    }}
+    { name: "parse ctrl-b back key", run: {||
+        check eq (_finder_parse "ctrl-b\n/x" | get key) "ctrl-b" "ctrl-b recognised"
+    }}
+    { name: "parse ctrl-n forward key", run: {||
+        check eq (_finder_parse "ctrl-n\n/x" | get key) "ctrl-n" "ctrl-n recognised"
+    }}
+    { name: "parse ctrl-r reset key", run: {||
+        check eq (_finder_parse "ctrl-r\n/x" | get key) "ctrl-r" "ctrl-r recognised"
+    }}
+    { name: "parse plain enter (empty leading line)", run: {||
+        let r = (_finder_parse "\n/only/file")
+        check eq $r.key "enter" "empty first line == plain enter"
+        check eq $r.entries ["/only/file"] "entry kept"
+    }}
+    { name: "parse empty output aborts", run: {||
+        check eq (_finder_parse "" | get key) "abort" "no output == abort"
+    }}
+
+    # _finder_legend (the always-visible chain key hint) ----------------------
+    { name: "legend advertises every chain key", run: {||
+        let l = (_finder_legend)
+        for k in ["[ctrl-p] pipe" "[ctrl-b] back" "[ctrl-n] fwd" "[ctrl-r] reset"] {
+            check has $l $k $"legend shows ($k)"
+        }
+    }}
+
     # _finder_type ------------------------------------------------------------
     { name: "type known channel", run: {||
         check eq (_finder_type "files" | get produces) "FileList" "files produces FileList"

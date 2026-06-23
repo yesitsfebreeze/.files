@@ -31,11 +31,14 @@ def --wrapped theme [...rest] {
         if ($prev | is-not-empty) {
             try { ^tinty apply $prev e> /dev/null }
         } else {
-            # No theme was active before: forget the polluted current scheme so
-            # new shells stay on the base, and reset the terminal palette now
-            # (OSC 104/110/111/112 -> WezTerm falls back to its Gruvbox config).
+            # No theme was active before: forget the polluted current scheme so new
+            # shells stay on the base, reset the terminal palette now (OSC
+            # 104/110/111/112 -> WezTerm's Gruvbox config), and regenerate colors.lua
+            # for that base so the live config-reload watch reverts WezTerm's bg too
+            # (preview reloaded it per focus; without this it'd keep the last swatch).
             if ($state | path exists) { rm --force $state }
             print -n "\u{1b}]104\u{7}\u{1b}]110\u{7}\u{1b}]111\u{7}\u{1b}]112\u{7}"
+            try { bash $"($env.HOME)/.config/tinted-theming/tinty/wezterm-colors.sh" base16-gruvbox-dark-hard e> /dev/null }
         }
     }
 }
