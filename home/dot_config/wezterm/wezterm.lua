@@ -200,19 +200,19 @@ else
     config.font_dirs = { home .. "/.local/share/fonts" }
 end
 
--- Translucent window; the centered padding (set live by center_grid) becomes a
--- thin translucent border frame around the grid. Starts at 0 so center_grid has
--- a clean baseline to measure the cell size from on the first resize.
-config.window_background_opacity = 0.0
+-- Translucent window: 90% transparent (0.1 opacity), so the desktop shows
+-- through. The centered padding (set live by center_grid) becomes a thin
+-- translucent border frame around the grid.
+config.window_background_opacity = 0.1
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
--- macOS frosted-dark glass: blur the desktop behind the window, tinted with the
--- active tinty background at < 1 opacity. macOS only; Windows/Linux stay clear.
+-- macOS frosted glass: keep the window 90% transparent (0.1, from above) but
+-- blur the desktop behind it, lightly tinted with the active tinty background.
+-- macOS only — the blur is a native compositor effect; Windows/Linux stay clear.
 if is_mac then
     config.colors = config.colors or {}
     config.colors.background = tinty_bg or "#000000"
-    config.window_background_opacity = 0.85
     config.macos_window_background_blur = 50
 end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
