@@ -1,0 +1,8 @@
+[metadata]
+name = "channels"
+description = "Pick a finder channel to run or chain into"
+
+# finder.nu overrides this with --source-command (the carry-aware candidate list); the
+# default just lists every channel so `tv channels` is also useful on its own.
+[source]
+command = "tv list-channels"

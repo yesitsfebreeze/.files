@@ -59,6 +59,7 @@ let tests = [
         let m = (_leader_menu)
         check eq (_leader_kind (_leader_resolve $m "f")) "find" "f is a find action"
         check eq (_leader_kind (_leader_resolve $m "F")) "find" "F is a find action"
+        check eq (_leader_kind (_leader_resolve $m "o")) "find" "o (recent cwd) is a find action"
         check eq (_leader_kind (_leader_resolve $m "g")) "menu" "g is a submenu"
     }}
 ]

@@ -32,6 +32,7 @@ def _leader_menu [] {
         # listen` reports the shifted key as code "F", so the two rows never collide.
         { key: "f", desc: "find (resume)", find: {|| finder --resume } }
         { key: "F", desc: "find (new)",    find: {|| finder --fresh } }
+        { key: "o", desc: "recent cwd",    find: {|| finder --start rcwd } }
         { key: "g", desc: "git", menu: [
             { key: "s", desc: "status", run: {|| ^git status } }
             { key: "l", desc: "log",    run: {|| ^git log --oneline -20 } }

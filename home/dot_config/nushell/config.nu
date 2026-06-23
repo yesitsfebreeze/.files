@@ -353,13 +353,6 @@ $env.config = (
                 event: { send: executehostcommand, cmd: "tv_shell_history" }
             }
             {
-                name: cwd_picker
-                modifier: alt
-                keycode: char_o
-                mode: [vi_normal vi_insert emacs]
-                event: { send: executehostcommand, cmd: "tv_cwd_picker" }
-            }
-            {
                 name: hist_up_local
                 modifier: none
                 keycode: up

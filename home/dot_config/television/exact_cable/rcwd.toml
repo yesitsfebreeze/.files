@@ -1,0 +1,12 @@
+[metadata]
+name = "rcwd"
+description = "Jump to a recent working directory (recency-ordered)"
+requirements = ["nu"]
+
+# Recent cwds come from dirstack.nu's recency stack — reuse _dirstack_list so the format,
+# dedup, cap and dead-path filtering stay single-sourced (nu expands the ~ in the path).
+[source]
+command = "nu -n -c 'source ~/.config/nushell/dirstack.nu; _dirstack_list | str join (char nl)'"
+
+[preview]
+command = "ls -la --color=always '{}'"

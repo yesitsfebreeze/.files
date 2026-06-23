@@ -121,35 +121,14 @@ let tests = [
         check eq (_finder_mk_stage "text" ["x"] "func" | get query) "func" "query stored when given"
     }}
 
-    # _finder_prefix_filter ---------------------------------------------------
-    { name: "prefix_filter empty buffer matches all", run: {||
-        check eq (_finder_prefix_filter ["files" "dirs" "text"] "") ["files" "dirs" "text"] "no prefix -> all"
-    }}
-    { name: "prefix_filter narrows to unique (autofire condition)", run: {||
-        check eq (_finder_prefix_filter ["files" "dirs"] "f") ["files"] "single match"
-    }}
-    { name: "prefix_filter empty result is a dead end", run: {||
-        check eq (_finder_prefix_filter ["files"] "x") [] "no match -> dead end"
-    }}
-    { name: "prefix_filter is case-insensitive both ways", run: {||
-        check eq (_finder_prefix_filter ["Dirs" "Files"] "di") ["Dirs"] "lower query, mixed names"
-        check eq (_finder_prefix_filter ["dirs"] "DI") ["dirs"] "upper query, lower names"
-    }}
-
-    # _finder_prefix_advance --------------------------------------------------
-    { name: "prefix_advance appends when still matching", run: {||
-        check eq (_finder_prefix_advance ["files" "dirs"] "d" "i") "di" "d+i matches dirs"
-    }}
-    { name: "prefix_advance rejects dead-end keystroke", run: {||
-        check eq (_finder_prefix_advance ["files"] "f" "x") "f" "fx matches nothing -> buffer unchanged"
-        check eq (_finder_prefix_advance ["files"] "" "z") "" "z matches nothing -> unchanged"
-    }}
-
-    # _finder_prefix_backspace ------------------------------------------------
-    { name: "prefix_backspace drops last char", run: {||
-        check eq (_finder_prefix_backspace "abc") "ab" "abc -> ab"
-        check eq (_finder_prefix_backspace "a") "" "a -> empty"
-        check eq (_finder_prefix_backspace "") "" "empty stays empty"
+    # _finder_channel_defs (every typed channel carries produces/accepts/scope) ----
+    { name: "channel defs expose produces, accepts and a scope closure", run: {||
+        let d = (_finder_channel_defs)
+        check true ("files" in ($d | columns)) "files is a defined channel"
+        check eq $d.files.produces "FileList" "produces co-located"
+        check eq $d.files.accepts ["DirList"] "accepts co-located"
+        check eq ($d.files.scope | describe) "closure" "scope is a closure"
+        check eq (do $d.files.scope "'/d'") "fd -t f --color=never . '/d'" "scope splices quoted paths"
     }}
 
     # persistence (_finder_save / _finder_load / _finder_state_file) -----------

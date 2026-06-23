@@ -27,12 +27,17 @@ local nu_env = home .. "/.config/nushell/env.nu"
 -- update-status tick and detect activity by a change in a cheap fingerprint (cursor
 -- + scrollback). STATUS_MS is the tick period; after IDLE_MS of an unchanged
 -- fingerprint we ease the overlay/blur opacity toward 0. The two directions are
--- asymmetric: idle -> sharp is a very slow drift (FADE_OUT_STEP per tick), while the
--- first activity tick SNAPS straight back to fully blurred (no ease-in) so typing
--- instantly restores the working background.
+-- asymmetric: idle -> sharp is an exponential decay (fade *= FADE_DECAY per tick),
+-- while the first activity tick SNAPS straight back to fully blurred (no ease-in) so
+-- typing instantly restores the working background. The decay is snapped to 0 once it
+-- drops below FADE_EPSILON: a true exponential never reaches 0, and without the snap
+-- the fade never equals the applied value, so we'd rewrite the (image-layer) config
+-- override on every tick forever -- the churn that hangs wezterm. The snap lets the
+-- fade settle in a handful of ticks, so set_config_overrides stops firing once idle.
 local IDLE_MS = 10000
 local STATUS_MS = 100
-local FADE_OUT_STEP = 0.01
+local FADE_DECAY = 0.85
+local FADE_EPSILON = 0.02
 
 if is_windows then
     -- Windows is a thin host: launch into WSL. A login (-l) bash sets PATH so `nu`
@@ -380,9 +385,14 @@ local function on_update_status(window, pane)
         state.fade = 1.0
     else
         state.idle_ms = state.idle_ms + STATUS_MS
-        -- Idle: very slow drift toward the sharp original, clamped at 0.
+        -- Idle: exponential decay toward the sharp original; snap to 0 below epsilon so
+        -- the fade actually settles (and we stop rewriting overrides) instead of
+        -- asymptotically approaching 0 forever.
         if state.idle_ms >= IDLE_MS then
-            state.fade = math.max(0.0, state.fade - FADE_OUT_STEP)
+            state.fade = state.fade * FADE_DECAY
+            if state.fade < FADE_EPSILON then
+                state.fade = 0.0
+            end
         end
     end
 

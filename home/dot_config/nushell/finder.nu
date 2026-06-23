@@ -1,10 +1,12 @@
-# finder.nu — a composable, typed fuzzy finder over `tv` (television) 0.15.8.
+# finder.nu — a typed, fuzzy, chainable pipe engine over `tv` (television) 0.15.8.
 #
-# Model: don't hand-code pickers — fzf the tv CHANNEL LIST itself, then chain the
-# results. Each run is a loop: pick a channel, run it, and on confirm either return
-# the selection as real Nushell structured data, chain forward into another channel
-# (scoped by the carry), or step back one stage. Every stage `produces` a typed value
-# (FileList | DirList | GrepList | Commits | Any) the next stage may scope on.
+# Model: don't hand-code pickers — tv owns every screen. Channel selection is itself a
+# fuzzy `channels` channel (the candidate list is computed here and handed to tv); picking
+# one runs it. Each run is a loop: pick a channel, run it, and on confirm either return the
+# selection as real Nushell structured data, chain forward into another channel (its source
+# scoped by the carry), or step back one stage. Every stage `produces` a typed value
+# (FileList | DirList | GrepList | Commits | Any) the next stage may scope on — produces,
+# accepts and the scope recipe are co-located per channel in _finder_channel_defs.
 #
 # tv LIMITATIONS this module is built around (both confirmed against tv 0.15.8):
 #   (a) Back-navigation cannot restore in-session query text or toggled marks. tv only
@@ -36,9 +38,12 @@
 # finder: chain tv channels and return the final selection as structured nu data.
 #   --resume : start from the persisted stack instead of fresh
 #   --fresh  : ignore any persisted stack (skip the resume prompt)
+#   --start  : seed the first stage on this channel, skipping the channels picker (e.g.
+#              `finder --start rcwd` drops straight into the recent-cwd channel).
 export def --env finder [
     --resume
     --fresh
+    --start: string = ""
 ] {
     if (which tv | is-empty) {
         error make { msg: "finder: `tv` (television) is not installed — required dependency" }
@@ -62,6 +67,8 @@ export def --env finder [
     let committed = if ($resume_stack != null) and (($resume_stack | length) > 0) {
         let last = ($resume_stack | last)
         _finder_loop ($resume_stack | drop 1) $last.channel ($last.query? | default "")
+    } else if ($start | is-not-empty) {
+        _finder_loop [] $start ""
     } else {
         _finder_loop
     }
@@ -146,86 +153,32 @@ def _finder_loop [
     $committed
 }
 
-# ── channel picker (type-to-narrow, autofire on unique prefix) ────────────────
+# ── channel picker (a carry-aware `channels` fuzzy channel) ───────────────────
 
-# _finder_pick_channel: choose a tv channel by typing its name's unique prefix. No fuzzy
-# multiselect — you type the first distinguishing letters and the instant exactly one
-# channel still matches, it fires (e.g. `f` -> files). First pick (no carry) ranges over
-# ALL tv channels; a CHAIN pick (carry present) ranges only over channels the carry can
-# flow into, so nonsense chains are never offered. Returns "" on esc/abort.
+# _finder_pick_channel: choose the next channel by fuzzy-searching a `channels` channel —
+# tv draws and matches it, so picking a channel IS just another fuzzy channel (no bespoke
+# nu prepicker). The candidate list is computed here and handed to tv via --source-command:
+# the FULL tv channel list on the first pick (no carry), or only the type-compatible
+# channels once a carry exists (so nonsense chains are never offered). esc → "" (the loop
+# reads that as step-back/abort). Non-interactive falls back to the first candidate.
 def _finder_pick_channel [committed: list, carry] {
-    let crumb = (_finder_breadcrumb $committed)
     let names = if ($carry == null) {
-        tv list-channels | lines | each { |l| $l | str trim } | where { |l| $l != "" }
+        tv list-channels | lines | each { |l| $l | str trim }
+            | where { |l| ($l != "") and ($l != "channels") }
     } else {
         _finder_compatible $carry
     }
     if ($names | is-empty) { return "" }
-    _finder_prefix_pick $names $crumb
-}
+    if (not (is-terminal --stdin)) { return ($names | first) }
 
-# ── prefix-pick: pure narrowing logic (testable) ──────────────────────────────
-# These three pure helpers are the entire input model of the prefix picker; the
-# interactive loop below is just I/O around them. Kept separate so they can be unit
-# tested headless (see tests/nushell/finder-test.nu).
-
-# _finder_prefix_filter: names whose value case-insensitively starts with `buf`. The
-# narrowing heart of the picker — 1 match means autofire, 0 matches means dead end.
-def _finder_prefix_filter [names: list, buf: string] {
-    let pre = ($buf | str downcase)
-    $names | where { |n| ($n | str downcase | str starts-with $pre) }
-}
-
-# _finder_prefix_advance: `buf + ch`, but only if that still matches ≥1 name — a
-# dead-end keystroke is swallowed and the buffer is returned unchanged.
-def _finder_prefix_advance [names: list, buf: string, ch: string] {
-    let nb = $"($buf)($ch)"
-    if (_finder_prefix_filter $names $nb | is-not-empty) { $nb } else { $buf }
-}
-
-# _finder_prefix_backspace: drop the last char of `buf` (empty/1-char -> empty).
-def _finder_prefix_backspace [buf: string] {
-    let n = ($buf | str length)
-    if ($n <= 1) { "" } else { $buf | str substring 0..<($n - 1) }
-}
-
-# _finder_prefix_pick: type-to-narrow selector over `names`. Holds a typed prefix buffer,
-# shows only the names starting with it (case-insensitive), and AUTOFIRES the moment a
-# single candidate remains. A keystroke that would empty the set is rejected (dead-end
-# guard), so the buffer always matches ≥1 name. backspace deletes, enter takes the first
-# remaining, esc / ctrl-c abort. Renders in place on one line (CR + erase-line).
-def _finder_prefix_pick [names: list, crumb: string] {
-    if not (is-terminal --stdin) { return ($names | first) }   # non-interactive: first
-    if (($names | length) == 1) { return ($names | first) }    # nothing to disambiguate
-    mut buf = ""
-    mut result = ""
-    loop {
-        let matches = (_finder_prefix_filter $names $buf)
-        if (($matches | length) == 1) { $result = ($matches | first); break }   # autofire
-        _finder_prefix_render $crumb $buf $matches
-        let k = (input listen --types [key])
-        if ($k.code == "esc") { break }                                          # -> ""
-        if ($k.code == "c") and ("keymodifiers(control)" in $k.modifiers) { break }
-        if ($k.code == "enter") {
-            if ($matches | is-not-empty) { $result = ($matches | first) }
-            break
-        }
-        if ($k.code == "backspace") { $buf = (_finder_prefix_backspace $buf); continue }
-        if ($k.key_type == "char")  { $buf = (_finder_prefix_advance $names $buf $k.code) }
-    }
-    print ""   # close the in-place status line with a newline
-    $result
-}
-
-# _finder_prefix_render: redraw the one-line selector in place — typed prefix + a block
-# cursor, then the remaining candidates (capped, with a +N overflow tag). `\e[2K\r` clears
-# the line and returns the cursor so each keystroke overwrites the previous frame.
-def _finder_prefix_render [crumb: string, buf: string, matches: list] {
-    let head = (if ($crumb | is-empty) { "find" } else { $crumb })
-    let cap = 14
-    let shown = ($matches | take $cap | str join " ")
-    let overflow = (if (($matches | length) > $cap) { $" +(($matches | length) - $cap)" } else { "" })
-    print -n $"\u{1b}[2K\r(ansi green_bold)($head)(ansi reset) (ansi yellow_bold)($buf)(ansi reset)▌  (ansi dark_gray)($shown)($overflow)(ansi reset)"
+    let header = $"(_finder_breadcrumb $committed) channels    [enter] open   [esc] back"
+    # Hand the precomputed candidate list to tv as the `channels` source (each name on its
+    # own line). tv fuzzy-matches it; the confirmed line is the channel to run next.
+    let src = $"printf '%s\\n' (_finder_shquote_list $names)"
+    let raw = (try {
+        tv channels --input-header $header --keybindings 'enter="confirm_selection"' --source-command $src
+    } catch { "" })
+    $raw | lines | where { |l| ($l | str trim) != "" } | get -o 0 | default "" | str trim
 }
 
 # ── run one channel + parse --expect output ──────────────────────────────────
@@ -331,86 +284,67 @@ def _finder_legend [] {
     "    [enter] done   [ctrl-p] pipe   [ctrl-b] back"
 }
 
-# ── type table (accepts / produces) ──────────────────────────────────────────
+# ── channel definitions (produces / accepts / scope recipe, co-located) ───────
 
-# Known channels and the typed value each produces / can scope on. The single source
-# of truth for both _finder_type (lookup) and _finder_channels (key set) — add a typed
-# channel here once. v1 scopes ONLY the edges files/dirs→text and files→git-log; every
-# other pairing drops the carry and runs fresh.
-def _finder_type_table [] {
+# _finder_channel_defs: the single source of truth for every TYPED channel. Each entry
+# binds the three things that used to live apart — the value it `produces`, the upstream
+# types it `accepts`, and the `scope` recipe that splices a carry's paths into its source
+# command. Add a typed channel = one record here; _finder_type, _finder_channels and
+# _finder_scope all derive from it, so they can never drift. `scope` takes the carry's
+# already shell-quoted path string and returns the channel's scoped source command. v1
+# edges: dirs→files/dirs, files/dirs→text, files→git-log; rcwd→files/dirs/text (DirList).
+# A SOURCE-ONLY channel (a chain root like rcwd) has `accepts: []` and no `scope` — it is
+# never a chain *target*, so its produced type just gates what it can flow *into*.
+def _finder_channel_defs [] {
     {
-        files:     { produces: "FileList", accepts: ["DirList"] }
-        dirs:      { produces: "DirList",  accepts: ["DirList"] }
-        text:      { produces: "GrepList", accepts: ["FileList" "DirList"] }
-        "git-log": { produces: "Commits",  accepts: ["FileList"] }
+        files:     { produces: "FileList", accepts: ["DirList"],            scope: {|paths| $"fd -t f --color=never . ($paths)" } }
+        dirs:      { produces: "DirList",  accepts: ["DirList"],            scope: {|paths| $"fd -t d --color=never . ($paths)" } }
+        text:      { produces: "GrepList", accepts: ["FileList" "DirList"], scope: {|paths| $"rg . --no-heading --line-number --color=never -- ($paths)" } }
+        "git-log": { produces: "Commits",  accepts: ["FileList"],           scope: {|paths| $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)" } }
+        rcwd:      { produces: "DirList",  accepts: [] }
     }
 }
 
-# _finder_type: the typed value a channel produces / accepts. Anything not in the table
-# is `Any` with no accepts → runs fresh.
+# _finder_type: the typed value a channel produces / accepts. Anything not defined is
+# `Any` with no accepts → runs fresh.
 def _finder_type [channel: string] {
-    (_finder_type_table) | get -o $channel | default { produces: "Any", accepts: [] }
+    (_finder_channel_defs) | get -o $channel | default { produces: "Any", accepts: [] }
 }
 
-# _finder_channels: the channels finder knows how to TYPE (and so can chain) — the table
-# keys. Used as the candidate set when filtering the chain picker. First-pick lists all
-# tv channels; only these can appear as a *chain* target (only these have scope edges).
+# _finder_channels: the channels finder knows how to TYPE (and so can chain) — the def
+# keys. First-pick lists all tv channels; only these can appear as a *chain* target.
 def _finder_channels [] {
-    _finder_type_table | columns
+    _finder_channel_defs | columns
 }
 
 # _finder_compatible: channels you can chain INTO from this carry — exactly those for
-# which _finder_scope yields a real scoped command. Deriving the picker list from the
-# scope edges (not a separate `accepts` table) means the two can never drift: if a
-# channel shows up in the chain picker, the carry is guaranteed to flow into it.
+# which _finder_scope yields a real scoped command. Deriving the list from the scope
+# result (not a separate `accepts` lookup) means the picker and the splice can never drift.
 def _finder_compatible [carry] {
-    if ($carry == null) or (($carry.results | default [] | is-empty)) { return [] }
+    if ($carry == null) or (($carry.results? | default [] | is-empty)) { return [] }
     _finder_channels | where { |ch| not ((_finder_scope $ch $carry).source_cmd | is-empty) }
 }
 
 # ── scoping dispatch ─────────────────────────────────────────────────────────
 
 # _finder_scope: given a channel + carry, build the scoped --source-command (or none).
-# Returns { source_cmd: string } — empty string means run fresh.
-# Only the v1-locked edges are scoped: files/dirs→text and files→git-log.
+# Returns { source_cmd: string } — empty string means run fresh. The recipe lives WITH the
+# channel (its `scope` closure in _finder_channel_defs); this just gates on the type edge
+# (does the channel accept the carry's produced type?) and feeds it the quoted paths.
 def _finder_scope [channel: string, carry] {
     # Empty carry must NOT scope to the whole tree: a null carry, or one with no
     # results, means there are no paths to restrict to → run fresh (unscoped).
     if ($carry == null) or ($carry.results | is-empty) { return { source_cmd: "" } }
 
-    let info = (_finder_type $channel)
-    if not ($carry.produces in $info.accepts) {
-        return { source_cmd: "" }
+    let def = ((_finder_channel_defs) | get -o $channel)
+    if ($def == null) or (not ($carry.produces in ($def.accepts? | default []))) {
+        return { source_cmd: "" }   # no typed edge from this carry → not chainable
     }
 
-    # absolute paths from the carry, neutralized for the shell (§2.8 strategy A).
+    # absolute paths from the carry, shell-quoted, spliced into the channel's recipe.
     let abs = ($carry.results | each { |p| $p | path expand })
-
-    let scoped = match [$channel, $carry.produces] {
-        # dirs → files — list files under the carried directories (mirrors files.toml `fd -t f`).
-        ["files", "DirList"] => {
-            let paths = (_finder_shquote_list $abs)
-            $"fd -t f --color=never . ($paths)"
-        }
-        # dirs → dirs — descend into subdirs of the carried directories (mirrors dirs.toml).
-        ["dirs", "DirList"] => {
-            let paths = (_finder_shquote_list $abs)
-            $"fd -t d --color=never . ($paths)"
-        }
-        # files/dirs → text — restrict the rg path set, same output shape.
-        ["text", "FileList"] | ["text", "DirList"] => {
-            let paths = (_finder_shquote_list $abs)
-            $"rg . --no-heading --line-number --color=never -- ($paths)"
-        }
-        # files → git-log — same pretty/graph format, scoped to the paths.
-        ["git-log", "FileList"] => {
-            let paths = (_finder_shquote_list $abs)
-            $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)"
-        }
-        _ => { "" }   # no typed edge → not chainable from this carry
-    }
-
-    { source_cmd: $scoped }
+    let paths = (_finder_shquote_list $abs)
+    { source_cmd: (do $def.scope $paths) }
 }
 
 # _finder_shquote: POSIX single-quote one path (everything inside '' is literal).
