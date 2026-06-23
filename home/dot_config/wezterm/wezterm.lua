@@ -22,23 +22,6 @@ local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
 local nu_config = home .. "/.config/nushell/config.nu"
 local nu_env = home .. "/.config/nushell/env.nu"
 
--- Idle cross-fade tuning (background: blurred+overlay when active -> sharp original
--- when idle). WezTerm has no native idle event, so we poll the active pane on the
--- update-status tick and detect activity by a change in a cheap fingerprint (cursor
--- + scrollback). STATUS_MS is the tick period; after IDLE_MS of an unchanged
--- fingerprint we ease the overlay/blur opacity toward 0. The two directions are
--- asymmetric: idle -> sharp is an exponential decay (fade *= FADE_DECAY per tick),
--- while the first activity tick SNAPS straight back to fully blurred (no ease-in) so
--- typing instantly restores the working background. The decay is snapped to 0 once it
--- drops below FADE_EPSILON: a true exponential never reaches 0, and without the snap
--- the fade never equals the applied value, so we'd rewrite the (image-layer) config
--- override on every tick forever -- the churn that hangs wezterm. The snap lets the
--- fade settle in a handful of ticks, so set_config_overrides stops firing once idle.
-local IDLE_MS = 10000
-local STATUS_MS = 16
-local FADE_DECAY = 0.90
-local FADE_EPSILON = 0.02
-
 if is_windows then
     -- Windows is a thin host: launch into WSL. A login (-l) bash sets PATH so `nu`
     -- resolves, then immediately execs it; `|| exec bash` keeps the terminal usable
@@ -170,8 +153,10 @@ end
 -- computed padding actually changes).
 wezterm.on("window-resized", center_grid)
 wezterm.on("window-config-reloaded", center_grid)
--- update-status also drives the idle cross-fade; that single combined handler is
--- registered after build_background is defined (below) so it can rebuild the layers.
+-- Interactive font zoom fires neither of the above, so a slow update-status tick
+-- catches it within ~1s. center_grid only writes overrides when the computed padding
+-- actually changes, so these idle ticks are nearly free.
+wezterm.on("update-status", center_grid)
 
 -- Colors from the active tinty theme, written by wezterm-colors.sh whenever the
 -- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
@@ -233,12 +218,9 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 -- Background overlay color: the live tinty theme bg, falling back to gruvbox dark
 -- hard base00 (NOT pure black, which diverges from the scheme) before any theme.
 local overlay = tinty_bg or "#1d2021"
--- How heavily the theme-bg wash sits over the blurred image in the ACTIVE state.
--- High (near 1.0) keeps the active background near-black with the blur as faint
--- texture; the idle cross-fade still fully reveals the sharp original at fade 0.
+-- How heavily the theme-bg wash sits over the image, keeping text legible over it.
 local OVERLAY_OPACITY = 0.92
-local bg_file = wezterm.config_dir .. "/background.png"           -- blurred image
-local orig_file = wezterm.config_dir .. "/background-original.png" -- sharp original
+local bg_file = wezterm.config_dir .. "/background.png"
 
 local function file_exists(path)
     local f = io.open(path, "r")
@@ -249,49 +231,11 @@ local function file_exists(path)
     return false
 end
 
--- True only when BOTH the blurred and the sharp-original images are present, i.e.
--- the idle cross-fade (below) is possible. Computed once at config-load; the
--- update-status fade handler skips entirely unless this holds.
-local fade_capable = file_exists(bg_file) and file_exists(orig_file)
-
--- Build the layered background for a given fade value (1.0 = active: blurred image +
--- heavy overlay over the sharp original; 0.0 = idle: only the sharp original shows
--- through). The sharp original is always the full bottom layer; the blurred image
--- and the theme-bg overlay sit on top and fade their opacity together, so easing
--- `fade` 1->0 cross-fades from blurred to sharp without ever exposing the desktop.
--- Back-compat: if only the blurred image exists (an install from before the original
--- was saved), return the original static 2-layer form (no fade). Neither image ->
--- nil, and the caller paints the solid theme bg instead.
-local function build_background(fade)
-    if fade_capable then
-        return {
-            {
-                source = { File = orig_file },
-                width = "100%",
-                height = "100%",
-                horizontal_align = "Center",
-                vertical_align = "Middle",
-                repeat_x = "NoRepeat",
-                repeat_y = "NoRepeat",
-            },
-            {
-                source = { File = bg_file },
-                width = "100%",
-                height = "100%",
-                horizontal_align = "Center",
-                vertical_align = "Middle",
-                repeat_x = "NoRepeat",
-                repeat_y = "NoRepeat",
-                opacity = fade,
-            },
-            {
-                source = { Color = overlay },
-                width = "100%",
-                height = "100%",
-                opacity = OVERLAY_OPACITY * fade,
-            },
-        }
-    elseif file_exists(bg_file) then
+-- Fixed layered background: the blurred image covers the window with the theme bg
+-- washed heavily over it for legibility. No image -> nil, and the caller paints the
+-- solid theme bg instead. Either way the window is fully opaque.
+local function build_background()
+    if file_exists(bg_file) then
         return {
             {
                 source = { File = bg_file },
@@ -313,25 +257,7 @@ local function build_background(fade)
     return nil
 end
 
--- Precompute the layered background at quantized fade levels once at load. The idle
--- fade indexes into this array instead of rebuilding a table (and re-specifying the
--- PNG sources) every tick, and only calls set_config_overrides when the QUANTIZED
--- level changes -- so a full fade triggers at most FADE_LEVELS config reapplies with
--- zero allocation on the hot path, rather than one rebuild+reapply per tick. WezTerm
--- caches the decoded PNGs by path, so reusing these tables is cheap. fade_cache[0] is
--- fully idle (sharp original), fade_cache[FADE_LEVELS] is fully active.
-local FADE_LEVELS = 60
-local fade_cache = {}
-if fade_capable then
-    for i = 0, FADE_LEVELS do
-        fade_cache[i] = build_background(i / FADE_LEVELS)
-    end
-end
-local function fade_level(fade)
-    return math.floor(fade * FADE_LEVELS + 0.5)
-end
-
-local loaded_bg = build_background(1.0) -- start ACTIVE = blurred + overlay
+local loaded_bg = build_background()
 if loaded_bg then
     config.background = loaded_bg
 else
@@ -343,90 +269,10 @@ config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
--- Tick ~10x/sec so the idle fade is smooth. center_grid also runs on update-status;
--- that's fine at this rate because it only writes overrides when the computed padding
--- actually changes (its idempotency guard), so the extra ticks are nearly free.
-config.status_update_interval = STATUS_MS
-
--- Per-window fade state, keyed by window id: fingerprint of last-seen activity, ms
--- since last activity, current eased opacity, and the last opacity we actually
--- applied (so we only write overrides mid-transition, not every steady tick).
-local bg_state = {}
-
--- One update-status tick: keep the grid centered, then step the idle cross-fade.
--- Folded into a single handler (rather than a second wezterm.on) so center_grid and
--- the fade compose on the SAME overrides table via read-modify-write -- the fade sets
--- only overrides.background, center_grid sets only overrides.window_padding, neither
--- clobbers the other.
-local function on_update_status(window, pane)
-    center_grid(window)
-    if not fade_capable then
-        -- Overrides persist across reload_configuration(), so after a clear (or a
-        -- reload into the solid/blurred-only state) an already-open window would keep
-        -- rendering the old layered background pointing at now-deleted PNGs. Drop any
-        -- stale background override so the reloaded load-time config takes over.
-        local ov = window:get_config_overrides() or {}
-        if ov.background ~= nil then
-            ov.background = nil
-            window:set_config_overrides(ov)
-        end
-        return -- solid / static-2-layer modes have nothing to fade
-    end
-
-    -- No native idle API in WezTerm, so detect activity by a cheap fingerprint of
-    -- the active pane: cursor cell + scrollback extent. Any typing or program output
-    -- moves the cursor or grows the scrollback, changing the fingerprint. Guard nils
-    -- the same way center_grid does (an overlay/detached pane has no usable pane).
-    local p = pane or window:active_pane()
-    if not p then
-        return
-    end
-    local c = p:get_cursor_position()
-    local d = p:get_dimensions()
-    if not c or not d then
-        return
-    end
-    local fp = string.format("%d:%d:%d:%d", c.x, c.y, d.scrollback_rows, d.physical_top)
-
-    local id = window:window_id()
-    local state = bg_state[id]
-    if not state then
-        state = { fp = fp, idle_ms = 0, fade = 1.0, applied = FADE_LEVELS }
-        bg_state[id] = state
-    end
-
-    if fp ~= state.fp then
-        -- Activity this tick: reset the idle clock and SNAP straight back to fully
-        -- blurred -- typing must instantly restore the working background, no ease-in.
-        state.fp = fp
-        state.idle_ms = 0
-        state.fade = 1.0
-    else
-        state.idle_ms = state.idle_ms + STATUS_MS
-        -- Idle: exponential decay toward the sharp original; snap to 0 below epsilon so
-        -- the fade actually settles (and we stop rewriting overrides) instead of
-        -- asymptotically approaching 0 forever.
-        if state.idle_ms >= IDLE_MS then
-            state.fade = state.fade * FADE_DECAY
-            if state.fade < FADE_EPSILON then
-                state.fade = 0.0
-            end
-        end
-    end
-
-    -- Only reapply when the QUANTIZED level changes: continuous fade values that round
-    -- to the same level reuse the already-applied background (no-op), and once the fade
-    -- settles at level 0 or FADE_LEVELS we stop touching overrides entirely. The table
-    -- is pulled from fade_cache -- no allocation, no re-specifying image sources.
-    local lvl = fade_level(state.fade)
-    if lvl ~= state.applied then
-        local overrides = window:get_config_overrides() or {}
-        overrides.background = fade_cache[lvl]
-        window:set_config_overrides(overrides)
-        state.applied = lvl
-    end
-end
-wezterm.on("update-status", on_update_status)
+-- Slow tick: update-status now only exists to catch interactive font zoom for
+-- center_grid (registered above), which fires no resize/reload event. 1s is plenty,
+-- and the padding guard keeps the idle ticks nearly free.
+config.status_update_interval = 1000
 
 -- OpenGL, not WebGpu: the layered config.background (File image + Color overlay
 -- with per-layer opacity) has the same backend sensitivity the old translucent
@@ -485,13 +331,12 @@ local function run_bg_script(script)
 end
 
 -- Single POSIX script: derive both dest DIRS in-shell (no host paths hardcoded),
--- download to a temp, then write TWO images to each dir -- the SHARP original (the
--- downloaded $tmp, used as the idle reveal layer) and the 16px gaussian BLUR
--- (background.png, the active layer). Both go to the committed chezmoi source AND
--- the live dir the running wezterm reads. set -e is on, so every command-sub that
--- can fail is guarded. The url is single-quoted in only after Lua-side validation
--- (below) already rejected control chars, quotes, and anything not matching
--- ^https?://[^%s]+$.
+-- obtain the image (download an http(s) URL, or copy a local file -- a file:// URL,
+-- ~ path, POSIX path, or a Windows path via wslpath), then write the 16px gaussian
+-- BLUR (background.png) to BOTH the committed chezmoi source AND the live dir the
+-- running wezterm reads. set -e is on, so every command-sub that can fail is guarded.
+-- The input is single-quoted in only after Lua-side validation (below) already
+-- rejected control chars and single quotes.
 --
 -- WSL live-dir derivation is strict (FIX B): cmd.exe|tr exits 0 even when cmd.exe
 -- fails, leaving $up empty, and `wslpath ""` returns "." (a valid dir) -- which
@@ -505,10 +350,10 @@ local WIN_LIVE_DIR =
     .. '[ -d "$winhome" ] || exit 1; '
     .. 'live_dir="$winhome/.config/wezterm"'
 
-local function set_background_from_url(url)
+local function set_background(input)
     local script = table.concat({
         "set -e",
-        "url='" .. url .. "'",
+        "input='" .. input .. "'",
         'tmp="$(mktemp)"',
         -- FIX E: GUI-launched wezterm inherits launchd's minimal PATH on macOS, so
         -- sh -lc won't find brew's magick/curl; seed Homebrew up front (no-op on
@@ -523,17 +368,24 @@ local function set_background_from_url(url)
         "if grep -qi microsoft /proc/version 2>/dev/null; then " .. WIN_LIVE_DIR .. "; "
             .. 'else live_dir="$HOME/.config/wezterm"; fi',
         'mkdir -p "$live_dir"',
-        'curl -fsSL "$url" -o "$tmp"',
+        -- Obtain the source image into $tmp: download http(s) URLs, else treat the
+        -- input as a local file -- strip a file:// prefix, expand a leading ~, and
+        -- convert a Windows drive path via wslpath (WSL only). A missing local file
+        -- aborts before any dest write.
+        'case "$input" in '
+            .. 'http://*|https://*) curl -fsSL "$input" -o "$tmp" ;; '
+            .. '*) src="${input#file://}"; '
+            .. 'case "$src" in "~/"*) src="$HOME/${src#\\~/}" ;; esac; '
+            .. 'case "$src" in [A-Za-z]:[/\\\\]*) if command -v wslpath >/dev/null 2>&1; then src="$(wslpath -u "$src")"; fi ;; esac; '
+            .. '[ -f "$src" ] || exit 1; cp "$src" "$tmp" ;; '
+            .. "esac",
         "blur() { if command -v magick >/dev/null 2>&1; then magick \"$1\" -blur 0x16 \"$2\"; "
             .. 'else convert "$1" -blur 0x16 "$2"; fi; }',
-        -- Blur into a temp FIRST: this doubles as image validation. A non-image
-        -- download (e.g. an HTML page from a non-direct URL) makes magick/convert
-        -- fail here, and set -e aborts before ANY dest file is written -- so a bad
-        -- URL can never leave a poisoned background-original.png behind. Only once
-        -- the blur succeeds do we publish both images to both dirs.
+        -- Blur into a temp FIRST: this doubles as image validation. A non-image input
+        -- (e.g. an HTML page from a non-direct URL) makes magick/convert fail here, and
+        -- set -e aborts before ANY dest file is written. Only once the blur succeeds do
+        -- we publish to both dirs.
         'blur "$tmp" "$blurred"',
-        'cp "$tmp" "$src_dir/background-original.png"',
-        'cp "$tmp" "$live_dir/background-original.png"',
         'cp "$blurred" "$src_dir/background.png"',
         'cp "$blurred" "$live_dir/background.png"',
     }, "; ")
@@ -545,10 +397,9 @@ local function set_background_from_url(url)
     end
 end
 
--- Empty-enter clear: remove BOTH the blurred and the sharp-original images at both
--- the live display dir and the committed source, via the same single WSL/POSIX path
--- so the running (Windows) wezterm stops showing it, then reload to fall back to the
--- solid theme bg.
+-- Empty-enter clear: remove the background image at both the live display dir and the
+-- committed source, via the same single WSL/POSIX path so the running (Windows)
+-- wezterm stops showing it, then reload to fall back to the solid theme bg.
 local function clear_background()
     -- Best-effort, no set -e: remove the committed copies first (always reachable),
     -- then the live copies. The live derivation reuses the same strict WIN_LIVE_DIR
@@ -558,10 +409,10 @@ local function clear_background()
     -- falls back to the solid bg anyway).
     local script = table.concat({
         'src_dir="$(chezmoi source-path "$HOME/.config/wezterm" 2>/dev/null)"',
-        '[ -n "$src_dir" ] && rm -f "$src_dir/background.png" "$src_dir/background-original.png"',
+        '[ -n "$src_dir" ] && rm -f "$src_dir/background.png"',
         "if grep -qi microsoft /proc/version 2>/dev/null; then " .. WIN_LIVE_DIR .. "; "
             .. 'else live_dir="$HOME/.config/wezterm"; fi',
-        'rm -f "$live_dir/background.png" "$live_dir/background-original.png"',
+        'rm -f "$live_dir/background.png"',
         "true",
     }, "; ")
     run_bg_script(script)
@@ -585,7 +436,7 @@ config.keys = {
             end
         end),
     },
-    -- CTRL-SHIFT-B: prompt for an image URL, download + blur it, set as window bg.
+    -- CTRL-SHIFT-B: prompt for an image URL or local path, blur it, set as window bg.
     {
         key = "b",
         mods = "CTRL|SHIFT",
@@ -593,12 +444,12 @@ config.keys = {
             description = wezterm.format({
                 { Attribute = { Intensity = "Bold" } },
                 { Foreground = { AnsiColor = "Fuchsia" } },
-                { Text = "Paste image URL (empty to clear):" },
+                { Text = "Paste image URL or path (empty to clear):" },
             }),
             action = wezterm.action_callback(function(_window, _pane, line)
                 -- nil  -> ESC: do nothing.
                 -- ""   -> empty enter: clear the background.
-                -- else -> validate, then download+blur+set.
+                -- else -> validate, then fetch/copy + blur + set.
                 if line == nil then
                     return
                 end
@@ -607,14 +458,14 @@ config.keys = {
                     return
                 end
                 -- Validate in Lua before interpolating into the shell script: reject
-                -- any control char (newline/CR), require a full-line-anchored URL,
-                -- and reject single quotes (which would break the 'url=...' literal).
-                if line:match("[%c]") or line:find("'", 1, true)
-                    or not line:match("^https?://[^%s]+$") then
-                    wezterm.log_error("ignored invalid background URL")
+                -- any control char (newline/CR) and single quotes (which would break
+                -- the 'input=...' literal). The shell decides URL vs local path; a bad
+                -- one fails the download/copy or the blur, leaving no dest file behind.
+                if line:match("[%c]") or line:find("'", 1, true) then
+                    wezterm.log_error("ignored invalid background input")
                     return
                 end
-                set_background_from_url(line)
+                set_background(line)
             end),
         }),
     },
