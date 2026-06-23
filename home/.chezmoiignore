@@ -6,3 +6,9 @@
 {{ if ne .chezmoi.os "darwin" }}
 install-homebrew.sh
 {{ end }}
+
+# WezTerm colors.lua is a generated artifact: run_after_generate-shell-init.sh
+# regenerates it at apply time from the active (last-picked) tinty scheme. Tracking
+# it in source pinned feb and let chezmoi rewrite the live file back to feb on every
+# apply. Ignore it so the generated last-picked palette is the single source.
+.config/wezterm/colors.lua

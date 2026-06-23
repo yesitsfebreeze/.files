@@ -18,3 +18,5 @@ Thumbs.db
 
 # git-fs plugin runtime object store — never committed
 /.git-fs/
+
+home/dot_config/wezterm/colors.lua
