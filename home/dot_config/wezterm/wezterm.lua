@@ -173,7 +173,7 @@ wezterm.on("window-config-reloaded", center_grid)
 -- (e.g. first run before any theme has been picked).
 local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
 -- Capture the theme background; the background overlay layer (below) uses it as the
--- 75% wash over the blurred image, and the no-image fallback paints it solid.
+-- heavy wash over the blurred image, and the no-image fallback paints it solid.
 local tinty_bg = (ok and type(tinty_colors) == "table") and tinty_colors.background or nil
 if ok and type(tinty_colors) == "table" then
     -- Keep tinty's background: the layered background model below is opaque (no
@@ -219,7 +219,7 @@ end
 
 -- Layered window background (ctrl+shift+b sets it from a URL): when a baked
 -- background.png exists it's the bottom layer (sized to cover) with the active
--- theme bg washed over it at 75% so text stays legible; with no image the window
+-- theme bg washed over it heavily so text stays legible; with no image the window
 -- is just the solid theme bg. Either way the window is fully opaque — no
 -- see-through desktop. The centered padding (center_grid) frames the grid.
 config.window_decorations = "RESIZE"
@@ -228,6 +228,10 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 -- Background overlay color: the live tinty theme bg, falling back to gruvbox dark
 -- hard base00 (NOT pure black, which diverges from the scheme) before any theme.
 local overlay = tinty_bg or "#1d2021"
+-- How heavily the theme-bg wash sits over the blurred image in the ACTIVE state.
+-- High (near 1.0) keeps the active background near-black with the blur as faint
+-- texture; the idle cross-fade still fully reveals the sharp original at fade 0.
+local OVERLAY_OPACITY = 0.92
 local bg_file = wezterm.config_dir .. "/background.png"           -- blurred image
 local orig_file = wezterm.config_dir .. "/background-original.png" -- sharp original
 
@@ -246,7 +250,7 @@ end
 local fade_capable = file_exists(bg_file) and file_exists(orig_file)
 
 -- Build the layered background for a given fade value (1.0 = active: blurred image +
--- 75% overlay over the sharp original; 0.0 = idle: only the sharp original shows
+-- heavy overlay over the sharp original; 0.0 = idle: only the sharp original shows
 -- through). The sharp original is always the full bottom layer; the blurred image
 -- and the theme-bg overlay sit on top and fade their opacity together, so easing
 -- `fade` 1->0 cross-fades from blurred to sharp without ever exposing the desktop.
@@ -279,7 +283,7 @@ local function build_background(fade)
                 source = { Color = overlay },
                 width = "100%",
                 height = "100%",
-                opacity = 0.75 * fade,
+                opacity = OVERLAY_OPACITY * fade,
             },
         }
     elseif file_exists(bg_file) then
@@ -297,7 +301,7 @@ local function build_background(fade)
                 source = { Color = overlay },
                 width = "100%",
                 height = "100%",
-                opacity = 0.75,
+                opacity = OVERLAY_OPACITY,
             },
         }
     end
