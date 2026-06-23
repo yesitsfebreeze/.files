@@ -155,14 +155,14 @@ wezterm.on("update-status", center_grid)
 -- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
 -- (e.g. first run before any theme has been picked).
 local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
--- Capture the theme background before it's nil'd below; the macOS glass reuses it.
+-- Capture the theme background; the background overlay layer (below) uses it as the
+-- 75% wash over the blurred image, and the no-image fallback paints it solid.
 local tinty_bg = (ok and type(tinty_colors) == "table") and tinty_colors.background or nil
 if ok and type(tinty_colors) == "table" then
-    -- Drop tinty's background so window_background_opacity below governs. A solid
-    -- colors.background paints an opaque layer over the translucent window, killing
-    -- the transparency; WezTerm falls back to a transparent default without it. The
-    -- ANSI/fg/cursor palette still retints live — only the canvas stays see-through.
-    tinty_colors.background = nil
+    -- Keep tinty's background: the layered background model below is opaque (no
+    -- see-through canvas to protect), so the terminal cells should paint the real
+    -- theme bg for text legibility over the image/overlay. The ANSI/fg/cursor
+    -- palette retints live as before.
     config.colors = tinty_colors
 else
     config.color_scheme = "Gruvbox dark, hard (base16)"
@@ -200,30 +200,59 @@ else
     config.font_dirs = { home .. "/.local/share/fonts" }
 end
 
--- Translucent window: 90% transparent (0.1 opacity), so the desktop shows
--- through. The centered padding (set live by center_grid) becomes a thin
--- translucent border frame around the grid.
-config.window_background_opacity = 0.1
+-- Layered window background (ctrl+shift+b sets it from a URL): when a baked
+-- background.png exists it's the bottom layer (sized to cover) with the active
+-- theme bg washed over it at 75% so text stays legible; with no image the window
+-- is just the solid theme bg. Either way the window is fully opaque — no
+-- see-through desktop. The centered padding (center_grid) frames the grid.
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
--- macOS frosted glass: keep the window 90% transparent (0.1, from above) but
--- blur the desktop behind it, lightly tinted with the active tinty background.
--- macOS only — the blur is a native compositor effect; Windows/Linux stay clear.
-if is_mac then
+-- Background overlay color: the live tinty theme bg, falling back to gruvbox dark
+-- hard base00 (NOT pure black, which diverges from the scheme) before any theme.
+local overlay = tinty_bg or "#1d2021"
+local bg_file = wezterm.config_dir .. "/background.png"
+local bg_exists = false
+do
+    local f = io.open(bg_file, "r")
+    if f then
+        f:close()
+        bg_exists = true
+    end
+end
+if bg_exists then
+    config.background = {
+        {
+            source = { File = bg_file },
+            width = "100%",
+            height = "100%",
+            horizontal_align = "Center",
+            vertical_align = "Middle",
+            repeat_x = "NoRepeat",
+            repeat_y = "NoRepeat",
+        },
+        {
+            source = { Color = overlay },
+            width = "100%",
+            height = "100%",
+            opacity = 0.75,
+        },
+    }
+else
+    -- No image: single source of truth for the solid case is the cell background.
     config.colors = config.colors or {}
-    config.colors.background = tinty_bg or "#000000"
-    config.macos_window_background_blur = 50
+    config.colors.background = overlay
 end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
--- OpenGL, not WebGpu: WebGpu does not honor window_background_opacity on the
--- Windows/D3D12 backend (this config's host -- WSL launches into the Windows
--- wezterm.exe), so a translucent window renders as solid black. OpenGL composites
--- the transparent canvas correctly and is still GPU-accelerated. max_fps is
--- uncapped to 255 (WezTerm's ceiling) so frames present as fast as produced, and
+-- OpenGL, not WebGpu: the layered config.background (File image + Color overlay
+-- with per-layer opacity) has the same backend sensitivity the old translucent
+-- window did — WebGpu on the Windows/D3D12 backend (this config's host: WSL
+-- launches into the Windows wezterm.exe) mis-composites layered/opacity
+-- backgrounds, so OpenGL is the safe choice and is still GPU-accelerated. max_fps
+-- is uncapped to 255 (WezTerm's ceiling) so frames present as fast as produced, and
 -- animation_fps matches so cursor blink / smooth-scroll never throttle below it.
 config.front_end = "OpenGL"
 config.max_fps = 255
@@ -254,6 +283,79 @@ end)
 -- Keybindings are terminal-level only; burrito owns the grid (its leader is
 -- ctrl+space), so there's no leader or mux emulation here.
 
+-- ctrl+shift+b background pipeline. The keybind callback runs inside the active
+-- wezterm binary; on the WSL→Windows host that's wezterm.exe, so we route the
+-- ENTIRE download+blur+commit through a single `wsl.exe … bash -lc` call into the
+-- same WSL distro the terminal uses — one POSIX code path everywhere, no
+-- PowerShell, no conhost flash (wsl.exe runs windowless from wezterm-gui; see the
+-- "No WezTerm plugins" note above on the os.execute conhost lesson). We pass argv,
+-- never a shell string, and never os.execute.
+local function run_bg_script(script)
+    local argv
+    if is_windows then
+        argv = { "wsl.exe", "-d", "Ubuntu", "-e", "bash", "-lc", script }
+    else
+        argv = { "sh", "-lc", script }
+    end
+    -- Login shell (-lc) so PATH resolves magick/convert/curl/wslpath/chezmoi.
+    -- run_child_process is synchronous (returns success/stdout/stderr) so we can
+    -- branch on failure; it briefly blocks the GUI thread during the download.
+    return wezterm.run_child_process(argv)
+end
+
+-- Single POSIX script: derive both dest paths in-shell (no host paths hardcoded),
+-- download to a temp, bake a 16px gaussian blur, write to the committed chezmoi
+-- source AND the live path the running wezterm reads. set -e is on, so every
+-- command-substitution that can fail is guarded. The url is single-quoted in only
+-- after Lua-side validation (below) already rejected control chars, quotes, and
+-- anything not matching ^https?://[^%s]+$.
+local function set_background_from_url(url)
+    local script = table.concat({
+        "set -e",
+        "url='" .. url .. "'",
+        'tmp="$(mktemp)"',
+        'src_dir="$(chezmoi source-path "$HOME/.config/wezterm")"',
+        '[ -n "$src_dir" ] || exit 1',
+        'mkdir -p "$src_dir"',
+        'committed="$src_dir/background.png"',
+        "if grep -qi microsoft /proc/version 2>/dev/null; then "
+            .. "winhome=\"$(wslpath \"$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r\\n')\" 2>/dev/null)\"; "
+            .. '{ [ -n "$winhome" ] && [ -d "$winhome" ]; } || exit 1; '
+            .. 'live="$winhome/.config/wezterm/background.png"; '
+            .. 'else live="$HOME/.config/wezterm/background.png"; fi',
+        'mkdir -p "$(dirname "$live")"',
+        'curl -fsSL "$url" -o "$tmp"',
+        "blur() { if command -v magick >/dev/null 2>&1; then magick \"$1\" -blur 0x16 \"$2\"; "
+            .. 'else convert "$1" -blur 0x16 "$2"; fi; }',
+        'blur "$tmp" "$committed"',
+        'cp "$committed" "$live"',
+        'rm -f "$tmp"',
+    }, "; ")
+    local success, _, stderr = run_bg_script(script)
+    if success then
+        wezterm.reload_configuration()
+    else
+        wezterm.log_error("set background failed: " .. (stderr or ""))
+    end
+end
+
+-- Empty-enter clear: remove both the live display copy and the committed source,
+-- via the same single WSL/POSIX path so the running (Windows) wezterm stops
+-- showing it, then reload to fall back to the solid theme bg.
+local function clear_background()
+    local script = table.concat({
+        'src_dir="$(chezmoi source-path "$HOME/.config/wezterm" 2>/dev/null)"',
+        '[ -n "$src_dir" ] && rm -f "$src_dir/background.png"',
+        "if grep -qi microsoft /proc/version 2>/dev/null; then "
+            .. "winhome=\"$(wslpath \"$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r\\n')\" 2>/dev/null)\"; "
+            .. '[ -n "$winhome" ] && rm -f "$winhome/.config/wezterm/background.png"; '
+            .. 'else rm -f "$HOME/.config/wezterm/background.png"; fi',
+        "true",
+    }, "; ")
+    run_bg_script(script)
+    wezterm.reload_configuration()
+end
+
 config.keys = {
     { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
     -- CTRL-C copies when a selection exists, otherwise falls through to the
@@ -270,6 +372,39 @@ config.keys = {
                 window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
             end
         end),
+    },
+    -- CTRL-SHIFT-B: prompt for an image URL, download + blur it, set as window bg.
+    {
+        key = "b",
+        mods = "CTRL|SHIFT",
+        action = act.PromptInputLine({
+            description = wezterm.format({
+                { Attribute = { Intensity = "Bold" } },
+                { Foreground = { AnsiColor = "Fuchsia" } },
+                { Text = "Paste image URL (empty to clear):" },
+            }),
+            action = wezterm.action_callback(function(_window, _pane, line)
+                -- nil  -> ESC: do nothing.
+                -- ""   -> empty enter: clear the background.
+                -- else -> validate, then download+blur+set.
+                if line == nil then
+                    return
+                end
+                if line == "" then
+                    clear_background()
+                    return
+                end
+                -- Validate in Lua before interpolating into the shell script: reject
+                -- any control char (newline/CR), require a full-line-anchored URL,
+                -- and reject single quotes (which would break the 'url=...' literal).
+                if line:match("[%c]") or line:find("'", 1, true)
+                    or not line:match("^https?://[^%s]+$") then
+                    wezterm.log_error("ignored invalid background URL")
+                    return
+                end
+                set_background_from_url(line)
+            end),
+        }),
     },
 }
 
