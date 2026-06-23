@@ -9,19 +9,18 @@
 # forwarded to WezTerm, so WezTerm's own bg/cursor might not follow. The fix is a
 # multiplexer-aware path (burrito passthrough or a WezTerm overlay), not this config.
 #
-# `default-scheme` is our own `base24-feb` — the custom Matrix scheme whose
-# palette lives, tracked, next to this file. We ship two variants:
-# feb.base16.yaml and feb.base24.yaml; base24 is a superset (adds base10-17 for
-# distinct bright ANSI colors) and renders fine wherever base16 does, so it's the
-# default and base24-aware programs get the richer palette for free. On `chezmoi
-# apply` the run_after_generate-shell-init.sh hook copies each into the
-# (gitignored) data-dir at custom-schemes/<system>/feb.yaml and regenerates
-# WezTerm's colors.lua from the active scheme, so a fresh checkout lands on feb
-# without launching a shell/WezTerm first. The `theme` switcher (and `tinty init`
-# from config.nu) then drive the live OSC retint on top; pick anything via the
-# switcher and that choice persists over this default.
+# `default-scheme` is the Gruvbox base16 hard scheme — matching WezTerm's builtin
+# fallback — so a fresh checkout with no prior pick lands on a neutral base, NOT on
+# our own feb. Our custom feb scheme still ships and is listed in the switcher: the
+# run_after_generate-shell-init.sh hook copies feb.base16.yaml / feb.base24.yaml
+# into the (gitignored) data-dir at custom-schemes/<system>/feb.yaml, so `base16-feb`
+# / `base24-feb` appear in the `theme` picker alongside the catalog (base24 is a
+# superset of base16 — adds base10-17 for distinct bright ANSI). The colors.lua
+# generator and `tinty init` resolve the LAST picked scheme (current_scheme) first
+# and only fall back to this default when nothing has been picked yet — so your
+# last `theme` choice persists across applies and new shells.
 
-default-scheme = "base24-feb"
+default-scheme = "base16-gruvbox-dark-hard"
 shell = "bash -c '{}'"
 
 [[items]]
