@@ -9,7 +9,7 @@ no_sort = true
 frecency = false
 
 [preview]
-command = "ls -la --color=always '{}'"
+command = "^ls -la --color=always '{}'"
 
 [keybindings]
 enter = "actions:cd"
@@ -17,7 +17,7 @@ ctrl-d = "actions:remove"
 
 [actions.cd]
 description = "Change to the selected directory"
-command = "cd '{}' && $SHELL"
+command = "cd '{}'; ^$env.SHELL"
 mode = "execute"
 
 [actions.remove]

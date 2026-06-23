@@ -4,9 +4,10 @@ description = "List recently modified files (via git or filesystem)"
 requirements = ["git", "bat"]
 
 [source]
+# nu can't parse `2>/dev/null` / `||`; delegate these pipelines to bash.
 command = [
-  { name = "Recent",    run = "git diff --name-only HEAD~10 HEAD 2>/dev/null || find . -type f -mtime -7 -not -path '*/.*' 2>/dev/null | head -100" },
-  { name = "Last hour", run = "find . -type f -mmin -60 -not -path '*/.*' 2>/dev/null | head -100" },
+  { name = "Recent",    run = "bash -c \"git diff --name-only HEAD~10 HEAD 2>/dev/null || find . -type f -mtime -7 -not -path '*/.*' 2>/dev/null | head -100\"" },
+  { name = "Last hour", run = "bash -c \"find . -type f -mmin -60 -not -path '*/.*' 2>/dev/null | head -100\"" },
 ]
 
 [preview]

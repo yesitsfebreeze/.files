@@ -9,4 +9,4 @@ requirements = ["nu"]
 command = "nu -n -c 'source ~/.config/nushell/dirstack.nu; _dirstack_list | str join (char nl)'"
 
 [preview]
-command = "ls -la --color=always '{}'"
+command = "^ls -la --color=always '{}'"

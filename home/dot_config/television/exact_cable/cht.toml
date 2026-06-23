@@ -28,7 +28,8 @@ command = """printf '%s\\n' \
   ffmpeg imagemagick openssl tmux vim chmod chown ln mount"""
 
 [preview]
-command = "curl -sf --max-time 15 'cht.sh/{}' || echo 'cht.sh unreachable (overloaded or offline) — retry'"
+# nu has no `||`; delegate the curl-or-fallback to bash (same pattern as theme.toml).
+command = '''bash -c "curl -sf --max-time 15 'cht.sh/{}' || echo 'cht.sh unreachable (overloaded or offline) — retry'"'''
 
 [ui]
 preview_panel = { size = 65 }

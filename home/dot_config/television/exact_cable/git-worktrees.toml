@@ -7,7 +7,7 @@ requirements = ["git"]
 command = "git worktree list --porcelain | grep '^worktree' | cut -d' ' -f2-"
 
 [preview]
-command = "cd '{}' && git log --oneline -10 --color=always && echo && git status --short"
+command = "cd '{}'; git log --oneline -10 --color=always; print ''; git status --short"
 
 [keybindings]
 enter = "actions:cd"
@@ -15,7 +15,7 @@ ctrl-d = "actions:remove"
 
 [actions.cd]
 description = "Change to the selected worktree"
-command = "cd '{}' && $SHELL"
+command = "cd '{}'; ^$env.SHELL"
 mode = "execute"
 
 [actions.remove]

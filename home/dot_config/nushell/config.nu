@@ -389,6 +389,15 @@ $env.config = (
                 mode: [vi_normal vi_insert emacs]
                 event: { send: executehostcommand, cmd: "leader" }
             }
+            {
+                # Ctrl-T: open the finder, insert its selection at the cursor.
+                # Overrides tv init.nu's Ctrl-T (tv_smart_autocomplete) — appended later wins.
+                name: finder_pick
+                modifier: control
+                keycode: char_t
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "tv_finder" }
+            }
         ]
     )
 )
@@ -410,6 +419,23 @@ source ~/.config/nushell/pass.nu
 
 # `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data.
 source ~/.config/nushell/finder.nu
+
+# Ctrl-T: open the finder and splice the selection into the prompt at the cursor
+# (fzf-style). `--fresh` skips the resume y/N prompt so the key is non-blocking.
+# Paths/grep-files/commit-hashes are shell-quoted (reusing finder's own quoter) so
+# spaces survive. Empty/aborted pick leaves the line untouched.
+def tv_finder [] {
+    let sel = (finder --fresh)
+    if ($sel | is-empty) { return }
+    let parts = ($sel | each { |it|
+        let s = (match (($it | describe -d).type) {
+            "record" => ($it.file? | default ($it.hash? | default ($it | to nuon)))
+            _ => ($it | into string)
+        })
+        _finder_shquote $s
+    })
+    commandline edit --insert ($parts | str join " ")
+}
 
 # `leader`: which-key style overlay — one chord opens it, keys are swallowed and
 # dispatched (all routes go through `finder`). Bound to the leader chord below.

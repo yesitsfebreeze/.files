@@ -3,12 +3,11 @@ name = "alias"
 description = "A channel to select from shell aliases"
 
 [source]
-# you may need to adjust the command depending on your shell
-command = "$SHELL -ic 'alias'"
-output = "{split:=:0}"
+# nu aliases live in config.nu; source it (env-free) and list them via `scope aliases`.
+command = "nu -n -c 'source ~/.config/nushell/config.nu; scope aliases | get name | str join (char nl)'"
 
 [preview]
-command = "$SHELL -ic 'alias' | grep -E '^(alias )?{split:=:0}='"
+command = "nu -n -c 'source ~/.config/nushell/config.nu; scope aliases | where name == \"{}\" | get 0.expansion'"
 
 [ui.preview_panel]
 size = 30
