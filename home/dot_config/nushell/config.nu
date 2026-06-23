@@ -77,14 +77,14 @@ const LS_ICONS = {
 # wrappers can reach it without recursing.
 alias core-ls = ls
 
-# Decorate an `ls` table: sort (dirs first, newest last), swap each directory's
-# inode size (a flat ~4 KB) for its recursive on-disk size, prefix an icon column.
-# One `du` spawn covers every dir in the listing (names passed as args, matched
-# back by the path du echoes); files keep their own size. Cost scales with the
-# tree under each dir, so a listing full of huge dirs (node_modules) is slower.
-def decorate-ls []: table -> table {
+# Decorate an `ls` table: sort (dirs first, newest last), prefix an icon column,
+# and — only with `-D` — swap each directory's inode size (a flat ~4 KB) for its
+# recursive on-disk size. The `du` swap is opt-in because it walks the whole tree
+# under each dir (one `du` spawn, names matched back by the path du echoes), so a
+# huge dir like node_modules would otherwise stall every plain `ls`/auto-list.
+def decorate-ls [du: bool]: table -> table {
     let rows = ($in | sort-by type modified)
-    let dirs = ($rows | where type == "dir" | get name)
+    let dirs = (if $du { $rows | where type == "dir" | get name } else { [] })
     let dir_sizes = if ($dirs | is-empty) { {} } else {
         ^du -sb ...$dirs e> /dev/null
         | lines
@@ -128,8 +128,10 @@ def ls [
     ...pattern: string
 ] {
     let paths = (if ($pattern | is-empty) { ["."] } else { $pattern })
-    core-ls --all=$all --long=$long --short-names=$short_names --full-paths=$full_paths --du=$du --directory=$directory --mime-type=$mime_type ...$paths
-    | decorate-ls
+    # -D no longer goes to the builtin (its native --du also walks the tree); our
+    # decorate-ls owns recursive dir sizing and only does it when $du is set.
+    core-ls --all=$all --long=$long --short-names=$short_names --full-paths=$full_paths --directory=$directory --mime-type=$mime_type ...$paths
+    | decorate-ls $du
 }
 def l  [path: string = "."] { ls    $path }
 def ll [path: string = "."] { ls -l $path }
