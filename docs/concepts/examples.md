@@ -12,7 +12,8 @@ finder --resume   # jump straight back into the last search (prompt prefilled)
 finder --fresh    # new search, no resume prompt, no prefill
 ```
 
-Via the leader overlay (ctrl+space): **`f`** = resume, **`F`** = fresh.
+Via the leader overlay: **`ctrl+space` → `q`** opens the commands channel; fuzzy-type
+`find (resume)` / `find (new)` and `enter`.
 
 ## Consuming the result in nu
 
@@ -37,7 +38,7 @@ Inside the result list, `ctrl-p` commits the selection and re-opens the picker
 scoped to it. `ctrl-b` steps back, `enter` ends.
 
 ```
-ctrl+space f → files → (mark a few) ctrl-p → text → "TODO" → enter
+ctrl+space q → "find (new)" → files → (mark a few) ctrl-p → text → "TODO" → enter
 #            greps "TODO" in ONLY the files you marked; returns GrepList records
 ```
 
@@ -59,32 +60,29 @@ finder | select file line text
 [[hash, subject]; ["a1b2c3d", "* a1b2c3d fix the bug"]]
 ```
 
-## leadermode — custom menus
+## leadermode — adding commands
 
-Edit `_leader_menu` in `leadermode.nu`. Three row kinds:
+Every command lives in `_leader_commands` in `leadermode.nu` — the flat `q` palette.
+Add a command = one row (no other code changes):
 
 ```nu
-def _leader_menu [] {
+def _leader_commands [] {
     [
-        # find: closure returns a finder selection, acted on automatically
-        { key: "f", desc: "find (resume)", find: {|| finder --resume } }
-        { key: "F", desc: "find (new)",    find: {|| finder --fresh } }
+        # find: closure returns a finder selection, acted on automatically (cd-safe)
+        { name: "find (resume)", find: {|| finder --resume } }
+        { name: "find (new)",    find: {|| finder --fresh } }
 
         # run: any closure; output prints (no cd propagation — use find for cd)
-        { key: "t", desc: "time", run: {|| date now | print } }
-
-        # menu: nest into a submenu (prefix tree); esc backs out one level
-        { key: "g", desc: "git", menu: [
-            { key: "s", desc: "status", run: {|| ^git status } }
-            { key: "l", desc: "log",    run: {|| ^git log --oneline -20 } }
-            { key: "p", desc: "pull",   run: {|| ^git pull } }
-        ] }
+        { name: "time",       run: {|| date now | print } }
+        { name: "git status", run: {|| ^git status } }
+        { name: "git pull",   run: {|| ^git pull } }
     ]
 }
 ```
 
-`ctrl+space g s` runs git status. Keys are case-sensitive (`f` ≠ `F`), and an
-unmapped key is swallowed (the overlay stays open).
+`ctrl+space q` opens the palette; fuzzy-type `git status` and `enter` runs it. The
+overlay tree (`_leader_menu`) just holds the `q` row — add direct-key overlay
+shortcuts there only if you want them alongside the palette.
 
 ## Extending finder — add a typed channel
 

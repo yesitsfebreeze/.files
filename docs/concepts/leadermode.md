@@ -20,17 +20,31 @@ runtime exposes:
 
 ## The menu tree
 
-`_leader_menu` returns a list of rows. A row is one of three kinds:
+`_leader_menu` returns the overlay rows. A row is one of these kinds:
 
 | Row shape | Kind | Behaviour |
 |-----------|------|-----------|
-| `{ key, desc, find: {closure} }` | `find` | closure returns a `finder` selection; `_leader_open` acts on it (file→edit, dir→cd, grep→edit@line, commit→git show) |
-| `{ key, desc, run: {closure} }` | `run` | arbitrary closure; output prints. A `cd` inside it does **not** propagate (closure env is scoped) — use `find` for cd |
+| `{ key, desc, palette: true }` | `palette` | opens the `q` commands channel (tv fuzzy pick over `_leader_commands`) |
+| `{ name\|key, desc, find: {closure} }` | `find` | closure returns a `finder` selection; `_leader_open` acts on it (file→edit, dir→cd, grep→edit@line, commit→git show) |
+| `{ name\|key, desc, run: {closure} }` | `run` | arbitrary closure; output prints. A `cd` inside it does **not** propagate (closure env is scoped) — use `find` for cd |
 | `{ key, desc, menu: [ …rows ] }` | `menu` | descend into a nested level |
 
-The default tree: `f` resumes the last finder search (refind), shift-`F` starts a
-fresh one, and `g` opens a git submenu (`s`/`l`/`d`). Extend by editing
-`_leader_menu` — no other code changes needed.
+Every command is consolidated into the **`q` commands channel**, so the root tree
+holds a single `q` row. `<leader> q` opens a tv picker over `_leader_commands` — you
+fuzzy-type the command name and `enter` runs it. The default command set: `find
+(resume)`, `find (new)`, `recent cwd`, and `git status`/`log`/`diff`. **Add a command
+= one row in `_leader_commands`** — no other code changes needed; add direct-key
+overlay shortcuts in `_leader_menu` only if you want them alongside the palette.
+
+### The `q` palette
+
+`_leader_palette` hands the precomputed command-name list to tv's `channels` channel
+via `--source-command` (the same trick `finder` uses for its channel picker), so tv
+draws and fuzzy-matches it. The confirmed line resolves through `_leader_command
+[cmds, name]` (resolve-by-name, since the palette picks by the displayed entry, not a
+keypress) and dispatches by `_leader_kind` — `find` rows route through `_leader_open`,
+`run` rows fire their closure. It is called **directly** from `_leader_run` (never via
+`do`) so a `cd` still reaches the shell.
 
 ## Dispatch — the pure core
 
@@ -40,7 +54,8 @@ Two pure helpers decide everything; the loop is just I/O around them:
   are matched on `input listen`'s `.code`, which is **case-sensitive** — a shifted
   letter arrives as its uppercase char, so `f` and `F` are distinct rows that never
   collide.
-- **`_leader_kind [row]`** → `"menu" | "find" | "run"`, checked in that precedence.
+- **`_leader_kind [row]`** → `"menu" | "palette" | "find" | "run"`, checked in that precedence.
+- **`_leader_command [cmds, name]`** → the palette row whose `name` matches the fuzzy-picked line, or `null`.
 
 `_leader_run` loops: render the level, read a key, `esc` returns `"back"`, an
 unmapped key is swallowed, otherwise resolve + classify + act. A submenu recurses;
@@ -55,9 +70,10 @@ ctrl+space ─▶ leader ─▶ _leader_run(root)
                           │   esc        ─▶ return "back"
                           │   unmapped   ─▶ swallow, loop
                           │   resolve+kind:
-                          │     menu ─▶ _leader_run(sub) ─▶ "back": re-render · "done": exit
-                          │     find ─▶ _leader_open(do find) ─▶ "done"
-                          │     run  ─▶ do run               ─▶ "done"
+                          │     menu    ─▶ _leader_run(sub) ─▶ "back": re-render · "done": exit
+                          │     palette ─▶ _leader_palette (tv pick → dispatch) ─▶ "done"
+                          │     find    ─▶ _leader_open(do find) ─▶ "done"
+                          │     run     ─▶ do run               ─▶ "done"
 ```
 
 ## Constraints

@@ -39,8 +39,22 @@ let tests = [
     { name: "kind classifies run", run: {||
         check eq (_leader_kind { key: "s", desc: "status", run: {|| } }) "run" "run row"
     }}
+    { name: "kind classifies palette", run: {||
+        check eq (_leader_kind { key: "q", desc: "commands", palette: true }) "palette" "palette row"
+    }}
     { name: "kind precedence: menu wins over find", run: {||
         check eq (_leader_kind { key: "x", desc: "", menu: [], find: {|| } }) "menu" "menu checked first"
+    }}
+    { name: "kind precedence: palette beats find/run", run: {||
+        check eq (_leader_kind { key: "q", desc: "", palette: true, find: {|| } }) "palette" "palette checked before find"
+    }}
+
+    # _leader_command (palette resolve-by-name) -------------------------------
+    { name: "command resolves a row by its name", run: {||
+        check eq (_leader_command (_leader_commands) "git status" | get name) "git status" "name -> its row"
+    }}
+    { name: "command unknown name is null", run: {||
+        check eq (_leader_command (_leader_commands) "nope") null "unknown command name -> null"
     }}
 
     # real _leader_menu validity ----------------------------------------------
@@ -55,12 +69,26 @@ let tests = [
         let keys = (_leader_menu | get key)
         check eq ($keys | length) ($keys | uniq | length) "no duplicate top-level keys"
     }}
-    { name: "menu binds f/F to find and g to a submenu", run: {||
-        let m = (_leader_menu)
-        check eq (_leader_kind (_leader_resolve $m "f")) "find" "f is a find action"
-        check eq (_leader_kind (_leader_resolve $m "F")) "find" "F is a find action"
-        check eq (_leader_kind (_leader_resolve $m "o")) "find" "o (recent cwd) is a find action"
-        check eq (_leader_kind (_leader_resolve $m "g")) "menu" "g is a submenu"
+    { name: "menu binds q to the commands palette", run: {||
+        check eq (_leader_kind (_leader_resolve (_leader_menu) "q")) "palette" "q opens the palette"
+    }}
+
+    # real _leader_commands validity ------------------------------------------
+    { name: "every command carries a name + a find/run action", run: {||
+        for c in (_leader_commands) {
+            let cols = ($c | columns)
+            check true ("name" in $cols) "command has name"
+            check true (("find" in $cols) or ("run" in $cols)) $"($c.name) carries find or run"
+        }
+    }}
+    { name: "command names are unique", run: {||
+        let names = (_leader_commands | get name)
+        check eq ($names | length) ($names | uniq | length) "no duplicate command names"
+    }}
+    { name: "finder commands dispatch as find, git as run", run: {||
+        let c = (_leader_commands)
+        check eq (_leader_kind (_leader_command $c "find (resume)")) "find" "find (resume) is a find action"
+        check eq (_leader_kind (_leader_command $c "git status")) "run" "git status is a run action"
     }}
 ]
 

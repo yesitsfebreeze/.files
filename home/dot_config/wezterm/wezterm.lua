@@ -304,6 +304,24 @@ config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
 config.show_new_tab_button_in_tab_bar = false
 
+-- Theme the retro tab bar from the active tinty palette so it tracks the live
+-- scheme like the rest of the window (colors.lua is on the reload-watch list, so a
+-- theme switch retints this on the next reload). Derived only from named palette
+-- entries — never hardcoded — so it follows any scheme. Skipped on the builtin
+-- gruvbox fallback, where WezTerm already derives a bar from the scheme itself.
+if ok and type(tinty_colors) == "table" then
+    local p = config.colors
+    local br = p.brights or {}
+    p.tab_bar = {
+        background = p.background,
+        active_tab = { bg_color = p.selection_bg or br[1], fg_color = br[8] or p.foreground },
+        inactive_tab = { bg_color = p.background, fg_color = br[1] or p.foreground },
+        inactive_tab_hover = { bg_color = br[4] or p.selection_bg, fg_color = p.foreground, italic = false },
+        new_tab = { bg_color = p.background, fg_color = br[1] or p.foreground },
+        new_tab_hover = { bg_color = br[4] or p.selection_bg, fg_color = p.foreground },
+    }
+end
+
 wezterm.on("update-right-status", function(window, _pane)
     window:set_right_status(wezterm.format({
         { Foreground = { AnsiColor = "Blue" } },
