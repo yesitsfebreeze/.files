@@ -7,13 +7,14 @@ self-contained, searchable HTML file: docs/index.html.
 Zero third-party dependencies. Fully offline. Deterministic output
 (stable ordering) so re-running on unchanged sources yields identical bytes.
 
-Sources (relative to repo root):
-  - README.md                 -> "Guide"
-  - .proj/**/*.md             -> "Project layer"
-  - .claude/agents/**/*.md    -> "Agents"
-  - .claude/skills/**/*.md    -> "Skills"
-  - .claude/rules/**/*.md     -> "Rules"
-  - .claude/output-styles/*.md-> "Output styles"
+Sources (relative to repo root), in sidebar order:
+  - README.md                  -> "Guide"
+  - .proj/**/*.md              -> "Project layer"
+  - .claude/rules/*.md         -> "Rules"
+  - .claude/output-styles/*.md -> "Output styles"
+  - .claude/agents/*.md        -> "Agents"
+  - .claude/skills/**/*.md     -> "Skills"
+  - docs/concepts/*.md         -> "Concepts"
 
 Usage:
   python docs/build.py            # build into docs/index.html
