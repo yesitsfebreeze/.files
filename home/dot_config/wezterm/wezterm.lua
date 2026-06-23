@@ -12,6 +12,10 @@ local triple = wezterm.target_triple
 local is_windows = triple:find("windows") ~= nil
 local is_mac = triple:find("darwin") ~= nil
 
+-- The WSL distro the Windows host launches into; shared by default_prog and the
+-- background script's wsl.exe spawn so the two can't drift.
+local WSL_DISTRO = "Ubuntu"
+
 local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
 
 -- Explicit config dir so the same ~/.config/nushell files are used on every OS.
@@ -33,7 +37,7 @@ if is_windows then
     -- resolves, then immediately execs it; `|| exec bash` keeps the terminal usable
     -- if nu isn't installed yet. NOT interactive (-i): that sources ~/.bashrc (nvm,
     -- etc.) — ~1-2s of work for a bash we replace instantly. -l alone is ~0.04s.
-    config.default_prog = { "wsl.exe", "-d", "Ubuntu", "--cd", "~", "-e", "bash", "-lc", "exec nu || exec bash" }
+    config.default_prog = { "wsl.exe", "-d", WSL_DISTRO, "--cd", "~", "-e", "bash", "-lc", "exec nu || exec bash" }
 else
     config.default_prog = { "nu", "--config", nu_config, "--env-config", nu_env }
 end
@@ -328,6 +332,15 @@ local bg_state = {}
 local function on_update_status(window, pane)
     center_grid(window)
     if not fade_capable then
+        -- Overrides persist across reload_configuration(), so after a clear (or a
+        -- reload into the solid/blurred-only state) an already-open window would keep
+        -- rendering the old layered background pointing at now-deleted PNGs. Drop any
+        -- stale background override so the reloaded load-time config takes over.
+        local ov = window:get_config_overrides() or {}
+        if ov.background ~= nil then
+            ov.background = nil
+            window:set_config_overrides(ov)
+        end
         return -- solid / static-2-layer modes have nothing to fade
     end
 
@@ -429,7 +442,7 @@ end)
 local function run_bg_script(script)
     local argv
     if is_windows then
-        argv = { "wsl.exe", "-d", "Ubuntu", "-e", "bash", "-lc", script }
+        argv = { "wsl.exe", "-d", WSL_DISTRO, "-e", "bash", "-lc", script }
     else
         argv = { "sh", "-lc", script }
     end
@@ -447,28 +460,46 @@ end
 -- can fail is guarded. The url is single-quoted in only after Lua-side validation
 -- (below) already rejected control chars, quotes, and anything not matching
 -- ^https?://[^%s]+$.
+--
+-- WSL live-dir derivation is strict (FIX B): cmd.exe|tr exits 0 even when cmd.exe
+-- fails, leaving $up empty, and `wslpath ""` returns "." (a valid dir) -- which
+-- would silently write under wsl.exe's CWD. So require a drive letter on the raw
+-- value AND an absolute wslpath result before trusting it.
+local WIN_LIVE_DIR =
+    'up="$(cmd.exe /c \'echo %USERPROFILE%\' 2>/dev/null | tr -d \'\\r\\n\')"; '
+    .. 'case "$up" in [A-Za-z]:*) ;; *) exit 1 ;; esac; '
+    .. 'winhome="$(wslpath -u "$up" 2>/dev/null)" || exit 1; '
+    .. 'case "$winhome" in /*) ;; *) exit 1 ;; esac; '
+    .. '[ -d "$winhome" ] || exit 1; '
+    .. 'live_dir="$winhome/.config/wezterm"'
+
 local function set_background_from_url(url)
     local script = table.concat({
         "set -e",
         "url='" .. url .. "'",
         'tmp="$(mktemp)"',
-        'src_dir="$(chezmoi source-path "$HOME/.config/wezterm")"',
+        -- FIX E: GUI-launched wezterm inherits launchd's minimal PATH on macOS, so
+        -- sh -lc won't find brew's magick/curl; seed Homebrew up front (no-op on
+        -- linux/WSL, where bash -lc already has /usr/bin).
+        'export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"',
+        -- FIX C: clean the temp on any exit/interrupt, not just the success path.
+        "trap 'rm -f \"$tmp\"' EXIT INT TERM",
+        'src_dir="$(chezmoi source-path "$HOME/.config/wezterm" 2>/dev/null)" || exit 1',
         '[ -n "$src_dir" ] || exit 1',
         'mkdir -p "$src_dir"',
-        "if grep -qi microsoft /proc/version 2>/dev/null; then "
-            .. "winhome=\"$(wslpath \"$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r\\n')\" 2>/dev/null)\"; "
-            .. '{ [ -n "$winhome" ] && [ -d "$winhome" ]; } || exit 1; '
-            .. 'live_dir="$winhome/.config/wezterm"; '
+        "if grep -qi microsoft /proc/version 2>/dev/null; then " .. WIN_LIVE_DIR .. "; "
             .. 'else live_dir="$HOME/.config/wezterm"; fi',
         'mkdir -p "$live_dir"',
         'curl -fsSL "$url" -o "$tmp"',
         "blur() { if command -v magick >/dev/null 2>&1; then magick \"$1\" -blur 0x16 \"$2\"; "
             .. 'else convert "$1" -blur 0x16 "$2"; fi; }',
-        'blur "$tmp" "$src_dir/background.png"',
-        'cp "$src_dir/background.png" "$live_dir/background.png"',
+        -- FIX D: write the ORIGINAL to both dirs FIRST, the BLURRED last. fade_capable
+        -- needs BOTH; a crash mid-sequence then leaves original-only (-> solid
+        -- fallback, clean) rather than blurred-without-original (a mismatched state).
         'cp "$tmp" "$src_dir/background-original.png"',
         'cp "$tmp" "$live_dir/background-original.png"',
-        'rm -f "$tmp"',
+        'blur "$tmp" "$src_dir/background.png"',
+        'cp "$src_dir/background.png" "$live_dir/background.png"',
     }, "; ")
     local success, _, stderr = run_bg_script(script)
     if success then
@@ -483,15 +514,18 @@ end
 -- so the running (Windows) wezterm stops showing it, then reload to fall back to the
 -- solid theme bg.
 local function clear_background()
+    -- Best-effort, no set -e: remove the committed copies first (always reachable),
+    -- then the live copies. The live derivation reuses the same strict WIN_LIVE_DIR
+    -- guard (FIX B) so a failed cmd.exe can never resolve live_dir to a relative "."
+    -- and delete under the wrong CWD; on that failure it exits before the live rm,
+    -- which is acceptable (the committed copy is already gone and the next reload
+    -- falls back to the solid bg anyway).
     local script = table.concat({
         'src_dir="$(chezmoi source-path "$HOME/.config/wezterm" 2>/dev/null)"',
         '[ -n "$src_dir" ] && rm -f "$src_dir/background.png" "$src_dir/background-original.png"',
-        'live_dir=""',
-        "if grep -qi microsoft /proc/version 2>/dev/null; then "
-            .. "winhome=\"$(wslpath \"$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r\\n')\" 2>/dev/null)\"; "
-            .. '[ -n "$winhome" ] && live_dir="$winhome/.config/wezterm"; '
+        "if grep -qi microsoft /proc/version 2>/dev/null; then " .. WIN_LIVE_DIR .. "; "
             .. 'else live_dir="$HOME/.config/wezterm"; fi',
-        '[ -n "$live_dir" ] && rm -f "$live_dir/background.png" "$live_dir/background-original.png"',
+        'rm -f "$live_dir/background.png" "$live_dir/background-original.png"',
         "true",
     }, "; ")
     run_bg_script(script)
