@@ -177,10 +177,10 @@
     f.setAttribute("scrolling", "no");
     f.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
     f.onload = function () {
-      // A cross-origin page that refuses framing (X-Frame-Options/CSP) still
-      // fires onload but renders blank — we can't read it to confirm. Clear the
-      // note for media embeds; warn gently for arbitrary pages.
-      report(e.kind === "page" ? "" : "");
+      // Clear the loading note once framed. A cross-origin page that refuses
+      // framing (X-Frame-Options/CSP) still fires onload but renders blank — we
+      // can't read it to confirm, so there's nothing more to report either way.
+      report("");
     };
     if (e.kind === "youtube-resolve") {
       // No id in the URL yet — ask the helper, then point the iframe at the
