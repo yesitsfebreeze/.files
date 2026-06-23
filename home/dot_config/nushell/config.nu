@@ -114,10 +114,26 @@ def decorate-ls []: table -> table {
 }
 
 # Shadow `ls` so a bare `ls` (and l/ll/la) all show recursive folder sizes + icons.
-def --wrapped ls [...args] { core-ls ...$args | decorate-ls }
-def l  [path: string = "."] { core-ls    $path | decorate-ls }
-def ll [path: string = "."] { core-ls -l $path | decorate-ls }
-def la [path: string = "."] { core-ls -a $path | decorate-ls }
+# Flags are declared explicitly (not `--wrapped`) so the builtin reparses them as
+# flags instead of treating them as paths; pattern defaults to "." because the
+# builtin's empty-spread (`ls ...[]`) returns nothing rather than the cwd.
+def ls [
+    --all (-a)
+    --long (-l)
+    --short-names (-s)
+    --full-paths (-f)
+    --du (-D)
+    --directory (-d)
+    --mime-type (-m)
+    ...pattern: string
+] {
+    let paths = (if ($pattern | is-empty) { ["."] } else { $pattern })
+    core-ls --all=$all --long=$long --short-names=$short_names --full-paths=$full_paths --du=$du --directory=$directory --mime-type=$mime_type ...$paths
+    | decorate-ls
+}
+def l  [path: string = "."] { ls    $path }
+def ll [path: string = "."] { ls -l $path }
+def la [path: string = "."] { ls -a $path }
 alias cat = bat --paging=never
 alias grep = rg
 alias g = git
