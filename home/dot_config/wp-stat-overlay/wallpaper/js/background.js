@@ -95,12 +95,15 @@
     })();
   }
 
+  // Shared muted/chromeless embed params for every YouTube player URL (by id and
+  // by channel live_stream), kept in one place so the two builders can't drift.
+  var YT_PARAMS = "autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0";
+
   // ytEmbed — the player URL for a known video id (muted, chromeless). A LIVE
   // stream must NOT get loop/playlist: you can't loop a live broadcast and YT's
   // player errors out (blank) if you try — so only VOD ids are looped.
   function ytEmbed(id, live) {
-    var src = "https://www.youtube.com/embed/" + id +
-      "?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0";
+    var src = "https://www.youtube.com/embed/" + id + "?" + YT_PARAMS;
     return live ? src : src + "&loop=1&playlist=" + id;
   }
 
@@ -133,8 +136,7 @@
     if (ytCh) {
       return {
         kind: "youtube",
-        src: "https://www.youtube.com/embed/live_stream?channel=" + ytCh[1] +
-          "&autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&fs=0"
+        src: "https://www.youtube.com/embed/live_stream?channel=" + ytCh[1] + "&" + YT_PARAMS
       };
     }
 
