@@ -9,31 +9,22 @@ set -uo pipefail
 [ -x /usr/local/bin/brew ] && eval "$(/usr/local/bin/brew shellenv)"
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
-# Starship prompt init -> ~/.cache/starship/init.nu
-starship_init="$HOME/.cache/starship/init.nu"
-mkdir -p "$(dirname "$starship_init")"
-if command -v starship >/dev/null 2>&1; then
-    starship init nu > "$starship_init" 2>/dev/null || true
-fi
-# Guarantee each init file exists (empty = harmless no-op) so `source` never
-# fails when the tool isn't installed yet. Repeated after each integration below.
-[ -s "$starship_init" ] || : > "$starship_init"
+# Write a tool's init file, guaranteeing it always exists (empty = harmless
+# no-op) so config.nu's `source` never fails when the tool isn't installed yet.
+#   gen_init <out-file> <tool> <init args...>
+gen_init() {
+    local out="$1"; shift
+    mkdir -p "$(dirname "$out")"
+    if command -v "$1" >/dev/null 2>&1; then
+        "$@" > "$out" 2>/dev/null || true
+    fi
+    [ -s "$out" ] || : > "$out"
+}
 
-# Zoxide init -> ~/.zoxide.nu
-zoxide_init="$HOME/.zoxide.nu"
-if command -v zoxide >/dev/null 2>&1; then
-    zoxide init nushell > "$zoxide_init" 2>/dev/null || true
-fi
-[ -s "$zoxide_init" ] || : > "$zoxide_init"
-
-# Television (tv) -> ~/.cache/television/init.nu. `tv init nu` emits the Ctrl-T
-# (autocomplete) and Ctrl-R (history) Nushell keybindings; tv replaces fzf.
-tv_init="$HOME/.cache/television/init.nu"
-mkdir -p "$(dirname "$tv_init")"
-if command -v tv >/dev/null 2>&1; then
-    tv init nu > "$tv_init" 2>/dev/null || true
-fi
-[ -s "$tv_init" ] || : > "$tv_init"
+gen_init "$HOME/.cache/starship/init.nu"    starship init nu
+gen_init "$HOME/.zoxide.nu"                 zoxide init nushell
+# `tv init nu` emits the Ctrl-T (autocomplete) + Ctrl-R (history) keybindings.
+gen_init "$HOME/.cache/television/init.nu"  tv init nu
 
 # tinty (live `theme` switcher) — clone the configured items into tinty's data dir
 # so the first `tinty apply` works. Idempotent; quiet + non-fatal so a missing
