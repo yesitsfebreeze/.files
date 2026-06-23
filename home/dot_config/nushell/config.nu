@@ -83,9 +83,30 @@ const LS_ICONS = {
     lock: "", db: "", sqlite: "", sqlite3: "",
 }
 
-# Decorate an `ls` table: sort (dirs first, newest last), prefix an icon column.
+# Decorate an `ls` table: sort (dirs first, newest last), swap each directory's
+# inode size (a flat ~4 KB) for its recursive on-disk size, prefix an icon column.
+# One `du` spawn covers every dir in the listing (names passed as args, matched
+# back by the path du echoes); files keep their own size. Cost scales with the
+# tree under each dir, so a listing full of huge dirs (node_modules) is slower.
 def decorate-ls []: table -> table {
-    sort-by type modified
+    let rows = ($in | sort-by type modified)
+    let dirs = ($rows | where type == "dir" | get name)
+    let dir_sizes = if ($dirs | is-empty) { {} } else {
+        ^du -sb ...$dirs e> /dev/null
+        | lines
+        | parse -r '(?<size>\d+)\s+(?<name>.+)'
+        | reduce --fold {} {|it, acc|
+            $acc | insert $it.name ($it.size | into int | into filesize)
+        }
+    }
+    $rows
+    | each {|row|
+        if $row.type == "dir" {
+            $row | update size ($dir_sizes | get --optional $row.name | default $row.size)
+        } else {
+            $row
+        }
+    }
     | insert icon {|row|
         if $row.type == "dir" {
             ""
