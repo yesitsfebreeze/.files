@@ -56,15 +56,22 @@ $env.SHELL = $nu.current-exe
 # read the same path. Change this to relocate the store.
 $env.PASSWORD_STORE_DIR = ($nu.home-dir | path join ".password-store")
 
-# Default working directory: open every interactive shell in ~/dev (the dev
-# workspace) instead of $HOME. `mkdir` is idempotent, so it's created on first
-# launch and the `cd` never fails. Guarded on an interactive stdout so a
-# non-interactive `nu -c ...` caller keeps its own cwd. burrito cells read this
-# env.nu too, so every pane also lands here.
+# Start dir: open every interactive shell in the last directory we moved into,
+# falling back to ~/dev (the dev workspace) on a fresh machine. The recency stack
+# is maintained by dirstack.nu via the PWD hook; we read its head directly here
+# because env.nu runs before config.nu sources that module — the file path mirrors
+# `_dirstack_file`. Guarded on an interactive stdout so a non-interactive
+# `nu -c ...` caller keeps its own cwd. burrito cells read this env.nu too, so
+# every pane lands on the same last dir.
 if (is-terminal --stdout) {
     let dev_dir = ($nu.home-dir | path join "dev")
     mkdir $dev_dir
-    cd $dev_dir
+    let state = ($env.XDG_STATE_HOME? | default ($nu.home-dir | path join ".local" "state"))
+    let dirs_file = ($state | path join "nushell" "dirs.txt")
+    let recent = (if ($dirs_file | path exists) {
+        open --raw $dirs_file | lines | where { |d| ($d | str trim | is-not-empty) and ($d | path exists) }
+    } else { [] })
+    cd (if ($recent | is-empty) { $dev_dir } else { $recent | first })
 }
 
 # Shell integrations are generated at apply time by the chezmoi run_after script,

@@ -483,7 +483,8 @@ local function set_background_from_url(url)
         -- linux/WSL, where bash -lc already has /usr/bin).
         'export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"',
         -- FIX C: clean the temp on any exit/interrupt, not just the success path.
-        "trap 'rm -f \"$tmp\"' EXIT INT TERM",
+        'blurred="$tmp.blur"',
+        "trap 'rm -f \"$tmp\" \"$blurred\"' EXIT INT TERM",
         'src_dir="$(chezmoi source-path "$HOME/.config/wezterm" 2>/dev/null)" || exit 1',
         '[ -n "$src_dir" ] || exit 1',
         'mkdir -p "$src_dir"',
@@ -493,13 +494,16 @@ local function set_background_from_url(url)
         'curl -fsSL "$url" -o "$tmp"',
         "blur() { if command -v magick >/dev/null 2>&1; then magick \"$1\" -blur 0x16 \"$2\"; "
             .. 'else convert "$1" -blur 0x16 "$2"; fi; }',
-        -- FIX D: write the ORIGINAL to both dirs FIRST, the BLURRED last. fade_capable
-        -- needs BOTH; a crash mid-sequence then leaves original-only (-> solid
-        -- fallback, clean) rather than blurred-without-original (a mismatched state).
+        -- Blur into a temp FIRST: this doubles as image validation. A non-image
+        -- download (e.g. an HTML page from a non-direct URL) makes magick/convert
+        -- fail here, and set -e aborts before ANY dest file is written -- so a bad
+        -- URL can never leave a poisoned background-original.png behind. Only once
+        -- the blur succeeds do we publish both images to both dirs.
+        'blur "$tmp" "$blurred"',
         'cp "$tmp" "$src_dir/background-original.png"',
         'cp "$tmp" "$live_dir/background-original.png"',
-        'blur "$tmp" "$src_dir/background.png"',
-        'cp "$src_dir/background.png" "$live_dir/background.png"',
+        'cp "$blurred" "$src_dir/background.png"',
+        'cp "$blurred" "$live_dir/background.png"',
     }, "; ")
     local success, _, stderr = run_bg_script(script)
     if success then

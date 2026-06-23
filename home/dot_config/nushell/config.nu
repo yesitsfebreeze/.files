@@ -290,6 +290,11 @@ def o [path?: path] {
     ^explorer.exe $arg | complete | ignore
 }
 
+# `dirstack`: recency stack of visited dirs. Sourced HERE (before the PWD hook
+# below) so `_dirstack_push` is in scope when that closure is parsed. Drives both
+# the new-shell start dir (env.nu reads the head) and the Alt-O picker.
+source ~/.config/nushell/dirstack.nu
+
 # Append the auto-list closure now that the `la` alias is in scope. `$before`
 # is null on the first fire at shell start, so we skip that one to keep startup
 # clean; thereafter every real cd lists the new directory in an interactive shell.
@@ -305,6 +310,7 @@ $env.config.hooks.env_change.PWD = (
     | append {|before, after|
         if $before != null and $after != $before and (is-terminal --stdout) {
             ^stty sane e> /dev/null
+            _dirstack_push $after
             la
         }
     }
@@ -346,6 +352,13 @@ $env.config = (
                 keycode: char_r
                 mode: [vi_normal vi_insert emacs]
                 event: { send: executehostcommand, cmd: "tv_shell_history" }
+            }
+            {
+                name: cwd_picker
+                modifier: alt
+                keycode: char_o
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "tv_cwd_picker" }
             }
             {
                 name: hist_up_local
