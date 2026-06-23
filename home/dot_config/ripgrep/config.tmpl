@@ -1,0 +1,4 @@
+# ripgrep config — RIPGREP_CONFIG_PATH points here (set in env.nu). Reuses the
+# fd global ignore so fd and rg share ONE search-ignore list. ripgrep does not
+# expand ~ in --ignore-file, so chezmoi templates the absolute home path.
+--ignore-file={{ .chezmoi.homeDir }}/.config/fd/ignore

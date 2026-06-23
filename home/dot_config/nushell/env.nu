@@ -37,6 +37,9 @@ $env.PATH = (
 )
 
 $env.XDG_CONFIG_HOME = ($nu.home-dir | path join ".config")
+# Point ripgrep at its config so `rg` shares the global search-ignore that fd
+# reads natively from ~/.config/fd/ignore (node_modules, target, build, …).
+$env.RIPGREP_CONFIG_PATH = ($nu.home-dir | path join ".config" "ripgrep" "config")
 $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 $env.STARSHIP_SHELL = "nu"

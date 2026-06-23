@@ -1,0 +1,9 @@
+# Global search-ignore — the one list of paths fd and ripgrep skip.
+# fd reads this automatically (~/.config/fd/ignore); ripgrep is pointed at the
+# same file via RIPGREP_CONFIG_PATH (set in env.nu). Applies both inside and
+# outside git repos. gitignore glob syntax — edit freely.
+node_modules/
+target/
+build/
+dist/
+.git/
