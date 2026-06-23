@@ -33,20 +33,17 @@ return {
             end
         end
 
+        -- Same marks/move bindings in insert and normal mode (read-only config,
+        -- so both modes can share one table).
+        local maps = {
+            ["<CR>"] = multi_or_select,
+            ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
+            ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
+        }
+
         telescope.setup({
             defaults = {
-                mappings = {
-                    i = {
-                        ["<CR>"] = multi_or_select,
-                        ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
-                        ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
-                    },
-                    n = {
-                        ["<CR>"] = multi_or_select,
-                        ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
-                        ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
-                    },
-                },
+                mappings = { i = maps, n = maps },
             },
         })
 
