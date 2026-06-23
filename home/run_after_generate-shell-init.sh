@@ -42,6 +42,30 @@ if command -v tinty >/dev/null 2>&1; then
     tinty install >/dev/null 2>&1 || true
 fi
 
+tinty_cfg="$HOME/.config/tinted-theming/tinty"
+tinty_data="$HOME/.local/share/tinted-theming/tinty"
+
+# Ship our custom base16-feb scheme into the data-dir. The tracked source lives
+# in the config dir (the data-dir custom-schemes/ is gitignored runtime state),
+# so we copy it across here, where tinty and the colors generator look for it.
+if [ -f "$tinty_cfg/feb.yaml" ]; then
+    mkdir -p "$tinty_data/custom-schemes/base16"
+    cp -f "$tinty_cfg/feb.yaml" "$tinty_data/custom-schemes/base16/feb.yaml"
+fi
+
+# WezTerm colors.lua is generated HERE, at apply time — not on shell/WezTerm
+# launch. config.nu only re-emits the live OSC retint; a terminal start should
+# never be what writes colors.lua. Resolve the active scheme (a prior `theme`
+# pick, else config's default-scheme) and regenerate colors.lua from its base16
+# YAML — catalog or our chezmoi-shipped custom-schemes (base16-feb). Non-fatal.
+if [ -x "$tinty_cfg/wezterm-colors.sh" ]; then
+    scheme="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
+    if [ -z "$scheme" ]; then
+        scheme="$(sed -n 's/^[[:space:]]*default-scheme[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$tinty_cfg/config.toml" 2>/dev/null)"
+    fi
+    [ -n "$scheme" ] && bash "$tinty_cfg/wezterm-colors.sh" "$scheme" || true
+fi
+
 # pass (password-store) — installing the binary does not create a store; that
 # needs a one-time `pass init <gpg-id>` against a GPG key. Detect the unset state
 # (store has no .gpg-id) and point at the README setup section. Purely advisory:

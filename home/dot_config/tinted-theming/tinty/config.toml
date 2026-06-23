@@ -9,11 +9,14 @@
 # forwarded to WezTerm, so WezTerm's own bg/cursor might not follow. The fix is a
 # multiplexer-aware path (burrito passthrough or a WezTerm overlay), not this config.
 #
-# `default-scheme` is our own `base16-feb` — the custom scheme shipped by chezmoi
-# to custom-schemes/base16/feb.yaml in the data-dir. `tinty init` (run from
-# config.nu at every shell/WezTerm start) applies it whenever no scheme has been
-# picked yet, so a fresh machine lands on feb instead of each tool's builtin base.
-# Pick anything via the `theme` switcher and that choice persists over this default.
+# `default-scheme` is our own `base16-feb` — the custom scheme whose palette
+# lives, tracked, next to this file (feb.yaml). On `chezmoi apply` the
+# run_after_generate-shell-init.sh hook copies it into the (gitignored) data-dir
+# at custom-schemes/base16/feb.yaml and regenerates WezTerm's colors.lua from it,
+# so a fresh checkout lands on feb without launching a shell/WezTerm first. The
+# `theme` switcher (and `tinty init` from config.nu) then drive the live OSC
+# retint on top; pick anything via the switcher and that choice persists over
+# this default.
 
 default-scheme = "base16-feb"
 shell = "bash -c '{}'"
