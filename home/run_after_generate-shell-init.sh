@@ -45,13 +45,17 @@ fi
 tinty_cfg="$HOME/.config/tinted-theming/tinty"
 tinty_data="$HOME/.local/share/tinted-theming/tinty"
 
-# Ship our custom base16-feb scheme into the data-dir. The tracked source lives
-# in the config dir (the data-dir custom-schemes/ is gitignored runtime state),
-# so we copy it across here, where tinty and the colors generator look for it.
-if [ -f "$tinty_cfg/feb.yaml" ]; then
-    mkdir -p "$tinty_data/custom-schemes/base16"
-    cp -f "$tinty_cfg/feb.yaml" "$tinty_data/custom-schemes/base16/feb.yaml"
-fi
+# Ship our custom feb scheme(s) into the data-dir. The tracked sources live in
+# the config dir as feb.<system>.yaml (the data-dir custom-schemes/ is gitignored
+# runtime state); copy each into custom-schemes/<system>/feb.yaml, where tinty
+# and the colors generator look for it. Covers base16-feb and base24-feb.
+for src in "$tinty_cfg"/feb.*.yaml; do
+    [ -f "$src" ] || continue
+    sys="$(sed -n 's/^[[:space:]]*system:[[:space:]]*"\(.*\)".*/\1/p' "$src" | head -n1)"
+    [ -n "$sys" ] || continue
+    mkdir -p "$tinty_data/custom-schemes/$sys"
+    cp -f "$src" "$tinty_data/custom-schemes/$sys/feb.yaml"
+done
 
 # WezTerm colors.lua is generated HERE, at apply time — not on shell/WezTerm
 # launch. config.nu only re-emits the live OSC retint; a terminal start should

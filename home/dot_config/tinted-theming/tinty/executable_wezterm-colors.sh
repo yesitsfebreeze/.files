@@ -36,6 +36,13 @@ base05=$(color base05); base07=$(color base07); base08=$(color base08)
 base0a=$(color base0A); base0b=$(color base0B); base0c=$(color base0C)
 base0d=$(color base0D); base0e=$(color base0E)
 
+# base24 schemes carry distinct bright ANSI colors in base12-17; base16 schemes
+# don't, so fall back to the normal accents there (identical output for base16).
+base12=$(color base12); base13=$(color base13); base14=$(color base14)
+base15=$(color base15); base16=$(color base16); base17=$(color base17)
+br_red="${base12:-$base08}"; br_grn="${base14:-$base0b}"; br_yel="${base13:-$base0a}"
+br_blu="${base16:-$base0d}"; br_mag="${base17:-$base0e}"; br_cyn="${base15:-$base0c}"
+
 # Bail if the scheme didn't parse (missing essentials) so we never overwrite a
 # good colors.lua with a half-empty one.
 [[ -z "$base00" || -z "$base05" ]] && exit 0
@@ -54,8 +61,8 @@ return {
     \"$base0d\", \"$base0e\", \"$base0c\", \"$base05\",
   },
   brights = {
-    \"$base03\", \"$base08\", \"$base0b\", \"$base0a\",
-    \"$base0d\", \"$base0e\", \"$base0c\", \"$base07\",
+    \"$base03\", \"$br_red\", \"$br_grn\", \"$br_yel\",
+    \"$br_blu\", \"$br_mag\", \"$br_cyn\", \"$base07\",
   },
 }"
 
