@@ -58,8 +58,8 @@ for src in "$tinty_cfg"/feb.*.yaml; do
 done
 
 # Convert Gogh's terminal themes into base24 custom-schemes so they show up in the
-# `theme` switcher alongside the tinty catalog. Self-contained, HEAD-stamped, and
-# non-fatal — it only does real work when Gogh updates upstream.
+# `theme` switcher alongside the tinty catalog. Installs once, then exits instantly
+# on subsequent applies; `gogh-to-base24.sh --update` refreshes from upstream.
 if [ -x "$tinty_cfg/gogh-to-base24.sh" ]; then
     bash "$tinty_cfg/gogh-to-base24.sh" || true
 fi

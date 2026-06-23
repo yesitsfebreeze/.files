@@ -7,7 +7,8 @@
 # switcher pick them up as base24-gogh-<slug>. tinty builds + applies them through
 # the normal pipeline (it auto-renders the tinted-shell script on first apply).
 #
-# Idempotent: shallow-clones Gogh once, then only re-converts when its HEAD moves.
+# Installs once: after the schemes exist it exits instantly on every apply (no
+# git, no network). Pass --update to pull the latest Gogh themes and rebuild.
 # Deliberately bash-3.2 safe (no associative arrays) and non-fatal end to end, so
 # a missing network never breaks `chezmoi apply`. Invoked from
 # run_after_generate-shell-init.sh.
@@ -16,10 +17,19 @@ set -uo pipefail
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty"
 SRC="$DATA/gogh-src"
 OUT="$DATA/custom-schemes/base24"
-STAMP="$DATA/.gogh-head"
 REPO="https://github.com/Gogh-Co/Gogh.git"
 
 command -v git >/dev/null 2>&1 || exit 0
+
+FORCE=0
+case "${1:-}" in --update | -u) FORCE=1 ;; esac
+
+# Fast path: already installed. Every `chezmoi apply` calls this, so once the
+# schemes exist we exit instantly — no git, no network. Run with `--update` to
+# pull the latest Gogh themes and rebuild.
+if [ "$FORCE" -eq 0 ] && [ -n "$(ls "$OUT"/gogh-*.yaml 2>/dev/null)" ]; then
+    exit 0
+fi
 
 # Clone (shallow) or update. Non-fatal: no network must never break apply.
 if [ -d "$SRC/.git" ]; then
@@ -28,13 +38,6 @@ else
     git clone --depth 1 "$REPO" "$SRC" >/dev/null 2>&1 || true
 fi
 [ -d "$SRC/themes" ] || exit 0
-
-head=$(git -C "$SRC" rev-parse HEAD 2>/dev/null)
-# Skip when nothing changed since last run and the output is still present.
-if [ -n "$head" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$head" ] \
-        && [ -n "$(ls "$OUT"/gogh-*.yaml 2>/dev/null)" ]; then
-    exit 0
-fi
 
 mkdir -p "$OUT"
 rm -f "$OUT"/gogh-*.yaml   # drop schemes for themes renamed/removed upstream
@@ -97,5 +100,4 @@ for f in "$SRC"/themes/*.yml; do
     count=$((count + 1))
 done
 
-[ -n "$head" ] && printf '%s' "$head" > "$STAMP"
 printf 'gogh: converted %d themes -> %s\n' "$count" "$OUT"
