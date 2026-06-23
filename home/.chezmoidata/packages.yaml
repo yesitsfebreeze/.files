@@ -71,6 +71,12 @@ packages:
       pacman: jq
       dnf: jq
 
+    - name: imagemagick   # bake gaussian blur into the wezterm background image (`magick`/`convert`)
+      brew: imagemagick
+      apt: imagemagick
+      pacman: imagemagick
+      dnf: imagemagick
+
     - name: python3       # used to extract Nerd Font zips during install and as a
       brew: python        # common base dep. Stdlib only — no pip packages needed.
       apt: python3
