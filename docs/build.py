@@ -33,7 +33,6 @@ OUT_FILE = REPO_ROOT / "docs" / "index.html"
 # (glob, category, sort-weight) — weight orders categories in the sidebar.
 SOURCES = [
     ("README.md", "Guide", 0),
-    (".proj/*.md", "Project layer", 1),
     (".proj/**/*.md", "Project layer", 1),
     (".claude/rules/*.md", "Rules", 2),
     (".claude/output-styles/*.md", "Output styles", 3),
