@@ -13,3 +13,8 @@
 # Nushell choke on a sourced function and can confuse strict TOML parsers.
 *.nu        text eol=lf
 *.toml      text eol=lf
+
+# The wezterm background.png is committed as a runtime artifact; mark PNGs binary
+# so git never applies text/CRLF normalization and corrupts the image bytes.
+*.png   binary
+*.png   -text
