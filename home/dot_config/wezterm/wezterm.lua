@@ -35,8 +35,8 @@ local nu_env = home .. "/.config/nushell/env.nu"
 -- override on every tick forever -- the churn that hangs wezterm. The snap lets the
 -- fade settle in a handful of ticks, so set_config_overrides stops firing once idle.
 local IDLE_MS = 10000
-local STATUS_MS = 100
-local FADE_DECAY = 0.85
+local STATUS_MS = 16
+local FADE_DECAY = 0.90
 local FADE_EPSILON = 0.02
 
 if is_windows then
@@ -313,6 +313,24 @@ local function build_background(fade)
     return nil
 end
 
+-- Precompute the layered background at quantized fade levels once at load. The idle
+-- fade indexes into this array instead of rebuilding a table (and re-specifying the
+-- PNG sources) every tick, and only calls set_config_overrides when the QUANTIZED
+-- level changes -- so a full fade triggers at most FADE_LEVELS config reapplies with
+-- zero allocation on the hot path, rather than one rebuild+reapply per tick. WezTerm
+-- caches the decoded PNGs by path, so reusing these tables is cheap. fade_cache[0] is
+-- fully idle (sharp original), fade_cache[FADE_LEVELS] is fully active.
+local FADE_LEVELS = 60
+local fade_cache = {}
+if fade_capable then
+    for i = 0, FADE_LEVELS do
+        fade_cache[i] = build_background(i / FADE_LEVELS)
+    end
+end
+local function fade_level(fade)
+    return math.floor(fade * FADE_LEVELS + 0.5)
+end
+
 local loaded_bg = build_background(1.0) -- start ACTIVE = blurred + overlay
 if loaded_bg then
     config.background = loaded_bg
@@ -373,7 +391,7 @@ local function on_update_status(window, pane)
     local id = window:window_id()
     local state = bg_state[id]
     if not state then
-        state = { fp = fp, idle_ms = 0, fade = 1.0, applied = nil }
+        state = { fp = fp, idle_ms = 0, fade = 1.0, applied = FADE_LEVELS }
         bg_state[id] = state
     end
 
@@ -396,14 +414,16 @@ local function on_update_status(window, pane)
         end
     end
 
-    -- Only rewrite the background while the fade is actually moving; once it settles
-    -- at 0.0 or 1.0 (fade == applied) we stop touching overrides, so the steady state
-    -- is not reloaded 10x/sec.
-    if state.fade ~= state.applied then
+    -- Only reapply when the QUANTIZED level changes: continuous fade values that round
+    -- to the same level reuse the already-applied background (no-op), and once the fade
+    -- settles at level 0 or FADE_LEVELS we stop touching overrides entirely. The table
+    -- is pulled from fade_cache -- no allocation, no re-specifying image sources.
+    local lvl = fade_level(state.fade)
+    if lvl ~= state.applied then
         local overrides = window:get_config_overrides() or {}
-        overrides.background = build_background(state.fade)
+        overrides.background = fade_cache[lvl]
         window:set_config_overrides(overrides)
-        state.applied = state.fade
+        state.applied = lvl
     end
 end
 wezterm.on("update-status", on_update_status)
