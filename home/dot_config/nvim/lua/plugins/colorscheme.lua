@@ -8,10 +8,35 @@ return {
     priority = 1000,
     lazy = false,
     config = function()
+        -- tinted-nvim only resolves builtin palettes or schemes passed here; it
+        -- does not read tinty's custom-scheme yamls. Load feb's tinty palettes so
+        -- base16-feb / base24-feb resolve when tinty picks them.
+        local function load_custom(system)
+            local path = vim.fn.expand(
+                "~/.local/share/tinted-theming/tinty/custom-schemes/" .. system .. "/feb.yaml"
+            )
+            local f = io.open(path, "r")
+            if not f then return nil end
+            local palette = {}
+            for line in f:lines() do
+                local variant = line:match('^variant:%s*"(%w+)"')
+                if variant then palette.variant = variant end
+                local key, hex = line:match("^%s*(base%x%x):%s*\"(#%x+)\"")
+                if key then palette[key] = hex end
+            end
+            f:close()
+            return palette.variant and palette or nil
+        end
+
+        local schemes = {}
+        schemes["base16-feb"] = load_custom("base16")
+        schemes["base24-feb"] = load_custom("base24")
+
         require("tinted-nvim").setup({
             default_scheme = "base16-gruvbox-dark-hard",
             apply_scheme_on_startup = true,
             ui = { transparent = true },
+            schemes = schemes,
             highlights = {
                 integrations = {
                     blink = true,

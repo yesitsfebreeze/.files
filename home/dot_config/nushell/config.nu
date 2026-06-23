@@ -1,11 +1,10 @@
 # config.nu — Nushell config, launched explicitly by WezTerm.
 $env.config = {
     show_banner: false
-    edit_mode: vi
-    # Block cursor in every mode; the terminal applies the blink.
+    edit_mode: emacs
+    # Block cursor; the terminal applies the blink.
     cursor_shape: {
-        vi_insert: block
-        vi_normal: block
+        emacs: block
     }
     rm: { always_trash: true }
     table: {
