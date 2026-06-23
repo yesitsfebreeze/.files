@@ -11,11 +11,13 @@ name = "theme"
 description = "Live theme switcher — official base16/base24 schemes via tinty, apply-on-focus preview"
 requirements = ["tinty"]
 
-# NB: use a ( ) subshell, NOT a { } brace group — television treats unquoted
-# "{...}" as its own placeholder template and mangles the command (the resulting
-# garble is what surfaced as a "nu::parser ... 2>/dev/null" error).
+# NB: television runs these commands through $SHELL = Nushell, which can't parse
+# POSIX-isms (2>/dev/null, subshells, ${VAR:-x}, "$HOME" expansion). So both
+# commands delegate to `bash -c '...'`: nu runs bash as a plain external and the
+# single-quoted body is handed to bash verbatim. Keep the bodies single-quoted.
 [source]
-command = "( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u"
+command = "bash -c '( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u'"
 
+# `_` is $0; television fills '{}' with the focused entry, which arrives as $1.
 [preview]
-command = "\"$HOME/.config/television/theme-preview.sh\" '{}'"
+command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"$1\"' _ '{}'"
