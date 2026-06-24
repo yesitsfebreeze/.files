@@ -35,7 +35,7 @@ window_effects:
   focused_window:
     border:
       enabled: true
-      color: '#8dbcff'
+      color: '#ff0000'
   other_windows:
     border:
       enabled: false
