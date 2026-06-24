@@ -7,6 +7,7 @@ push:
   @chezmoi apply --force
   @git add --all
   @git diff --cached --quiet || git commit -m "intermediate"
+  @git pull --rebase --autostash
   @git push
   @sleep 5
   @chezmoi update --force
