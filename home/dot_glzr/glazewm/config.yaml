@@ -3,7 +3,8 @@
 # Modifier is alt throughout so muscle-memory is the same on Windows and macOS.
 
 general:
-  startup_commands: []
+  # Launch the Zebar status bar with the WM. Non-fatal if Zebar is absent.
+  startup_commands: ['shell-exec zebar']
   shutdown_commands: []
   config_reload_commands: []
   focus_follows_cursor: false
