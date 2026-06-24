@@ -26,7 +26,15 @@
                    "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
       font-size: 18px;                    /* 1.5x the terminal's 12px */
       user-select: none;
+      transition: opacity 0.18s ease;
     }
+
+    /* macOS only (toggled by the reveal-on-hover class in JS): the menu bar is
+       auto-hidden and slides down when the cursor reaches the top edge — exactly
+       where this bar sits. Fade the bar out on hover so the two don't overlap; it
+       fades back when the cursor leaves. Not applied on Windows, where there's no
+       menu bar to reveal and the tray icons must stay clickable. */
+    body.reveal-on-hover:hover { opacity: 0; }
 
     .left  { display: flex; align-items: center; gap: 12px; flex: none; }
     .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -111,6 +119,14 @@
 
   <script type="module">
     import * as zebar from 'https://esm.sh/zebar@3.0';
+
+    // macOS auto-hides its menu bar and reveals it when the cursor hits the top
+    // edge, where this bar sits — fade the bar out on hover there so they don't
+    // clash. Windows has no such menu bar, so leave the bar (and its clickable
+    // tray icons) solid.
+    if (!navigator.userAgent.includes('Windows')) {
+      document.body.classList.add('reveal-on-hover');
+    }
 
     const providers = zebar.createProviderGroup({
       glazewm: { type: 'glazewm' },
