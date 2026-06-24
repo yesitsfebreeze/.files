@@ -37,6 +37,7 @@ def --env _recents_replay [entry: record] {
     if (($entry.cwd | is-not-empty) and ($entry.cwd | path exists)) {
         $env._CD_TRANSIENT = true   # a picker jump — leave the new-shell start dir on the last real `cd`
         cd $entry.cwd
+        $env._CD_TRANSIENT = false
     }
     if ($entry.channel | is-not-empty) { _finder_open (finder --start $entry.channel --fresh) }
 }

@@ -520,6 +520,7 @@ def --env _finder_open [sel: list] {
         if (($first | path type) == "dir") {
             $env._CD_TRANSIENT = true   # a picker jump — leave the new-shell start dir on the last real `cd`
             cd $first
+            $env._CD_TRANSIENT = false
         } else { ^$env.EDITOR $first }
     }
 }

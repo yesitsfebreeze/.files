@@ -173,9 +173,13 @@ source ~/.config/nushell/dirstack.nu
 # mkcd is also the single funnel every `cd` flows through — including the transient
 # zoxide/picker jumps, which reach it via the `cd` alias. So this is where we record
 # the new-shell start dir: a real `cd` updates startdir.txt; a transient jump sets
-# $env._CD_TRANSIENT first (see the zoxide wrappers / finder / quicklist) so we skip
-# the write and the start dir keeps pointing at the last place we deliberately cd'd.
-# The recency stack (Alt-O) still logs every move via the PWD hook below.
+# $env._CD_TRANSIENT first (the zoxide wrappers / finder / quicklist set it, do the
+# jump, then clear it) so we skip the write and the start dir keeps pointing at the
+# last place we deliberately cd'd. We do NOT clear the flag here: `cd` (the alias)
+# re-enters mkcd recursively for the inner `cd $target`, so a reset here would fire
+# mid-jump and let the transient move leak into startdir.txt — the transient caller
+# owns clearing it. The write is idempotent across the re-entry. The recency stack
+# (Alt-O) still logs every move via the PWD hook below.
 def --env mkcd [dir?: path] {
     let target = if ($dir | is-empty) { $env.HOME
     } else if $dir == "-" { "-"
@@ -192,7 +196,6 @@ def --env mkcd [dir?: path] {
     if not ($env._CD_TRANSIENT? | default false) {
         _startdir_save $env.PWD
     }
-    $env._CD_TRANSIENT = false
 }
 alias cd = mkcd
 
@@ -335,17 +338,20 @@ source ~/.cache/television/init.nu
 
 # zoxide jumps (z / zi, and `cdi`) are transient: they belong in the Alt-O recency
 # stack but must NOT become the new-shell start dir, which tracks deliberate `cd`
-# only. Wrap the generated z/zi to flag the jump before delegating; mkcd reads the
-# flag (set on the shared --env call chain) and skips the startdir.txt write. `cdi`
-# (aliased to `zi` before zoxide loads) forward-references zi, so it follows these
-# overrides too — verified: a pre-zoxide alias-to-alias resolves the latest target.
+# only. Wrap the generated z/zi to raise $env._CD_TRANSIENT for the duration of the
+# jump; mkcd reads it (shared --env call chain) and skips the startdir.txt write, then
+# we lower it again so the next real `cd` records normally. `cdi` (aliased to `zi`
+# before zoxide loads) forward-references zi, so it follows these overrides too —
+# verified: a pre-zoxide alias-to-alias resolves the latest target.
 def --env --wrapped _z_transient [...rest: string] {
     $env._CD_TRANSIENT = true
     __zoxide_z ...$rest
+    $env._CD_TRANSIENT = false
 }
 def --env --wrapped _zi_transient [...rest: string] {
     $env._CD_TRANSIENT = true
     __zoxide_zi ...$rest
+    $env._CD_TRANSIENT = false
 }
 alias z = _z_transient
 alias zi = _zi_transient
