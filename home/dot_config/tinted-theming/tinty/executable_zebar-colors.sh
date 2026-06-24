@@ -88,3 +88,28 @@ if grep -qi microsoft /proc/version 2>/dev/null; then
         printf '%s\n' "$css_content" > "$win_dir/theme.css"
     fi
 fi
+
+# ── Restart Zebar so the new palette actually shows ──────────────────────────
+# Zebar has no reload IPC (only start-widget/startup), so it reads theme.css once
+# at launch — a live `theme` switch rewrites the CSS above but leaves the running
+# bar painted with the OLD colors. Restart it here, the one place that knows the
+# palette just changed, but ONLY if a bar is already up, so we never spawn one the
+# user deliberately closed. Best-effort and non-fatal: a failed retint must never
+# break `theme`. (chezmoi apply uses a separate hook —
+# run_onchange_after_restart-glazewm-zebar.sh — for structural config changes.)
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    # WSL → native Zebar.exe on the Windows host. taskkill's exit code is our
+    # "was it running" signal (pgrep can't see Windows processes from WSL).
+    if command -v taskkill.exe >/dev/null 2>&1 && taskkill.exe /IM zebar.exe /F >/dev/null 2>&1; then
+        cmd.exe /c start "" zebar.exe >/dev/null 2>&1 || true
+    fi
+elif pgrep -x zebar >/dev/null 2>&1; then
+    pkill -x zebar 2>/dev/null || true
+    # Let the old process release its windows before the new one binds.
+    for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -x zebar >/dev/null 2>&1 || break; sleep 0.2; done
+    if [[ -d /Applications/Zebar.app ]]; then
+        open -na /Applications/Zebar.app >/dev/null 2>&1 || true   # macOS
+    else
+        nohup zebar startup >/dev/null 2>&1 &                      # Linux
+    fi
+fi

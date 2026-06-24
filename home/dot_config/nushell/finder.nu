@@ -517,7 +517,10 @@ def --env _finder_open [sel: list] {
     } else if ("sheet" in $cols) {
         ^bash -c $"curl -sf --max-time 20 'cht.sh/($first.sheet)' | less -R"   # cht sheet -> render
     } else {
-        if (($first | path type) == "dir") { cd $first } else { ^$env.EDITOR $first }
+        if (($first | path type) == "dir") {
+            $env._CD_TRANSIENT = true   # a picker jump — leave the new-shell start dir on the last real `cd`
+            cd $first
+        } else { ^$env.EDITOR $first }
     }
 }
 

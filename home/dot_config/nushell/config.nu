@@ -156,6 +156,11 @@ alias q = exit
 # without prompting.
 alias rr = chezmoi update --force
 
+# `dirstack`: directory-history helpers. Sourced HERE (before mkcd and the PWD hook
+# below) so `_startdir_save` is in scope for mkcd and `_dirstack_push` for the hook.
+# Drives both the new-shell start dir (env.nu reads startdir.txt) and the Alt-O picker.
+source ~/.config/nushell/dirstack.nu
+
 # cd that creates missing directories. Existing paths behave exactly like the
 # builtin (and still fire the PWD auto-list hook below); a non-existent target is
 # `mkdir`-ed first, so `cd some/new/path` + Enter just makes and enters it. `cd`
@@ -164,6 +169,13 @@ alias rr = chezmoi update --force
 # The wrapper is named `mkcd` and `cd` is aliased to it *after* the def, so the
 # `cd $target` in the body still resolves to the builtin (no recursion); the
 # alias only redirects the names typed at the prompt.
+#
+# mkcd is also the single funnel every `cd` flows through — including the transient
+# zoxide/picker jumps, which reach it via the `cd` alias. So this is where we record
+# the new-shell start dir: a real `cd` updates startdir.txt; a transient jump sets
+# $env._CD_TRANSIENT first (see the zoxide wrappers / finder / quicklist) so we skip
+# the write and the start dir keeps pointing at the last place we deliberately cd'd.
+# The recency stack (Alt-O) still logs every move via the PWD hook below.
 def --env mkcd [dir?: path] {
     let target = if ($dir | is-empty) { $env.HOME
     } else if $dir == "-" { "-"
@@ -177,6 +189,10 @@ def --env mkcd [dir?: path] {
         mkdir $target
     }
     cd $target
+    if not ($env._CD_TRANSIENT? | default false) {
+        _startdir_save $env.PWD
+    }
+    $env._CD_TRANSIENT = false
 }
 alias cd = mkcd
 
@@ -289,11 +305,6 @@ def o [path?: path] {
     ^explorer.exe $arg | complete | ignore
 }
 
-# `dirstack`: recency stack of visited dirs. Sourced HERE (before the PWD hook
-# below) so `_dirstack_push` is in scope when that closure is parsed. Drives both
-# the new-shell start dir (env.nu reads the head) and the Alt-O picker.
-source ~/.config/nushell/dirstack.nu
-
 # Append the auto-list closure now that the `la` alias is in scope. `$before`
 # is null on the first fire at shell start, so we skip that one to keep startup
 # clean; thereafter every real cd lists the new directory in an interactive shell.
@@ -321,6 +332,23 @@ $env.config.hooks.env_change.PWD = (
 source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu
+
+# zoxide jumps (z / zi, and `cdi`) are transient: they belong in the Alt-O recency
+# stack but must NOT become the new-shell start dir, which tracks deliberate `cd`
+# only. Wrap the generated z/zi to flag the jump before delegating; mkcd reads the
+# flag (set on the shared --env call chain) and skips the startdir.txt write. `cdi`
+# (aliased to `zi` before zoxide loads) forward-references zi, so it follows these
+# overrides too — verified: a pre-zoxide alias-to-alias resolves the latest target.
+def --env --wrapped _z_transient [...rest: string] {
+    $env._CD_TRANSIENT = true
+    __zoxide_z ...$rest
+}
+def --env --wrapped _zi_transient [...rest: string] {
+    $env._CD_TRANSIENT = true
+    __zoxide_zi ...$rest
+}
+alias z = _z_transient
+alias zi = _zi_transient
 
 # History keymap, appended after the television init so it overrides tv's own
 # Ctrl-R binding (reedline keys the map by (modifier,keycode); a later entry wins).
