@@ -18,9 +18,12 @@ requirements = ["tinty"]
 [source]
 command = "bash -c '( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u'"
 
-# television fills '{}' with the focused entry, which arrives as $2 (after _ in position 1).
+# television substitutes '{}' with the focused entry directly into the command
+# string (same as [action] below). Scheme ids are [a-z0-9-] only, so this is safe
+# and avoids the brittle `bash -c ... _ '{}'` positional indirection (the entry's
+# arg position shifts between tv versions, which left the script with an empty id).
 [preview]
-command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"$2\"' _ '{}'"
+command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"{}\"'"
 
 # When Enter is pressed, commit and push the theme change to git.
 [action]

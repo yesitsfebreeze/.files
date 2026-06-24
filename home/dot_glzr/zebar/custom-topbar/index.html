@@ -28,6 +28,7 @@
       user-select: none;
     }
 
+    .left  { display: flex; align-items: center; gap: 12px; flex: none; }
     .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
     /* A bubble: the tinty background at golden-ratio (0.618) opacity. Corner
@@ -41,7 +42,15 @@
       border-radius: 4px;                 /* half the GlazeWM/Win11 window corner */
       background: color-mix(in srgb, var(--bg, #000) 61.8%, transparent);
     }
-    .left { flex: none; }
+    /* System tray: the Windows tray icons, rendered as their native bitmaps. */
+    .tray { gap: 8px; }
+    .tray:empty { display: none; }
+    /* brightness(0) crushes the icon to a black silhouette, invert(1) flips it
+       to a flat white one — normalizes the tray's mixed-color icons. */
+    .tray img {
+      width: 16px; height: 16px; display: block; cursor: pointer;
+      filter: brightness(0) invert(1);
+    }
 
     /* Workspace buttons 1-9, always present so alt+1..9 has a fixed target.
        Empty workspaces are dimmest, populated ones brighter, focused accented. */
@@ -63,7 +72,12 @@
       max-width: 160px; padding: 0 2px;
       opacity: 0.6; cursor: pointer; white-space: nowrap;
     }
-    .task.active { opacity: 1; color: var(--accent, #7799bb); }
+    /* Active window: full-opacity accent text on a faint accent pill. */
+    .task.active {
+      opacity: 1; color: var(--accent, #7799bb);
+      background: color-mix(in srgb, var(--accent, #7799bb) 22%, transparent);
+      border-radius: 3px;
+    }
     .task .name { overflow: hidden; text-overflow: ellipsis; }
 
     /* A labelled stat: dim label, tabular value so widths don't jitter. */
@@ -78,8 +92,11 @@
   </style>
 </head>
 <body>
-  <div class="bubble left">
-    <div class="workspaces" id="workspaces"></div>
+  <div class="left">
+    <div class="bubble">
+      <div class="workspaces" id="workspaces"></div>
+    </div>
+    <div class="bubble tray" id="tray"></div>
   </div>
 
   <div class="right">
@@ -96,6 +113,7 @@
 
     const providers = zebar.createProviderGroup({
       glazewm: { type: 'glazewm' },
+      systray: { type: 'systray' },
       cpu:     { type: 'cpu',     refreshInterval: 2000 },
       memory:  { type: 'memory',  refreshInterval: 5000 },
       network: { type: 'network', refreshInterval: 2000 },
@@ -107,10 +125,23 @@
     const WORKSPACES = ['1','2','3','4','5','6','7','8','9'];
 
     const workspacesEl = document.getElementById('workspaces');
+    const trayEl = document.getElementById('tray');
     const taskbarEl = document.getElementById('taskbar');
     const statsEl = document.getElementById('stats');
     const clockEl = document.getElementById('clock');
     const dateEl = document.getElementById('date');
+
+    // Build the 9 workspace buttons once, up front, so the bubble is never
+    // empty even before GlazeWM emits. onOutput only updates their state.
+    const wsButtons = WORKSPACES.map(name => {
+      const b = document.createElement('button');
+      b.className = 'ws';
+      b.textContent = name;
+      b.onclick = () =>
+        providers.outputMap.glazewm?.runCommand(`focus --workspace ${name}`);
+      return b;
+    });
+    workspacesEl.replaceChildren(...wsButtons);
 
     const stat = (lbl, val) =>
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
@@ -125,27 +156,37 @@
     };
 
     providers.onOutput(() => {
-      const { glazewm, cpu, memory, network, battery, clock, cal } =
+      const { glazewm, systray, cpu, memory, network, battery, clock, cal } =
         providers.outputMap;
+
+      if (systray) {
+        trayEl.replaceChildren(
+          ...systray.icons.map(icon => {
+            const img = document.createElement('img');
+            img.src = icon.iconUrl;
+            img.title = icon.tooltip ?? '';
+            img.onclick = () => systray.onLeftClick(icon.id);
+            img.oncontextmenu = e => {
+              e.preventDefault();
+              systray.onRightClick(icon.id);
+            };
+            return img;
+          }),
+        );
+      }
 
       if (glazewm) {
         const byName = new Map(
           glazewm.currentWorkspaces.map(ws => [ws.name, ws]),
         );
-        workspacesEl.replaceChildren(
-          ...WORKSPACES.map(name => {
-            const ws = byName.get(name);
-            const b = document.createElement('button');
-            b.className =
-              'ws' +
-              (ws ? ' populated' : '') +
-              (ws?.hasFocus ? ' focused' : '') +
-              (ws?.isDisplayed ? ' displayed' : '');
-            b.textContent = name;
-            b.onclick = () => glazewm.runCommand(`focus --workspace ${name}`);
-            return b;
-          }),
-        );
+        wsButtons.forEach((b, i) => {
+          const ws = byName.get(WORKSPACES[i]);
+          b.className =
+            'ws' +
+            (ws ? ' populated' : '') +
+            (ws?.hasFocus ? ' focused' : '') +
+            (ws?.isDisplayed ? ' displayed' : '');
+        });
 
         // Taskbar: windows on the displayed workspace of this monitor.
         const shown = glazewm.displayedWorkspace ?? glazewm.focusedWorkspace;
