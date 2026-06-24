@@ -13,7 +13,6 @@
       align-items: center;
       justify-content: space-between;
       height: 44px;
-      margin: 0;
       box-sizing: border-box;
       color: var(--fg, #c1c1c1);
       /* Same font stack as the terminal (wezterm.lua). */
@@ -33,8 +32,8 @@
 
     body.reveal-on-hover.at-top { opacity: 0; }
 
-    .left  { display: flex; align-items: center; gap: 12px; flex: none; }
-    .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .left  { display: flex; align-items: center; flex: none; }
+    .right { display: flex; align-items: center; min-width: 0; }
 
     .bubble {
       display: flex;
