@@ -202,6 +202,67 @@ let tests = [
         check true ($f | str starts-with $dir) "rooted at the configured XDG_STATE_HOME"
     }}
 
+    # recents log (quicklist source) — sandboxed via a temp XDG_STATE_HOME -------
+    { name: "recents logs the final stage entries newest-first", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "files", produces: "FileList", results: ["/a"], query: "q1" }]
+            _recents_log [{ channel: "dirs",  produces: "DirList",  results: ["/b"], query: "q2" }]
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 2 "two entries logged"
+        check eq ($got | first | get value) "/b" "most recent is first"
+        check eq ($got | first | get channel) "dirs" "channel tagged"
+        check eq ($got | first | get query) "q2" "query tagged"
+        check true ("cwd" in ($got | first | columns)) "cwd recorded"
+    }}
+    { name: "recents dedups by channel+value, bumping to front", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "files", produces: "FileList", results: ["/a"], query: "old" }]
+            _recents_log [{ channel: "dirs",  produces: "DirList",  results: ["/b"], query: "" }]
+            _recents_log [{ channel: "files", produces: "FileList", results: ["/a"], query: "new" }]
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 2 "re-log of same channel+value did not duplicate"
+        check eq ($got | first | get value) "/a" "re-logged entry bumped to front"
+        check eq ($got | first | get query) "new" "newer metadata wins"
+    }}
+    { name: "recents same value from a different channel is distinct", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "files", produces: "FileList", results: ["/a"], query: "" }]
+            _recents_log [{ channel: "git-files", produces: "FileList", results: ["/a"], query: "" }]
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 2 "channel is part of the dedup key"
+    }}
+    { name: "recents never logs the quicklist meta-channel", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "quicklist", produces: "Mixed", results: ["x"], query: "" }]
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 0 "quicklist picks are not fed back into the log"
+    }}
+    { name: "recents_lines emits TAB rows: kind,value,cwd,channel,query", run: {||
+        let dir = (mktemp -d | str trim)
+        let out = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "files", produces: "FileList", results: ["/a"], query: "q" }]
+            _recents_lines
+        })
+        rm -r -f $dir
+        let f = ($out | split row (char tab))
+        check eq ($f | get 0) "FileList" "col0 kind"
+        check eq ($f | get 1) "/a" "col1 value"
+        check eq ($f | get 3) "files" "col3 channel"
+        check eq ($f | get 4) "q" "col4 query"
+    }}
+
     # _finder_history_query (tv query recovery for resume prefill) -------------
     { name: "history_query returns latest query for the channel", run: {||
         let dir = (mktemp -d | str trim)

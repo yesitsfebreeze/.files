@@ -122,7 +122,7 @@ tv has no `--print-query`, so the query is recovered *after the fact* from tv's 
 channel-scoped history (`$XDG_DATA_HOME/television/history.json`) via
 `_finder_history_query`. The prefill lands with the cursor at the end and **no
 selection** (tv's prompt has no text selection), so resume is for adjusting or
-extending; `--fresh` (leader `F`) skips the prefill for a clean slate.
+extending; `--fresh` skips the prefill for a clean slate.
 
 ## Hard constraints (tv 0.15.8)
 

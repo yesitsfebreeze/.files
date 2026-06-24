@@ -381,13 +381,13 @@ $env.config = (
                 event: { until: [{ send: menudown } { send: nexthistory }] }
             }
             {
-                # leader: ctrl+space opens the leadermode overlay (which-key style);
-                # keys are then swallowed by its `input listen` loop. See leadermode.nu.
-                name: leader
+                # ctrl+space: open the tv channels remote directly (the finder). Type a
+                # channel's prefix to pick it — `q` lands on the quicklist of recent picks.
+                name: tv_remote
                 modifier: control
                 keycode: space
                 mode: [vi_normal vi_insert emacs]
-                event: { send: executehostcommand, cmd: "leader" }
+                event: { send: executehostcommand, cmd: "tv_remote" }
             }
             {
                 # Ctrl-T: open the finder, insert its selection at the cursor.
@@ -437,6 +437,17 @@ def tv_finder [] {
     commandline edit --insert ($parts | str join " ")
 }
 
-# `leader`: which-key style overlay — one chord opens it, keys are swallowed and
-# dispatched (all routes go through `finder`). Bound to the leader chord below.
-source ~/.config/nushell/leadermode.nu
+# `quicklist`: the cross-channel "recent picks" channel + its open/replay runner.
+source ~/.config/nushell/quicklist.nu
+
+# Ctrl-Space: open the tv channels remote and ACT on the pick (vs ctrl-t which inserts).
+# Pick a channel from the remote; `quicklist` (type `q`) drops into the recents picker,
+# anything else runs the typed finder chain and opens the result by type (file -> editor,
+# dir -> cd, commit -> git show). --env so a cd from the pick reaches the shell.
+def --env tv_remote [] {
+    if not (is-terminal --stdin) { return }
+    let channel = (_finder_pick_channel [] null)
+    if ($channel | is-empty) { return }
+    if ($channel == "quicklist") { quicklist; return }
+    _finder_open (finder --start $channel --fresh)
+}

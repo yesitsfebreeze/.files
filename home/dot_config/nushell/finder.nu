@@ -80,6 +80,7 @@ export def --env finder [
         return []
     }
     _finder_save $committed
+    _recents_log $committed
     _finder_decode ($committed | last)
 }
 
@@ -471,4 +472,79 @@ def _finder_decode [stage] {
         }
         _ => $results
     }
+}
+
+# ── open a selection by type (the leader/remote "do it" dispatch) ─────────────
+
+# _finder_open: act on a decoded selection by its produced shape — file (grep hit) ->
+# editor at line, hash (commit) -> git show, else a path -> cd if a dir, edit if a file.
+# Multi-select takes the first entry (v1). --env so a `cd` here reaches the shell (the
+# whole call chain from the keybinding down must stay --env for cd to propagate).
+def --env _finder_open [sel: list] {
+    if ($sel | is-empty) { return }
+    let first = ($sel | first)
+    let cols = (try { $first | columns } catch { [] })
+    if ("file" in $cols) {
+        ^$env.EDITOR $"+($first.line)" $first.file       # grep hit -> editor at line
+    } else if ("hash" in $cols) {
+        ^git show $first.hash                             # commit -> show it
+    } else {
+        if (($first | path type) == "dir") { cd $first } else { ^$env.EDITOR $first }
+    }
+}
+
+# ── recents log (cross-channel quicklist source) ──────────────────────────────
+# Every committed finder selection is appended here, tagged with the channel that
+# produced it, the typed query, and the CWD it was made in — so the `quicklist`
+# channel can re-surface what you actually used across all channels (enter re-opens
+# by type; ctrl-r replays the channel in its recorded cwd). See quicklist.nu.
+
+def _recents_file [] {
+    (_finder_state_dir) | path join "recents.nuon"
+}
+
+# _recents_load: the recents list newest-first, tolerating a missing/corrupt file.
+def _recents_load [] {
+    let f = (_recents_file)
+    if not ($f | path exists) { return [] }
+    try { let r = (open $f); if ($r == null) { [] } else { $r } } catch { [] }
+}
+
+# _recents_key: the dedup identity of an entry — same pick from the same channel.
+def _recents_key [e: record] {
+    $"($e.channel)(char us)($e.value)"
+}
+
+# _recents_log: prepend this chain's FINAL stage entries (newest-first), drop older
+# duplicates of the same channel+value, cap the list. The `quicklist` channel itself
+# is a meta view of this log, so its own picks are never logged back into it.
+def _recents_log [stack: list] {
+    if ($stack | is-empty) { return }
+    let final = ($stack | last)
+    if ($final.channel == "quicklist") { return }
+    let now = (date now)
+    let fresh = ($final.results | each { |v|
+        {
+            kind: $final.produces
+            value: $v
+            channel: $final.channel
+            query: ($final.query? | default "")
+            cwd: $env.PWD
+            ts: $now
+        }
+    })
+    let keys = ($fresh | each { |e| _recents_key $e })
+    let kept = (_recents_load | where { |e| not ((_recents_key $e) in $keys) })
+    ($fresh | append $kept) | first 200 | to nuon | save -f (_recents_file)
+}
+
+# _recents_lines: the `quicklist` channel's source — one TAB-delimited row per recent
+# entry (kind, value, cwd, channel, query), newest-first. The channel's display template
+# shows just the value + context; its output template emits the whole row so the runner
+# can recover the kind (to open) and cwd/channel/query (to replay). Exported so the cable
+# TOML can call it via `nu -c`.
+export def _recents_lines [] {
+    _recents_load | each { |e|
+        [$e.kind $e.value $e.cwd $e.channel ($e.query? | default "")] | str join (char tab)
+    } | str join (char nl)
 }

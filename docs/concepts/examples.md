@@ -1,4 +1,4 @@
-# finder & leadermode — examples
+# finder & quicklist — examples
 
 Copy-pasteable usage. The interactive pickers need a tty (run them in your shell);
 the data-shape outputs below are the real, test-pinned results of `_finder_decode`
@@ -12,8 +12,10 @@ finder --resume   # jump straight back into the last search (prompt prefilled)
 finder --fresh    # new search, no resume prompt, no prefill
 ```
 
-Via the leader overlay: **`ctrl+space` → `q`** opens the commands channel; fuzzy-type
-`find (resume)` / `find (new)` and `enter`.
+Keys: **`ctrl+space`** opens the tv channels remote and *acts* on the pick (file →
+editor, dir → cd, commit → git show); **`ctrl+t`** opens the same remote but *inserts*
+the pick into the prompt (fzf-style). In the remote, type a channel's prefix to pick it
+— **`q`** lands on the [quicklist](quicklist.md) of recent picks.
 
 ## Consuming the result in nu
 
@@ -38,8 +40,8 @@ Inside the result list, `ctrl-p` commits the selection and re-opens the picker
 scoped to it. `ctrl-b` steps back, `enter` ends.
 
 ```
-ctrl+space q → "find (new)" → files → (mark a few) ctrl-p → text → "TODO" → enter
-#            greps "TODO" in ONLY the files you marked; returns GrepList records
+ctrl+space → files → (mark a few) ctrl-p → text → "TODO" → enter
+#          greps "TODO" in ONLY the files you marked; returns GrepList records
 ```
 
 ```nu
@@ -60,29 +62,21 @@ finder | select file line text
 [[hash, subject]; ["a1b2c3d", "* a1b2c3d fix the bug"]]
 ```
 
-## leadermode — adding commands
+## quicklist — recent picks across channels
 
-Every command lives in `_leader_commands` in `leadermode.nu` — the flat `q` palette.
-Add a command = one row (no other code changes):
+Everything you pick through the finder is logged to a recents store, tagged with the
+channel, the typed query, and the **cwd** it happened in. `ctrl+space` → type `q` →
+the `quicklist` channel surfaces them newest-first:
 
-```nu
-def _leader_commands [] {
-    [
-        # find: closure returns a finder selection, acted on automatically (cd-safe)
-        { name: "find (resume)", find: {|| finder --resume } }
-        { name: "find (new)",    find: {|| finder --fresh } }
-
-        # run: any closure; output prints (no cd propagation — use find for cd)
-        { name: "time",       run: {|| date now | print } }
-        { name: "git status", run: {|| ^git status } }
-        { name: "git pull",   run: {|| ^git pull } }
-    ]
-}
+```
+ctrl+space q                       # open the quicklist
+  enter   on an entry  → open it by type   (file → editor, dir → cd, commit → git show)
+  ctrl-r  on an entry  → replay: cd into its recorded cwd, then re-run that channel there
 ```
 
-`ctrl+space q` opens the palette; fuzzy-type `git status` and `enter` runs it. The
-overlay tree (`_leader_menu`) just holds the `q` row — add direct-key overlay
-shortcuts there only if you want them alongside the palette.
+The log lives at `$XDG_STATE_HOME/finder/recents.nuon` (deduped by channel+value, cap
+200). The `quicklist` cable channel reads it live via `_recents_lines`; see
+[quicklist](quicklist.md).
 
 ## Extending finder — add a typed channel
 
@@ -115,4 +109,4 @@ def _finder_type [channel: string] {
 `_finder_compatible` and the prefix picker pick up the new channel automatically —
 no other changes needed.
 
-See [finder](finder.md) and [leadermode](leadermode.md) for the design behind these.
+See [finder](finder.md) and [quicklist](quicklist.md) for the design behind these.

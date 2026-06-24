@@ -1,0 +1,17 @@
+[metadata]
+name = "quicklist"
+description = "Recent picks across all channels — enter opens by type, ctrl-r replays in its cwd"
+requirements = ["nu"]
+
+# Source = finder's live recents log, emitted as TAB rows: kind, value, cwd, channel, query
+# (see finder.nu `_recents_lines`). Read fresh on every open so it always reflects the last
+# thing you used. nu runs env-free (`-n`); the body is single-quoted so it reaches nu verbatim.
+[source]
+command = "nu -n -c 'source ~/.config/nushell/finder.nu; _recents_lines'"
+# Show the value, then the channel it came from and the cwd, dimmed by position. `\\t` in
+# TOML reaches tv as the literal escape `\t`, which tv's template engine treats as the tab
+# delimiter that splits each source row.
+display = "{split:\\t:1}    ({split:\\t:3})  {split:\\t:2}"
+# Emit the whole row so quicklist.nu can recover the kind (to open) and cwd/channel/query
+# (to replay).
+output = "{}"
