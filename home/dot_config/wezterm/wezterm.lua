@@ -265,12 +265,14 @@ config.front_end = "OpenGL"
 config.max_fps = 60
 config.animation_fps = 60
 
--- Kitty keyboard protocol: lets the shell see the FULL modifier set on a key, so
--- e.g. Ctrl+Shift+R arrives distinct from Ctrl+R (a legacy terminal collapses both
--- to ^R, dropping shift on ctrl+letter). Pairs with nushell's `use_kitty_protocol`
--- in config.nu, which keys local vs global history pickers off exactly that
--- distinction. Defaults to false in WezTerm, so it must be opted into here.
-config.enable_kitty_keyboard = true
+-- Kitty keyboard protocol: stays OFF, matching nushell's `use_kitty_protocol =
+-- false` in config.nu. The two are a matched pair — with it on, reedline fires the
+-- kitty support query at startup and the WSL2<->WezTerm pty returns the reply too
+-- late to consume, so it leaks as `^[[?...u` and garbles the prompt before it's
+-- visible. Enabling only the WezTerm half (the state this was left in) reproduces
+-- that leak without buying anything, since the shell never opts in. WezTerm defaults
+-- this to false, so the matched-off state needs no line; kept explicit as a marker.
+config.enable_kitty_keyboard = false
 
 config.use_fancy_tab_bar = false
 config.hide_tab_bar_if_only_one_tab = true
