@@ -1,21 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-    }
+    :root { color-scheme: dark; }
+    html, body { margin: 0; padding: 0; height: 100%; }
 
-    /* Your own background. Edit this line — solid colour, gradient, or
-       `background: url('./bg.png') center/cover` for an image. */
+    /* Your own background — edit this line. rgba() controls transparency, or use
+       `background: url('./bg.png') center/cover` for an image dropped in this folder. */
     body {
       background: rgba(22, 22, 26, 0.6);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      color: #e6e6e6;
+      user-select: none;
     }
+
+    .workspaces { display: flex; gap: 4px; height: 100%; }
+    .ws {
+      padding: 0 6px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      opacity: 0.5;
+      cursor: pointer;
+    }
+    .ws.displayed { opacity: 0.8; }
+    .ws.focused { opacity: 1; }
+
+    .clock { opacity: 0.9; font-variant-numeric: tabular-nums; }
   </style>
 </head>
-<body></body>
+<body>
+  <div class="workspaces" id="workspaces"></div>
+  <div class="clock" id="clock"></div>
+
+  <!-- Zebar's own provider API — the correct way to read GlazeWM/date data.
+       glazewm only emits on Windows (where GlazeWM runs); on macOS the guard
+       below skips it and the bar shows just the clock. -->
+  <script type="module">
+    import * as zebar from 'https://esm.sh/zebar@3.0';
+
+    const providers = zebar.createProviderGroup({
+      glazewm: { type: 'glazewm' },
+      date: { type: 'date', formatting: 'HH:mm' },
+    });
+
+    const workspacesEl = document.getElementById('workspaces');
+    const clockEl = document.getElementById('clock');
+
+    providers.onOutput(() => {
+      const { glazewm, date } = providers.outputMap;
+
+      if (glazewm) {
+        workspacesEl.replaceChildren(
+          ...glazewm.currentWorkspaces.map(ws => {
+            const b = document.createElement('button');
+            b.className =
+              'ws' +
+              (ws.hasFocus ? ' focused' : '') +
+              (ws.isDisplayed ? ' displayed' : '');
+            b.textContent = ws.displayName ?? ws.name;
+            b.onclick = () => glazewm.runCommand(`focus --workspace ${ws.name}`);
+            return b;
+          }),
+        );
+      }
+
+      if (date) clockEl.textContent = date.formatted;
+    });
+  </script>
+</body>
 </html>
