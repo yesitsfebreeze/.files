@@ -230,14 +230,13 @@ config.colors.background = overlay
 -- Use the terminal background color for the opacity: the cell bg above goes
 -- translucent at this alpha so the blurred desktop shows through it on every OS.
 config.window_background_opacity = 0.618
--- Per-OS blur behind the translucent window. macOS exposes it directly; Windows
--- uses the Acrylic system backdrop (its own blur + translucency). WezTerm has no
--- Linux blur field — there the compositor (KWin/picom) blurs the translucent
--- window, so transparency alone is enough.
+-- Blur: macOS frosts the desktop behind the window directly. Windows and Linux
+-- have no reliable per-window blur from WezTerm — the Acrylic backdrop renders a
+-- flat gray fallback whenever the window is unfocused or transparency effects are
+-- off, and Linux blur is the compositor's job. But the wallpaper we set below is
+-- ALREADY gaussian-blurred, so plain transparency shows a blurred backdrop on
+-- every OS regardless; only macOS gets the extra live frosting.
 config.macos_window_background_blur = 30
-if is_windows then
-    config.win32_system_backdrop = "Acrylic"
-end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"

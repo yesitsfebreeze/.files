@@ -28,7 +28,7 @@
       user-select: none;
     }
 
-    .right { display: flex; align-items: center; gap: 12px; }
+    .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
     /* A bubble: the tinty background at golden-ratio (0.618) opacity. Corner
        radius + padding match GlazeWM's windows so the UI reads as one system. */
@@ -41,19 +41,38 @@
       border-radius: 4px;                 /* half the GlazeWM/Win11 window corner */
       background: color-mix(in srgb, var(--bg, #000) 61.8%, transparent);
     }
+    .left { flex: none; }
 
+    /* Workspace buttons 1-9, always present so alt+1..9 has a fixed target.
+       Empty workspaces are dimmest, populated ones brighter, focused accented. */
     .ws {
       border: 0; background: transparent; color: inherit; font: inherit;
-      padding: 0 2px; opacity: 0.45; cursor: pointer;
+      padding: 0 2px; opacity: 0.25; cursor: pointer;
     }
+    .ws.populated { opacity: 0.5; }
     .ws.displayed { opacity: 0.75; }
     .ws.focused   { opacity: 1; color: var(--accent, #7799bb); }
 
+    /* Running-window taskbar: shrinks and clips before it would push the
+       clock off the right edge. */
+    .taskbar { min-width: 0; overflow: hidden; }
+    .taskbar:empty { display: none; }
+    .task {
+      border: 0; background: transparent; color: inherit; font: inherit;
+      display: flex; align-items: center; gap: 6px;
+      max-width: 160px; padding: 0 2px;
+      opacity: 0.6; cursor: pointer; white-space: nowrap;
+    }
+    .task.active { opacity: 1; color: var(--accent, #7799bb); }
+    .task .name { overflow: hidden; text-overflow: ellipsis; }
+
     /* A labelled stat: dim label, tabular value so widths don't jitter. */
+    .stats { flex: none; }
     .stat { display: flex; align-items: baseline; gap: 5px; }
     .stat .lbl { opacity: 0.5; font-size: 14px; }
     .stat .val { font-variant-numeric: tabular-nums; }
 
+    .clockbox { flex: none; }
     .clock { font-variant-numeric: tabular-nums; }
     .date  { opacity: 0.85; }
   </style>
@@ -64,6 +83,7 @@
   </div>
 
   <div class="right">
+    <div class="bubble taskbar" id="taskbar"></div>
     <div class="bubble stats" id="stats"></div>
     <div class="bubble clockbox">
       <span class="clock" id="clock"></span>
@@ -84,30 +104,61 @@
       cal:     { type: 'date', formatting: 'EEE, MMM d' },
     });
 
+    const WORKSPACES = ['1','2','3','4','5','6','7','8','9'];
+
     const workspacesEl = document.getElementById('workspaces');
+    const taskbarEl = document.getElementById('taskbar');
     const statsEl = document.getElementById('stats');
     const clockEl = document.getElementById('clock');
     const dateEl = document.getElementById('date');
 
     const stat = (lbl, val) =>
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
-
     const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
+
+    // Walk a GlazeWM container tree, collecting every window leaf.
+    const collectWindows = (node, out) => {
+      if (!node) return out;
+      if (node.type === 'window') out.push(node);
+      for (const child of node.children ?? []) collectWindows(child, out);
+      return out;
+    };
 
     providers.onOutput(() => {
       const { glazewm, cpu, memory, network, battery, clock, cal } =
         providers.outputMap;
 
       if (glazewm) {
+        const byName = new Map(
+          glazewm.currentWorkspaces.map(ws => [ws.name, ws]),
+        );
         workspacesEl.replaceChildren(
-          ...glazewm.currentWorkspaces.map(ws => {
+          ...WORKSPACES.map(name => {
+            const ws = byName.get(name);
             const b = document.createElement('button');
             b.className =
               'ws' +
-              (ws.hasFocus ? ' focused' : '') +
-              (ws.isDisplayed ? ' displayed' : '');
-            b.textContent = ws.displayName ?? ws.name;
-            b.onclick = () => glazewm.runCommand(`focus --workspace ${ws.name}`);
+              (ws ? ' populated' : '') +
+              (ws?.hasFocus ? ' focused' : '') +
+              (ws?.isDisplayed ? ' displayed' : '');
+            b.textContent = name;
+            b.onclick = () => glazewm.runCommand(`focus --workspace ${name}`);
+            return b;
+          }),
+        );
+
+        // Taskbar: windows on the displayed workspace of this monitor.
+        const shown = glazewm.displayedWorkspace ?? glazewm.focusedWorkspace;
+        const focusedId = glazewm.focusedContainer?.id;
+        const windows = collectWindows(shown, []);
+        taskbarEl.replaceChildren(
+          ...windows.map(win => {
+            const b = document.createElement('button');
+            b.className = 'task' + (win.id === focusedId ? ' active' : '');
+            const label = win.processName || win.title || '?';
+            b.innerHTML = `<span class="name">${label}</span>`;
+            b.title = win.title ?? label;
+            b.onclick = () => glazewm.runCommand('focus', win.id).catch(() => {});
             return b;
           }),
         );
