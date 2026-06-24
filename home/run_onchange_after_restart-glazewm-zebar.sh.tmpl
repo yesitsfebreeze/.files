@@ -100,15 +100,19 @@ else
     warn "Zebar: taskkill.exe not reachable from WSL; skipping restart."
 fi
 
-# Balance daemon: wm-reload-config does not restart it, so cycle it here. Kill any
-# node running the daemon and relaunch detached (GlazeWM startup_commands also
-# launches it on a fresh WM start; this covers the reload-only path).
-if command -v taskkill.exe >/dev/null 2>&1 && command -v node.exe >/dev/null 2>&1; then
-    taskkill.exe /IM node.exe /F /FI "WINDOWTITLE eq balance-daemon*" >/dev/null 2>&1 || true
-    win_launch node.exe "%USERPROFILE%\\.glzr\\glazewm\\balance-daemon.js" \
-        && log "Balance daemon: relaunch dispatched on Windows." \
-        || warn "Balance daemon: could not dispatch relaunch; it restarts on next GlazeWM start."
+# Balance daemon: ensure it's running, launched HIDDEN through GlazeWM's own
+# shell-exec (same path as startup_commands) so no console window shows. The daemon
+# holds a single-instance lock, so this is a no-op when one is already up — which
+# means a daemon-CODE change only takes effect on the next full GlazeWM restart, not
+# a bare wm-reload-config. The daemon reads no config files, so config/zebar edits
+# never need it restarted anyway.
+if [ -n "$glazewm_exe" ]; then
+    if "$glazewm_exe" command shell-exec --hide-window node "%USERPROFILE%\\.glzr\\glazewm\\balance-daemon.js" >/dev/null 2>&1; then
+        log "Balance daemon: ensured running (hidden) via GlazeWM."
+    else
+        log "Balance daemon: GlazeWM not running; it starts on next GlazeWM launch."
+    fi
 else
-    log "Balance daemon: node.exe/taskkill not reachable; it restarts on next GlazeWM start."
+    warn "Balance daemon: glazewm.exe not on interop PATH; it starts on next GlazeWM launch."
 fi
 {{- end }}

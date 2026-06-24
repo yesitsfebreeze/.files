@@ -31,8 +31,9 @@
     .left  { display: flex; align-items: center; gap: 12px; flex: none; }
     .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
-    /* A bubble: the tinty background at golden-ratio (0.618) opacity. Corner
-       radius + padding match GlazeWM's windows so the UI reads as one system. */
+    /* A bubble: the tinty background at WezTerm's window opacity (0.821), so the bar
+       shares the terminal's exact translucent background. Corner radius + padding
+       match GlazeWM's windows so the UI reads as one system. */
     .bubble {
       display: flex;
       align-items: center;
@@ -40,7 +41,7 @@
       padding: 5px 12px;
       box-sizing: border-box;
       border-radius: 4px;                 /* half the GlazeWM/Win11 window corner */
-      background: color-mix(in srgb, var(--bg, #000) 61.8%, transparent);
+      background: color-mix(in srgb, var(--bg, #000) 82.1%, transparent);
     }
     /* System tray: the Windows tray icons, rendered as their native bitmaps. */
     .tray { gap: 8px; }

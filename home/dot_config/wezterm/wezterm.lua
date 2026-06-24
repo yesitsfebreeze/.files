@@ -48,13 +48,18 @@ if is_mac then
         .. (os.getenv("PATH") or "")
 end
 
--- Always launch fullscreen. WezTerm renders an integer grid of cells and never
--- stretches glyphs, so the grid almost never divides the screen exactly; the
--- leftover sub-cell pixels would sit as an uneven gap on the right/bottom. We
--- center the grid by splitting that leftover into symmetric padding (see below).
+-- Launch fullscreen — EXCEPT on Windows, where GlazeWM tiles the window: a native
+-- fullscreen toggle there fights the tiler (the window gets sized into its pane,
+-- then snaps back to borderless fullscreen), so we let GlazeWM own the geometry and
+-- center_grid still centers the grid inside whatever tile it's given. On mac/Linux
+-- there's no GlazeWM, so keep the self-fullscreen. The grid is an integer number of
+-- cells that rarely divides the screen exactly; the leftover sub-cell pixels are
+-- split into symmetric padding by center_grid (below).
 wezterm.on("gui-startup", function(cmd)
     local _, _, window = wezterm.mux.spawn_window(cmd or {})
-    window:gui_window():toggle_fullscreen()
+    if not is_windows then
+        window:gui_window():toggle_fullscreen()
+    end
 end)
 
 -- Keep the grid centered. The grid is an integer number of cells, so it almost

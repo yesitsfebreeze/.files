@@ -33,6 +33,14 @@ const EVENTS = [
   'workspace_updated',
 ];
 
+// Single-instance guard: hold a localhost port as a mutex. Launched hidden, the
+// daemon has no visible window for a title-based taskkill to target, so a relaunch
+// could otherwise stack a second copy. If the port is already held, exit quietly.
+const net = require('net');
+const lock = net.createServer();
+lock.on('error', () => process.exit(0));
+lock.listen(6124, '127.0.0.1');
+
 let ws = null;
 let reconnectMs = RECONNECT_MS;
 let debounceTimer = null;
