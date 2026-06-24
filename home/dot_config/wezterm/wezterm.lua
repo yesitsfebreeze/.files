@@ -247,21 +247,23 @@ config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
--- Slow tick: update-status now only exists to catch interactive font zoom for
--- center_grid (registered above), which fires no resize/reload event. 1s is plenty,
--- and the padding guard keeps the idle ticks nearly free.
-config.status_update_interval = 1000
+-- Slow tick: the status interval drives BOTH update-status (→ center_grid, to catch
+-- interactive font zoom, which fires no resize/reload event) AND update-right-status
+-- (the workspace label). At 1s that repainted the tab bar every second forever — a
+-- constant titlebar refresh for a label that almost never changes. 5s still recenters
+-- a font zoom within a few seconds, and the padding guard keeps idle ticks near-free.
+config.status_update_interval = 5000
 
 -- OpenGL, not WebGpu: window transparency + the OS backdrop blur have the same
 -- backend sensitivity the old layered background did — WebGpu on the Windows/D3D12
 -- backend (this config's host: WSL launches into the Windows wezterm.exe)
 -- mis-composites translucent windows, so OpenGL is the safe choice and is still
--- GPU-accelerated. max_fps is uncapped to 255 (WezTerm's ceiling) so frames present
--- as fast as produced, and animation_fps matches so cursor blink / smooth-scroll
--- never throttle below it.
+-- GPU-accelerated. fps is capped at 60: uncapping to 255 let WezTerm present every
+-- redraw at up to 255 Hz, which combined with the periodic status repaint and cursor
+-- blink kept the GPU/CPU churning for no visible benefit. 60 is smooth and idle-cheap.
 config.front_end = "OpenGL"
-config.max_fps = 255
-config.animation_fps = 255
+config.max_fps = 60
+config.animation_fps = 60
 
 -- Kitty keyboard protocol: lets the shell see the FULL modifier set on a key, so
 -- e.g. Ctrl+Shift+R arrives distinct from Ctrl+R (a legacy terminal collapses both
