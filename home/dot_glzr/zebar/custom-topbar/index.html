@@ -135,6 +135,15 @@
         // we're click-through — a webview gets NO mouse events then, so DOM hover
         // can't see the cursor leave. Backend polling can, so no blink. Window rect
         // is cached and refreshed occasionally (it rarely moves).
+        //
+        // The fade BAND (how far below the top edge still counts as "over the bar")
+        // is the bar's own content height, NOT outer_size.height: a transparent
+        // docked window can report its outer height as the WHOLE monitor height,
+        // which makes "over" true everywhere and pins the bar permanently hidden.
+        // innerHeight*devicePixelRatio is the true bar height in the same physical
+        // pixels the cursor/rect use; we clamp the band to it.
+        const barPx = () =>
+          Math.round(window.innerHeight * window.devicePixelRatio) || 80;
         let rect = null, n = 0;
         const refreshRect = async () => {
           const [p, s] = await Promise.all([
@@ -147,8 +156,9 @@
           try {
             if (!rect || n++ % 25 === 0) await refreshRect();
             const c = await inv('plugin:window|cursor_position');
+            const band = Math.min(rect.h, barPx());
             const over = c.x >= rect.x && c.x <= rect.x + rect.w &&
-                         c.y >= rect.y && c.y <= rect.y + rect.h;
+                         c.y >= rect.y && c.y <= rect.y + band;
             over ? fade() : show();
           } catch {}
         }, 100);
