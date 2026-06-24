@@ -429,7 +429,7 @@ def tv_finder [] {
     if ($sel | is-empty) { return }
     let parts = ($sel | each { |it|
         let s = (match (($it | describe -d).type) {
-            "record" => ($it.file? | default ($it.hash? | default ($it | to nuon)))
+            "record" => ($it.file? | default ($it.hash? | default ($it.sheet? | default ($it | to nuon))))
             _ => ($it | into string)
         })
         _finder_shquote $s

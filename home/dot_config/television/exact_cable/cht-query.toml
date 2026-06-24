@@ -1,0 +1,28 @@
+# television cable channel: `cht-query` — step 2 of the cht.sh drill. Not meant to be run
+# on its own: pick a language in the `cht.sh` channel, then ctrl-p (pipe) into this one.
+# finder overrides the source with --source-command (see _finder_cht_query_src), so the
+# entries become that language's live topics — `cht.sh/<lang>/:list`, each prefixed with
+# `<lang>/` so the confirmed line is a complete sheet id (`python/lambda`, `go/:learn`).
+# In finder, enter renders the full sheet in a pager (see _finder_open's `sheet` arm).
+#
+# source : a hint only — the real list is injected by finder per language. Running this
+#          channel standalone just reminds you to enter via cht.sh.
+# preview: the selected sheet, in cht.sh's own ANSI colors.
+
+[metadata]
+name = "cht-query"
+description = "cht.sh topics for a language — pipe here from cht.sh"
+requirements = ["curl"]
+
+[source]
+command = "printf '%s\\n' 'pick a language in cht.sh first, then ctrl-p to drill in'"
+
+[preview]
+# nu has no `||`; delegate the curl-or-fallback to bash (same pattern as cht.sh).
+command = '''bash -c "curl -sf --max-time 15 'cht.sh/{}' || echo 'cht.sh unreachable (overloaded or offline) — retry'"'''
+
+[ui]
+preview_panel = { size = 65 }
+
+[ui.input_bar]
+header = "cht.sh query: {}"

@@ -1,18 +1,19 @@
-# television cable channel: `tv cht` — fuzzy-browse cht.sh cheatsheets with a
-# live preview pane. The tmux+fzf cht.sh tool, reimagined as a tv channel.
+# television cable channel: `cht.sh` — step 1 of the cht.sh cheatsheet drill: pick a
+# language or CLI tool. In `finder`, ctrl-p (pipe) carries the pick into `cht-query`,
+# whose source is that language's live topic `:list` (see cht-query.toml) — so you query
+# the cht.sh database in steps: lang ▸ query ▸ sheet, with suggestions at every step.
+# Standalone (`tv cht.sh` / f5) it is the language browser with a topic-list preview.
 #
-# source : a curated, OFFLINE list of languages + CLI tools (same set as the
-#          `cht` script in the machine's `cheat` skill). Offline on purpose —
-#          cht.sh is a shared service that 500s under load; a network-fetched
-#          source (cht.sh/:list) leaves an empty picker whenever it's down.
-#          Here the picker always populates; only the preview needs the network.
-# preview: curl the selected sheet, colored ANSI (cht.sh colorizes for curl by
-#          default; tv renders the ANSI in the preview panel).
-# enter / ctrl-e : open the full sheet in a pager.
+# source : a curated, OFFLINE list of languages + CLI tools. Offline on purpose — the
+#          global cht.sh/:list is ~14k noisy, mixed entries; this keeps the picker fast
+#          and always-populated. Only the preview + the query step need the network.
+# preview: the hovered language's topic list (cht.sh/<lang>/:list) — a live look at what
+#          you can drill into next.
+# ctrl-e : open that language's :learn tutorial in a pager.
 
 [metadata]
-name = "cht"
-description = "Browse cht.sh cheatsheets — languages and CLI tools, live preview"
+name = "cht.sh"
+description = "cht.sh cheatsheets — pick a language (pipe ▸ cht-query to drill in)"
 requirements = ["curl"]
 
 [source]
@@ -29,19 +30,19 @@ command = """printf '%s\\n' \
 
 [preview]
 # nu has no `||`; delegate the curl-or-fallback to bash (same pattern as theme.toml).
-command = '''bash -c "curl -sf --max-time 15 'cht.sh/{}' || echo 'cht.sh unreachable (overloaded or offline) — retry'"'''
+command = '''bash -c "curl -sf --max-time 15 'cht.sh/{}/:list' || echo 'cht.sh unreachable (overloaded or offline) — retry'"'''
 
 [ui]
-preview_panel = { size = 65 }
+preview_panel = { size = 50 }
 
 [ui.input_bar]
-header = "cht.sh: {}"
+header = "cht.sh language: {}"
 
 [keybindings]
 shortcut = "f5"
-ctrl-e = "actions:open"
+ctrl-e = "actions:learn"
 
-[actions.open]
-description = "Open the full cheatsheet in a pager"
-command = "curl -sf --max-time 20 'cht.sh/{}' | less -R"
+[actions.learn]
+description = "Open this language's :learn tutorial in a pager"
+command = "curl -sf --max-time 20 'cht.sh/{}/:learn' | less -R"
 mode = "fork"

@@ -42,6 +42,12 @@ let tests = [
         check eq ($out | first | get hash) "a1b2c3d" "hash at split index 1"
         check eq ($out | first | get subject) "* a1b2c3d - first" "subject is the whole line"
     }}
+    { name: "decode ChtSheet wraps each line as a sheet record", run: {||
+        let out = (_finder_decode { produces: "ChtSheet", results: ["python/lambda" "go/:learn"] })
+        check eq ($out | length) 2 "all sheets decoded"
+        check eq ($out | first | get sheet) "python/lambda" "sheet id captured"
+        check eq ($out | last | get sheet) "go/:learn" ":learn sheet captured"
+    }}
     { name: "decode unknown produces returns raw", run: {||
         check eq (_finder_decode { produces: "Any", results: ["x" "y"] }) ["x" "y"] "passthrough"
     }}
@@ -85,6 +91,11 @@ let tests = [
     { name: "type unknown channel defaults to Any", run: {||
         check eq (_finder_type "zzz" | get produces) "Any" "unknown -> Any"
     }}
+    { name: "type cht.sh / cht-query carry the drill types", run: {||
+        check eq (_finder_type "cht.sh" | get produces) "ChtLang" "cht.sh root produces ChtLang"
+        check eq (_finder_type "cht-query" | get produces) "ChtSheet" "cht-query produces ChtSheet"
+        check eq (_finder_type "cht-query" | get accepts) ["ChtLang"] "cht-query accepts ChtLang"
+    }}
 
     # _finder_scope -----------------------------------------------------------
     { name: "scope null carry is empty", run: {||
@@ -111,6 +122,19 @@ let tests = [
         # files accepts DirList, not FileList -> no edge
         check eq (_finder_scope "files" { produces: "FileList", results: ["/a"] } | get source_cmd) "" "FileList->files has no edge"
     }}
+    { name: "scope cht.sh->cht-query fetches the lang's topic :list", run: {||
+        let cmd = (_finder_scope "cht-query" { produces: "ChtLang", results: ["python"] } | get source_cmd)
+        check has $cmd "cht.sh/python/:list" "topic list endpoint for the carried lang"
+        check has $cmd "s#^#python/#" "entries prefixed with the lang so the id is complete"
+    }}
+    { name: "scope cht-query does NOT path-expand the language", run: {||
+        # a path carry would expand 'python' against cwd; the lang arg must stay literal.
+        let cmd = (_finder_scope "cht-query" { produces: "ChtLang", results: ["python"] } | get source_cmd)
+        check true (not ($cmd | str contains ($env.PWD))) "lang not expanded into an absolute path"
+    }}
+    { name: "scope cht-query rejects an unsafe language token", run: {||
+        check eq (_finder_scope "cht-query" { produces: "ChtLang", results: ["py;rm -rf /"] } | get source_cmd) "" "non-token lang -> no spliced command"
+    }}
 
     # _finder_compatible ------------------------------------------------------
     { name: "compatible of null is empty", run: {||
@@ -121,6 +145,12 @@ let tests = [
         check true ("text" in $c) "text reachable from files"
         check true ("git-log" in $c) "git-log reachable from files"
         check true (not ("files" in $c)) "files not self-reachable (no FileList->files edge)"
+    }}
+    { name: "compatible of ChtLang carry offers only cht-query", run: {||
+        let c = (_finder_compatible { produces: "ChtLang", results: ["python"] })
+        check true ("cht-query" in $c) "cht-query reachable from a language"
+        check true (not ("text" in $c)) "path channels not reachable from a language"
+        check true (not ("cht.sh" in $c)) "cht.sh is a root, never a chain target"
     }}
 
     # _finder_shquote(_list) --------------------------------------------------

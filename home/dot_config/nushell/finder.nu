@@ -325,22 +325,38 @@ def _finder_legend [] {
 # ── channel definitions (produces / accepts / scope recipe, co-located) ───────
 
 # _finder_channel_defs: the single source of truth for every TYPED channel. Each entry
-# binds the three things that used to live apart — the value it `produces`, the upstream
-# types it `accepts`, and the `scope` recipe that splices a carry's paths into its source
-# command. Add a typed channel = one record here; _finder_type, _finder_channels and
-# _finder_scope all derive from it, so they can never drift. `scope` takes the carry's
-# already shell-quoted path string and returns the channel's scoped source command. v1
-# edges: dirs→files/dirs, files/dirs→text, files→git-log; rcwd→files/dirs/text (DirList).
-# A SOURCE-ONLY channel (a chain root like rcwd) has `accepts: []` and no `scope` — it is
-# never a chain *target*, so its produced type just gates what it can flow *into*.
+# binds the things that used to live apart — the value it `produces`, the upstream types
+# it `accepts`, and the `scope` recipe that splices a carry into its source command. Add a
+# typed channel = one record here; _finder_type, _finder_channels and _finder_scope all
+# derive from it, so they can never drift. By default `scope` receives the carry's already
+# shell-quoted, path-expanded result string (the file/dir channels). A def may set
+# `arg: "lang"` to instead receive the carry's raw first result un-expanded (the cht.sh
+# drill, whose carry is a language name, not a path). v1 edges: dirs→files/dirs,
+# files/dirs→text, files→git-log; rcwd→files/dirs/text (DirList); cht.sh→cht-query (ChtLang).
+# A SOURCE-ONLY channel (a chain root like rcwd or cht.sh) has `accepts: []` and no `scope`
+# — it is never a chain *target*, so its produced type just gates what it can flow *into*.
 def _finder_channel_defs [] {
     {
-        files:     { produces: "FileList", accepts: ["DirList"],            scope: {|paths| $"fd -t f --color=never . ($paths)" } }
-        dirs:      { produces: "DirList",  accepts: ["DirList"],            scope: {|paths| $"fd -t d --color=never . ($paths)" } }
-        text:      { produces: "GrepList", accepts: ["FileList" "DirList"], scope: {|paths| $"rg . --no-heading --line-number --color=never -- ($paths)" } }
-        "git-log": { produces: "Commits",  accepts: ["FileList"],           scope: {|paths| $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)" } }
-        rcwd:      { produces: "DirList",  accepts: [] }
+        files:       { produces: "FileList", accepts: ["DirList"],            scope: {|paths| $"fd -t f --color=never . ($paths)" } }
+        dirs:        { produces: "DirList",  accepts: ["DirList"],            scope: {|paths| $"fd -t d --color=never . ($paths)" } }
+        text:        { produces: "GrepList", accepts: ["FileList" "DirList"], scope: {|paths| $"rg . --no-heading --line-number --color=never -- ($paths)" } }
+        "git-log":   { produces: "Commits",  accepts: ["FileList"],           scope: {|paths| $"git log --graph --pretty=format:'%C\(yellow)%h%Creset -%C\(yellow)%d%Creset %s %Cgreen\(%cr) %C\(bold blue)<%an>%Creset' --abbrev-commit --color=never -- ($paths)" } }
+        rcwd:        { produces: "DirList",  accepts: [] }
+        "cht.sh":    { produces: "ChtLang",  accepts: [] }
+        "cht-query": { produces: "ChtSheet", accepts: ["ChtLang"], arg: "lang", scope: {|lang| _finder_cht_query_src $lang } }
     }
+}
+
+# _finder_cht_query_src: the scoped source for the cht-query step. Given the language
+# carried from the cht.sh pick, fetch that language's live topic list (cht.sh/<lang>/:list,
+# which includes :learn and :list) and prefix every entry with `<lang>/` so the confirmed
+# line is a complete sheet id (`python/lambda`, `go/:learn`) the preview/open can curl
+# directly. Wrapped in `bash -c` because tv runs source commands through the user's shell
+# (nu), which lacks the pipe/quoting this needs. Returns "" for a non-token language so a
+# malformed carry just runs the channel's own (hint) source instead of a spliced command.
+def _finder_cht_query_src [lang: string] {
+    if not ($lang =~ '^[A-Za-z0-9._+-]+$') { return "" }
+    $"bash -c \"curl -sf --max-time 15 'cht.sh/($lang)/:list' | sed 's#^#($lang)/#'\""
 }
 
 # _finder_type: the typed value a channel produces / accepts. Anything not defined is
@@ -379,10 +395,14 @@ def _finder_scope [channel: string, carry] {
         return { source_cmd: "" }   # no typed edge from this carry → not chainable
     }
 
-    # absolute paths from the carry, shell-quoted, spliced into the channel's recipe.
-    let abs = ($carry.results | each { |p| $p | path expand })
-    let paths = (_finder_shquote_list $abs)
-    { source_cmd: (do $def.scope $paths) }
+    # The recipe's argument depends on the carry's shape. Path carries (the default) are
+    # expanded to absolute and shell-quoted before splicing; a `arg: "lang"` def instead
+    # gets the carry's raw first result (the cht.sh language — not a path, must not expand).
+    let arg = (match ($def.arg? | default "paths") {
+        "lang" => ($carry.results | first)
+        _ => (_finder_shquote_list ($carry.results | each { |p| $p | path expand }))
+    })
+    { source_cmd: (do $def.scope $arg) }
 }
 
 # _finder_shquote: POSIX single-quote one path (everything inside '' is literal).
@@ -470,6 +490,12 @@ def _finder_decode [stage] {
                 }
             } | where { |r| $r.hash =~ '^[0-9a-f]{7,}$' }
         }
+        "ChtSheet" => {
+            # cht-query output: one `<lang>/<topic>` sheet id per line. Wrap each as a
+            # { sheet } record so _finder_open can curl-render it (vs. a bare path string,
+            # which it would mistake for a file to edit).
+            $results | each { |line| { sheet: ($line | str trim) } }
+        }
         _ => $results
     }
 }
@@ -488,6 +514,8 @@ def --env _finder_open [sel: list] {
         ^$env.EDITOR $"+($first.line)" $first.file       # grep hit -> editor at line
     } else if ("hash" in $cols) {
         ^git show $first.hash                             # commit -> show it
+    } else if ("sheet" in $cols) {
+        ^bash -c $"curl -sf --max-time 20 'cht.sh/($first.sheet)' | less -R"   # cht sheet -> render
     } else {
         if (($first | path type) == "dir") { cd $first } else { ^$env.EDITOR $first }
     }

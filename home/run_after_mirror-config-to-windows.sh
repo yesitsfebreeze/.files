@@ -19,6 +19,20 @@ src="$HOME/.config/"
 dst="$winhome/.config/"
 mkdir -p "$dst"
 
+# GlazeWM reads its config from the default %USERPROFILE%\.glzr on Windows, not
+# ~/.config. Mirror that tree too so the native-Windows GlazeWM picks up the same
+# config chezmoi deployed on the WSL side. One-way, additive, same as below.
+if [ -d "$HOME/.glzr" ]; then
+  glzr_dst="$winhome/.glzr/"
+  mkdir -p "$glzr_dst"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -rlt --no-perms --no-owner --no-group "$HOME/.glzr/" "$glzr_dst"
+  else
+    cp -rL "$HOME/.glzr/." "$glzr_dst"
+  fi
+  printf ':: WSL: mirrored ~/.glzr -> %s\n' "$glzr_dst"
+fi
+
 # Skip dirs that aren't config any Windows app reads and would make the cross-FS
 # copy pathological: ~/.config/assembly alone is ~910MB. Add to this list rather
 # than mirror runtime caches / build output over the slow /mnt/c 9p bridge.

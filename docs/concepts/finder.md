@@ -42,8 +42,21 @@ Only channels with a declared type can chain. The table (`_finder_type`):
 | `dirs` | `DirList` | `DirList` |
 | `text` | `GrepList` | `FileList`, `DirList` |
 | `git-log` | `Commits` | `FileList` |
+| `cht.sh` | `ChtLang` | — (chain root) |
+| `cht-query` | `ChtSheet` | `ChtLang` |
 
 Anything else is `Any` with no accepts → it runs fresh and is a chain dead-end.
+
+### The cht.sh drill
+
+`cht.sh` → `cht-query` is a non-path chain: you query the [cht.sh](https://cht.sh)
+cheatsheet database in steps with suggestions at every step. Pick a language in `cht.sh`
+(a curated list; preview shows that language's topic `:list`), `ctrl-p` to pipe into
+`cht-query`, whose source is scoped to the carried language — `cht.sh/<lang>/:list`, every
+topic prefixed `<lang>/` so the pick is a complete sheet id (`python/lambda`, `go/:learn`).
+`enter` renders the sheet in a pager. Because the carry is a *language*, not a path,
+`cht-query`'s def sets `arg: "lang"` so `_finder_scope` hands its closure the raw result
+instead of the expanded, quoted paths the file/dir channels get.
 
 A directed **scope edge** exists from carry → channel when the carry's `produces`
 is in the channel's `accepts`. `_finder_scope` turns an edge into a concrete,
@@ -104,6 +117,7 @@ the channel `produces`:
 | `FileList` / `DirList` | `list<string>` of expanded, existing paths |
 | `GrepList` | `list<{ file, line, text }>` (split on the first two colons; text keeps the rest) |
 | `Commits` | `list<{ hash, subject }>` (graph-art rows dropped) |
+| `ChtSheet` | `list<{ sheet }>` (`<lang>/<topic>` ids; `_finder_open` curl-renders `cht.sh/<sheet>`) |
 | anything else | the raw lines |
 
 This is what makes finder *composable in nu*: `finder | each { … }` gets typed
@@ -138,9 +152,10 @@ extending; `--fresh` skips the prefill for a clean slate.
 
 ## Extending
 
-- **Add a typed, chainable channel:** add a row to `_finder_type` (its `produces`
-  + `accepts`) and a scope arm to `_finder_scope`. `_finder_compatible` and the
-  picker pick it up automatically.
+- **Add a typed, chainable channel:** add one row to `_finder_channel_defs` (its
+  `produces`, `accepts`, and `scope` closure). `_finder_type`, `_finder_channels`,
+  `_finder_scope` and `_finder_compatible` all derive from it. A non-path carry sets
+  `arg: "lang"` so its closure receives the raw result instead of expanded, quoted paths.
 - **Add a decode shape:** add a `produces` arm to `_finder_decode`.
 
 ## Testing
