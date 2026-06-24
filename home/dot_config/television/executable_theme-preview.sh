@@ -4,7 +4,9 @@
 #   1. Apply the scheme LIVE to the terminal. tinty emits OSC palette sequences on
 #      stdout, but television captures this process's stdout for the preview panel,
 #      so we route the apply to /dev/tty to retint WezTerm as you scroll.
-#   2. Print a color swatch to stdout for the preview panel.
+#   2. Render a real syntax-highlighted sample file so you judge the theme on actual
+#      content. bat's "ansi" theme maps tokens onto the 16 ANSI slots, which the live
+#      apply just retinted — so the sample recolors with the scheme as you scroll.
 set -u
 
 id="${1:-}"
@@ -14,28 +16,27 @@ slug="${id#*-}"
 data="${XDG_DATA_HOME:-$HOME/.local/share}/tinted-theming/tinty"
 scheme="$data/repos/schemes/$system/$slug.yaml"
 # Custom schemes (base24-feb, the converted base24-gogh-*) live outside the
-# catalog clone — fall back to the custom-schemes dir for their swatch/name.
+# catalog clone — fall back to the custom-schemes dir for their name.
 [ -f "$scheme" ] || scheme="$data/custom-schemes/$system/$slug.yaml"
+sample="$HOME/.config/television/theme-preview-sample.ts"
 
 # (1) live apply to the terminal device (not our captured stdout).
 if command -v tinty >/dev/null 2>&1; then
     tinty apply "$id" >/dev/tty 2>/dev/null || true
 fi
 
-# (2) swatch for the preview panel.
-if [ ! -f "$scheme" ]; then
-    printf '%s\n(no scheme file)\n' "$id"
-    exit 0
+# (2) header: scheme name + variant.
+if [ -f "$scheme" ]; then
+    name=$(sed -n 's/^name: *"\(.*\)".*/\1/p' "$scheme" | head -n1)
+    variant=$(sed -n 's/^variant: *"\(.*\)".*/\1/p' "$scheme" | head -n1)
+    printf '%s  (%s)\n\n' "${name:-$slug}" "${variant:-?}"
+else
+    printf '%s\n\n' "$id"
 fi
 
-name=$(sed -n 's/^name: *"\(.*\)".*/\1/p' "$scheme" | head -n1)
-variant=$(sed -n 's/^variant: *"\(.*\)".*/\1/p' "$scheme" | head -n1)
-printf '%s  (%s)\n\n' "${name:-$slug}" "${variant:-?}"
-
-# Each "baseXX: \"#rrggbb\"" line -> a truecolor block plus its label.
-while read -r key hex; do
-    [ -z "$hex" ] && continue
-    r=$((16#${hex:0:2})); g=$((16#${hex:2:2})); b=$((16#${hex:4:2}))
-    printf '\033[48;2;%d;%d;%dm      \033[0m  \033[38;2;%d;%d;%dm%s  #%s\033[0m\n' \
-        "$r" "$g" "$b" "$r" "$g" "$b" "$key" "$hex"
-done < <(sed -n 's/^ *\(base[0-9A-Fa-f][0-9A-Fa-f]\): *"#\([0-9a-fA-F]\{6\}\)".*/\1 \2/p' "$scheme")
+# (3) sample file rendered through the ANSI palette the scheme just set.
+if command -v bat >/dev/null 2>&1; then
+    bat --color=always --theme=ansi --style=numbers --paging=never "$sample"
+else
+    cat "$sample"
+fi
