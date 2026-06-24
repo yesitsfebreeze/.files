@@ -14,7 +14,7 @@
       "resizable": false,
       "transparent": true,
       "includeFiles": ["*.html", "*.css"],
-      "caching": { "defaultDuration": 604800, "rules": [] },
+      "caching": { "defaultDuration": 0, "rules": [] },
       "privileges": { "shellCommands": [] },
       "presets": [
         {
