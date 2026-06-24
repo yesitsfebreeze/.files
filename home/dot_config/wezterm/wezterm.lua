@@ -209,13 +209,14 @@ config.line_height = 1.0
 -- center_grid only absorbs the sub-cell residual.
 config.adjust_window_size_when_changing_font_size = false
 
--- Also search the installer's per-user font dir, so a freshly-downloaded font
--- resolves before the system font cache refreshes.
-if is_windows then
-    config.font_dirs = { (os.getenv("LOCALAPPDATA") or (home .. "/AppData/Local")) .. "/Microsoft/Windows/Fonts" }
-elseif is_mac then
+-- Search a per-user font dir so a freshly-installed font resolves before the system
+-- font cache refreshes. NOT on Windows: there that dir is the OS per-user font
+-- INSTALL location (here 2.1 GB / 525 Nerd Fonts), and WezTerm parses every file in
+-- font_dirs at startup — scanning it dominated launch time. Windows registers those
+-- fonts with DirectWrite, which WezTerm already queries, so they still resolve.
+if is_mac then
     config.font_dirs = { home .. "/Library/Fonts" }
-else
+elseif not is_windows then
     config.font_dirs = { home .. "/.local/share/fonts" }
 end
 
