@@ -65,7 +65,7 @@ window_rules:
   # and any Zebar popups).
   - commands: ['ignore']
     match:
-      - window_process: { equals: 'Zebar' }
+      - window_process: { equals: 'zebar' }
 
 workspaces:
   - name: '1'

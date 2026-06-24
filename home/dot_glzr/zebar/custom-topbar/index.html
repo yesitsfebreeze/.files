@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./theme.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     /* No scrollbar — a webview scrollbar would inset the right edge and make
        the left/right padding look unequal. */
     ::-webkit-scrollbar { display: none; }
@@ -17,13 +17,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-width: 100%;
       gap: 12px;                          /* = GlazeWM inner_gap */
-      /* The window is a full-width 64px dock (dockToEdge reserves the strip so
-         windows tile below it). 12px padding all round insets the visible bar to
-         a tile-width 40px island floating in the gap — exact 12px margins on any
-         monitor, since the px margin is screen-independent. */
-      padding: 12px;
+      /* Full-width 32px dock (dockToEdge reserves the strip so windows tile
+         below it). Slim 2px vertical inset; 12px horizontal inset matches the
+         GlazeWM gap so the island lines up with the tiled windows below. */
+      padding: 2px 12px;
       background: transparent;            /* only the bubbles are tinted */
       color: var(--fg, #c1c1c1);
       /* Same font stack as the terminal (wezterm.lua). */
@@ -44,7 +42,7 @@
     body.reveal-on-hover.at-top { opacity: 0; }
 
     .left  { display: flex; align-items: center; gap: 12px; flex: none; }
-    .right { display: flex; align-items: center; gap: 12px; min-width: 0; margin-left: auto; }
+    .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
     /* A bubble: the tinty background at WezTerm's window opacity (0.821), so the bar
        shares the terminal's exact translucent background. Corner radius + padding
