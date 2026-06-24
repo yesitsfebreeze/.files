@@ -229,7 +229,7 @@ config.colors.background = overlay
 
 -- Use the terminal background color for the opacity: the cell bg above goes
 -- translucent at this alpha so the blurred desktop shows through it on every OS.
-config.window_background_opacity = 0.618
+config.window_background_opacity = 0.821
 -- Blur: macOS frosts the desktop behind the window directly. Windows and Linux
 -- have no reliable per-window blur from WezTerm — the Acrylic backdrop renders a
 -- flat gray fallback whenever the window is unfocused or transparency effects are
