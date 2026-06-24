@@ -18,7 +18,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;                          /* = GlazeWM inner_gap */
-      padding: 0 11px;                    /* = GlazeWM outer_gap sides (12px) */
+      /* The window is a full-width 64px dock (dockToEdge reserves the strip so
+         windows tile below it). 12px padding all round insets the visible bar to
+         a tile-width 40px island floating in the gap — exact 12px margins on any
+         monitor, since the px margin is screen-independent. */
+      padding: 12px;
       background: transparent;            /* only the bubbles are tinted */
       color: var(--fg, #c1c1c1);
       /* Same font stack as the terminal (wezterm.lua). */
