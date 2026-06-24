@@ -2,61 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Theme palette generated from the active tinty scheme by
+       ~/.config/tinted-theming/tinty/zebar-colors.sh — defines --bg/--fg/etc.
+       so the bar matches the terminal. -->
+  <link rel="stylesheet" href="./theme.css" />
   <style>
-    :root { color-scheme: dark; }
     html, body { margin: 0; padding: 0; height: 100%; }
 
-    /* Your own background — edit this line. rgba() controls transparency, or use
-       `background: url('./bg.png') center/cover` for an image dropped in this folder. */
     body {
-      background: rgba(22, 22, 26, 0.6);
-
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 8px;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      gap: 8px;
+      padding: 0 6px;
+      background: transparent;            /* only the bubbles are tinted */
+      color: var(--fg, #c1c1c1);
+      /* Same font stack as the terminal (wezterm.lua). */
+      font-family: "DepartureMono Nerd Font", "Departure Mono",
+                   "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
       font-size: 12px;
-      color: #e6e6e6;
       user-select: none;
     }
 
-    .workspaces { display: flex; gap: 4px; height: 100%; }
-    .ws {
-      padding: 0 6px;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      opacity: 0.5;
-      cursor: pointer;
+    /* A bubble: the tinty background at golden-ratio (0.618) opacity. */
+    .bubble {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 20px;
+      padding: 0 10px;
+      box-sizing: border-box;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg, #000) 61.8%, transparent);
     }
-    .ws.displayed { opacity: 0.8; }
-    .ws.focused { opacity: 1; }
+    .left   { justify-self: start; }
+    .center { justify-self: center; }
+    .right  { justify-self: end; }
 
-    .clock { opacity: 0.9; font-variant-numeric: tabular-nums; }
+    .ws {
+      border: 0; background: transparent; color: inherit; font: inherit;
+      padding: 0 2px; opacity: 0.45; cursor: pointer;
+    }
+    .ws.displayed { opacity: 0.75; }
+    .ws.focused   { opacity: 1; color: var(--accent, #7799bb); }
+
+    .clock { font-variant-numeric: tabular-nums; }
+    .date  { opacity: 0.85; }
   </style>
 </head>
 <body>
-  <div class="workspaces" id="workspaces"></div>
-  <div class="clock" id="clock"></div>
+  <div class="bubble left">
+    <div class="workspaces" id="workspaces"></div>
+  </div>
+  <div class="bubble center">
+    <span class="clock" id="clock"></span>
+  </div>
+  <div class="bubble right">
+    <span class="date" id="date"></span>
+  </div>
 
-  <!-- Zebar's own provider API — the correct way to read GlazeWM/date data.
-       glazewm only emits on Windows (where GlazeWM runs); on macOS the guard
-       below skips it and the bar shows just the clock. -->
   <script type="module">
     import * as zebar from 'https://esm.sh/zebar@3.0';
 
     const providers = zebar.createProviderGroup({
       glazewm: { type: 'glazewm' },
-      date: { type: 'date', formatting: 'HH:mm' },
+      clock: { type: 'date', formatting: 'HH:mm' },
+      cal: { type: 'date', formatting: 'EEE, MMM d' },
     });
 
     const workspacesEl = document.getElementById('workspaces');
     const clockEl = document.getElementById('clock');
+    const dateEl = document.getElementById('date');
 
     providers.onOutput(() => {
-      const { glazewm, date } = providers.outputMap;
+      const { glazewm, clock, cal } = providers.outputMap;
 
       if (glazewm) {
         workspacesEl.replaceChildren(
@@ -73,7 +92,8 @@
         );
       }
 
-      if (date) clockEl.textContent = date.formatted;
+      if (clock) clockEl.textContent = clock.formatted;
+      if (cal) dateEl.textContent = cal.formatted;
     });
   </script>
 </body>

@@ -27,5 +27,5 @@ shell = "bash -c '{}'"
 name = "tinted-shell"
 path = "https://github.com/tinted-theming/tinted-shell"
 themes-dir = "scripts"
-hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/wezterm-colors.sh\""
+hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/wezterm-colors.sh\" && \"$HOME/.config/tinted-theming/tinty/zebar-colors.sh\""
 supported-systems = ["base16", "base24"]
