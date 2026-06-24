@@ -9,7 +9,7 @@ general:
   # Windows shell, so %USERPROFILE% expands to the user profile. --hide-window keeps
   # node's console hidden (it's a background daemon). Non-fatal if absent.
   startup_commands:
-    - 'shell-exec zebar'
+    - 'shell-exec zebar startup'
     - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/balance-daemon.js'
   shutdown_commands: []
   config_reload_commands: []

@@ -11,9 +11,10 @@
 # only re-runs this when one of those files changes — a no-op apply stays a no-op,
 # and we never touch the apps when nothing they read moved.
 #
-# Best-effort and non-fatal throughout: if an app isn't running we leave it alone
-# (the install script is what launches it fresh, which already loads current
-# config), and every failure is a warning, never an apply error.
+# Best-effort and non-fatal throughout: GlazeWM we only hot-reload when it's already
+# up (a fresh launch loads the new config anyway); Zebar has no reload IPC, so we
+# always (re)start it to guarantee the bar is up with current config -- even when it
+# had exited. Every failure is a warning, never an apply error.
 #
 # Re-run trigger — hashes of the deployed configs (data, not executed):
 #   glazewm config  {{ include "dot_glzr/glazewm/config.yaml" | sha256sum }}
@@ -45,20 +46,22 @@ else
     warn "GlazeWM: 'glazewm' CLI not on PATH; skipping reload."
 fi
 
-# Zebar: no reload IPC — restart only if it's already running, so we apply the new
-# bar config without spawning a bar on a machine where the user keeps it closed.
+# Zebar: no reload IPC — kill any running instance to force a config re-read, then
+# always (re)launch it so the bar is up with current config even when it had exited.
 if pgrep -x zebar >/dev/null 2>&1; then
     log "Zebar: restarting to pick up config."
     pkill -x zebar 2>/dev/null || true
     # Brief wait so the old process releases its windows before the new one binds.
     for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -x zebar >/dev/null 2>&1 || break; sleep 0.2; done
-    if [ -d "/Applications/Zebar.app" ]; then
-        open -na /Applications/Zebar.app >/dev/null 2>&1 \
-            && log "  Zebar relaunched." \
-            || warn "  could not relaunch Zebar; open it manually."
-    fi
 else
-    log "Zebar: not running; nothing to restart."
+    log "Zebar: not running; launching."
+fi
+if [ -d "/Applications/Zebar.app" ]; then
+    open -na /Applications/Zebar.app >/dev/null 2>&1 \
+        && log "  Zebar launched." \
+        || warn "  could not launch Zebar; open it manually."
+else
+    warn "Zebar: /Applications/Zebar.app not found; skipping launch."
 fi
 {{- else -}}
 # WSL → the apps run on the Windows host; drive them over interop. Plain Linux has
@@ -85,19 +88,27 @@ win_launch() {
     disown 2>/dev/null || true
 }
 
-# Zebar: restart on the Windows host only if it's already running. taskkill reports
-# success when a zebar.exe was killed.
+# Zebar: kill any running instance (no reload IPC) so it re-reads settings, then
+# always (re)launch — preferring GlazeWM's shell-exec (same path as startup_commands:
+# correct PATH/env, no console window), falling back to a detached interop launch.
+# This brings the bar back even when it had exited, not just restarts a live one.
 if command -v taskkill.exe >/dev/null 2>&1; then
     if taskkill.exe /IM zebar.exe /F >/dev/null 2>&1; then
         log "Zebar: stopped on Windows; relaunching."
-        win_launch zebar.exe \
-            && log "  Zebar relaunch dispatched on Windows." \
-            || warn "  could not dispatch Zebar relaunch; start it manually on Windows."
+        # Brief wait so the old process releases its windows before the new one binds.
+        sleep 0.3
     else
-        log "Zebar: not running on Windows; nothing to restart."
+        log "Zebar: not running on Windows; launching."
+    fi
+    if [ -n "$glazewm_exe" ] && "$glazewm_exe" command shell-exec zebar startup >/dev/null 2>&1; then
+        log "  Zebar launch dispatched via GlazeWM."
+    else
+        win_launch zebar.exe startup \
+            && log "  Zebar launch dispatched on Windows." \
+            || warn "  could not dispatch Zebar launch; start it manually on Windows."
     fi
 else
-    warn "Zebar: taskkill.exe not reachable from WSL; skipping restart."
+    warn "Zebar: taskkill.exe not reachable from WSL; skipping launch."
 fi
 
 # Balance daemon: ensure it's running, launched HIDDEN through GlazeWM's own

@@ -36,10 +36,13 @@ const EVENTS = [
 // Single-instance guard: hold a localhost port as a mutex. Launched hidden, the
 // daemon has no visible window for a title-based taskkill to target, so a relaunch
 // could otherwise stack a second copy. If the port is already held, exit quietly.
+// NOTE: must avoid the glzr.io port range — GlazeWM's IPC is 6123 and Zebar's asset
+// server is 6124; squatting 6124 makes Zebar's asset server fail to bind (AddrInUse)
+// and the bar renders blank. Use a port well clear of that range.
 const net = require('net');
 const lock = net.createServer();
 lock.on('error', () => process.exit(0));
-lock.listen(6124, '127.0.0.1');
+lock.listen(16124, '127.0.0.1');
 
 let ws = null;
 let reconnectMs = RECONNECT_MS;
