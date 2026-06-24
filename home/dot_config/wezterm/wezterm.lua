@@ -214,63 +214,28 @@ else
     config.font_dirs = { home .. "/.local/share/fonts" }
 end
 
--- Layered window background (ctrl+shift+b sets it from a URL): when a baked
--- background.png exists it's the bottom layer (sized to cover) with the active
--- theme bg washed over it heavily so text stays legible; with no image the window
--- is just the solid theme bg. Either way the window is fully opaque — no
--- see-through desktop. The centered padding (center_grid) frames the grid.
+-- Transparent, blurred window: there's no wezterm image layer anymore. The theme
+-- bg is painted as the translucent cell color and the OS composites a blur behind
+-- it, so the desktop wallpaper (set by ctrl+shift+b, below) reads through softly.
+-- The centered padding (center_grid) frames the grid.
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
--- Background overlay color: the live tinty theme bg, falling back to gruvbox dark
+-- The translucent tint is the live tinty theme bg, falling back to gruvbox dark
 -- hard base00 (NOT pure black, which diverges from the scheme) before any theme.
 local overlay = tinty_bg or "#1d2021"
--- How heavily the theme-bg wash sits over the image, keeping text legible over it.
-local OVERLAY_OPACITY = 0.92
-local bg_file = wezterm.config_dir .. "/background.png"
+config.colors = config.colors or {}
+config.colors.background = overlay
 
-local function file_exists(path)
-    local f = io.open(path, "r")
-    if f then
-        f:close()
-        return true
-    end
-    return false
-end
-
--- Fixed layered background: the blurred image covers the window with the theme bg
--- washed heavily over it for legibility. No image -> nil, and the caller paints the
--- solid theme bg instead. Either way the window is fully opaque.
-local function build_background()
-    if file_exists(bg_file) then
-        return {
-            {
-                source = { File = bg_file },
-                width = "100%",
-                height = "100%",
-                horizontal_align = "Center",
-                vertical_align = "Middle",
-                repeat_x = "NoRepeat",
-                repeat_y = "NoRepeat",
-            },
-            {
-                source = { Color = overlay },
-                width = "100%",
-                height = "100%",
-                opacity = OVERLAY_OPACITY,
-            },
-        }
-    end
-    return nil
-end
-
-local loaded_bg = build_background()
-if loaded_bg then
-    config.background = loaded_bg
-else
-    -- No image: single source of truth for the solid case is the cell background.
-    config.colors = config.colors or {}
-    config.colors.background = overlay
+-- Use the terminal background color for the opacity: the cell bg above goes
+-- translucent at this alpha so the blurred desktop shows through it on every OS.
+config.window_background_opacity = 0.618
+-- Per-OS blur behind the translucent window. macOS and KDE expose it directly;
+-- Windows uses the Acrylic system backdrop (its own blur + translucency).
+config.macos_window_background_blur = 30
+config.kde_window_background_blur = true
+if is_windows then
+    config.win32_system_backdrop = "Acrylic"
 end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
@@ -281,13 +246,13 @@ config.audible_bell = "Disabled"
 -- and the padding guard keeps the idle ticks nearly free.
 config.status_update_interval = 1000
 
--- OpenGL, not WebGpu: the layered config.background (File image + Color overlay
--- with per-layer opacity) has the same backend sensitivity the old translucent
--- window did — WebGpu on the Windows/D3D12 backend (this config's host: WSL
--- launches into the Windows wezterm.exe) mis-composites layered/opacity
--- backgrounds, so OpenGL is the safe choice and is still GPU-accelerated. max_fps
--- is uncapped to 255 (WezTerm's ceiling) so frames present as fast as produced, and
--- animation_fps matches so cursor blink / smooth-scroll never throttle below it.
+-- OpenGL, not WebGpu: window transparency + the OS backdrop blur have the same
+-- backend sensitivity the old layered background did — WebGpu on the Windows/D3D12
+-- backend (this config's host: WSL launches into the Windows wezterm.exe)
+-- mis-composites translucent windows, so OpenGL is the safe choice and is still
+-- GPU-accelerated. max_fps is uncapped to 255 (WezTerm's ceiling) so frames present
+-- as fast as produced, and animation_fps matches so cursor blink / smooth-scroll
+-- never throttle below it.
 config.front_end = "OpenGL"
 config.max_fps = 255
 config.animation_fps = 255
@@ -358,8 +323,9 @@ end
 -- Single POSIX script: derive both dest DIRS in-shell (no host paths hardcoded),
 -- obtain the image (download an http(s) URL, or copy a local file -- a file:// URL,
 -- ~ path, POSIX path, or a Windows path via wslpath), then write the 16px gaussian
--- BLUR (background.png) to BOTH the committed chezmoi source AND the live dir the
--- running wezterm reads. set -e is on, so every command-sub that can fail is guarded.
+-- BLUR (background.png) to BOTH the committed chezmoi source AND a live dir, then
+-- apply that blurred copy as the OS desktop wallpaper. set -e is on, so every
+-- command-sub that can fail is guarded.
 -- The input is single-quoted in only after Lua-side validation (below) already
 -- rejected control chars and single quotes.
 --
@@ -413,12 +379,25 @@ local function set_background(input)
         'blur "$tmp" "$blurred"',
         'cp "$blurred" "$src_dir/background.png"',
         'cp "$blurred" "$live_dir/background.png"',
+        -- Apply that blurred copy as the OS DESKTOP wallpaper (not a wezterm layer):
+        -- Windows (from WSL) via reg + rundll32 on the wslpath -w form, macOS via
+        -- osascript, otherwise GNOME via gsettings. Best-effort per OS.
+        'wp="$live_dir/background.png"',
+        'if grep -qi microsoft /proc/version 2>/dev/null; then '
+            .. 'win_wp="$(wslpath -w "$wp")"; '
+            .. 'reg.exe add "HKCU\\Control Panel\\Desktop" /v Wallpaper /t REG_SZ /d "$win_wp" /f >/dev/null 2>&1 || true; '
+            .. 'reg.exe add "HKCU\\Control Panel\\Desktop" /v WallpaperStyle /t REG_SZ /d 10 /f >/dev/null 2>&1 || true; '
+            .. 'rundll32.exe user32.dll,UpdatePerUserSystemParameters 1, True >/dev/null 2>&1 || true; '
+        .. 'elif [ "$(uname)" = "Darwin" ]; then '
+            .. 'osascript -e "tell application \\"System Events\\" to tell every desktop to set picture to \\"$wp\\"" >/dev/null 2>&1 || true; '
+        .. 'else '
+            .. 'gsettings set org.gnome.desktop.background picture-uri "file://$wp" >/dev/null 2>&1 || true; '
+            .. 'gsettings set org.gnome.desktop.background picture-uri-dark "file://$wp" >/dev/null 2>&1 || true; '
+        .. 'fi',
     }, "; ")
     local success, _, stderr = run_bg_script(script)
-    if success then
-        wezterm.reload_configuration()
-    else
-        wezterm.log_error("set background failed: " .. (stderr or ""))
+    if not success then
+        wezterm.log_error("set wallpaper failed: " .. (stderr or ""))
     end
 end
 
@@ -461,7 +440,7 @@ config.keys = {
             end
         end),
     },
-    -- CTRL-SHIFT-B: prompt for an image URL or local path, blur it, set as window bg.
+    -- CTRL-SHIFT-B: prompt for an image URL or local path, blur it, set as OS wallpaper.
     {
         key = "b",
         mods = "CTRL|SHIFT",
