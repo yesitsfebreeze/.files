@@ -14,9 +14,9 @@
     ::-webkit-scrollbar { display: none; }
 
     body {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;                          /* = GlazeWM inner_gap */
       padding: 0 22px;                    /* = 2x GlazeWM outer_gap sides (12px) */
       background: transparent;            /* only the bubbles are tinted */
@@ -27,6 +27,8 @@
       font-size: 18px;                    /* 1.5x the terminal's 12px */
       user-select: none;
     }
+
+    .right { display: flex; align-items: center; gap: 12px; }
 
     /* A bubble: the tinty background at golden-ratio (0.618) opacity. Corner
        radius + padding match GlazeWM's windows so the UI reads as one system. */
@@ -39,9 +41,6 @@
       border-radius: 4px;                 /* half the GlazeWM/Win11 window corner */
       background: color-mix(in srgb, var(--bg, #000) 61.8%, transparent);
     }
-    .left   { justify-self: start; }
-    .center { justify-self: center; }
-    .right  { justify-self: end; }
 
     .ws {
       border: 0; background: transparent; color: inherit; font: inherit;
@@ -49,6 +48,11 @@
     }
     .ws.displayed { opacity: 0.75; }
     .ws.focused   { opacity: 1; color: var(--accent, #7799bb); }
+
+    /* A labelled stat: dim label, tabular value so widths don't jitter. */
+    .stat { display: flex; align-items: baseline; gap: 5px; }
+    .stat .lbl { opacity: 0.5; font-size: 14px; }
+    .stat .val { font-variant-numeric: tabular-nums; }
 
     .clock { font-variant-numeric: tabular-nums; }
     .date  { opacity: 0.85; }
@@ -58,11 +62,13 @@
   <div class="bubble left">
     <div class="workspaces" id="workspaces"></div>
   </div>
-  <div class="bubble center">
-    <span class="clock" id="clock"></span>
-  </div>
-  <div class="bubble right">
-    <span class="date" id="date"></span>
+
+  <div class="right">
+    <div class="bubble stats" id="stats"></div>
+    <div class="bubble clockbox">
+      <span class="clock" id="clock"></span>
+      <span class="date" id="date"></span>
+    </div>
   </div>
 
   <script type="module">
@@ -70,16 +76,27 @@
 
     const providers = zebar.createProviderGroup({
       glazewm: { type: 'glazewm' },
-      clock: { type: 'date', formatting: 'HH:mm' },
-      cal: { type: 'date', formatting: 'EEE, MMM d' },
+      cpu:     { type: 'cpu',     refreshInterval: 2000 },
+      memory:  { type: 'memory',  refreshInterval: 5000 },
+      network: { type: 'network', refreshInterval: 2000 },
+      battery: { type: 'battery', refreshInterval: 10000 },
+      clock:   { type: 'date', formatting: 'HH:mm' },
+      cal:     { type: 'date', formatting: 'EEE, MMM d' },
     });
 
     const workspacesEl = document.getElementById('workspaces');
+    const statsEl = document.getElementById('stats');
     const clockEl = document.getElementById('clock');
     const dateEl = document.getElementById('date');
 
+    const stat = (lbl, val) =>
+      `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
+
+    const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
+
     providers.onOutput(() => {
-      const { glazewm, clock, cal } = providers.outputMap;
+      const { glazewm, cpu, memory, network, battery, clock, cal } =
+        providers.outputMap;
 
       if (glazewm) {
         workspacesEl.replaceChildren(
@@ -95,6 +112,23 @@
           }),
         );
       }
+
+      const parts = [];
+      if (cpu) parts.push(stat('CPU', `${cpu.usage.toFixed(0)}%`));
+      if (memory) parts.push(stat('RAM', `${memory.usage.toFixed(0)}%`));
+      if (network?.traffic) {
+        parts.push(stat('↓', rate(network.traffic.received)));
+        parts.push(stat('↑', rate(network.traffic.transmitted)));
+      }
+      if (battery && battery.chargePercent != null) {
+        const t = battery.isCharging
+          ? battery.timeTillFull
+          : battery.timeTillEmpty;
+        const eta = t != null ? ` ${Math.round(t / 60000)}m` : '';
+        const icon = battery.isCharging ? '⚡' : '';
+        parts.push(stat('BAT', `${icon}${battery.chargePercent.toFixed(0)}%${eta}`));
+      }
+      statsEl.innerHTML = parts.join('');
 
       if (clock) clockEl.textContent = clock.formatted;
       if (cal) dateEl.textContent = cal.formatted;
