@@ -1,0 +1,31 @@
+[metadata]
+name = "burrito-sessions"
+description = "Browse and attach to live burrito multiplexer sessions"
+requirements = ["burrito"]
+
+[source]
+# `burrito ls` prints one live session per line as: name<TAB>cwd<TAB>socket.
+command = "burrito ls"
+# Show the friendly name and its cwd; the actionable output is the socket path.
+display = "{split:\t:0}  ({split:\t:1})"
+output = "{split:\t:2}"
+
+[preview]
+# List the session's cwd when one was recorded, else just name the session.
+command = '''bash -c 'd="{split:\t:1}"; if [ -n "$d" ] && [ -d "$d" ]; then ls -la --color=always "$d"; else echo "session {split:\t:0}"; fi' '''
+
+[ui]
+layout = "landscape"
+[ui.preview_panel]
+size = 55
+header = "Session: {split:\t:0}"
+border_type = "rounded"
+
+[keybindings]
+shortcut = "f5"
+enter = "actions:attach"
+
+[actions.attach]
+description = "Attach to the selected session"
+command = "burrito attach '{split:\t:2}'"
+mode = "execute"
