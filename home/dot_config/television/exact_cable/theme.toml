@@ -18,9 +18,9 @@ requirements = ["tinty"]
 [source]
 command = "bash -c '( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u'"
 
-# `_` is $0; television fills '{}' with the focused entry, which arrives as $1.
+# television fills '{}' with the focused entry, which arrives as $2 (after _ in position 1).
 [preview]
-command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"$1\"' _ '{}'"
+command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"$2\"' _ '{}'"
 
 # When Enter is pressed, commit and push the theme change to git.
 [action]
