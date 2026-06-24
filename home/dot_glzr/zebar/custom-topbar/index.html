@@ -114,36 +114,50 @@
     if (!navigator.userAgent.includes('Windows')) {
       document.body.classList.add('reveal-on-hover');
 
-      // Click-through while faded. Our window sits at layer 25, one above the
-      // macOS menu bar (24), so it eats the menu bar's clicks. Zebar's Tauri
-      // backend registers plugin:window|set_ignore_cursor_events — invoke it so
-      // that, while we're faded at the top, the cursor passes THROUGH us to the
-      // revealed menu bar (and its tray apps). No-op if internals aren't exposed.
+      // Our window sits at layer 25, one above the macOS menu bar (24), so it eats
+      // the menu bar's clicks. The fix: while the cursor is over us, fade out AND
+      // tell our Tauri window to ignore the cursor, so clicks fall THROUGH to the
+      // revealed menu bar (and its tray apps); restore otherwise.
       const inv = window.__TAURI_INTERNALS__?.invoke;
-      const tauriWin =
-        window.__TAURI__?.window?.getCurrentWindow?.() ??
-        window.__TAURI__?.webviewWindow?.getCurrentWebviewWindow?.();
-      const setClickThrough = inv
-        ? on => { try { inv('plugin:window|set_ignore_cursor_events', { ignore: on }); } catch {} }
-        : tauriWin?.setIgnoreCursorEvents
-          ? on => { try { tauriWin.setIgnoreCursorEvents(on); } catch {} }
-          : () => {};
+      const setClickThrough = on =>
+        inv?.('plugin:window|set_ignore_cursor_events', { ignore: on })?.catch?.(() => {});
 
-      // Once the window ignores the cursor it stops getting mousemove, so it can't
-      // see the cursor leave — the idle timer below restores it (and turns
-      // click-through back off). This is the flaky part: the bar re-appears ~1.2s
-      // after the last movement, even if you're still hovering. macOS gives a
-      // Zebar widget no way to poll the global cursor, so this is as good as it gets.
-      const TOP_ZONE = 30;         // px from top that fades — covers the menu-bar strip
-      let idle, faded = false;
+      let faded = false;
       const fade = () => { if (!faded) { faded = true; document.body.classList.add('at-top'); setClickThrough(true); } };
       const show = () => { if (faded) { faded = false; document.body.classList.remove('at-top'); setClickThrough(false); } };
-      document.addEventListener('mousemove', e => {
-        clearTimeout(idle);
-        if (e.clientY <= TOP_ZONE) fade(); else show();
-        idle = setTimeout(show, 1200);   // safety: never stay hidden / click-through
-      });
-      document.addEventListener('mouseleave', show);
+
+      if (inv) {
+        // Poll the GLOBAL cursor from the backend. Crucially this still works while
+        // we're click-through — a webview gets NO mouse events then, so DOM hover
+        // can't see the cursor leave. Backend polling can, so no blink. Window rect
+        // is cached and refreshed occasionally (it rarely moves).
+        let rect = null, n = 0;
+        const refreshRect = async () => {
+          const [p, s] = await Promise.all([
+            inv('plugin:window|outer_position'),
+            inv('plugin:window|outer_size'),
+          ]);
+          rect = { x: p.x, y: p.y, w: s.width, h: s.height };
+        };
+        setInterval(async () => {
+          try {
+            if (!rect || n++ % 25 === 0) await refreshRect();
+            const c = await inv('plugin:window|cursor_position');
+            const over = c.x >= rect.x && c.x <= rect.x + rect.w &&
+                         c.y >= rect.y && c.y <= rect.y + rect.h;
+            over ? fade() : show();
+          } catch {}
+        }, 100);
+      } else {
+        // No backend access — fall back to DOM hover (flaky under click-through).
+        let idle;
+        document.addEventListener('mousemove', e => {
+          clearTimeout(idle);
+          e.clientY <= 30 ? fade() : show();
+          idle = setTimeout(show, 1200);
+        });
+        document.addEventListener('mouseleave', show);
+      }
     }
 
     const providers = zebar.createProviderGroup({
