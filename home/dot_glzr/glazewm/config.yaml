@@ -1,10 +1,15 @@
-# GlazeWM — shared win+mac config (i3-style). Lives at the default
-# ~/.glzr/glazewm/config.yaml on both OSes; identical keybinds everywhere.
-# Modifier is alt throughout so muscle-memory is the same on Windows and macOS.
+# GlazeWM — Windows tiling WM config (i3-style). Lives at the default
+# ~/.glzr/glazewm/config.yaml. Modifier is alt throughout.
+# Panes are always kept equal and native-maximized windows snap back into the
+# grid via the balance-daemon (started below); manual resize is intentionally
+# absent (superseded by always-equal).
 
 general:
-  # Launch the Zebar status bar with the WM. Non-fatal if Zebar is absent.
-  startup_commands: ['shell-exec zebar']
+  # Launch Zebar + the balance daemon with the WM. shell-exec runs through the
+  # Windows shell, so %USERPROFILE% expands to the user profile. Non-fatal if absent.
+  startup_commands:
+    - 'shell-exec zebar'
+    - 'shell-exec node %USERPROFILE%/.glzr/glazewm/balance-daemon.js'
   shutdown_commands: []
   config_reload_commands: []
   focus_follows_cursor: false
@@ -12,7 +17,6 @@ general:
   cursor_jump:
     enabled: true
     trigger: 'monitor_focus'
-  # 'cloak' is Windows-only; macOS always uses place_in_corner, so this is a no-op there.
   hide_method: 'cloak'
   show_all_in_taskbar: false
 
@@ -20,13 +24,13 @@ gaps:
   scale_with_dpi: true
   inner_gap: '12px'
   outer_gap:
-    top: '40px'
+    top: '12px'
     right: '12px'
     bottom: '12px'
     left: '12px'
 
 window_effects:
-  # Borders are Windows 11-only; ignored on macOS.
+  # Borders are Windows 11-only.
   focused_window:
     border:
       enabled: true
@@ -45,6 +49,12 @@ window_behavior:
     fullscreen:
       maximized: false
       shown_on_top: false
+
+# Window rules run when a window is first managed; matchers are process/class/title
+# only (there is no state matcher in the schema). New windows tile by default
+# (initial_state above). Native-maximize that happens after a window is managed is
+# retiled by balance-daemon.js over IPC, since no window rule can match on state.
+window_rules: []
 
 workspaces:
   - name: '1'
@@ -77,10 +87,6 @@ keybindings:
     bindings: ['alt+shift+k', 'alt+shift+up']
   - commands: ['move --direction down']
     bindings: ['alt+shift+j', 'alt+shift+down']
-
-  # Resize via a dedicated mode (alt+r, then hjkl/arrows, escape to exit).
-  - commands: ['wm-enable-binding-mode --name resize']
-    bindings: ['alt+r']
 
   # Tiling direction / layout.
   - commands: ['toggle-tiling-direction']
@@ -147,17 +153,3 @@ keybindings:
     bindings: ['alt+shift+8']
   - commands: ['move --workspace 9']
     bindings: ['alt+shift+9']
-
-binding_modes:
-  - name: 'resize'
-    keybindings:
-      - commands: ['resize --width -2%']
-        bindings: ['h', 'left']
-      - commands: ['resize --width +2%']
-        bindings: ['l', 'right']
-      - commands: ['resize --height +2%']
-        bindings: ['k', 'up']
-      - commands: ['resize --height -2%']
-        bindings: ['j', 'down']
-      - commands: ['wm-disable-binding-mode --name resize']
-        bindings: ['escape', 'enter', 'alt+r']

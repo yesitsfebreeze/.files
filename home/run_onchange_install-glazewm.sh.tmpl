@@ -1,57 +1,39 @@
 #!/usr/bin/env bash
-# chezmoi run_onchange — installs GlazeWM, the tiling window manager, on the two
-# platforms it supports. Separate from install-packages.sh (CLI tools) because
-# GlazeWM is a GUI app on per-OS channels, and the Windows install is driven from
-# WSL through interop (winget.exe), not a native package manager.
+# chezmoi run_onchange — installs GlazeWM, the tiling window manager. GlazeWM is
+# Windows-only; the Windows install is driven from WSL through interop
+# (winget.exe), not a native package manager.
 #
-#   macOS → brew cask from the glzr-io tap
-#   WSL   → winget.exe install on the Windows host (where GlazeWM actually runs)
-#   Linux → skipped (GlazeWM does not run on Linux)
+#   WSL     → winget.exe install on the Windows host (where GlazeWM actually runs)
+#   other   → skipped (GlazeWM does not run on macOS or plain Linux)
 #
 # Config is deployed separately to ~/.glzr/glazewm/config.yaml (and mirrored to the
-# Windows profile by run_after_mirror-config-to-windows.sh).
-# bump to force a re-run: v2
+# Windows profile by run_after_mirror-config-to-windows.sh). The balance-daemon
+# (ships with the config) runs on the Windows host via Node, so Node is installed
+# here too.
+# bump to force a re-run: v3
 set -uo pipefail
 
 log()  { printf '\033[1;34m::\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 
 {{ if eq .chezmoi.os "darwin" -}}
-# macOS — Homebrew cask from the glzr-io tap. Idempotent: skip if app present.
-[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
-[ -x /usr/local/bin/brew ] && eval "$(/usr/local/bin/brew shellenv)"
-
-if ! command -v brew >/dev/null 2>&1; then
-    warn "GlazeWM: Homebrew not found; install brew (https://brew.sh) and re-run: chezmoi apply"
-else
-    # GlazeWM (WM) + Zebar (status bar), both from the glzr-io tap. Guarded per app.
-    if [ -d "/Applications/GlazeWM.app" ] || brew list --cask glazewm >/dev/null 2>&1; then
-        log "GlazeWM already installed."
-    else
-        log "install GlazeWM (brew cask glzr-io/tap/glazewm)"
-        brew install --cask glzr-io/tap/glazewm >/dev/null 2>&1 \
-            && log "  installed GlazeWM — grant it Accessibility permission on first launch" \
-            || warn "  could not install GlazeWM via brew"
-    fi
-    if [ -d "/Applications/Zebar.app" ] || brew list --cask zebar >/dev/null 2>&1; then
-        log "Zebar already installed."
-    else
-        log "install Zebar (brew cask glzr-io/tap/zebar)"
-        brew install --cask glzr-io/tap/zebar >/dev/null 2>&1 \
-            && log "  installed Zebar" \
-            || warn "  could not install Zebar via brew"
-    fi
-fi
+log "GlazeWM: macOS not supported (Windows-only); skipping."
+exit 0
 {{- else -}}
 # WSL → drive the Windows host's winget. Plain Linux has no GlazeWM, so bail unless
 # we are inside WSL with winget.exe reachable over interop.
-grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null || { log "GlazeWM: not macOS/WSL, skipping."; exit 0; }
+grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null || { log "GlazeWM: not WSL, skipping."; exit 0; }
 
 winget="$(command -v winget.exe 2>/dev/null || true)"
 [ -z "$winget" ] && { warn "GlazeWM: winget.exe not on PATH from WSL; install manually: winget install glzr-io.glazewm"; exit 0; }
 
-# GlazeWM (WM) + Zebar (status bar) on the Windows host, each guarded.
-for pkg in glzr-io.glazewm glzr-io.zebar; do
+# GlazeWM (WM) + Zebar (status bar) + Node (balance daemon) on the Windows host,
+# each guarded. Node is detected separately since it ships its own node.exe.
+for pkg in glzr-io.glazewm glzr-io.zebar OpenJS.NodeJS; do
+    if [ "$pkg" = "OpenJS.NodeJS" ] && command -v node.exe >/dev/null 2>&1; then
+        log "Node already present on Windows (node.exe)."
+        continue
+    fi
     if "$winget" list --id "$pkg" -e >/dev/null 2>&1; then
         log "$pkg already installed on Windows."
     else
@@ -62,16 +44,4 @@ for pkg in glzr-io.glazewm glzr-io.zebar; do
             || warn "  winget install failed; run manually in Windows: winget install $pkg"
     fi
 done
-{{- end }}
-
-# Launch GlazeWM + Zebar on macOS so the user can grant Accessibility permissions.
-{{ if eq .chezmoi.os "darwin" -}}
-if [ -d "/Applications/GlazeWM.app" ]; then
-    log "launching GlazeWM (grant Accessibility permission when prompted)"
-    open /Applications/GlazeWM.app >/dev/null 2>&1 || true
-fi
-if [ -d "/Applications/Zebar.app" ]; then
-    log "launching Zebar"
-    open /Applications/Zebar.app >/dev/null 2>&1 || true
-fi
 {{- end }}

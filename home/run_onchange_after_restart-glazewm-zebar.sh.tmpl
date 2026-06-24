@@ -17,6 +17,7 @@
 #
 # Re-run trigger — hashes of the deployed configs (data, not executed):
 #   glazewm config  {{ include "dot_glzr/glazewm/config.yaml" | sha256sum }}
+#   balance daemon  {{ include "dot_glzr/glazewm/balance-daemon.js" | sha256sum }}
 #   zebar settings  {{ include "dot_glzr/zebar/settings.json" | sha256sum }}
 #   topbar html     {{ include "dot_glzr/zebar/custom-topbar/index.html" | sha256sum }}
 #   topbar css      {{ include "dot_glzr/zebar/custom-topbar/theme.css" | sha256sum }}
@@ -76,18 +77,38 @@ else
     warn "GlazeWM: glazewm.exe not on interop PATH; skipping reload."
 fi
 
+# Detached interop launch. A bare `cmd.exe /c start` can wedge the WSL interop
+# bridge and block the whole apply (holding the chezmoi state lock). Detach stdio,
+# background it, and cap it with `timeout` so a stuck launch can never block apply.
+win_launch() {
+    timeout 5 cmd.exe /c start "" "$@" </dev/null >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+}
+
 # Zebar: restart on the Windows host only if it's already running. taskkill reports
-# success when a zebar.exe was killed; relaunch detached via `cmd /c start`.
+# success when a zebar.exe was killed.
 if command -v taskkill.exe >/dev/null 2>&1; then
     if taskkill.exe /IM zebar.exe /F >/dev/null 2>&1; then
         log "Zebar: stopped on Windows; relaunching."
-        cmd.exe /c start "" zebar.exe >/dev/null 2>&1 \
-            && log "  Zebar relaunched on Windows." \
-            || warn "  could not relaunch Zebar; start it manually on Windows."
+        win_launch zebar.exe \
+            && log "  Zebar relaunch dispatched on Windows." \
+            || warn "  could not dispatch Zebar relaunch; start it manually on Windows."
     else
         log "Zebar: not running on Windows; nothing to restart."
     fi
 else
     warn "Zebar: taskkill.exe not reachable from WSL; skipping restart."
+fi
+
+# Balance daemon: wm-reload-config does not restart it, so cycle it here. Kill any
+# node running the daemon and relaunch detached (GlazeWM startup_commands also
+# launches it on a fresh WM start; this covers the reload-only path).
+if command -v taskkill.exe >/dev/null 2>&1 && command -v node.exe >/dev/null 2>&1; then
+    taskkill.exe /IM node.exe /F /FI "WINDOWTITLE eq balance-daemon*" >/dev/null 2>&1 || true
+    win_launch node.exe "%USERPROFILE%\\.glzr\\glazewm\\balance-daemon.js" \
+        && log "Balance daemon: relaunch dispatched on Windows." \
+        || warn "Balance daemon: could not dispatch relaunch; it restarts on next GlazeWM start."
+else
+    log "Balance daemon: node.exe/taskkill not reachable; it restarts on next GlazeWM start."
 fi
 {{- end }}
