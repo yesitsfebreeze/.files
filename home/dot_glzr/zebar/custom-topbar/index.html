@@ -31,10 +31,12 @@
 
     /* macOS only (toggled by the reveal-on-hover class in JS): the menu bar is
        auto-hidden and slides down when the cursor reaches the top edge — exactly
-       where this bar sits. Fade the bar out on hover so the two don't overlap; it
-       fades back when the cursor leaves. Not applied on Windows, where there's no
-       menu bar to reveal and the tray icons must stay clickable. */
-    body.reveal-on-hover:hover { opacity: 0; }
+       where this bar sits. Fade the bar out while the cursor is at the top so the
+       two don't overlap; it fades back when the cursor leaves. Driven by JS
+       pointer tracking (see below), NOT CSS :hover — a Zebar overlay window is
+       non-focused and doesn't reliably deliver :hover/mouseleave, which can leave
+       the bar stuck invisible. Not applied on Windows. */
+    body.reveal-on-hover.at-top { opacity: 0; }
 
     .left  { display: flex; align-items: center; gap: 12px; flex: none; }
     .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -76,10 +78,11 @@
     .taskbar { min-width: 0; overflow: hidden; }
     .taskbar:empty { display: none; }
     .task {
-      border: 0; background: transparent; color: inherit; font: inherit;
-      display: flex; align-items: center; gap: 6px;
-      max-width: 160px; padding: 0 2px;
-      opacity: 0.6; cursor: pointer; white-space: nowrap;
+      border: 0; background: transparent; color: inherit;
+      font-family: inherit; font-size: 19px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; padding: 0;
+      opacity: 0.6; cursor: pointer;
     }
     /* Active window: full-opacity accent text on a faint accent pill. */
     .task.active {
@@ -105,11 +108,11 @@
     <div class="bubble">
       <div class="workspaces" id="workspaces"></div>
     </div>
+    <div class="bubble taskbar" id="taskbar"></div>
     <div class="bubble tray" id="tray"></div>
   </div>
 
   <div class="right">
-    <div class="bubble taskbar" id="taskbar"></div>
     <div class="bubble stats" id="stats"></div>
     <div class="bubble clockbox">
       <span class="clock" id="clock"></span>
@@ -120,12 +123,26 @@
   <script type="module">
     import * as zebar from 'https://esm.sh/zebar@3.0';
 
-    // macOS auto-hides its menu bar and reveals it when the cursor hits the top
-    // edge, where this bar sits — fade the bar out on hover there so they don't
-    // clash. Windows has no such menu bar, so leave the bar (and its clickable
-    // tray icons) solid.
+    // macOS auto-hides its menu bar and reveals it when the cursor hits the very
+    // top edge, where this bar sits — fade the bar out there so the two don't
+    // clash. Driven by explicit pointer tracking, not CSS :hover: a Zebar overlay
+    // is a non-focused window that doesn't reliably deliver mouseleave, so :hover
+    // can get stuck on and pin the bar invisible. We fade ONLY while the cursor is
+    // in the top few px (the menu-bar reveal zone) — so buttons/clock stay solid
+    // and usable — and an idle timer always restores the bar, so it can never get
+    // stuck hidden. Windows has no such menu bar, so it's left solid there.
     if (!navigator.userAgent.includes('Windows')) {
       document.body.classList.add('reveal-on-hover');
+      const TOP_ZONE = 6;          // px from the top that triggers the fade
+      let idle;
+      const show = () => document.body.classList.remove('at-top');
+      document.addEventListener('mousemove', e => {
+        clearTimeout(idle);
+        if (e.clientY <= TOP_ZONE) document.body.classList.add('at-top');
+        else show();
+        idle = setTimeout(show, 1500);   // safety: never stay hidden
+      });
+      document.addEventListener('mouseleave', show);
     }
 
     const providers = zebar.createProviderGroup({
@@ -163,6 +180,31 @@
     const stat = (lbl, val) =>
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
     const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
+
+    // Per-app taskbar glyphs. macOS exposes no real app icons to Zebar (same
+    // limitation as the Windows-only systray), so map the window's process name
+    // to a Nerd Font glyph (DepartureMono Nerd Font ships these). All codepoints
+    // are in the classic FontAwesome range (U+F0xx–F2xx) present in every Nerd
+    // Font. Unknown apps fall back to a generic window glyph.
+    const APP_GLYPHS = [
+      [/wezterm|term|alacritty|kitty|tmux|ghostty/i, ''], // terminal
+      [/slack/i,                    ''],                  // slack
+      [/discord/i,                  ''],                  // discord
+      [/finder/i,                   ''],                  // folder
+      [/obsidian|roam|notion|note/i,''],                  // sticky note
+      [/code|cursor|vscode|zed|sublime|nvim|vim/i, ''],   // code
+      [/chrome|chromium/i,          ''],                  // chrome
+      [/firefox/i,                  ''],                  // firefox
+      [/safari/i,                   ''],                  // safari
+      [/arc|edge|brave|browser/i,   ''],                  // globe
+      [/spotify|music/i,            ''],                  // spotify
+      [/mail|outlook|spark/i,       ''],                  // envelope
+      [/figma|sketch/i,             ''],                  // pen-nib
+    ];
+    const glyphFor = name => {
+      for (const [re, g] of APP_GLYPHS) if (re.test(name)) return g;
+      return '';   // generic window
+    };
 
     // Walk a GlazeWM container tree, collecting every window leaf.
     const collectWindows = (node, out) => {
@@ -213,9 +255,9 @@
           ...windows.map(win => {
             const b = document.createElement('button');
             b.className = 'task' + (win.id === focusedId ? ' active' : '');
-            const label = win.processName || win.title || '?';
-            b.innerHTML = `<span class="name">${label}</span>`;
-            b.title = win.title ?? label;
+            const name = win.processName || win.title || '?';
+            b.textContent = glyphFor(name);          // Nerd Font app glyph
+            b.title = win.title || name;             // full title on hover
             b.onclick = () => glazewm.runCommand('focus', win.id).catch(() => {});
             return b;
           }),

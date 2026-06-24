@@ -55,7 +55,14 @@ window_behavior:
 # only (there is no state matcher in the schema). New windows tile by default
 # (initial_state above). Native-maximize that happens after a window is managed is
 # retiled by balance-daemon.js over IPC, since no window rule can match on state.
-window_rules: []
+window_rules:
+  # Zebar is our top status bar, not an app window — ignore it so GlazeWM never
+  # hands it a tiling slot. Without this the bar's overlay window is managed like
+  # any other and steals tiling space. Matches the Zebar process (covers the bar
+  # and any Zebar popups).
+  - commands: ['ignore']
+    match:
+      - window_process: { equals: 'Zebar' }
 
 workspaces:
   - name: '1'
