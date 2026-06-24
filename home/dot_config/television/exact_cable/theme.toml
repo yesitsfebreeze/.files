@@ -21,3 +21,7 @@ command = "bash -c '( tinty list; tinty list --custom-schemes ) 2>/dev/null | so
 # `_` is $0; television fills '{}' with the focused entry, which arrives as $1.
 [preview]
 command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"$1\"' _ '{}'"
+
+# When Enter is pressed, commit and push the theme change to git.
+[action]
+command = "bash -c 'cd \"$(chezmoi source-path)\" && git add --all && git diff --cached --quiet || git commit -m \"theme: {}\" && git push' _"

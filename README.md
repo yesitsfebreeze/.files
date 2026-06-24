@@ -54,6 +54,10 @@ chezmoi diff      # preview pending changes
 chezmoi cd        # enter source dir (exit returns)
 ```
 
+**Finding the repo:** Use `chezmoi source-path` to locate your local .files directory.
+It is usually cloned to `~/.local/share/chezmoi`, but you can verify with that command
+or navigate directly via `chezmoi cd`.
+
 ## Theme switcher
 
 Each tool ships the Gruvbox Dark Hard default — builtin themes (bat, Television,
