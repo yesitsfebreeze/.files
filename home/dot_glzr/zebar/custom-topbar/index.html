@@ -16,6 +16,10 @@
     body {
       display: flex;
       align-items: center;
+      min-height: 100%;                   /* WebView2 shrink-to-fits vertically too;
+                                             without this the body collapses to the
+                                             content height and align-items:center has
+                                             no slack, pinning the bar to the top edge. */
       justify-content: space-between;
       gap: 12px;                          /* = GlazeWM inner_gap */
       /* Full-width 32px dock (dockToEdge reserves the strip so windows tile
