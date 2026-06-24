@@ -1,5 +1,5 @@
 [metadata]
-name = "rcwd"
+name = "recent-dirs"
 description = "Jump to a recent working directory (recency-ordered)"
 requirements = ["nu"]
 

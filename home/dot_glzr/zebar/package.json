@@ -1,0 +1,10 @@
+{
+  "name": "custom-topbar",
+  "version": "1.0.0",
+  "widgets": [
+    {
+      "id": "topbar",
+      "path": "./widgets/topbar"
+    }
+  ]
+}
