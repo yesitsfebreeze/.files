@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./theme.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
     /* No scrollbar — a webview scrollbar would inset the right edge and make
        the left/right padding look unequal. */
     ::-webkit-scrollbar { display: none; }
@@ -17,6 +17,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      min-width: 100%;
       gap: 12px;                          /* = GlazeWM inner_gap */
       /* The window is a full-width 64px dock (dockToEdge reserves the strip so
          windows tile below it). 12px padding all round insets the visible bar to
@@ -43,7 +44,7 @@
     body.reveal-on-hover.at-top { opacity: 0; }
 
     .left  { display: flex; align-items: center; gap: 12px; flex: none; }
-    .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .right { display: flex; align-items: center; gap: 12px; min-width: 0; margin-left: auto; }
 
     /* A bubble: the tinty background at WezTerm's window opacity (0.821), so the bar
        shares the terminal's exact translucent background. Corner radius + padding
