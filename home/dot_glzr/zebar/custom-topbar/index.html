@@ -7,7 +7,11 @@
        so the bar matches the terminal. -->
   <link rel="stylesheet" href="./theme.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    /* No scrollbar — a webview scrollbar would inset the right edge and make
+       the left/right padding look unequal. */
+    ::-webkit-scrollbar { display: none; }
 
     body {
       display: grid;
