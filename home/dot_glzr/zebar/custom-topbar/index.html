@@ -113,15 +113,35 @@
     // stuck hidden. Windows has no such menu bar, so it's left solid there.
     if (!navigator.userAgent.includes('Windows')) {
       document.body.classList.add('reveal-on-hover');
-      const TOP_ZONE = 30;         // px from top that fades — covers the menu-bar
-                                   // strip so it stays faded while you use it
-      let idle;
-      const show = () => document.body.classList.remove('at-top');
+
+      // Click-through while faded. Our window sits at layer 25, one above the
+      // macOS menu bar (24), so it eats the menu bar's clicks. Zebar's Tauri
+      // backend registers plugin:window|set_ignore_cursor_events — invoke it so
+      // that, while we're faded at the top, the cursor passes THROUGH us to the
+      // revealed menu bar (and its tray apps). No-op if internals aren't exposed.
+      const inv = window.__TAURI_INTERNALS__?.invoke;
+      const tauriWin =
+        window.__TAURI__?.window?.getCurrentWindow?.() ??
+        window.__TAURI__?.webviewWindow?.getCurrentWebviewWindow?.();
+      const setClickThrough = inv
+        ? on => { try { inv('plugin:window|set_ignore_cursor_events', { ignore: on }); } catch {} }
+        : tauriWin?.setIgnoreCursorEvents
+          ? on => { try { tauriWin.setIgnoreCursorEvents(on); } catch {} }
+          : () => {};
+
+      // Once the window ignores the cursor it stops getting mousemove, so it can't
+      // see the cursor leave — the idle timer below restores it (and turns
+      // click-through back off). This is the flaky part: the bar re-appears ~1.2s
+      // after the last movement, even if you're still hovering. macOS gives a
+      // Zebar widget no way to poll the global cursor, so this is as good as it gets.
+      const TOP_ZONE = 30;         // px from top that fades — covers the menu-bar strip
+      let idle, faded = false;
+      const fade = () => { if (!faded) { faded = true; document.body.classList.add('at-top'); setClickThrough(true); } };
+      const show = () => { if (faded) { faded = false; document.body.classList.remove('at-top'); setClickThrough(false); } };
       document.addEventListener('mousemove', e => {
         clearTimeout(idle);
-        if (e.clientY <= TOP_ZONE) document.body.classList.add('at-top');
-        else show();
-        idle = setTimeout(show, 1500);   // safety: never stay hidden
+        if (e.clientY <= TOP_ZONE) fade(); else show();
+        idle = setTimeout(show, 1200);   // safety: never stay hidden / click-through
       });
       document.addEventListener('mouseleave', show);
     }
