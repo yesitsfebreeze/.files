@@ -287,13 +287,25 @@ config.show_new_tab_button_in_tab_bar = false
 if ok and type(tinty_colors) == "table" then
     local p = config.colors
     local br = p.brights or {}
+    -- Append an alpha byte to a #RRGGBB so the bar tints translucently (#RRGGBBAA).
+    local function with_alpha(hex, aa)
+        if type(hex) == "string" and hex:match("^#%x%x%x%x%x%x$") then
+            return hex .. aa
+        end
+        return hex
+    end
+    -- Transparent tab bar to match the translucent window: an explicit opaque hex
+    -- here paints the strip solid (it does NOT honor window_background_opacity), so
+    -- the strip and inactive/new tabs use "none" to read straight through to the
+    -- blurred desktop like the cells do. Only the active tab keeps a translucent
+    -- tint so it stays legible against the see-through bar.
     p.tab_bar = {
-        background = p.background,
-        active_tab = { bg_color = p.selection_bg or br[1], fg_color = br[8] or p.foreground },
-        inactive_tab = { bg_color = p.background, fg_color = br[1] or p.foreground },
-        inactive_tab_hover = { bg_color = br[4] or p.selection_bg, fg_color = p.foreground, italic = false },
-        new_tab = { bg_color = p.background, fg_color = br[1] or p.foreground },
-        new_tab_hover = { bg_color = br[4] or p.selection_bg, fg_color = p.foreground },
+        background = "none",
+        active_tab = { bg_color = with_alpha(p.selection_bg or br[1], "cc"), fg_color = br[8] or p.foreground },
+        inactive_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
+        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "80"), fg_color = p.foreground, italic = false },
+        new_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
+        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "80"), fg_color = p.foreground },
     }
 end
 
