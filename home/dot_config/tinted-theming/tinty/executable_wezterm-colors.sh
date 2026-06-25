@@ -47,6 +47,13 @@ br_blu="${base16:-$base0d}"; br_mag="${base17:-$base0e}"; br_cyn="${base15:-$bas
 # good colors.lua with a half-empty one.
 [[ -z "$base00" || -z "$base05" ]] && exit 0
 
+# Optional background-override from config.toml overrides the scheme's base00, so
+# every background-derived field (bg, cursor_fg, ansi black) tracks the fixed hex.
+bg_override=$(grep -iE '^[[:space:]]*background-override[[:space:]]*=[[:space:]]*"#[0-9A-Fa-f]{6}"' \
+    "$HOME/.config/tinted-theming/tinty/config.toml" 2>/dev/null \
+    | head -n1 | sed -E 's/.*"(#[0-9A-Fa-f]{6})".*/\1/' | tr 'A-F' 'a-f')
+[[ -n "$bg_override" ]] && base00="$bg_override"
+
 # GlazeWM's focused-window outline tracks the theme's green (base0B), the same way
 # colors.lua tracks the palette: rewrite the single border line tagged `tinty:base0B`
 # in a deployed glazewm config.yaml, leaving every other line (incl. other_windows'
