@@ -9,7 +9,7 @@ palette:
   base02: "#322d44" # selection — purple-tinted
   base03: "#7a7391" # comments — legible lavender-gray
   base04: "#9b94b3" # darker foreground / punctuation
-  base05: "#d8d4e6" # foreground — bright, faint lavender (high contrast)
+  base05: "#b9f6ca" # foreground — pastel bright mint green (high contrast)
   base06: "#ebe8f3" # light foreground
   base07: "#ffffff" # brightest white
   base08: "#ef5f6e" # red — errors / variables
