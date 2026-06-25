@@ -40,6 +40,11 @@ $env.config = {
     shell_integration: {
         osc133: false
         osc633: false
+        # Keep osc7 on: it reports the cwd to the host terminal, which WezTerm's
+        # update-right-status reads to show the current directory (replacing the
+        # static "default" workspace label). Default is already true; explicit here
+        # so the disables above aren't mistaken for turning ALL integration off.
+        osc7: true
     }
     # Auto-list on directory change. The PWD env_change hook fires on every cd,
     # zoxide jump, or picker (`finder`), so listing happens however you move. The

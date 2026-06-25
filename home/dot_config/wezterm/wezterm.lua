@@ -235,7 +235,10 @@ config.colors.background = overlay
 
 -- Use the terminal background color for the opacity: the cell bg above goes
 -- translucent at this alpha so the blurred desktop shows through it on every OS.
-config.window_background_opacity = 0.821
+-- The retro tab bar reuses this exact value (baked into its rgba bg below) so the
+-- bar reads as the same translucent surface as the cells, not a separate shade.
+local window_opacity = 0.821
+config.window_background_opacity = window_opacity
 -- Blur: macOS frosts the desktop behind the window directly. Windows and Linux
 -- have no reliable per-window blur from WezTerm — the Acrylic backdrop renders a
 -- flat gray fallback whenever the window is unfocused or transparency effects are
@@ -296,13 +299,13 @@ if ok and type(tinty_colors) == "table" then
         end
         return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
     end
-    -- Transparent tab bar to match the translucent window: an explicit opaque hex
-    -- here paints the strip solid (it does NOT honor window_background_opacity), so
-    -- the strip and inactive/new tabs use "none" to read straight through to the
-    -- blurred desktop like the cells do. Only the active tab keeps a translucent
-    -- tint so it stays legible against the see-through bar.
+    -- Tab bar matches the translucent window: an explicit opaque hex here paints the
+    -- strip solid (it does NOT honor window_background_opacity), so the strip bakes
+    -- the same theme bg + window_opacity into an rgba — identical surface to the
+    -- cells. inactive/new tabs use "none" to read straight through to that strip; only
+    -- the active tab keeps a brighter translucent tint so it stays legible.
     p.tab_bar = {
-        background = "none",
+        background = with_alpha(p.background, window_opacity),
         active_tab = { bg_color = with_alpha(p.selection_bg or br[1], "0.8"), fg_color = br[8] or p.foreground },
         inactive_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
         inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = p.foreground, italic = false },
@@ -311,10 +314,27 @@ if ok and type(tinty_colors) == "table" then
     }
 end
 
-wezterm.on("update-right-status", function(window, _pane)
+wezterm.on("update-right-status", function(window, pane)
+    -- Show the pane's current working directory instead of the workspace name
+    -- ("default", which never changes here — burrito owns multiplexing). Needs the
+    -- shell to emit OSC 7; get_current_working_directory() returns nil otherwise, so
+    -- fall back to the workspace name. $HOME is abbreviated to ~.
+    local label = window:active_workspace()
+    local cwd = pane:get_current_working_directory()
+    if cwd then
+        local path = type(cwd) == "userdata" and (cwd.file_path or cwd.path)
+            or tostring(cwd):gsub("^file://[^/]*", "")
+        if path and path ~= "" then
+            local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
+            if home ~= "" and path:sub(1, #home) == home then
+                path = "~" .. path:sub(#home + 1)
+            end
+            label = path
+        end
+    end
     window:set_right_status(wezterm.format({
         { Foreground = { AnsiColor = "Blue" } },
-        { Text = "  " .. window:active_workspace() .. "  " },
+        { Text = "  " .. label .. "  " },
     }))
 end)
 
