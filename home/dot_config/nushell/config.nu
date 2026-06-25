@@ -349,9 +349,16 @@ source ~/.cache/television/init.nu
 # we lower it again so the next real `cd` records normally. `cdi` (aliased to `zi`
 # before zoxide loads) forward-references zi, so it follows these overrides too —
 # verified: a pre-zoxide alias-to-alias resolves the latest target.
+# `z` also opens: if the args resolve to an existing file, edit it; otherwise it's a
+# directory query and we hand off to zoxide as before (which cd's, dir or jump).
 def --env --wrapped _z_transient [...rest: string] {
     $env._CD_TRANSIENT = true
-    __zoxide_z ...$rest
+    let target = ($rest | str join " " | path expand)
+    if (($rest | length) == 1 and ($target | path type) == "file") {
+        ^$env.EDITOR $target
+    } else {
+        __zoxide_z ...$rest
+    }
     $env._CD_TRANSIENT = false
 }
 def --env --wrapped _zi_transient [...rest: string] {
