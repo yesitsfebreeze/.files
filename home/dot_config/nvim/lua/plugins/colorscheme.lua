@@ -9,12 +9,11 @@ return {
     lazy = false,
     config = function()
         -- tinted-nvim only resolves builtin palettes or schemes passed here; it
-        -- does not read tinty's custom-scheme yamls. Load feb's tinty palettes so
-        -- base16-feb / base24-feb resolve when tinty picks them.
-        local function load_custom(system)
-            local path = vim.fn.expand(
-                "~/.local/share/tinted-theming/tinty/custom-schemes/" .. system .. "/feb.yaml"
-            )
+        -- does not read tinty's custom-scheme yamls. The `theme` picker offers
+        -- every yaml under custom-schemes/<system>/ (feb plus the gogh-derived
+        -- catalog), so register them all here as `<system>-<name>` — otherwise
+        -- picking any non-builtin scheme aborts setup with "scheme not defined".
+        local function load_palette(path)
             local f = io.open(path, "r")
             if not f then return nil end
             local palette = {}
@@ -29,8 +28,15 @@ return {
         end
 
         local schemes = {}
-        schemes["base16-feb"] = load_custom("base16")
-        schemes["base24-feb"] = load_custom("base24")
+        local custom_root = vim.fn.expand("~/.local/share/tinted-theming/tinty/custom-schemes")
+        for _, system in ipairs({ "base16", "base24" }) do
+            local dir = custom_root .. "/" .. system
+            for _, path in ipairs(vim.fn.glob(dir .. "/*.yaml", true, true)) do
+                local name = vim.fn.fnamemodify(path, ":t:r")
+                local palette = load_palette(path)
+                if palette then schemes[system .. "-" .. name] = palette end
+            end
+        end
 
         require("tinted-nvim").setup({
             default_scheme = "base16-gruvbox-dark-hard",
