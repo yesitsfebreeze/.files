@@ -299,18 +299,22 @@ if ok and type(tinty_colors) == "table" then
         end
         return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
     end
-    -- Tab bar matches the translucent window: an explicit opaque hex here paints the
-    -- strip solid (it does NOT honor window_background_opacity), so the strip bakes
-    -- the same theme bg + window_opacity into an rgba — identical surface to the
-    -- cells. inactive/new tabs use "none" to read straight through to that strip; only
-    -- the active tab keeps a brighter translucent tint so it stays legible.
+    -- The theme green (base0B = ansi slot 3), same accent as the GlazeWM outline.
+    local green = (p.ansi and p.ansi[3]) or br[3] or p.selection_bg
+    -- The translucent window surface: an explicit opaque hex paints the bar solid (it
+    -- does NOT honor window_background_opacity), so bake the theme bg + window_opacity
+    -- into an rgba — identical surface to the cells.
+    local surface = with_alpha(p.background, window_opacity)
+    -- Active tab is FILLED with the green accent, with the bg color as text so it
+    -- stays readable on the accent. Inactive/new tabs sit on the same translucent
+    -- surface as the strip with green text, so the active tab reads as inverted.
     p.tab_bar = {
-        background = with_alpha(p.background, window_opacity),
-        active_tab = { bg_color = with_alpha(p.selection_bg or br[1], "0.8"), fg_color = br[8] or p.foreground },
-        inactive_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
-        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = p.foreground, italic = false },
-        new_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
-        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = p.foreground },
+        background = surface,
+        active_tab = { bg_color = green, fg_color = p.background },
+        inactive_tab = { bg_color = surface, fg_color = green },
+        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = green, italic = false },
+        new_tab = { bg_color = surface, fg_color = green },
+        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = green },
     }
 end
 
