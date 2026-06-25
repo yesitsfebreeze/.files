@@ -12,6 +12,20 @@ push:
   @sleep 5
   @chezmoi update --force
 
+# Pull remote first, then commit every local change, then merge the two together.
+# Unlike `push` (which rebases local work onto the remote), this fetches and merges
+# the remote into the local branch, so divergent histories are reconciled with a
+# merge commit instead of being replayed. Use when both sides have moved and you want
+# to preserve both lines of history rather than linearize them.
+merge:
+  @chezmoi init --source "{{cwd}}" --force
+  @chezmoi apply --force
+  @git fetch
+  @git add --all
+  @git diff --cached --quiet || git commit -m "intermediate"
+  @git merge --no-edit FETCH_HEAD
+  @git push
+
 # Headless unit tests for the nushell config (pure functions only; tty parts excluded).
 test:
   @nu tests/nushell/run.nu

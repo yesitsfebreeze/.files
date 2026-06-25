@@ -90,12 +90,30 @@
       document.body.classList.add('reveal-on-hover');
 
       const inv = window.__TAURI_INTERNALS__?.invoke;
-      const setClickThrough = on =>
-        inv?.('plugin:window|set_ignore_cursor_events', { ignore: on })?.catch?.(() => {});
+      const winCall = (cmd, args) =>
+        inv?.(`plugin:window|${cmd}`, args)?.catch?.(() => {});
+      // Click-through is best-effort: zebar may not grant the ignore-cursor-events
+      // capability, so that call can be a silent no-op. As the reliable fallback we
+      // also HIDE the whole window while the cursor is in the bar — that always lets
+      // clicks reach the native (auto-hidden) menu bar beneath, whatever the grants.
+      const setClickThrough = on => winCall('set_ignore_cursor_events', { ignore: on });
+      const setHidden = on => winCall(on ? 'hide' : 'show');
 
       let faded = false;
-      const fade = () => { if (!faded) { faded = true; document.body.classList.add('at-top'); setClickThrough(true); } };
-      const show = () => { if (faded) { faded = false; document.body.classList.remove('at-top'); setClickThrough(false); } };
+      const fade = () => {
+        if (faded) return;
+        faded = true;
+        document.body.classList.add('at-top');
+        setClickThrough(true);
+        setHidden(true);
+      };
+      const show = () => {
+        if (!faded) return;
+        faded = false;
+        document.body.classList.remove('at-top');
+        setHidden(false);
+        setClickThrough(false);
+      };
 
       if (inv) {
         const barPx = () =>
@@ -110,13 +128,19 @@
         };
         setInterval(async () => {
           try {
-            if (!rect || n++ % 25 === 0) await refreshRect();
+            // Only re-measure while shown: a hidden window can report a stale/bogus
+            // rect, so we reuse the docked geometry captured before hiding.
+            if (!faded && (!rect || n++ % 25 === 0)) await refreshRect();
+            if (!rect) return;
             const c = await inv('plugin:window|cursor_position');
             const band = Math.min(rect.h, barPx());
             const over = c.x >= rect.x && c.x <= rect.x + rect.w &&
                          c.y >= rect.y && c.y <= rect.y + band;
             over ? fade() : show();
-          } catch {}
+          } catch {
+            // Never get stuck hidden: if a poll throws while faded, fail safe to shown.
+            if (faded) show();
+          }
         }, 100);
       } else {
         let idle;
