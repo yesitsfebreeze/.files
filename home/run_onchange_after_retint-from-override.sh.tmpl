@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# chezmoi run_onchange_after — when the tinty config changes, regenerate the theme
+# artifacts so a `background-override` edit propagates on `chezmoi apply` alone, with
+# no `theme` switch or new shell needed. Without this the generators only run on
+# `tinty init` (shell start) or `tinty apply` (scheme switch), so an override edit sat
+# stale until the next of those — the locked background lagged behind the config.
+#
+# The two generators resolve the LAST picked scheme (current_scheme), re-apply
+# background-override over base00, rewrite colors.lua / theme.css, and self-propagate:
+# zebar-colors.sh restarts Zebar (no reload IPC), wezterm-colors.sh reloads GlazeWM and
+# mirrors colors.lua where the running terminal hot-reloads it. Both already guard an
+# unchanged scheme with a content-diff early-exit, so a no-op apply stays a no-op.
+#
+# run_onchange: the embedded config hash below IS the re-run trigger — chezmoi only
+# re-runs this when config.toml changes; an unrelated apply never touches the theme.
+#
+# Re-run trigger — hash of the deployed tinty config (data, not executed):
+#   tinty config  {{ include "dot_config/tinted-theming/tinty/config.toml" | sha256sum }}
+set -uo pipefail
+
+GEN="$HOME/.config/tinted-theming/tinty"
+[ -x "$GEN/wezterm-colors.sh" ] && "$GEN/wezterm-colors.sh" || true
+[ -x "$GEN/zebar-colors.sh" ]   && "$GEN/zebar-colors.sh"   || true
