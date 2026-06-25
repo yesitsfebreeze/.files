@@ -1,22 +1,27 @@
 # television cable channel: `tv theme` — the live theme switcher's picker.
-# source : every scheme tinty knows — the official base16/base24 catalog
-#          (`tinty list`) plus our custom-schemes (`tinty list --custom-schemes`:
-#          base24-feb and the converted base24-gogh-* themes). Each entry is a
-#          "<system>-<slug>" id that `tinty apply` can build + apply on demand.
+# source : the cache (liked set + recency stack) at the TOP, then every scheme
+#          tinty knows — the official base16/base24 catalog plus our
+#          custom-schemes (base24-feb, base16-feb-neon, the converted base24-gogh-*
+#          themes). _theme_list (theme.nu) builds the ordered, deduped list;
+#          television preserves source order so the cache sits at the head. Each
+#          entry is a "<system>-<slug>" id that `tinty apply` can build + apply.
 # preview: theme-preview.sh applies the scheme live (OSC -> /dev/tty) per focus.
-# Driven by the `theme` Nushell command: Enter persists, Esc reverts to launch state.
+# Driven by the `theme` Nushell command: Enter persists + pushes to the recency
+# cache; Esc reverts to launch state. Like/unlike via `theme like` / `theme unlike`.
 
 [metadata]
 name = "theme"
-description = "Live theme switcher — official base16/base24 schemes via tinty, apply-on-focus preview"
+description = "Live theme switcher — liked + recent cache on top, then the tinty base16/base24 catalog, apply-on-focus preview"
 requirements = ["tinty"]
 
-# NB: television runs these commands through $SHELL = Nushell, which can't parse
-# POSIX-isms (2>/dev/null, subshells, ${VAR:-x}, "$HOME" expansion). So both
-# commands delegate to `bash -c '...'`: nu runs bash as a plain external and the
-# single-quoted body is handed to bash verbatim. Keep the bodies single-quoted.
+# Source delegates to Nushell (where the cache lives): _theme_list emits liked +
+# recent + catalog, deduped, cache first. Mirrors recent-dirs.toml's `nu -n -c`.
+# NB: the preview/action below run through $SHELL = Nushell, which can't parse
+# POSIX-isms (2>/dev/null, subshells, ${VAR:-x}, "$HOME" expansion), so they
+# delegate to `bash -c '...'`: nu runs bash as a plain external and the
+# single-quoted body is handed to bash verbatim. Keep those bodies single-quoted.
 [source]
-command = "bash -c '( tinty list; tinty list --custom-schemes ) 2>/dev/null | sort -u'"
+command = "nu -n -c 'source ~/.config/nushell/theme.nu; _theme_list | str join (char nl)'"
 
 # television substitutes '{}' with the focused entry directly into the command
 # string (same as [action] below). Scheme ids are [a-z0-9-] only, so this is safe

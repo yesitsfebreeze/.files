@@ -369,6 +369,17 @@ def --env --wrapped _zi_transient [...rest: string] {
 alias z = _z_transient
 alias zi = _zi_transient
 
+# zc — like `z`, but directories only, then drop into a Claude (`cc`) session in
+# the jumped-to dir. Reuses zoxide's transient jump (so it lands in the Alt-O
+# recency stack but doesn't hijack the new-shell start dir), then launches `cc`
+# right there. No file-edit branch — unlike `z`, `zc` is dirs only by design.
+def --env --wrapped zc [...rest: string] {
+    $env._CD_TRANSIENT = true
+    __zoxide_z ...$rest
+    $env._CD_TRANSIENT = false
+    cc
+}
+
 # History keymap, appended after the television init so it overrides tv's own
 # Ctrl-R binding (reedline keys the map by (modifier,keycode); a later entry wins).
 #   Ctrl-R        local picker        Alt-R         global picker

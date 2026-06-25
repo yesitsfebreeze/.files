@@ -1,0 +1,22 @@
+system: "base16"
+name: "feb-neon"
+author: "feb — high-contrast neon: phosphor green (feb) + electric blue/purple/cyan (blue-moon) on near-black"
+description: "Custom high-contrast scheme. A mix of the recently-liked feb (Matrix green) and gogh-blue-moon (blue/purple pastels), pushed hard for contrast: vivid neon accents on a near-black, faintly blue base. Tracked source lives here in the config dir; run_after copies it into the (gitignored) tinty data-dir custom-schemes/ so tinty and the colors generators resolve base16-feb-neon."
+variant: "dark"
+palette:
+  base00: "#04060a" # background — near-black, faint blue tint
+  base01: "#0b0f17" # lighter background
+  base02: "#1c2740" # selection — blue-tinted
+  base03: "#6d7f9c" # comments / dim — readable cool grey
+  base04: "#aebfda" # darker foreground
+  base05: "#e6f0ff" # foreground — cool white, high contrast
+  base06: "#f2f8ff" # light foreground
+  base07: "#ffffff" # brightest
+  base08: "#ff5d72" # red
+  base09: "#ff9e5e" # orange
+  base0A: "#ffe45e" # yellow
+  base0B: "#2bff88" # green — neon (feb Matrix nod, cool-shifted to pop)
+  base0C: "#4df0ff" # cyan — electric
+  base0D: "#5aa6ff" # blue — blue-moon nod, brightened
+  base0E: "#c084ff" # purple — blue-moon nod, brightened
+  base0F: "#ff7eb6" # pink / brown slot

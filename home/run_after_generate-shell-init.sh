@@ -36,16 +36,20 @@ fi
 tinty_cfg="$HOME/.config/tinted-theming/tinty"
 tinty_data="$HOME/.local/share/tinted-theming/tinty"
 
-# Ship our custom feb scheme(s) into the data-dir. The tracked sources live in
-# the config dir as feb.<system>.yaml (the data-dir custom-schemes/ is gitignored
-# runtime state); copy each into custom-schemes/<system>/feb.yaml, where tinty
-# and the colors generator look for it. Covers base16-feb and base24-feb.
-for src in "$tinty_cfg"/feb.*.yaml; do
+# Ship our custom scheme(s) into the data-dir. The tracked sources live in the
+# config dir as <slug>.<system>.yaml (the data-dir custom-schemes/ is gitignored
+# runtime state); copy each into custom-schemes/<system>/<slug>.yaml, where tinty
+# and the colors generators look for it. The slug comes from the filename, so the
+# id is base<system>-<slug> — e.g. feb.base24.yaml -> base24-feb, and
+# feb-neon.base16.yaml -> base16-feb-neon. Add a new pair to add a new scheme.
+for src in "$tinty_cfg"/*.base16.yaml "$tinty_cfg"/*.base24.yaml; do
     [ -f "$src" ] || continue
     sys="$(sed -n 's/^[[:space:]]*system:[[:space:]]*"\(.*\)".*/\1/p' "$src" | head -n1)"
     [ -n "$sys" ] || continue
+    base="$(basename "$src")"   # e.g. feb-neon.base24.yaml
+    slug="${base%.$sys.yaml}"   # e.g. feb-neon
     mkdir -p "$tinty_data/custom-schemes/$sys"
-    cp -f "$src" "$tinty_data/custom-schemes/$sys/feb.yaml"
+    cp -f "$src" "$tinty_data/custom-schemes/$sys/$slug.yaml"
 done
 
 # Convert Gogh's terminal themes into base24 custom-schemes so they show up in the

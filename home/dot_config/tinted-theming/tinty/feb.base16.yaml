@@ -1,22 +1,22 @@
 system: "base16"
 name: "feb"
-author: "feb — Matrix (digital rain): phosphor green on near-black"
-description: "Custom default scheme for this dotfiles repo. Tracked source lives here in the config dir; run_after copies it into the (gitignored) tinty data-dir custom-schemes/ so tinty and wezterm-colors.sh can resolve base16-feb."
+author: "feb — duotone: purple + red on a lavender-gray mono ramp, high contrast"
+description: "Custom default scheme for this dotfiles repo: a mostly-monotone, contrast-driven theme. A high-contrast, slightly lavender-tinted grayscale ramp carries the whole hierarchy by brightness; exactly two accent hues sit on top — purple (primary: functions/keywords, base0D/0E) and red (errors/variables, base08). Tracked source lives here in the config dir; run_after copies it into the (gitignored) tinty data-dir custom-schemes/ so tinty and wezterm-colors.sh can resolve base16-feb."
 variant: "dark"
 palette:
-  base00: "#0a0e0a" # background — near-black, faint green tint
-  base01: "#10180f" # lighter background
-  base02: "#1b3a1b" # selection — dark green
-  base03: "#357a35" # comments / dim green
-  base04: "#4fb84f" # darker foreground
-  base05: "#3bff6a" # foreground — phosphor green
-  base06: "#9bffb0" # light foreground
-  base07: "#e6ffe6" # brightest — pale green-white
-  base08: "#ff6b6b" # red — kept distinct for errors
-  base09: "#ffb454" # orange
-  base0A: "#c8ff5f" # yellow — green-tinted
-  base0B: "#00ff41" # green — iconic Matrix green
-  base0C: "#2bffd0" # cyan — green-cyan
-  base0D: "#23d18b" # blue slot — emerald
-  base0E: "#7dffb0" # purple slot — mint
-  base0F: "#1f7a1f" # brown slot — dark green
+  base00: "#1a1823" # background — dark, faint purple tint
+  base01: "#232030" # lighter background
+  base02: "#322d44" # selection — purple-tinted
+  base03: "#7a7391" # comments — legible lavender-gray
+  base04: "#9b94b3" # darker foreground / punctuation
+  base05: "#d8d4e6" # foreground — bright, faint lavender (high contrast)
+  base06: "#ebe8f3" # light foreground
+  base07: "#ffffff" # brightest white
+  base08: "#ef5f6e" # red — errors / variables
+  base09: "#a39db5" # was orange — gray (numbers/constants)
+  base0A: "#c8c3d6" # was yellow — light gray (classes/attributes)
+  base0B: "#b3aec6" # was green — gray (strings)
+  base0C: "#c8c3d6" # was cyan — light gray (support)
+  base0D: "#a78bfa" # purple — primary accent (functions)
+  base0E: "#c4adff" # purple — primary accent (keywords), brighter
+  base0F: "#6b6580" # was brown — dim gray
