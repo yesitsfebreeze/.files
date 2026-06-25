@@ -9,6 +9,12 @@
 //           parent. GlazeWM exposes no absolute size setter, only relative
 //           `resize --width/--height <delta>%`, so we read each sibling's
 //           `tilingSize` and issue the minimal relative delta. Nested splits recurse.
+//   Pass C  float-small: when a window is first managed, if its NATIVE size is under
+//           a fraction of its monitor's area, float + center it instead of letting it
+//           join the grid. This is what keeps transient dialogs (file-upload pickers,
+//           save prompts) from reshuffling the whole tiling layout. GlazeWM window
+//           rules can only match process/class/title — there is no size matcher — so
+//           this size-based decision has to live here, at the IPC layer.
 //
 // GlazeWM already equal-splits on add/remove, so Pass B is usually a no-op; it only
 // corrects drift left by manual resize or odd layouts. Convergence is bounded by an
@@ -23,6 +29,10 @@ const EPSILON = 0.01;
 // Ignore events for this long after we issue commands, so our own resize/set-tiling
 // edits don't retrigger another balance pass.
 const SELF_QUIET_MS = 250;
+// Pass C — a freshly managed window whose native area is below this fraction of its
+// monitor's area is floated + centered rather than tiled. "A quarter of the screen"
+// by area; tune freely. Area (not per-side) so the single knob matches the intent.
+const FLOAT_MAX_AREA_RATIO = 0.25;
 
 const EVENTS = [
   'window_managed',
@@ -49,6 +59,11 @@ let reconnectMs = RECONNECT_MS;
 let debounceTimer = null;
 let suppressUntil = 0;
 let balancing = false;
+
+// Window ids we've already run the Pass-C float-small decision on, so each window is
+// judged exactly once at managed-time (not re-floated on every later event). Pruned
+// when the window is unmanaged.
+const floatJudged = new Set();
 
 // Pending command replies keyed by the exact message text we sent (GlazeWM echoes
 // `clientMessage` on `client_response`).
@@ -123,8 +138,74 @@ function onMessage(raw) {
   }
 
   if (msg.messageType === 'event_subscription') {
+    const evt = msg.data;
+    if (evt && evt.eventType === 'window_managed') {
+      // Pass C runs off the managed event (not the debounced balance) because it
+      // needs the window's NATIVE rect, which is only meaningful before/at the moment
+      // it's slotted into the grid. Fire-and-forget; it self-suppresses on action.
+      maybeFloatSmall(evt.managedWindow).catch((err) =>
+        log('float-small error:', err.message),
+      );
+    } else if (evt && evt.eventType === 'window_unmanaged' && evt.unmanagedId) {
+      floatJudged.delete(evt.unmanagedId);
+    }
     if (Date.now() < suppressUntil) return;
     schedule();
+  }
+}
+
+// Pass C — float + center a freshly managed window when its native size is below
+// FLOAT_MAX_AREA_RATIO of the monitor it opened on. `floatingPlacement` is GlazeWM's
+// preserved native rect (it survives tiling, which is the whole point of the field),
+// so it reflects the window's intended size even though the window may already be
+// tiled to its grid slot by the time this fires. The comparison is an area RATIO, so
+// it's DPI-independent as long as both rects share a coordinate space — they do, both
+// being Win32 physical screen coords.
+async function maybeFloatSmall(win) {
+  if (!win || win.type !== 'window' || !win.id) return;
+  if (floatJudged.has(win.id)) return;
+  floatJudged.add(win.id);
+
+  // Only reconsider windows that actually landed in tiling; anything the user/app
+  // already put in floating/fullscreen/minimized is left alone.
+  const st = win.state && win.state.type;
+  if (st && st !== 'tiling') return;
+
+  const fp = win.floatingPlacement;
+  if (!fp) return;
+  const w = fp.right - fp.left;
+  const h = fp.bottom - fp.top;
+  if (!(w > 0) || !(h > 0)) return;
+
+  // Resolve the monitor this window opened on by testing its center against each
+  // monitor's rect; fall back to the first monitor if nothing contains it.
+  let monitors;
+  try {
+    monitors = (await send('query monitors')).monitors || [];
+  } catch (err) {
+    log('query monitors failed:', err.message);
+    return;
+  }
+  const cx = fp.left + w / 2;
+  const cy = fp.top + h / 2;
+  const mon =
+    monitors.find(
+      (m) => cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height,
+    ) || monitors[0];
+  if (!mon || !(mon.width > 0) || !(mon.height > 0)) return;
+
+  const ratio = (w * h) / (mon.width * mon.height);
+  if (ratio >= FLOAT_MAX_AREA_RATIO) return;
+
+  try {
+    await command('set-floating --centered=true', win.id);
+    suppressUntil = Date.now() + SELF_QUIET_MS;
+    log(
+      `floated small window "${win.title || win.processName || win.id}"`,
+      `(area ${(ratio * 100).toFixed(0)}% < ${(FLOAT_MAX_AREA_RATIO * 100).toFixed(0)}%)`,
+    );
+  } catch (err) {
+    log('set-floating failed:', err.message);
   }
 }
 

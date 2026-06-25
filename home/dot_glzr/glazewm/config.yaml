@@ -58,9 +58,12 @@ window_behavior:
       shown_on_top: false
 
 # Window rules run when a window is first managed; matchers are process/class/title
-# only (there is no state matcher in the schema). New windows tile by default
-# (initial_state above). Native-maximize that happens after a window is managed is
-# retiled by balance-daemon.js over IPC, since no window rule can match on state.
+# only (there is no state matcher OR size matcher in the schema). New windows tile by
+# default (initial_state above). Native-maximize that happens after a window is managed
+# is retiled by balance-daemon.js over IPC, since no window rule can match on state.
+# Small transient windows (file-upload pickers, save prompts) are float+centered by the
+# same daemon (Pass C: native area < 1/4 of the monitor) so they don't reshuffle the
+# grid — again because size can't be matched by a rule here.
 window_rules:
   # Zebar is our top status bar, not an app window — ignore it so GlazeWM never
   # hands it a tiling slot. Without this the bar's overlay window is managed like

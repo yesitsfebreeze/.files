@@ -150,6 +150,7 @@ alias cdi = zi
 
 # Convenience aliases.
 alias cc = claude --dangerously-skip-permissions  # skip the per-tool prompts
+alias cr = claude --dangerously-skip-permissions --resume  # cc, but resume a session
 alias bb = burrito                                # spawn-or-attach default session
 alias ba = burrito --attach                       # attach to an existing session
 # Vim/editor muscle memory for quitting the shell.
