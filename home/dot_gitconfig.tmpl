@@ -31,10 +31,12 @@
     navigate = true
     line-numbers = true
     side-by-side = false
-    # "gruvbox-dark" is a builtin bat/delta syntax theme (no fetch). Diff frame
-    # accents use standard ANSI color names, so delta follows the terminal's live
-    # (tinty / tinted-shell) palette; diff backgrounds use delta's own defaults.
-    syntax-theme = gruvbox-dark
+    # "ansi" is a builtin bat/delta syntax theme (no fetch) that maps tokens onto
+    # the terminal's 16 ANSI slots, so delta's code syntax highlighting follows
+    # the live (tinty / tinted-shell) palette instead of a pinned gruvbox one.
+    # Frame accents already use ANSI color names; diff backgrounds use delta's
+    # own defaults.
+    syntax-theme = ansi
     line-numbers-minus-style = red
     line-numbers-plus-style  = green
     file-style               = bold

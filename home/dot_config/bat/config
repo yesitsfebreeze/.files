@@ -1,6 +1,8 @@
-# bat config. "gruvbox-dark" is a built-in bat theme (no fetch, no templating).
-# tinty-aware surfaces re-theme live via the `theme` switcher; bat ships this
-# theme itself, so it is pinned to the gruvbox default here.
---theme="gruvbox-dark"
+# bat config. "ansi" is bat's built-in 16-color theme: it maps syntax tokens
+# onto the terminal's ANSI slots, which tinted-shell retints live on every
+# `theme` switch. So `cat`/`bat` (and anything reading this config) follows the
+# active tinty scheme instead of a pinned palette. Matches the television
+# previews, which already force BAT_THEME=ansi.
+--theme="ansi"
 --style="numbers,changes,header"
 --paging=auto
