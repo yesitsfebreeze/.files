@@ -287,12 +287,14 @@ config.show_new_tab_button_in_tab_bar = false
 if ok and type(tinty_colors) == "table" then
     local p = config.colors
     local br = p.brights or {}
-    -- Append an alpha byte to a #RRGGBB so the bar tints translucently (#RRGGBBAA).
-    local function with_alpha(hex, aa)
-        if type(hex) == "string" and hex:match("^#%x%x%x%x%x%x$") then
-            return hex .. aa
+    -- Tint a #RRGGBB translucently as an rgba() string (a in 0..1). WezTerm rejects
+    -- #RRGGBBAA hex for tab-bar colors, but accepts rgba(r, g, b, a).
+    local function with_alpha(hex, a)
+        local r, g, b = (hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+        if not r then
+            return hex
         end
-        return hex
+        return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
     end
     -- Transparent tab bar to match the translucent window: an explicit opaque hex
     -- here paints the strip solid (it does NOT honor window_background_opacity), so
@@ -301,11 +303,11 @@ if ok and type(tinty_colors) == "table" then
     -- tint so it stays legible against the see-through bar.
     p.tab_bar = {
         background = "none",
-        active_tab = { bg_color = with_alpha(p.selection_bg or br[1], "cc"), fg_color = br[8] or p.foreground },
+        active_tab = { bg_color = with_alpha(p.selection_bg or br[1], "0.8"), fg_color = br[8] or p.foreground },
         inactive_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
-        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "80"), fg_color = p.foreground, italic = false },
+        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = p.foreground, italic = false },
         new_tab = { bg_color = "none", fg_color = br[1] or p.foreground },
-        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "80"), fg_color = p.foreground },
+        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = p.foreground },
     }
 end
 
