@@ -458,6 +458,10 @@ if (is-terminal --stdout) {
     } else if (which tinty | is-not-empty) {
         try { ^tinty init e> /dev/null }
     }
+    # tinted-shell's OSC 11 above sets bg to the scheme's base00; re-emit our
+    # background-override (if any) so it wins. stdout stays attached — that IS the retint.
+    let bg_override = ($nu.home-dir | path join ".config" "tinted-theming" "tinty" "bg-override.sh")
+    if ($bg_override | path exists) { try { ^bash $bg_override e> /dev/null } }
 }
 
 # `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.

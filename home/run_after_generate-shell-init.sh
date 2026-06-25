@@ -55,17 +55,20 @@ if [ -x "$tinty_cfg/gogh-to-base24.sh" ]; then
     bash "$tinty_cfg/gogh-to-base24.sh" || true
 fi
 
-# WezTerm colors.lua is generated HERE, at apply time — not on shell/WezTerm
-# launch. config.nu only re-emits the live OSC retint; a terminal start should
-# never be what writes colors.lua. Resolve the active scheme (a prior `theme`
-# pick, else config's default-scheme) and regenerate colors.lua from its base16
-# YAML — catalog or our chezmoi-shipped custom-schemes (base16-feb). Non-fatal.
-if [ -x "$tinty_cfg/wezterm-colors.sh" ]; then
-    scheme="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
-    if [ -z "$scheme" ]; then
-        scheme="$(sed -n 's/^[[:space:]]*default-scheme[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$tinty_cfg/config.toml" 2>/dev/null)"
-    fi
-    [ -n "$scheme" ] && bash "$tinty_cfg/wezterm-colors.sh" "$scheme" || true
+# WezTerm colors.lua and Zebar theme.css are generated HERE, at apply time — not
+# on shell/WezTerm launch. config.nu only re-emits the live OSC retint; a terminal
+# start should never be what writes them. Resolve the active scheme (a prior
+# `theme` pick, else config's default-scheme) once and regenerate both from its
+# base16/24 YAML — catalog or our chezmoi-shipped custom-schemes (base16-feb).
+# Both must run so a config change (e.g. background-override) lands in WezTerm and
+# Zebar together; the live `theme` switch chains the same two scripts. Non-fatal.
+scheme="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
+if [ -z "$scheme" ]; then
+    scheme="$(sed -n 's/^[[:space:]]*default-scheme[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$tinty_cfg/config.toml" 2>/dev/null)"
+fi
+if [ -n "$scheme" ]; then
+    [ -x "$tinty_cfg/wezterm-colors.sh" ] && bash "$tinty_cfg/wezterm-colors.sh" "$scheme" || true
+    [ -x "$tinty_cfg/zebar-colors.sh" ]   && bash "$tinty_cfg/zebar-colors.sh" "$scheme" || true
 fi
 
 # pass (password-store) — installing the binary does not create a store; that
