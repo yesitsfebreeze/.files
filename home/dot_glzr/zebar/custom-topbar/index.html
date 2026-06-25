@@ -88,10 +88,6 @@
     if (!navigator.userAgent.includes('Windows')) {
       document.body.classList.add('reveal-on-hover');
 
-      // Our window sits at layer 25, one above the macOS menu bar (24), so it eats
-      // the menu bar's clicks. The fix: while the cursor is over us, fade out AND
-      // tell our Tauri window to ignore the cursor, so clicks fall THROUGH to the
-      // revealed menu bar (and its tray apps); restore otherwise.
       const inv = window.__TAURI_INTERNALS__?.invoke;
       const setClickThrough = on =>
         inv?.('plugin:window|set_ignore_cursor_events', { ignore: on })?.catch?.(() => {});
@@ -122,7 +118,6 @@
           } catch {}
         }, 100);
       } else {
-        // No backend access — fall back to DOM hover (flaky under click-through).
         let idle;
         document.addEventListener('mousemove', e => {
           clearTimeout(idle);
@@ -152,8 +147,6 @@
     const clockEl = document.getElementById('clock');
     const dateEl = document.getElementById('date');
 
-    // Build the 9 workspace buttons once, up front, so the bubble is never
-    // empty even before GlazeWM emits. onOutput only updates their state.
     const wsButtons = WORKSPACES.map(name => {
       const b = document.createElement('button');
       b.className = 'ws';
