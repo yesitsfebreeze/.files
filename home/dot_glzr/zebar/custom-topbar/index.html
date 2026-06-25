@@ -15,10 +15,9 @@
       height: 44px;
       box-sizing: border-box;
       color: var(--fg, #c1c1c1);
-      /* Same font stack as the terminal (wezterm.lua). */
       font-family: "DepartureMono Nerd Font", "Departure Mono",
                    "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
-      font-size: 18px;                    /* 1.5x the terminal's 12px */
+      font-size: 14px;
       user-select: none;
       transition: opacity 0.18s ease;
       display: flex;
@@ -34,25 +33,21 @@
     .bubble {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 3px 6px;
+      gap: 6px;
+      padding: 3px 8px;
       height: 20px;
       box-sizing: border-box;
-      border-radius: 4px;                 /* half the GlazeWM/Win11 window corner */
+      border-radius: 4px
       background: color-mix(in srgb, var(--bg, #000) 82.1%, transparent);
-    }
-    /* System tray: the Windows tray icons, rendered as their native bitmaps. */
+     }
+
     .tray { gap: 8px; }
     .tray:empty { display: none; }
-    /* brightness(0) crushes the icon to a black silhouette, invert(1) flips it
-       to a flat white one — normalizes the tray's mixed-color icons. */
     .tray img {
-      width: 16px; height: 16px; display: block; cursor: pointer;
+      width: 12px; height: 12px; display: block; cursor: pointer;
       filter: brightness(0) invert(1);
     }
 
-    /* Workspace buttons 1-9, always present so alt+1..9 has a fixed target.
-       Empty workspaces are dimmest, populated ones brighter, focused accented. */
     .ws {
       border: 0; background: transparent; color: inherit; font: inherit;
       padding: 0 2px; opacity: 0.25; cursor: pointer;
@@ -61,10 +56,9 @@
     .ws.displayed { opacity: 0.75; }
     .ws.focused   { opacity: 1; color: var(--accent, #7799bb); }
 
-    /* A labelled stat: dim label, tabular value so widths don't jitter. */
     .stats { flex: none; }
     .stat { display: flex; align-items: baseline; gap: 5px; }
-    .stat .lbl { opacity: 0.5; font-size: 14px; }
+    .stat .lbl { opacity: 0.5; }
     .stat .val { font-variant-numeric: tabular-nums; }
 
     .clockbox { flex: none; }

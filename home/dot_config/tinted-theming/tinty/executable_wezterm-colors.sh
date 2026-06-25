@@ -66,6 +66,14 @@ return {
   },
 }"
 
+# tinty runs this hook on every `tinty init` (each shell start), not only on a
+# `theme` switch. On a plain start the scheme is unchanged, so the generated lua
+# already matches what's deployed — bail before the expensive `chezmoi source-path`
+# spawn (~120ms) and the file writes. Only a real theme change (differing content)
+# falls through to regenerate. This is the single biggest shell-startup cost.
+DEPLOY="$HOME/.config/wezterm/colors.lua"
+[[ -f "$DEPLOY" && "$lua_content" == "$(cat "$DEPLOY")" ]] && exit 0
+
 # Write to chezmoi source so the file is tracked in git
 CHEZMOI_SRC="$(chezmoi source-path 2>/dev/null)"
 if [[ -n "$CHEZMOI_SRC" ]]; then
