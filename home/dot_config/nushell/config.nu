@@ -436,13 +436,23 @@ $env.config = (
     )
 )
 
-# Live theme: re-apply the last `theme` pick so it persists into new shells.
-# tinty re-emits OSC palette sequences; stdout is left attached on purpose —
-# that IS the retint. No-op until you pick a theme, so the Gruvbox base stands.
-if (which tinty | is-not-empty) and (is-terminal --stdout) {
-    # `try` swallows a nonzero exit (no scheme applied yet). Do not use `complete`
-    # here — it would capture stdout and eat the OSC escape sequences.
-    try { ^tinty init e> /dev/null }
+# Live theme: re-emit the last `theme` pick's palette so it persists into new shells.
+# A fresh shell only needs the OSC retint. `tinty init` would deliver it, but it first
+# spawns the tinty binary AND its hook chain (wezterm-colors.sh + zebar-colors.sh) —
+# ~65ms — and those two hooks are no-ops on an unchanged scheme (they regenerate only on
+# a real `theme` switch). So source tinty's cached tinted-shell artifact directly: it is
+# the exact file `tinty init` sources ($TINTY_THEME_FILE_PATH), writing the same palette
+# OSC straight to the tty in a single bash spawn (~5ms). Fall back to `tinty init` only
+# when the artifact is absent (fresh machine, before the first apply). stdout is left
+# attached on purpose — that IS the retint. No-op until you pick a theme, so Gruvbox stands.
+if (is-terminal --stdout) {
+    let data = ($env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share"))
+    let palette = ($data | path join "tinted-theming" "tinty" "artifacts" "tinted-shell-scripts-file.sh")
+    if ($palette | path exists) {
+        try { ^bash $palette e> /dev/null }
+    } else if (which tinty | is-not-empty) {
+        try { ^tinty init e> /dev/null }
+    }
 }
 
 # `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.
