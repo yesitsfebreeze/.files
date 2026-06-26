@@ -38,10 +38,12 @@ window_effects:
   focused_window:
     border:
       enabled: true
-      # Active-window outline tracks the tinty theme's green (base0B); the line
-      # below is rewritten live by the wezterm-colors.sh theme hook on every
-      # `theme` switch — edit the marker, not the value.
-      color: '#6dfedf' # tinty:base0B
+      # Active-window outline tracks the tinty theme's green (base0B). The value
+      # is rendered by chezmoi from .chezmoidata/theme.toml's `green` (the single
+      # synced source of truth), so this file never carries a per-machine color and
+      # never conflicts. On a live `theme` switch wezterm-colors.sh also rewrites the
+      # deployed copy's `tinty:base0B` line for instant effect — edit neither by hand.
+      color: '{{ .theme.green }}' # tinty:base0B
   other_windows:
     border:
       enabled: false

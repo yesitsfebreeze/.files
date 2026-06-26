@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Generates ~/.config/wezterm/colors.lua (and writes it to the chezmoi source)
-# from the active tinty base16/base24 scheme. Run as a tinty hook after tinted-shell.
+# Generates ~/.config/wezterm/colors.lua from the active tinty base16/base24 scheme.
+# Run as a tinty hook after tinted-shell. The generated file is NOT tracked by git;
+# instead this script records the picked scheme in the chezmoi source's single
+# tracked source of truth (.chezmoidata/theme.toml) so other machines regenerate it.
 
 ARTIFACTS="$HOME/.local/share/tinted-theming/tinty/artifacts"
 SCHEMES_DIR="$HOME/.local/share/tinted-theming/tinty/repos/schemes"
@@ -105,11 +107,22 @@ return {
 DEPLOY="$HOME/.config/wezterm/colors.lua"
 [[ -f "$DEPLOY" && "$lua_content" == "$(cat "$DEPLOY")" ]] && exit 0
 
-# Write to chezmoi source so the file is tracked in git
+# Sync the active scheme to the chezmoi source as the SINGLE tracked source of
+# truth: .chezmoidata/theme.toml. The generated artifacts (colors.lua, theme.css)
+# are no longer tracked — other machines run `tinty apply <scheme>` from this on
+# `chezmoi apply` (run_after_generate-shell-init.sh.tmpl) and regenerate them
+# locally, so they can never conflict. We rewrite only the two value lines in place
+# (portable sed -i.bak) to preserve the file's comment header; `green` is base0B,
+# the one palette value GlazeWM's config.yaml.tmpl inlines. We reach here only on a
+# real theme change (the unchanged-content guard above already exited), so theme.toml
+# — and the one-line commit `just push` makes from it — changes only when you switch.
 CHEZMOI_SRC="$(chezmoi source-path 2>/dev/null)"
-if [[ -n "$CHEZMOI_SRC" ]]; then
-    echo "$lua_content" > "$CHEZMOI_SRC/dot_config/wezterm/colors.lua"
-    set_glazewm_border "$CHEZMOI_SRC/dot_glzr/glazewm/config.yaml"
+theme_data="$CHEZMOI_SRC/.chezmoidata/theme.toml"
+if [[ -n "$CHEZMOI_SRC" && -f "$theme_data" && -n "$base0b" ]]; then
+    sed -i.bak -E \
+        -e "s|^([[:space:]]*scheme[[:space:]]*=[[:space:]]*).*|\\1\"${SCHEME}\"|" \
+        -e "s|^([[:space:]]*green[[:space:]]*=[[:space:]]*).*|\\1\"${base0b}\"|" \
+        "$theme_data" 2>/dev/null && rm -f "$theme_data.bak"
 fi
 
 # Also write to the deployed location for immediate effect on Linux

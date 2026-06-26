@@ -7,8 +7,12 @@
 install-homebrew.sh
 {{ end }}
 
-# WezTerm colors.lua is a generated artifact: run_after_generate-shell-init.sh
-# regenerates it at apply time from the active (last-picked) tinty scheme. Tracking
-# it in source pinned feb and let chezmoi rewrite the live file back to feb on every
-# apply. Ignore it so the generated last-picked palette is the single source.
+# WezTerm colors.lua and Zebar theme.css are generated artifacts, NOT tracked in
+# git: run_after_generate-shell-init.sh.tmpl regenerates them at apply time by
+# running `tinty apply <scheme>`, where <scheme> is the single synced source of
+# truth in .chezmoidata/theme.toml. Tracking the generated files made every machine
+# commit its own palette and collide; ignoring them here keeps chezmoi from managing
+# the deployed copies the hooks own. (GlazeWM's one generated line is handled
+# differently — config.yaml.tmpl renders it from theme.toml's `green`.)
 .config/wezterm/colors.lua
+.glzr/zebar/custom-topbar/theme.css

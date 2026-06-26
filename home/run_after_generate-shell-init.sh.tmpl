@@ -60,17 +60,27 @@ if [ -x "$tinty_cfg/gogh-to-base24.sh" ]; then
 fi
 
 # WezTerm colors.lua and Zebar theme.css are generated HERE, at apply time — not
-# on shell/WezTerm launch. config.nu only re-emits the live OSC retint; a terminal
-# start should never be what writes them. Resolve the active scheme (a prior
-# `theme` pick, else config's default-scheme) once and regenerate both from its
-# base16/24 YAML — catalog or our chezmoi-shipped custom-schemes (base16-feb).
-# Both must run so a config change (e.g. background-override) lands in WezTerm and
-# Zebar together; the live `theme` switch chains the same two scripts. Non-fatal.
-scheme="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
+# on shell/WezTerm launch — and are NOT tracked in git (they used to be, and caused
+# cross-machine merge conflicts). The single tracked source of truth is the scheme
+# name in .chezmoidata/theme.toml, which chezmoi renders below. This is what makes a
+# `theme` switch on one machine propagate: that machine commits the new scheme name,
+# and every other machine adopts it here on the next `chezmoi apply`.
+#
+# Adopt the synced scheme: if it differs from this machine's locally-recorded pick,
+# `tinty apply` switches to it — updating current_scheme (so later shell-start hooks
+# agree) and firing the color hooks. Then regenerate the deployed artifacts
+# unconditionally, so a fresh checkout (current_scheme already matches but the files
+# don't exist yet) still produces colors.lua / theme.css. Non-fatal throughout.
+scheme="{{ .theme.scheme }}"
+[ -n "$scheme" ] || scheme="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
 if [ -z "$scheme" ]; then
     scheme="$(sed -n 's/^[[:space:]]*default-scheme[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$tinty_cfg/config.toml" 2>/dev/null)"
 fi
 if [ -n "$scheme" ]; then
+    current="$(cat "$tinty_data/artifacts/current_scheme" 2>/dev/null)"
+    if [ "$scheme" != "$current" ] && command -v tinty >/dev/null 2>&1; then
+        tinty apply "$scheme" >/dev/null 2>&1 || true
+    fi
     [ -x "$tinty_cfg/wezterm-colors.sh" ] && bash "$tinty_cfg/wezterm-colors.sh" "$scheme" || true
     [ -x "$tinty_cfg/zebar-colors.sh" ]   && bash "$tinty_cfg/zebar-colors.sh" "$scheme" || true
 fi
