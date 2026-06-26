@@ -219,11 +219,16 @@ def cl [...task: string] {
     python3 ([$nu.default-config-dir cl.py] | path join) $text
 }
 
-# journal — jump to the journal vault dir (zoxide) and open Claude there.
-# Calls `_z_transient` (a def, hoists) rather than the `z` alias, which is defined
-# later in the file and so isn't in scope here.
+# journal — find the zoxide-known dir named `journal` that has a `vicky` subfolder
+# (disambiguates from any other `journal`), cd into it, and open Claude there.
 def --env journal [] {
-    _z_transient journal/vicky/..
+    let matches = (zoxide query -l journal
+        | lines
+        | where {|p| ($p | path basename) == "journal" and ($p | path join vicky | path exists) })
+    if ($matches | is-empty) {
+        error make { msg: "journal: no zoxide-known `journal` dir with a `vicky` subfolder" }
+    }
+    cd ($matches | first)
     cc
 }
 
