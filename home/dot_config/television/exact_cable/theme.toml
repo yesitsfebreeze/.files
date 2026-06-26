@@ -32,6 +32,9 @@ command = "nu -n -c 'source ~/.config/nushell/theme.nu; _theme_list | str join (
 [preview]
 command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"{}\"'"
 
-# When Enter is pressed, commit and push the theme change to git.
+# On Enter, just emit the focused id on stdout so the `theme` Nushell wrapper
+# applies it (a single `tinty apply`, hooks fire once). An explicit action is
+# required so television doesn't fall back to its default — opening the entry in
+# $EDITOR (nvim). Deliberately no apply/git here: the wrapper owns the apply.
 [action]
-command = "bash -c 'cd \"$(chezmoi source-path)\" && git add --all && git diff --cached --quiet || git commit -m \"theme: {}\" && git push' _"
+command = "bash -c 'printf \"%s\" \"{}\"' _"
