@@ -219,6 +219,12 @@ def cl [...task: string] {
     python3 ([$nu.default-config-dir cl.py] | path join) $text
 }
 
+# journal — jump to the journal vault dir (zoxide) and open Claude there.
+def --env journal [] {
+    z journal/vicky/..
+    cc
+}
+
 # Local history, two ways. The sqlite history records a `cwd` per command, so we
 # can scope both the Ctrl-R picker and the Up/Down cycle to the current directory.
 # Bindings (appended after `tv init nu` below): Ctrl-R = local picker, Ctrl-Shift-R
