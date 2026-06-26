@@ -39,12 +39,10 @@
 # ── public entrypoint ────────────────────────────────────────────────────────
 
 # finder: chain tv channels and return the final selection as structured nu data.
-#   --resume : start from the persisted stack instead of fresh
-#   --fresh  : ignore any persisted stack (skip the resume prompt)
+#   --fresh  : ignore any persisted stack and start from the channels picker
 #   --start  : seed the first stage on this channel, skipping the channels picker (e.g.
 #              `finder --start rcwd` drops straight into the recent-cwd channel).
 export def --env finder [
-    --resume
     --fresh
     --start: string = ""
 ] {
@@ -52,20 +50,14 @@ export def --env finder [
         error make { msg: "finder: `tv` (television) is not installed — required dependency" }
     }
 
-    # Resume handling: re-ENTER the saved chain, don't just reprint its result. We seed the
+    # Resume by default: re-ENTER the saved chain, don't just reprint its result. We seed the
     # loop with the prior stages (breadcrumb shows how we got there), re-run the last channel
     # scoped by the stage below it, and PREFILL the prompt with that stage's saved query — so
-    # you drop back INTO the search ready to adjust it. (tv restores only the query text, at
-    # the cursor end, with no selection; `--fresh`/leader `F` gives a clean slate instead.)
+    # you drop back INTO the search ready to adjust it. To start over instead, clear it from
+    # inside the finder: ctrl-r resets the pipe to a fresh channels pick. (`--fresh`/leader `F`
+    # skips the resume entirely for non-blocking callers.)
     let persisted = (_finder_load)
-    let resume_stack = if ($persisted != null) and (not $fresh) {
-        let do_resume = if $resume {
-            true
-        } else {
-            (input "resume last finder search? (y/N) " | str trim | str downcase) in ["y" "yes"]
-        }
-        if $do_resume { $persisted.stack } else { null }
-    } else { null }
+    let resume_stack = if ($persisted != null) and (not $fresh) { $persisted.stack } else { null }
 
     let committed = if ($resume_stack != null) and (($resume_stack | length) > 0) {
         let last = ($resume_stack | last)

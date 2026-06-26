@@ -65,20 +65,12 @@ FN=$(fg 0D)       # functions (accent)
 STR=$(fg 0B)      # strings
 NUM=$(fg 09)      # numbers / constants
 ERR=$(fg 08)      # errors / variables
-# Window background: mirror what the terminal ACTUALLY renders, not the scheme's own
-# base00. tinty's background-override (config.toml) replaces base00 for wezterm/zebar, so
-# the preview uses it too. A "transparent"/"none" override (or no solid colour) hides the
-# fill, so the card shows the real transparent terminal background behind it. A blank
-# override keeps the documented "track the scheme's base00" behaviour.
-bg_hex() { [ "$color" = 1 ] && printf '\033[48;2;%sm' "$(rgb "$1")"; }
-ovr=$(grep -iE '^[[:space:]]*background-override[[:space:]]*=' \
-        "$HOME/.config/tinted-theming/tinty/config.toml" 2>/dev/null \
-      | head -n1 | sed -E 's/^[^=]*=[[:space:]]*"?([^"]*)"?.*/\1/' | tr 'A-F' 'a-f' | tr -d '[:space:]')
-case "${ovr#\#}" in
-    [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) WBG=$(bg_hex "${ovr#\#}") ;;  # real solid background
-    transparent|none|hidden|off)                       WBG="" ;;                       # transparent → hide
-    *)                                                 WBG=$(bg 00) ;;                 # blank → scheme base00
-esac
+# Window background: the terminal is translucent (wezterm window_background_opacity),
+# so the card must NOT paint an opaque fill — an escape-set bg renders fully opaque and
+# prints a solid rectangle over the see-through terminal. Leave WBG empty so every card
+# row inherits the real (translucent) terminal background behind it. The selection bar
+# below still gets a solid accent fill so the focused row stands out.
+WBG=""
 SBG=$(bg 02)      # selection background
 
 INNER=44   # interior content cells of the card

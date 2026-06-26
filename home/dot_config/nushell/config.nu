@@ -571,7 +571,7 @@ source ~/.config/nushell/theme.nu
 source ~/.config/nushell/pass.nu
 
 # Ctrl-T: open the finder and splice the selection into the prompt at the cursor
-# (fzf-style). `--fresh` skips the resume y/N prompt so the key is non-blocking.
+# (fzf-style). `--fresh` skips resuming the last search so the key is non-blocking.
 # Paths/grep-files/commit-hashes are shell-quoted (reusing finder's own quoter) so
 # spaces survive. Empty/aborted pick leaves the line untouched.
 def tv_finder [] {

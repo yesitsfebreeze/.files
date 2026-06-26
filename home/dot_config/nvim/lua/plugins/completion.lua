@@ -10,7 +10,10 @@ return {
         -- super-tab: <Tab> selects/accepts and jumps snippets, <S-Tab> reverses,
         -- <C-n>/<C-p> cycle, <C-Space> toggles, <C-e> hides. Closest to the old
         -- nvim-cmp Tab-driven flow.
-        keymap = { preset = "super-tab" },
+        keymap = {
+            preset = "super-tab",
+            ["<CR>"] = { "accept", "fallback" },
+        },
         appearance = { nerd_font_variant = "mono" },
         completion = {
             documentation = { auto_show = true, auto_show_delay_ms = 200 },
