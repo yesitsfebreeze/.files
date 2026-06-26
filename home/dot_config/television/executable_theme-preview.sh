@@ -97,15 +97,15 @@ _row() {
     printf '%b%s│%s %b%*s %b│%b\n' "$b" "$BRD" "$R$b" "$c" "$pad" "" "$BRD" "$R"
 }
 
-# ── banner (block weight = header/banner role) ───────────────────────────────
-ACC=$(fg 0D)
+# ── banner (rounded box in the foreground colour — same INNER+4 width as the card) ──
+HDR=$(fg 05)
 sub="$system · $variant"
 nl=$(vis "$name"); ((nl>INNER)) && { name="${name:0:$((INNER-1))}…"; nl=$INNER; }
 sl=${#sub};        ((sl>INNER)) && { sub="${sub:0:$((INNER-1))}…"; sl=$INNER; }
-printf '%b%s%b\n' "$ACC" "▛$(rep ▀ $((INNER+2)))▜" "$R"
-printf '%b▐█%b %b%s%b%*s %b█▌%b\n' "$ACC" "$R" "$HI" "$name" "$R" "$((INNER-nl))" "" "$ACC" "$R"
-printf '%b▐█%b %b%s%b%*s %b█▌%b\n' "$ACC" "$R" "$DIM" "$sub" "$R" "$((INNER-sl))" "" "$ACC" "$R"
-printf '%b%s%b\n\n' "$ACC" "▙$(rep ▄ $((INNER+2)))▟" "$R"
+printf '%b╭%s╮%b\n' "$HDR" "$(rep ─ $((INNER+2)))" "$R"
+printf '%b│%b %b%s%b%*s %b│%b\n' "$HDR" "$R" "$HI" "$name" "$R" "$((INNER-nl))" "" "$HDR" "$R"
+printf '%b│%b %b%s%b%*s %b│%b\n' "$HDR" "$R" "$DIM" "$sub" "$R" "$((INNER-sl))" "" "$HDR" "$R"
+printf '%b╰%s╯%b\n\n' "$HDR" "$(rep ─ $((INNER+2)))" "$R"
 
 # ── UI mockup card (rounded weight = default panel) ──────────────────────────
 ttl="preview"
