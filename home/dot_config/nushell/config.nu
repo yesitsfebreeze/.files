@@ -605,3 +605,10 @@ def --env tv_remote [] {
     if ($channel == "theme") { theme; return }
     _finder_open (finder --start $channel --fresh)
 }
+
+# When launched as the Ctrl+Space scratchpad float (wezterm `--class scratchpad` sets
+# SCRATCH_FLOAT=1; see float-toggle.js), open the finder once on startup, then fall
+# through to an interactive prompt for quick work. Guarded so normal shells are untouched.
+if (($env.SCRATCH_FLOAT? | default "") == "1") {
+    tv_remote
+}

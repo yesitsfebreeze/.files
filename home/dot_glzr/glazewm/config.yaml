@@ -73,6 +73,13 @@ window_rules:
     match:
       - window_process: { equals: 'zebar' }
 
+  # The Ctrl+Space scratchpad float: a wezterm window launched with `--class scratchpad`
+  # (see float-toggle.js). Float it inset + centered + on top so it drops over whatever's
+  # tiled instead of taking a grid slot. Normal wezterm windows keep the default class.
+  - commands: ['set-floating --centered true --shown-on-top true --width 55% --height 65%']
+    match:
+      - window_class: { equals: 'scratchpad' }
+
 workspaces:
   - name: '1'
   - name: '2'

@@ -583,4 +583,23 @@ config.keys = {
     },
 }
 
+-- CTRL-Space toggles the scratchpad float: a separate "scratchpad"-class wezterm window
+-- that GlazeWM floats over everything (see float-toggle.js + the GlazeWM window_rule).
+-- Caught here at the GUI layer so it's consumed before the pty — the key never reaches
+-- nu/burrito/the foreground app, which also sidesteps CTRL-Space's legacy NUL ambiguity.
+-- Registered only on Windows (the float is GlazeWM-driven); elsewhere CTRL-Space falls
+-- through to the shell untouched, where reedline's own binding opens the finder inline.
+if is_windows then
+    table.insert(config.keys, {
+        key = "Space",
+        mods = "CTRL",
+        action = wezterm.action_callback(function()
+            wezterm.background_child_process({
+                "C:\\Program Files\\nodejs\\node.exe",
+                (os.getenv("USERPROFILE") or "") .. "\\.glzr\\glazewm\\float-toggle.js",
+            })
+        end),
+    })
+end
+
 return config
