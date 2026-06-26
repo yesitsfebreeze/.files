@@ -471,7 +471,51 @@ local function clear_background()
     wezterm.reload_configuration()
 end
 
+-- Copy mode: ctrl+shift+x freezes the scrollback and drops a movable cursor
+-- (arrows/hjkl, plus all of WezTerm's default copy-mode motions + search). One
+-- key drives the whole select-and-copy cycle: first `c` anchors a cell selection
+-- at the cursor, you move to extend the highlight, second `c` copies the range to
+-- the clipboard and leaves copy mode. We track the toggle per-pane rather than
+-- reading the selection text back, because a selection that begins over blank
+-- cells reads as empty and would desync the toggle. State is reset on entry, so a
+-- copy mode exited any other way (q/Esc/y) can't leave it stale.
+local copy_selecting = {}
+
+-- Extend the DEFAULT copy_mode table so every builtin motion/search key survives;
+-- we only add the plain-`c` toggle on top.
+local copy_mode = wezterm.gui.default_key_tables().copy_mode
+table.insert(copy_mode, {
+    key = "c",
+    mods = "NONE",
+    action = wezterm.action_callback(function(window, pane)
+        local id = pane:pane_id()
+        if copy_selecting[id] then
+            copy_selecting[id] = nil
+            window:perform_action(
+                act.Multiple({
+                    act.CopyTo("ClipboardAndPrimarySelection"),
+                    act.CopyMode("Close"),
+                }),
+                pane
+            )
+        else
+            copy_selecting[id] = true
+            window:perform_action(act.CopyMode({ SetSelectionMode = "Cell" }), pane)
+        end
+    end),
+})
+config.key_tables = { copy_mode = copy_mode }
+
 config.keys = {
+    {
+        key = "x",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(window, pane)
+            copy_selecting[pane:pane_id()] = nil
+            window:perform_action(act.ClearSelection, pane)
+            window:perform_action(act.ActivateCopyMode, pane)
+        end),
+    },
     { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
     -- CTRL-C copies when a selection exists, otherwise falls through to the
     -- shell as a normal interrupt (SIGINT) so it keeps its terminal meaning.
