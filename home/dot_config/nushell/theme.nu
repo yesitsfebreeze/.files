@@ -63,6 +63,18 @@ def _theme_recent_push [id: string] {
     | save -f $f
 }
 
+# _theme_commit: apply a scheme + record it at the head of the recency cache.
+# Called by the `theme` channel's Enter action (television runs it in a fresh
+# `nu -n -c`, attached to the tty, so tinty's OSC retints the terminal). `e>` drops
+# stderr but keeps stdout (the OSC) on the tty; `try` guards a nonzero exit.
+export def _theme_commit [id: string] {
+    let id = ($id | str trim)
+    if ($id | is-empty) { return }
+    try { ^tinty apply $id e> /dev/null }
+    _theme_recent_push $id
+    print $"theme: ($id)"
+}
+
 # _theme_catalog: every scheme id tinty can apply — the official base16/base24
 # catalog plus our custom-schemes (base24-feb, base16-feb-neon, the converted
 # gogh-* themes). Deduped + alphabetical; the cache is prepended separately.
@@ -124,18 +136,9 @@ def --wrapped theme [...rest] {
         return
     }
 
-    # television prints the chosen entry on Enter, nothing on Esc/Ctrl-C. The
-    # preview no longer applies live, so browsing leaves the terminal, the bar, and
+    # Run the picker interactively. Enter fires the channel's `apply` action
+    # (_theme_commit: tinty apply + recency push); Esc/Ctrl-C does nothing. The
+    # preview never applies live, so browsing leaves the terminal, the bar, and
     # tinty's current_scheme untouched — Esc has nothing to revert.
-    let sel = (tv theme ...$rest | str trim)
-
-    if ($sel | is-not-empty) {
-        # Persist + canonical apply (tinted-shell OSC). Unpiped stdout stays on
-        # the terminal so the palette sticks; stderr discarded; `try` guards a
-        # nonzero exit (do NOT use `complete` — it would capture the OSC stdout).
-        try { ^tinty apply $sel e> /dev/null }
-        # Record the pick at the head of the recency cache.
-        _theme_recent_push $sel
-        print $"theme: ($sel)"
-    }
+    tv theme ...$rest
 }
