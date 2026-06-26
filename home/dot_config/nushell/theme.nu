@@ -1,7 +1,8 @@
 # theme.nu — the live `theme` switcher, sourced by config.nu. Opens television's
-# `theme` channel over tinty's official base16/base24 catalog with apply-on-focus
-# preview. Enter applies and persists; Esc reverts to the launch state (previous
-# pick, or the Gruvbox base if none was active).
+# `theme` channel over tinty's official base16/base24 catalog. The preview renders
+# a static swatch of each scheme (theme-preview.sh paints the scheme's own hex
+# values directly — it never `tinty apply`s), so browsing never touches the
+# terminal or the bar. Enter applies + persists; Esc leaves the current theme as-is.
 #
 # Cache: the picker surfaces a recency stack + a liked set at the TOP of the list,
 # above the alphabetical catalog (television preserves source order). Recents are
@@ -123,9 +124,9 @@ def --wrapped theme [...rest] {
         return
     }
 
-    let prev = (_theme_current)
-
-    # television prints the chosen entry on Enter, nothing on Esc/Ctrl-C.
+    # television prints the chosen entry on Enter, nothing on Esc/Ctrl-C. The
+    # preview no longer applies live, so browsing leaves the terminal, the bar, and
+    # tinty's current_scheme untouched — Esc has nothing to revert.
     let sel = (tv theme ...$rest | str trim)
 
     if ($sel | is-not-empty) {
@@ -136,21 +137,5 @@ def --wrapped theme [...rest] {
         # Record the pick at the head of the recency cache.
         _theme_recent_push $sel
         print $"theme: ($sel)"
-    } else {
-        # Esc: browsing applied themes live, so restore the launch state.
-        if ($prev | is-not-empty) {
-            try { ^tinty apply $prev e> /dev/null }
-        } else {
-            # No theme was active before: forget the polluted current scheme so new
-            # shells stay on the base, reset the terminal palette now (OSC
-            # 104/110/111/112 -> WezTerm's Gruvbox config), and regenerate colors.lua
-            # for that base so the live config-reload watch reverts WezTerm's bg too
-            # (preview reloaded it per focus; without this it'd keep the last swatch).
-            let data = ($env.XDG_DATA_HOME? | default $"($env.HOME)/.local/share")
-            let state = $"($data)/tinted-theming/tinty/current_scheme"
-            if ($state | path exists) { rm --force $state }
-            print -n "\u{1b}]104\u{7}\u{1b}]110\u{7}\u{1b}]111\u{7}\u{1b}]112\u{7}"
-            try { bash $"($env.HOME)/.config/tinted-theming/tinty/wezterm-colors.sh" base16-gruvbox-dark-hard e> /dev/null }
-        }
     }
 }
