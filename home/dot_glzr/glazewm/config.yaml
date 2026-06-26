@@ -41,7 +41,7 @@ window_effects:
       # Active-window outline tracks the tinty theme's green (base0B); the line
       # below is rewritten live by the wezterm-colors.sh theme hook on every
       # `theme` switch — edit the marker, not the value.
-      color: '#5f8787' # tinty:base0B
+      color: '#57826d' # tinty:base0B
   other_windows:
     border:
       enabled: false
