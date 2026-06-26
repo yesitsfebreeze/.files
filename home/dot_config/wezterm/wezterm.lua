@@ -481,6 +481,26 @@ end
 -- copy mode exited any other way (q/Esc/y) can't leave it stale.
 local copy_selecting = {}
 
+-- Enter copy mode on a pane from a clean state: clear any stale selection and the
+-- per-pane toggle flag so the first `c` always starts (never finishes) a selection.
+-- Shared by the ctrl+shift+x keybind and the user-var trigger below.
+local function enter_copy_mode(window, pane)
+    copy_selecting[pane:pane_id()] = nil
+    window:perform_action(act.ClearSelection, pane)
+    window:perform_action(act.ActivateCopyMode, pane)
+end
+
+-- Shell-driven entry: the nu `copymode` command (leader `q` palette → "cm") prints
+-- an OSC 1337 SetUserVar=copymode sequence to stdout. WezTerm parses it off the pty
+-- — even through the WSL→Windows host — and fires user-var-changed here, letting a
+-- plain shell command drop the GUI into copy mode. The var's value is ignored; only
+-- the name matters.
+wezterm.on("user-var-changed", function(window, pane, name, _value)
+    if name == "copymode" then
+        enter_copy_mode(window, pane)
+    end
+end)
+
 -- Extend the DEFAULT copy_mode table so every builtin motion/search key survives;
 -- we only add the plain-`c` toggle on top.
 local copy_mode = wezterm.gui.default_key_tables().copy_mode
@@ -510,11 +530,7 @@ config.keys = {
     {
         key = "x",
         mods = "CTRL|SHIFT",
-        action = wezterm.action_callback(function(window, pane)
-            copy_selecting[pane:pane_id()] = nil
-            window:perform_action(act.ClearSelection, pane)
-            window:perform_action(act.ActivateCopyMode, pane)
-        end),
+        action = wezterm.action_callback(enter_copy_mode),
     },
     { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
     -- CTRL-C copies when a selection exists, otherwise falls through to the

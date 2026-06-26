@@ -146,6 +146,7 @@ alias g = git
 alias lg = lazygit
 alias v = nvim
 alias vi = nvim
+def --wrapped e [...args] { ^$env.EDITOR ...$args }
 alias cdi = zi
 
 # Convenience aliases.
@@ -330,7 +331,9 @@ $env.config.hooks.env_change.PWD = (
         if $before != null and $after != $before and (is-terminal --stdout) {
             ^stty sane e> /dev/null
             _dirstack_push $after
-            la
+            # A z-fallback jump (below) defers its listing to pre_prompt, after it has
+            # wiped the doomed "command not found" — so skip the eager `la` here.
+            if not ($env._NAV? | default false) { la }
         }
     }
 )
@@ -394,6 +397,61 @@ def --env --wrapped zc [...rest: string] {
     $env._CD_TRANSIENT = false
     cc
 }
+
+# `zz` — step back to the previous directory (the dir-history toggle). Pairs with the
+# z-fallback below: a bare unknown token jumps forward via zoxide, `zz` steps back.
+alias zz = cd -
+
+# z as the default verb. A bare line whose first word is NOT a known command, path, or
+# nu expression is treated as a zoxide navigation query — `proj` ⏎ jumps just like
+# `z proj`, no prefix typed. Real commands, paths, and any pipeline/expression run
+# untouched. This is the "zoxide as a fallback when nothing was found" behaviour.
+#
+# Nushell gives no clean hook for it: `command_not_found` can't cd (its env changes are
+# discarded) and the unknown command always errors. So we run the jump from
+# `pre_execution`, where a cd DOES persist, let the doomed command error, then erase that
+# error in `pre_prompt` with a saved-cursor screen-clear (DECSC at the prompt line →
+# DECRC + clear-to-end before the next prompt). We jump ONLY on a real zoxide match
+# (querying directly, not via __zoxide_z, whose empty no-match result would `cd` HOME);
+# a no-match line falls straight through to the normal "command not found".
+def --env _z_fallback [] {
+    if not (is-terminal --stdout) { return }
+    let buf = (commandline | str trim)
+    if ($buf | is-empty) { return }
+    # any shell/nu metacharacter means it is an expression or a real invocation — leave it.
+    let meta = ['|' '>' '<' ';' '&' '(' ')' '{' '}' '[' ']' '$' '`' '"' "'" '#' '^' '=' '!']
+    if ($meta | any {|c| $buf | str contains $c }) { return }
+    let tokens = ($buf | split row -r '\s+')
+    let first = ($tokens | first)
+    # a resolvable name (builtin/alias/def/external) or a path-ish token is a real command.
+    if (which $first | is-not-empty) { return }
+    if ($first | str starts-with '-') or ($first | str starts-with '/') or ($first | str starts-with '.') or ($first | str starts-with '~') or ($first | str contains '/') { return }
+    # candidate navigation: ask zoxide directly, jump only on a genuine dir match.
+    let q = (^zoxide query --exclude $env.PWD -- ...$tokens | complete)
+    if $q.exit_code != 0 { return }
+    let path = ($q.stdout | str trim)
+    if ($path | is-empty) or (($path | path type) != 'dir') { return }
+    print -n $"(char -u '1b')7"       # DECSC: save cursor at the prompt line
+    $env._CD_TRANSIENT = true
+    cd $path
+    $env._CD_TRANSIENT = false
+    $env._NAV = true                  # env_change skips its `la`; pre_prompt cleans up
+    _recents_add "DirList" $env.PWD "zoxide"
+}
+$env.config.hooks.pre_execution = (
+    ($env.config.hooks.pre_execution? | default [])
+    | append {|| _z_fallback }
+)
+$env.config.hooks.pre_prompt = (
+    ($env.config.hooks.pre_prompt? | default [])
+    | append {||
+        if ($env._NAV? | default false) {
+            $env._NAV = false
+            print $"(char -u '1b')8(ansi -e '0J')"   # DECRC + clear-to-end: wipe the doomed error
+            la                                        # re-list the dir we jumped into
+        }
+    }
+)
 
 # History keymap, appended after the television init so it overrides tv's own
 # Ctrl-R binding (reedline keys the map by (modifier,keycode); a later entry wins).
