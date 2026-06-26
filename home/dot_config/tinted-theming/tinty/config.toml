@@ -26,7 +26,8 @@ shell = "bash -c '{}'"
 # Force the background to this hex regardless of the active scheme's base00. The
 # wezterm-colors.sh / zebar-colors.sh hooks read this key and substitute it for
 # base00. Leave blank or remove the value to track the scheme's own background.
-background-override = "#000e14"
+background-override = "#111111"
+
 
 [[items]]
 name = "tinted-shell"
