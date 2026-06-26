@@ -583,22 +583,118 @@ config.keys = {
     },
 }
 
--- CTRL-Space toggles the scratchpad float: a separate "scratchpad"-class wezterm window
--- that GlazeWM floats over everything (see float-toggle.js + the GlazeWM window_rule).
--- Caught here at the GUI layer so it's consumed before the pty — the key never reaches
--- nu/burrito/the foreground app, which also sidesteps CTRL-Space's legacy NUL ambiguity.
--- Registered only on Windows (the float is GlazeWM-driven); elsewhere CTRL-Space falls
--- through to the shell untouched, where reedline's own binding opens the finder inline.
+-- CTRL-Space toggles a native scratchpad pane, entirely inside WezTerm (no external
+-- window manager). WezTerm has no floating panes (issue #3851), so we fake the
+-- overlay with zoom: the scratch pane and the work pane share one tab, and exactly
+-- one of them is always ZOOMED (fills the tab, hiding the other). Toggling swaps
+-- which one is zoomed, so the scratch appears/vanishes as a full-window overlay
+-- while its shell keeps running underneath — state is preserved across toggles and
+-- the split is never visible. Caught at the GUI layer so CTRL-Space never reaches
+-- the pty (sidesteps its legacy NUL ambiguity). Windows-only, matching the old
+-- GlazeWM float's scope; elsewhere CTRL-Space falls through to reedline's inline finder.
+
+-- tab_id -> scratch pane_id, so the scratch pane is found again across toggles.
+local scratch_pane_for_tab = {}
+
+-- SpawnCommand for the scratch shell: the same nu as default_prog but with
+-- SCRATCH_FLOAT=1, which makes config.nu open the finder once on entry. On the
+-- WSL→Windows host the var must be set INSIDE the bash -lc string (WSL doesn't
+-- inherit Windows env without WSLENV); native hosts pass it via the env table.
+local function scratch_spawn()
+    if is_windows then
+        return { args = { "wsl.exe", "-d", WSL_DISTRO, "--cd", "~", "-e", "bash", "-lc",
+            "SCRATCH_FLOAT=1 exec nu --config ~/.config/nushell/config.nu"
+            .. " --env-config ~/.config/nushell/env.nu || exec bash" } }
+    end
+    return {
+        args = { "nu", "--config", nu_config, "--env-config", nu_env },
+        set_environment_variables = { SCRATCH_FLOAT = "1" },
+    }
+end
+
+local function find_pane(panes, id)
+    if not id then
+        return nil
+    end
+    for _, info in ipairs(panes) do
+        if info.pane:pane_id() == id then
+            return info
+        end
+    end
+    return nil
+end
+
+-- Zoom a specific pane. The zoom flag tracks the active pane, so we can't re-point
+-- it at a new target directly: unzoom first, activate the target, then zoom it.
+local function zoom_pane(tab, pane)
+    tab:set_zoomed(false)
+    pane:activate()
+    tab:set_zoomed(true)
+end
+
+local function toggle_scratch(window)
+    local tab = window:mux_window():active_tab()
+    if not tab then
+        return
+    end
+    local tid = tab:tab_id()
+    local panes = tab:panes_with_info()
+    local scratch = find_pane(panes, scratch_pane_for_tab[tid])
+
+    -- No scratch yet (first toggle, or it was closed): split one off and zoom it.
+    if not scratch then
+        local cmd = scratch_spawn()
+        cmd.direction = "Right"
+        cmd.size = 0.5
+        local new = tab:active_pane():split(cmd)
+        scratch_pane_for_tab[tid] = new:pane_id()
+        zoom_pane(tab, new)
+        return
+    end
+
+    if scratch.is_active then
+        -- Scratch is showing -> hide it by zooming the first non-scratch (work) pane.
+        for _, info in ipairs(panes) do
+            if info.pane:pane_id() ~= scratch.pane:pane_id() then
+                zoom_pane(tab, info.pane)
+                return
+            end
+        end
+    else
+        zoom_pane(tab, scratch.pane)
+    end
+end
+
+-- CTRL-SHIFT-TAB promotes the scratch: unzoom it so it stops being an overlay and
+-- becomes a normal pane beside the active terminal — graduating whatever you did in
+-- it into your live layout. It's then untracked, so the next CTRL-Space spawns a
+-- fresh scratch. Works regardless of what the work pane runs (plain shell or a
+-- burrito-multiplexed session) — at the WezTerm layer it's a single pane either way.
+local function promote_scratch(window)
+    local tab = window:mux_window():active_tab()
+    if not tab then
+        return
+    end
+    local tid = tab:tab_id()
+    local scratch = find_pane(tab:panes_with_info(), scratch_pane_for_tab[tid])
+    if not scratch then
+        return
+    end
+    tab:set_zoomed(false)
+    scratch.pane:activate()
+    scratch_pane_for_tab[tid] = nil
+end
+
 if is_windows then
     table.insert(config.keys, {
         key = "Space",
         mods = "CTRL",
-        action = wezterm.action_callback(function()
-            wezterm.background_child_process({
-                "C:\\Program Files\\nodejs\\node.exe",
-                (os.getenv("USERPROFILE") or "") .. "\\.glzr\\glazewm\\float-toggle.js",
-            })
-        end),
+        action = wezterm.action_callback(toggle_scratch),
+    })
+    table.insert(config.keys, {
+        key = "Tab",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(promote_scratch),
     })
 end
 
