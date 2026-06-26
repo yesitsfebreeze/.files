@@ -67,8 +67,10 @@ def _theme_recent_push [id: string] {
 # Called by the `theme` channel's Enter action (television runs it in a fresh
 # `nu -n -c`, attached to the tty, so tinty's OSC retints the terminal). `e>` drops
 # stderr but keeps stdout (the OSC) on the tty; `try` guards a nonzero exit.
+# The current theme sits at the head of the list tagged " (current)" — strip that
+# marker back off before applying so `tinty apply` gets the bare id.
 export def _theme_commit [id: string] {
-    let id = ($id | str trim)
+    let id = ($id | str trim | str replace --regex ' \(current\)$' '')
     if ($id | is-empty) { return }
     try { ^tinty apply $id e> /dev/null }
     _theme_recent_push $id
@@ -84,15 +86,19 @@ def _theme_catalog [] {
     $a ++ $b | each { |x| $x | str trim } | where { |x| $x | is-not-empty } | uniq | sort
 }
 
-# _theme_list: the picker's source — liked first, then recents, then the rest of
-# the catalog, all deduped. television preserves this order, so the cache sits at
-# the top of the `theme` picker. Exported for the channel's [source] command.
+# _theme_list: the picker's source — the current theme first (tagged " (current)"),
+# then liked, then recents, then the rest of the catalog, all deduped. television
+# preserves this order, so the current scheme sits at the very top of the `theme`
+# picker. The marker is stripped back off on apply (_theme_commit) and in the
+# preview ($1). Exported for the channel's [source] command.
 export def _theme_list [] {
+    let current = (_theme_current)
     let liked = (_theme_liked_list)
     let recent = (_theme_recent_list | where { |x| $x not-in $liked })
     let pinned = ($liked ++ $recent)
     let rest = (_theme_catalog | where { |x| $x not-in $pinned })
-    $pinned ++ $rest
+    let body = ($pinned ++ $rest | where { |x| $x != $current })
+    if ($current | is-empty) { $body } else { [$"($current) \(current\)"] ++ $body }
 }
 
 def --wrapped theme [...rest] {

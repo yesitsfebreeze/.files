@@ -13,6 +13,8 @@
 set -u
 
 id="${1:-}"
+# The current theme is listed first tagged " (current)" — strip it to the bare id.
+id="${id% (current)}"
 [ -z "$id" ] && exit 0
 system="${id%%-*}"
 slug="${id#*-}"
