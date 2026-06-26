@@ -599,5 +599,9 @@ def --env tv_remote [] {
     let channel = (_finder_pick_channel [] null)
     if ($channel | is-empty) { return }
     if ($channel == "quicklist") { quicklist; return }
+    # `theme` produces scheme-id strings, not paths — routing them through _finder_open
+    # would `^$env.EDITOR base16-…` (open the id in nvim). Hand off to the `theme` command,
+    # which runs the same picker and applies the pick via _theme_commit (tinty apply).
+    if ($channel == "theme") { theme; return }
     _finder_open (finder --start $channel --fresh)
 }
