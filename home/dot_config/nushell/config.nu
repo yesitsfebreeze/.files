@@ -220,8 +220,10 @@ def cl [...task: string] {
 }
 
 # journal — jump to the journal vault dir (zoxide) and open Claude there.
+# Calls `_z_transient` (a def, hoists) rather than the `z` alias, which is defined
+# later in the file and so isn't in scope here.
 def --env journal [] {
-    z journal/vicky/..
+    _z_transient journal/vicky/..
     cc
 }
 
