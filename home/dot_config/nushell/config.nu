@@ -342,6 +342,12 @@ source ~/.cache/starship/init.nu
 source ~/.zoxide.nu
 source ~/.cache/television/init.nu
 
+# `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data. Sourced
+# HERE (before the zoxide wrappers below) so `_recents_add` is in scope for them: nushell
+# resolves a def body's command calls at parse time, so the recents logger must already be
+# loaded when `_z_transient`/`_zi_transient` are parsed.
+source ~/.config/nushell/finder.nu
+
 # zoxide jumps (z / zi, and `cdi`) are transient: they belong in the Alt-O recency
 # stack but must NOT become the new-shell start dir, which tracks deliberate `cd`
 # only. Wrap the generated z/zi to raise $env._CD_TRANSIENT for the duration of the
@@ -488,9 +494,6 @@ source ~/.config/nushell/theme.nu
 
 # `pass` (password-store) completion: subcommands + live entry names from the store.
 source ~/.config/nushell/pass.nu
-
-# `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data.
-source ~/.config/nushell/finder.nu
 
 # Ctrl-T: open the finder and splice the selection into the prompt at the cursor
 # (fzf-style). `--fresh` skips the resume y/N prompt so the key is non-blocking.

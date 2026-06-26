@@ -136,9 +136,11 @@ def --wrapped theme [...rest] {
         return
     }
 
-    # Run the picker interactively. Enter fires the channel's `apply` action
-    # (_theme_commit: tinty apply + recency push); Esc/Ctrl-C does nothing. The
-    # preview never applies live, so browsing leaves the terminal, the bar, and
-    # tinty's current_scheme untouched — Esc has nothing to revert.
-    tv theme ...$rest
+    # television prints the chosen entry on Enter, nothing on Esc/Ctrl-C. We apply
+    # it HERE, in this live interactive shell, after tv has fully exited — so the
+    # OSC retint and tinty's hooks (wezterm/zebar) run with the real shell env, not
+    # a stripped television-action subprocess. The preview never applies live, so
+    # browsing leaves the terminal, the bar, and current_scheme untouched.
+    let sel = (tv theme ...$rest | str trim)
+    if ($sel | is-not-empty) { _theme_commit $sel }
 }

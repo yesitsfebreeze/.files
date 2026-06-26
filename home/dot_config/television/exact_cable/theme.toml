@@ -32,16 +32,7 @@ command = "nu -n -c 'source ~/.config/nushell/theme.nu; _theme_list | str join (
 [preview]
 command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"{}\"'"
 
-# Enter applies the focused scheme. Without an explicit binding television falls
-# back to its default action — opening the entry in $EDITOR (nvim) — so we bind it
-# like every other interactive channel. _theme_commit (theme.nu) runs tinty apply
-# (OSC retints the terminal) + pushes the pick to the recency cache; television
-# runs it in a fresh `nu -n -c`, mirroring the [source] command above. Scheme ids
-# are [a-z0-9-] only, so the substituted '{}' is safe inside the nu string.
-[keybindings]
-enter = "actions:apply"
-
-[actions.apply]
-description = "Apply the selected tinty scheme and record it in the recency cache"
-command = "nu -n -c 'source ~/.config/nushell/theme.nu; _theme_commit \"{}\"'"
-mode = "execute"
+# No [keybindings]/[actions]: television's default Enter prints the focused entry
+# to stdout, which the `theme` Nushell command captures and applies (_theme_commit:
+# tinty apply + recency push). Applying in that live shell — rather than a tv
+# action subprocess — keeps tinty's wezterm/zebar hooks in the real environment.

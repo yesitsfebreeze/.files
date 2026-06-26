@@ -570,6 +570,26 @@ def _recents_log [stack: list] {
     ($fresh | append $kept) | first 200 | to nuon | save -f (_recents_file)
 }
 
+# _recents_add: log a SINGLE used item (kind/value/channel) into the recents log, for
+# non-finder sources — e.g. zoxide jumps (a dir we cd'd into, or a file `z` opened in the
+# editor). Mirrors _recents_log's dedup-by-channel+value, newest-first prepend and cap, but
+# for one entry built here rather than a finder stage. The current cwd is recorded so the
+# quicklist `ctrl-r` replay knows where the jump was made. No-op on an empty value.
+export def _recents_add [kind: string, value: string, channel: string] {
+    if ($value | is-empty) { return }
+    let entry = {
+        kind: $kind
+        value: $value
+        channel: $channel
+        query: ""
+        cwd: $env.PWD
+        ts: (date now)
+    }
+    let key = (_recents_key $entry)
+    let kept = (_recents_load | where { |e| (_recents_key $e) != $key })
+    ([$entry] | append $kept) | first 200 | to nuon | save -f (_recents_file)
+}
+
 # _recents_lines: the `quicklist` channel's source — one TAB-delimited row per recent
 # entry (kind, value, cwd, channel, query), newest-first. The channel's display template
 # shows just the value + context; its output template emits the whole row so the runner
