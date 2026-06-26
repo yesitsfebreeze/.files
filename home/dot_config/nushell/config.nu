@@ -357,19 +357,28 @@ source ~/.config/nushell/finder.nu
 # verified: a pre-zoxide alias-to-alias resolves the latest target.
 # `z` also opens: if the args resolve to an existing file, edit it; otherwise it's a
 # directory query and we hand off to zoxide as before (which cd's, dir or jump).
+# Both wrappers also log the navigation into the cross-channel recents stack (the
+# `quicklist` source) via `_recents_add`, so a `z`-opened file or jumped-to dir resurfaces
+# there alongside finder picks. Dir jumps log only when PWD actually moved (a no-match `z`
+# leaves it put — nothing to record); file opens always log the edited path.
 def --env --wrapped _z_transient [...rest: string] {
     $env._CD_TRANSIENT = true
     let target = ($rest | str join " " | path expand)
     if (($rest | length) == 1 and ($target | path type) == "file") {
+        _recents_add "FileList" $target "zoxide"
         ^$env.EDITOR $target
     } else {
+        let before = $env.PWD
         __zoxide_z ...$rest
+        if ($env.PWD != $before) { _recents_add "DirList" $env.PWD "zoxide" }
     }
     $env._CD_TRANSIENT = false
 }
 def --env --wrapped _zi_transient [...rest: string] {
     $env._CD_TRANSIENT = true
+    let before = $env.PWD
     __zoxide_zi ...$rest
+    if ($env.PWD != $before) { _recents_add "DirList" $env.PWD "zoxide" }
     $env._CD_TRANSIENT = false
 }
 alias z = _z_transient

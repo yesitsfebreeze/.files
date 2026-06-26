@@ -279,6 +279,39 @@ let tests = [
         rm -r -f $dir
         check eq ($got | length) 0 "quicklist picks are not fed back into the log"
     }}
+    { name: "recents_add logs a single non-finder item (e.g. zoxide jump)", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_add "DirList" "/proj" "zoxide"
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 1 "one entry logged"
+        check eq ($got | first | get value) "/proj" "value recorded"
+        check eq ($got | first | get channel) "zoxide" "channel tagged"
+        check true ("cwd" in ($got | first | columns)) "cwd recorded"
+    }}
+    { name: "recents_add dedups against existing entries by channel+value", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_log [{ channel: "zoxide", produces: "DirList", results: ["/a"], query: "" }]
+            _recents_add "DirList" "/b" "zoxide"
+            _recents_add "DirList" "/a" "zoxide"
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 2 "re-add of same channel+value did not duplicate"
+        check eq ($got | first | get value) "/a" "re-added entry bumped to front"
+    }}
+    { name: "recents_add is a no-op on an empty value", run: {||
+        let dir = (mktemp -d | str trim)
+        let got = (with-env { XDG_STATE_HOME: $dir } {
+            _recents_add "DirList" "" "zoxide"
+            _recents_load
+        })
+        rm -r -f $dir
+        check eq ($got | length) 0 "empty value logs nothing"
+    }}
     { name: "recents_lines emits TAB rows: kind,value,cwd,channel,query", run: {||
         let dir = (mktemp -d | str trim)
         let out = (with-env { XDG_STATE_HOME: $dir } {

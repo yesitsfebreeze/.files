@@ -9,8 +9,11 @@ or replay any of them. It lives in `home/dot_config/nushell/quicklist.nu` plus t
 ## The recents log
 
 Every committed finder selection is appended to `$XDG_STATE_HOME/finder/recents.nuon`
-by `_recents_log` (called from `finder` right after it persists the chain). Each entry
-records enough to both **re-open** and **replay** it:
+by `_recents_log` (called from `finder` right after it persists the chain). Non-finder
+navigation feeds the same log too: a **zoxide** jump (`z <dir>`/`zi`) or a `z <file>`
+editor-open is appended by `_recents_add` (tagged `channel: zoxide`), so what you reach
+by jumping shows up in the quicklist alongside what you pick through the finder. Each
+entry records enough to both **re-open** and **replay** it:
 
 | Field | Why |
 |-------|-----|

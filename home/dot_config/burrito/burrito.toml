@@ -47,6 +47,12 @@ name = "Find (television)"
 description = "Fuzzy-find a path, then pipe / edit / shell"
 
 [[commands]]
+bind = "o"
+command = "!nu"            # root nu float: a fully-configured shell in a popup
+name = "Float shell (nu)"
+description = "Mini workspace — ctrl+space finder, editor, copy/paste, notes; exit to dismiss"
+
+[[commands]]
 bind = "q"
 command = ":quit"           # builtin
 
