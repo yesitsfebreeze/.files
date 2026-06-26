@@ -12,7 +12,8 @@ push:
   @sleep 5
   @chezmoi update --force
   # Reload into a fresh nushell so just-applied config (theme.nu, etc.) takes effect.
-  @exec nu
+  # Only when stdin is a real terminal — skip under non-TTY runs (CI, piped, `! just`).
+  @test -t 0 && exec nu || true
 
 # Pull remote first, then commit every local change, then merge the two together.
 # Unlike `push` (which rebases local work onto the remote), this fetches and merges
