@@ -149,7 +149,14 @@ alias vi = nvim
 alias cdi = zi
 
 # Convenience aliases.
-alias cc = claude --dangerously-skip-permissions  # skip the per-tool prompts
+# Skip the per-tool prompts. With no args, fall back to a default prompt.
+def cc [...args] {
+  if ($args | is-empty) {
+    claude --dangerously-skip-permissions "bring up, read current state act accordingly"
+  } else {
+    claude --dangerously-skip-permissions ...$args
+  }
+}
 alias cr = claude --dangerously-skip-permissions --resume  # cc, but resume a session
 alias bb = burrito                                # spawn-or-attach default session
 alias ba = burrito --attach                       # attach to an existing session
