@@ -146,10 +146,41 @@ alias g = git
 alias lg = lazygit
 alias v = nvim
 alias vi = nvim
+alias nn = nvim ~/notes.md
 alias cdi = zi
 
 # Convenience aliases.
 # Skip the per-tool prompts. With no args, fall back to a default prompt.
+
+# _claude_share — an account profile isolates only credentials + settings; the
+# heavy, meant-to-be-shared state (plugins, project/session history, caches…) is
+# symlinked back to the top-level ~/.claude so it stays reachable from every login.
+# .claude.json / settings are seeded once from the default so a new account starts
+# configured (enabled plugins, MCP servers, project trust) but then diverges; the
+# credentials file is left absent on purpose so the account logs in fresh.
+def _claude_share [root: path, name: string] {
+  let profile = ($root | path join $name)
+  mkdir $profile
+  let shared = [
+    plugins projects sessions session-env history.jsonl cache file-history
+    shell-snapshots agent-memory hooks hub jobs plans backups paste-cache
+    context-mode debug tasks teams telemetry
+  ]
+  for item in $shared {
+    let src = ($root | path join $item)
+    let dst = ($profile | path join $item)
+    if (($src | path exists) and (not ($dst | path exists))) {
+      ^ln -s $src $dst
+    }
+  }
+  for f in [".claude.json" "settings.json" "settings.local.json"] {
+    let src = ($root | path join $f)
+    let dst = ($profile | path join $f)
+    if (($src | path exists) and (not ($dst | path exists))) {
+      cp $src $dst
+    }
+  }
+}
 
 # _claude_login — pick a login profile and return its CLAUDE_CONFIG_DIR.
 # A profile is a subdir of ~/.claude that holds its own .credentials.json; Claude's
@@ -182,8 +213,12 @@ def _claude_login [] {
   if ($name | is-empty) { return null }
 
   # "default" maps to the top-level ~/.claude; any other name is a subdir profile
+  # that shares the heavy state and only keeps its own credentials + settings.
   let dir = (if $name == "default" { $root } else { ($root | path join $name) })
-  mkdir $dir
+  if $name != "default" {
+    mkdir $dir
+    _claude_share $root $name
+  }
   $name | save -f $last_file
   $dir
 }
