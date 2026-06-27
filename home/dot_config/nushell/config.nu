@@ -150,14 +150,64 @@ alias cdi = zi
 
 # Convenience aliases.
 # Skip the per-tool prompts. With no args, fall back to a default prompt.
+
+# _claude_login — pick a login profile and return its CLAUDE_CONFIG_DIR.
+# A profile is a subdir of ~/.claude that holds its own .credentials.json; Claude's
+# own internal dirs (projects, sessions, cache…) never have one, so they self-filter.
+# The last-used profile (recorded in ~/.claude/.last-login) is listed first, so a
+# bare Enter relaunches it. The "＋ new login" entry creates a fresh, isolated profile.
+# Returns null on cancel (Esc / empty name).
+def _claude_login [] {
+  let root = ($env.HOME | path join ".claude")
+  let last_file = ($root | path join ".last-login")
+  let new_label = "＋ new login"
+
+  # subdir profiles, plus the top-level credential (shown as "default") if present
+  let profiles = (ls $root
+    | where type == dir
+    | get name
+    | where {|d| ($d | path join ".credentials.json" | path exists) }
+    | each {|d| $d | path basename }
+    | sort)
+  let profiles = (if (($root | path join ".credentials.json") | path exists) {
+      (["default"] ++ $profiles)
+    } else { $profiles })
+
+  let last = (if ($last_file | path exists) { open $last_file | str trim } else { "" })
+  let ordered = (($profiles | where {|p| $p == $last }) ++ ($profiles | where {|p| $p != $last }))
+  let sel = (($ordered | append $new_label) | input list --fuzzy "claude login")
+  if ($sel | is-empty) { return null }
+
+  let name = (if $sel == $new_label { (input "new login name: " | str trim) } else { $sel })
+  if ($name | is-empty) { return null }
+
+  # "default" maps to the top-level ~/.claude; any other name is a subdir profile
+  let dir = (if $name == "default" { $root } else { ($root | path join $name) })
+  mkdir $dir
+  $name | save -f $last_file
+  $dir
+}
+
 def cc [...args] {
-  if ($args | is-empty) {
-    claude --dangerously-skip-permissions "bring up, read current state act accordingly"
-  } else {
-    claude --dangerously-skip-permissions ...$args
+  let dir = (_claude_login)
+  if ($dir | is-empty) { return }
+  with-env { CLAUDE_CONFIG_DIR: $dir } {
+    if ($args | is-empty) {
+      claude --dangerously-skip-permissions "bring up, read current state act accordingly"
+    } else {
+      claude --dangerously-skip-permissions ...$args
+    }
   }
 }
-alias cr = claude --dangerously-skip-permissions --resume  # cc, but resume a session
+
+# cr — like cc, but resume a session within the chosen profile.
+def cr [...args] {
+  let dir = (_claude_login)
+  if ($dir | is-empty) { return }
+  with-env { CLAUDE_CONFIG_DIR: $dir } {
+    claude --dangerously-skip-permissions --resume ...$args
+  }
+}
 alias bb = burrito                                # spawn-or-attach default session
 alias ba = burrito --attach                       # attach to an existing session
 # Vim/editor muscle memory for quitting the shell.
