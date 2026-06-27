@@ -9,8 +9,6 @@ push:
   @git diff --cached --quiet || git commit -m "intermediate"
   @git pull --rebase --autostash
   @git push
-  @sleep 5
-  @chezmoi update --force
   # Reload into a fresh nushell so just-applied config (theme.nu, etc.) takes effect.
   # Only when stdin is a real terminal — skip under non-TTY runs (CI, piped, `! just`).
   @test -t 0 && exec nu || true
