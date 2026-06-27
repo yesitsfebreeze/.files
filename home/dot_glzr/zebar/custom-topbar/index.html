@@ -92,12 +92,15 @@
       const inv = window.__TAURI_INTERNALS__?.invoke;
       const winCall = (cmd, args) =>
         inv?.(`plugin:window|${cmd}`, args)?.catch?.(() => {});
-      // Click-through is best-effort: zebar may not grant the ignore-cursor-events
-      // capability, so that call can be a silent no-op. As the reliable fallback we
-      // also HIDE the whole window while the cursor is in the bar — that always lets
-      // clicks reach the native (auto-hidden) menu bar beneath, whatever the grants.
+      // Reveal-on-hover: when the cursor enters the bar we go click-through so the
+      // native (auto-hidden) menu bar beneath reveals on hover. Zebar grants the
+      // set_ignore_cursor_events capability, so this is reliable on macOS.
+      //
+      // We deliberately do NOT hide the whole window as a fallback: macOS suspends a
+      // hidden webview's timers (window occlusion / App Nap), which freezes the cursor
+      // poll below — so once hidden the bar never un-hides and vanishes for good.
+      // Opacity + click-through keeps the window shown so the poll keeps running.
       const setClickThrough = on => winCall('set_ignore_cursor_events', { ignore: on });
-      const setHidden = on => winCall(on ? 'hide' : 'show');
 
       let faded = false;
       const fade = () => {
@@ -105,13 +108,11 @@
         faded = true;
         document.body.classList.add('at-top');
         setClickThrough(true);
-        setHidden(true);
       };
       const show = () => {
         if (!faded) return;
         faded = false;
         document.body.classList.remove('at-top');
-        setHidden(false);
         setClickThrough(false);
       };
 
@@ -128,9 +129,10 @@
         };
         setInterval(async () => {
           try {
-            // Only re-measure while shown: a hidden window can report a stale/bogus
-            // rect, so we reuse the docked geometry captured before hiding.
-            if (!faded && (!rect || n++ % 25 === 0)) await refreshRect();
+            // The docked geometry is static, so cache it; re-measure periodically to
+            // catch monitor / resolution changes. (The window is always shown now, so
+            // the rect is never stale — no need to gate this on the faded state.)
+            if (!rect || n++ % 25 === 0) await refreshRect();
             if (!rect) return;
             const c = await inv('plugin:window|cursor_position');
             const band = Math.min(rect.h, barPx());
@@ -138,7 +140,8 @@
                          c.y >= rect.y && c.y <= rect.y + band;
             over ? fade() : show();
           } catch {
-            // Never get stuck hidden: if a poll throws while faded, fail safe to shown.
+            // Never get stuck click-through: if a poll throws while faded, fail safe
+            // to shown so the bar stays visible and interactive.
             if (faded) show();
           }
         }, 100);
