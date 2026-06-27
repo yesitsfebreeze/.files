@@ -26,12 +26,13 @@ gh_latest_tag() {
 # Download the tarball at $2 and install the binary named $1 into ~/.local/bin.
 # Warns + returns non-zero on any download/extract/place failure, so the cargo
 # fallback can still try. Callers guard on `command -v`, so this stays idempotent.
+# Extracts with autodetecting `tar -xf` so both .tar.gz and .tar.xz assets work.
 fetch_tarball_binary() {
     _bin="$1"; _url="$2"; _rc=1
     mkdir -p "$HOME/.local/bin"
     _td="$(mktemp -d)"
-    if curl -fsSL -o "$_td/asset.tar.gz" "$_url" \
-        && tar -xzf "$_td/asset.tar.gz" -C "$_td" 2>/dev/null; then
+    if curl -fsSL -o "$_td/asset.tar" "$_url" \
+        && tar -xf "$_td/asset.tar" -C "$_td" 2>/dev/null; then
         _found="$(find "$_td" -type f -name "$_bin" 2>/dev/null | head -n1)"
         if [ -n "$_found" ] && cp "$_found" "$HOME/.local/bin/$_bin"; then
             chmod +x "$HOME/.local/bin/$_bin"; _rc=0
@@ -266,7 +267,8 @@ fi
 # x86_64 and Apple-Silicon macOS; other targets warn and fall through (build
 # from source). The tarball holds a top-level `kern`, so it drops straight
 # through fetch_tarball_binary. Idempotent: skipped once `kern` is on PATH.
-kern_repo="{{ range .packages }}{{ if hasKey . "gh_release" }}{{ .gh_release }}{{ end }}{{ end }}"
+# (gh_release is name-scoped here since worktrunk below carries it too.)
+kern_repo="{{ range .packages }}{{ if eq .name "kern" }}{{ .gh_release }}{{ end }}{{ end }}"
 if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
     case "$(uname -s)-$(uname -m)" in
         Linux-x86_64|Linux-amd64)    kern_target=x86_64-unknown-linux-gnu ;;
@@ -281,6 +283,31 @@ if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
             "https://github.com/$kern_repo/releases/latest/download/kern-$kern_target.tar.gz" \
             && log "  installed kern" \
             || warn "  could not install kern from the GitHub release"
+    fi
+fi
+
+# worktrunk — git worktree manager (binary: `wt`), built for parallel-agent
+# workflows. In homebrew-core (covers macOS) but absent from apt/dnf, so on Linux
+# fetch the prebuilt musl binary from its latest GitHub release. The repo is the
+# single source of truth in packages.yaml (gh_release). Release tarballs are
+# tag-agnostic (latest/download) .tar.xz with a top-level `wt` (fetch_tarball_binary
+# autodetects xz). Idempotent: skipped once `wt` is on PATH; cargo (worktrunk-sync)
+# is the last resort below.
+worktrunk_repo="{{ range .packages }}{{ if eq .name "worktrunk" }}{{ .gh_release }}{{ end }}{{ end }}"
+if [ "$(uname -s)" = "Linux" ] && [ -n "$worktrunk_repo" ] && ! command -v wt >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64|amd64)  wt_target=x86_64-unknown-linux-musl ;;
+        aarch64|arm64) wt_target=aarch64-unknown-linux-musl ;;
+        *)             wt_target="" ;;
+    esac
+    if [ -z "$wt_target" ]; then
+        warn "worktrunk: no prebuilt binary for $(uname -m); build from source (https://github.com/$worktrunk_repo)"
+    else
+        log "install worktrunk ($wt_target binary, GitHub release fallback)"
+        fetch_tarball_binary wt \
+            "https://github.com/$worktrunk_repo/releases/latest/download/worktrunk-$wt_target.tar.xz" \
+            && log "  installed worktrunk" \
+            || warn "  could not install worktrunk from the GitHub release"
     fi
 fi
 
@@ -461,6 +488,7 @@ bin_for() {
         television) echo tv ;;
         bubblewrap) echo bwrap ;;
         gnupg)      echo gpg ;;
+        worktrunk)  echo wt ;;
         *)          echo "$1" ;;
     esac
 }
@@ -476,6 +504,7 @@ crate_for() {
         tv) echo television ;;
         tinty) echo tinty ;;
         just) echo just ;;
+        wt) echo worktrunk-sync ;;
         *) echo "" ;;
     esac
 }

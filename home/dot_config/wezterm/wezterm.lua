@@ -532,29 +532,26 @@ config.keys = {
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(enter_copy_mode),
     },
-    -- CTRL-V pastes text at the shell prompt, but forwards to the running program
-    -- otherwise, keyed off the WEZTERM_PROG user var nushell sets (empty == prompt).
-    -- Forwarding is what lets Claude/nvim grab Ctrl-V themselves; Claude's handler
-    -- then reads image or text from the clipboard. On WSL we first mirror the
-    -- Windows clipboard onto the Wayland one (see wsl-clip-prime.sh): image as PNG
-    -- (WSLg only offers bmp, which Claude rejects), otherwise the latest text --
-    -- so dictation/Wispr and normal copies aren't shadowed by a stale buffer.
+    -- CTRL-V: native paste. Sends the Windows clipboard as a bracketed paste, which is
+    -- how text reaches both the shell and a running program (Claude, nvim). Fast, no
+    -- subprocess -- and it's what makes Wispr dictation (clipboard + paste) land here.
+    { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+    -- CTRL-SHIFT-V: paste an IMAGE into the running program. Claude's own Ctrl-V is
+    -- image-only (it probes the clipboard), and on WSL it reads the Wayland clipboard
+    -- while a copied Windows image only crosses as bmp, which Claude rejects. So we
+    -- re-encode the Windows clipboard image to PNG on the Wayland clipboard, then
+    -- forward Ctrl-V so Claude's probe finds it. Costs a PowerShell launch -- image only.
     {
         key = "v",
-        mods = "CTRL",
+        mods = "CTRL|SHIFT",
         action = wezterm.action_callback(function(window, pane)
-            local prog = (pane:get_user_vars() or {})["WEZTERM_PROG"]
-            if prog and prog ~= "" then
-                if is_windows then
-                    pcall(wezterm.run_child_process, {
-                        "wsl.exe", "-d", WSL_DISTRO, "-e", "bash", "-c",
-                        '"$HOME/.config/wezterm/wsl-clip-prime.sh"',
-                    })
-                end
-                window:perform_action(act.SendKey({ key = "v", mods = "CTRL" }), pane)
-            else
-                window:perform_action(act.PasteFrom("Clipboard"), pane)
+            if is_windows then
+                pcall(wezterm.run_child_process, {
+                    "wsl.exe", "-d", WSL_DISTRO, "-e", "bash", "-c",
+                    '"$HOME/.config/wezterm/wsl-clip-prime.sh"',
+                })
             end
+            window:perform_action(act.SendKey({ key = "v", mods = "CTRL" }), pane)
         end),
     },
     -- CTRL-C copies when a selection exists, otherwise falls through to the

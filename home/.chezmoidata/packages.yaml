@@ -107,6 +107,13 @@ packages:
       pacman: github-cli
       dnf: gh
 
+    - name: worktrunk     # git worktree manager (binary: `wt`) — parallel-agent worktree workflows
+      brew: worktrunk     # in homebrew-core; covers macOS + Linuxbrew
+      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
+      pacman: ""          # AUR-only; GitHub-release binary / cargo fallback
+      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
+      gh_release: max-sixty/worktrunk   # source of truth: prebuilt `wt` binary (.tar.xz) from this repo's latest release
+
     - name: just          # command runner / `.justfile` task automation (casey/just)
       brew: just
       apt: just           # in Debian 13+/Ubuntu 24.04+; older releases fall back to cargo
