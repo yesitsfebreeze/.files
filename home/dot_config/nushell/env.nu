@@ -56,11 +56,11 @@ $env.SHELL = $nu.current-exe
 # read the same path. Change this to relocate the store.
 $env.PASSWORD_STORE_DIR = ($nu.home-dir | path join ".password-store")
 
-# Start dir: open every interactive shell in the last directory a deliberate `cd`
-# moved into, falling back to ~/dev (the dev workspace) on a fresh machine. mkcd
-# records that dir in startdir.txt (and pointedly NOT on a transient zoxide/picker
-# jump — those stay out of the start dir). We read the file directly here because
-# env.nu runs before config.nu sources dirstack.nu — the path mirrors `_startdir_file`.
+# Start dir: open every interactive shell in the last directory we navigated into —
+# by any means (real `cd`, zoxide z/zi, `zz`, picker jump) — falling back to ~/dev
+# (the dev workspace) on a fresh machine. mkcd records that dir in startdir.txt on
+# every move. We read the file directly here because env.nu runs before config.nu
+# sources dirstack.nu — the path mirrors `_startdir_file`.
 # Guarded on an interactive stdout so a non-interactive `nu -c ...` caller keeps its
 # own cwd. burrito cells read this env.nu too, so every pane lands on the same dir.
 if (is-terminal --stdout) {

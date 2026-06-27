@@ -176,16 +176,11 @@ source ~/.config/nushell/dirstack.nu
 # `cd $target` in the body still resolves to the builtin (no recursion); the
 # alias only redirects the names typed at the prompt.
 #
-# mkcd is also the single funnel every `cd` flows through — including the transient
-# zoxide/picker jumps, which reach it via the `cd` alias. So this is where we record
-# the new-shell start dir: a real `cd` updates startdir.txt; a transient jump sets
-# $env._CD_TRANSIENT first (the zoxide wrappers / finder / quicklist set it, do the
-# jump, then clear it) so we skip the write and the start dir keeps pointing at the
-# last place we deliberately cd'd. We do NOT clear the flag here: `cd` (the alias)
-# re-enters mkcd recursively for the inner `cd $target`, so a reset here would fire
-# mid-jump and let the transient move leak into startdir.txt — the transient caller
-# owns clearing it. The write is idempotent across the re-entry. The recency stack
-# (Alt-O) still logs every move via the PWD hook below.
+# mkcd is also the single funnel every `cd` flows through — real `cd`, zoxide jumps
+# (z/zi reach it via the `cd` alias inside __zoxide_z), `zz`, and picker jumps. So
+# this is where we record the new-shell start dir: ANY move into a directory updates
+# startdir.txt, so a new shell opens wherever we last navigated — by whatever means.
+# The recency stack (Alt-O) likewise logs every move via the PWD hook below.
 def --env mkcd [dir?: path] {
     let target = if ($dir | is-empty) { $env.HOME
     } else if $dir == "-" { "-"
@@ -199,9 +194,7 @@ def --env mkcd [dir?: path] {
         mkdir $target
     }
     cd $target
-    if not ($env._CD_TRANSIENT? | default false) {
-        _startdir_save $env.PWD
-    }
+    _startdir_save $env.PWD
 }
 alias cd = mkcd
 
@@ -360,24 +353,21 @@ source ~/.cache/television/init.nu
 # `finder`: composable, typed fuzzy finder — chains tv channels, returns nu data. Sourced
 # HERE (before the zoxide wrappers below) so `_recents_add` is in scope for them: nushell
 # resolves a def body's command calls at parse time, so the recents logger must already be
-# loaded when `_z_transient`/`_zi_transient` are parsed.
+# loaded when `_z_nav`/`_zi_nav` are parsed.
 source ~/.config/nushell/finder.nu
 
-# zoxide jumps (z / zi, and `cdi`) are transient: they belong in the Alt-O recency
-# stack but must NOT become the new-shell start dir, which tracks deliberate `cd`
-# only. Wrap the generated z/zi to raise $env._CD_TRANSIENT for the duration of the
-# jump; mkcd reads it (shared --env call chain) and skips the startdir.txt write, then
-# we lower it again so the next real `cd` records normally. `cdi` (aliased to `zi`
-# before zoxide loads) forward-references zi, so it follows these overrides too —
-# verified: a pre-zoxide alias-to-alias resolves the latest target.
-# `z` also opens: if the args resolve to an existing file, edit it; otherwise it's a
-# directory query and we hand off to zoxide as before (which cd's, dir or jump).
-# Both wrappers also log the navigation into the cross-channel recents stack (the
-# `quicklist` source) via `_recents_add`, so a `z`-opened file or jumped-to dir resurfaces
-# there alongside finder picks. Dir jumps log only when PWD actually moved (a no-match `z`
-# leaves it put — nothing to record); file opens always log the edited path.
-def --env --wrapped _z_transient [...rest: string] {
-    $env._CD_TRANSIENT = true
+# Wrap the generated z/zi. The jump itself goes through mkcd (via the `cd` alias
+# inside __zoxide_z), so it already records the new-shell start dir — a zoxide jump
+# is treated as a real move, same as `cd`. These wrappers add two things on top:
+# `z` also opens (if the single arg resolves to an existing file, edit it; otherwise
+# it's a directory query handed to zoxide), and both log the navigation into the
+# cross-channel recents stack (the `quicklist` source) via `_recents_add`, so a
+# `z`-opened file or jumped-to dir resurfaces there alongside finder picks. Dir jumps
+# log only when PWD actually moved (a no-match `z` leaves it put — nothing to record);
+# file opens always log the edited path. `cdi` (aliased to `zi` before zoxide loads)
+# forward-references zi, so it follows these overrides too — verified: a pre-zoxide
+# alias-to-alias resolves the latest target.
+def --env --wrapped _z_nav [...rest: string] {
     let target = ($rest | str join " " | path expand)
     if (($rest | length) == 1 and ($target | path type) == "file") {
         _recents_add "FileList" $target "zoxide"
@@ -387,26 +377,21 @@ def --env --wrapped _z_transient [...rest: string] {
         __zoxide_z ...$rest
         if ($env.PWD != $before) { _recents_add "DirList" $env.PWD "zoxide" }
     }
-    $env._CD_TRANSIENT = false
 }
-def --env --wrapped _zi_transient [...rest: string] {
-    $env._CD_TRANSIENT = true
+def --env --wrapped _zi_nav [...rest: string] {
     let before = $env.PWD
     __zoxide_zi ...$rest
     if ($env.PWD != $before) { _recents_add "DirList" $env.PWD "zoxide" }
-    $env._CD_TRANSIENT = false
 }
-alias z = _z_transient
-alias zi = _zi_transient
+alias z = _z_nav
+alias zi = _zi_nav
 
 # zc — like `z`, but directories only, then drop into a Claude (`cc`) session in
-# the jumped-to dir. Reuses zoxide's transient jump (so it lands in the Alt-O
-# recency stack but doesn't hijack the new-shell start dir), then launches `cc`
-# right there. No file-edit branch — unlike `z`, `zc` is dirs only by design.
+# the jumped-to dir. The jump lands in the Alt-O recency stack and updates the
+# new-shell start dir (via mkcd, same as any move), then launches `cc` right there.
+# No file-edit branch — unlike `z`, `zc` is dirs only by design.
 def --env --wrapped zc [...rest: string] {
-    $env._CD_TRANSIENT = true
     __zoxide_z ...$rest
-    $env._CD_TRANSIENT = false
     cc
 }
 
@@ -451,11 +436,10 @@ def --env _z_fallback [] {
     if $q.exit_code != 0 { return }
     let path = ($q.stdout | str trim)
     if ($path | is-empty) or (($path | path type) != 'dir') { return }
-    $env._CD_TRANSIENT = true
     cd $path
-    $env._CD_TRANSIENT = false
     # cd in pre_execution may not trip the env_change PWD hook, so log the Alt-O recency
     # entry here (mirrors the `z` wrappers); _dirstack_push dedups if the hook also fired.
+    # (`cd` → mkcd already recorded the new-shell start dir.)
     _dirstack_push $env.PWD
     _recents_add "DirList" $env.PWD "zoxide"
     $env._NAV = true                  # signal the screen-clear in pre_prompt

@@ -6,12 +6,10 @@
 #    `o`), which fuzzy-picks one to jump back to — see recent-dirs.toml. Newest first,
 #    deduped, capped — one entry per directory so the head is always "latest visited".
 #
-# 2. startdir.txt — a single line: the last directory a *deliberate* `cd` moved into.
-#    env.nu reads it at shell start so a new shell opens where we last `cd`'d (not
-#    always ~/dev). This is deliberately NOT the recency head: a transient zoxide or
-#    picker jump should be reachable via the Alt-O picker but must NOT hijack where
-#    new shells open. mkcd writes here on a real `cd` and skips it when the move was a
-#    transient jump (those callers set $env._CD_TRANSIENT — see config.nu's mkcd).
+# 2. startdir.txt — a single line: the last directory we moved into, by ANY means
+#    (real `cd`, zoxide z/zi, `zz`, picker jump). env.nu reads it at shell start so a
+#    new shell opens wherever we last navigated (not always ~/dev). mkcd is the single
+#    funnel every move flows through, so it writes here on every move — see config.nu.
 #
 # env.nu reads both paths directly (it runs before this module is sourced), so the
 # path logic is mirrored there.
