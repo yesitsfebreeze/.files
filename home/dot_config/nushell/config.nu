@@ -536,12 +536,24 @@ def --env _z_fallback [] {
     _recents_add "DirList" $env.PWD "zoxide"
     $env._NAV = true                  # signal the screen-clear in pre_prompt
 }
+# _wezterm_prog — report what's running in this pane to the host terminal via OSC
+# 1337 SetUserVar (burrito forwards it up to WezTerm, like osc7). The command name
+# while a program runs, "" at the prompt. WezTerm gates Ctrl-V on this: empty pastes
+# text into reedline; non-empty forwards Ctrl-V to the running app, which is what
+# triggers Claude's clipboard image read (incl. the Windows clipboard on WSL) and
+# lets nvim/etc. see the key too.
+def _wezterm_prog [prog: string] {
+    if not (is-terminal --stdout) { return }
+    print -rn $"(char -u '1b')]1337;SetUserVar=WEZTERM_PROG=($prog | encode base64)(char -u '07')"
+}
 $env.config.hooks.pre_execution = (
     ($env.config.hooks.pre_execution? | default [])
     | append {|| _z_fallback }
+    | append {|| _wezterm_prog (commandline | str trim | split row -r '\s+' | get 0? | default "") }
 )
 $env.config.hooks.pre_prompt = (
     ($env.config.hooks.pre_prompt? | default [])
+    | append {|| _wezterm_prog "" }
     | append {||
         if ($env._NAV? | default false) {
             $env._NAV = false

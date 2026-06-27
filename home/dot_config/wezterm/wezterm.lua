@@ -532,7 +532,22 @@ config.keys = {
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(enter_copy_mode),
     },
-    { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+    -- CTRL-V pastes text at the shell prompt, but forwards to the running program
+    -- otherwise, keyed off the WEZTERM_PROG user var nushell sets (empty == prompt).
+    -- Forwarding is what lets Claude/nvim grab Ctrl-V themselves; Claude's handler
+    -- then reads an image from the clipboard (incl. the Windows clipboard on WSL).
+    {
+        key = "v",
+        mods = "CTRL",
+        action = wezterm.action_callback(function(window, pane)
+            local prog = (pane:get_user_vars() or {})["WEZTERM_PROG"]
+            if prog and prog ~= "" then
+                window:perform_action(act.SendKey({ key = "v", mods = "CTRL" }), pane)
+            else
+                window:perform_action(act.PasteFrom("Clipboard"), pane)
+            end
+        end),
+    },
     -- CTRL-C copies when a selection exists, otherwise falls through to the
     -- shell as a normal interrupt (SIGINT) so it keeps its terminal meaning.
     {
