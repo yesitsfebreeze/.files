@@ -219,14 +219,14 @@ def cl [...task: string] {
     python3 ([$nu.default-config-dir cl.py] | path join) $text
 }
 
-# journal — find the zoxide-known dir named `journal` that has a `vicky` subfolder
+# jj — find the zoxide-known dir named `journal` that has a `vicky` subfolder
 # (disambiguates from any other `journal`), cd into it, and open Claude there.
-def --env journal [] {
+def --env jj [] {
     let matches = (zoxide query -l journal
         | lines
         | where {|p| ($p | path basename) == "journal" and ($p | path join vicky | path exists) })
     if ($matches | is-empty) {
-        error make { msg: "journal: no zoxide-known `journal` dir with a `vicky` subfolder" }
+        error make { msg: "jj: no zoxide-known `journal` dir with a `vicky` subfolder" }
     }
     cd ($matches | first)
     cc
