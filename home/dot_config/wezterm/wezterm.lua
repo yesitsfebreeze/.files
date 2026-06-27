@@ -535,13 +535,21 @@ config.keys = {
     -- CTRL-V pastes text at the shell prompt, but forwards to the running program
     -- otherwise, keyed off the WEZTERM_PROG user var nushell sets (empty == prompt).
     -- Forwarding is what lets Claude/nvim grab Ctrl-V themselves; Claude's handler
-    -- then reads an image from the clipboard (incl. the Windows clipboard on WSL).
+    -- then reads an image from the clipboard. On WSL we first re-encode any Windows
+    -- screenshot to PNG on the Wayland clipboard (see wsl-clip-prime.sh) -- WSLg only
+    -- offers it as bmp, which Claude rejects. The script fast-exits for text pastes.
     {
         key = "v",
         mods = "CTRL",
         action = wezterm.action_callback(function(window, pane)
             local prog = (pane:get_user_vars() or {})["WEZTERM_PROG"]
             if prog and prog ~= "" then
+                if is_windows then
+                    pcall(wezterm.run_child_process, {
+                        "wsl.exe", "-d", WSL_DISTRO, "-e", "bash", "-c",
+                        '"$HOME/.config/wezterm/wsl-clip-prime.sh"',
+                    })
+                end
                 window:perform_action(act.SendKey({ key = "v", mods = "CTRL" }), pane)
             else
                 window:perform_action(act.PasteFrom("Clipboard"), pane)
