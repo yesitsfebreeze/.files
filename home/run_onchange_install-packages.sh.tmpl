@@ -347,6 +347,22 @@ if [ -n "$pi_npm_pkg" ] && [ ! -x "$HOME/.local/bin/pi" ]; then
     fi
 fi
 
+# playwright chromium deps — headless chromium needs a set of system libs
+# (libnss3, libatk, libgbm, …) that aren't pulled in by the package lists. The
+# `playwright install-deps` helper resolves and apt-installs exactly that set, so
+# browser automation works out of the box. apt-only (it shells out to apt-get),
+# and needs npx from the Node setup above; warns and skips otherwise.
+if [ "$(uname -s)" = "Linux" ] && [ "$MGR" = apt ]; then
+    if command -v npx >/dev/null 2>&1; then
+        log "install playwright chromium system deps (npx playwright install-deps chromium)"
+        npx --yes playwright install-deps chromium >/dev/null 2>&1 \
+            && log "  installed playwright chromium deps" \
+            || warn "  could not install playwright chromium deps"
+    else
+        warn "playwright deps: npx not found; install Node.js and re-run"
+    fi
+fi
+
 # docker — special-cased: "windows ?? local". On WSL where a Windows Docker
 # Desktop CLI is reachable (docker.exe on PATH), we do NOT install a second engine
 # inside the distro — we shim `docker` (+ compose) to the Windows binary, which
