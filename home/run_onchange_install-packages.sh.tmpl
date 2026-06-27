@@ -64,6 +64,24 @@ else
 fi
 log "Package manager: $MGR"
 
+# apt/pacman/dnf all shell out to sudo. In environments without root or
+# passwordless sudo (CI, restricted shells, some WSL setups) every per-package
+# install would fail identically, spamming a misleading "could not install X via
+# $MGR (will try fallback)" for each one — even for apt-only tools that have no
+# fallback. Detect that once here and skip the doomed loop; the Linux GitHub-
+# release + cargo fallbacks below cover most tools, and the final missing-check
+# reports whatever genuinely could not be installed.
+MGR_USABLE=1
+case "$MGR" in
+    apt|pacman|dnf)
+        if [ "$(id -u)" != 0 ] && ! sudo -n true >/dev/null 2>&1; then
+            MGR_USABLE=0
+            warn "$MGR needs root, but passwordless sudo is unavailable — skipping system packages."
+            warn "  relying on user-local fallbacks (~/.local, cargo); run 'sudo -v' then re-apply for the rest."
+        fi
+        ;;
+esac
+
 install_one() {
     pkg="$1"
     case "$MGR" in
@@ -75,7 +93,7 @@ install_one() {
     esac
 }
 
-if [ "$MGR" != none ]; then
+if [ "$MGR" != none ] && [ "$MGR_USABLE" = 1 ]; then
     case "$MGR" in
         brew)   pkgs="$brew_pkgs" ;;
         apt)    pkgs="$apt_pkgs"; sudo apt-get update -y >/dev/null 2>&1 || true ;;
@@ -484,6 +502,7 @@ bin_for() {
     case "$1" in
         ripgrep)    echo rg ;;
         neovim)     echo nvim ;;
+        imagemagick) echo magick ;;
         nushell)    echo nu ;;
         television) echo tv ;;
         bubblewrap) echo bwrap ;;

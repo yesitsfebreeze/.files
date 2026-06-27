@@ -1,24 +1,31 @@
 #!/usr/bin/env node
 // GlazeWM balance daemon — zero-dependency Node script (Node >=21, global WebSocket).
 //
-// Keeps the tiling grid sane on two axes, driven entirely over GlazeWM's IPC
-// WebSocket (ws://localhost:6123):
-//   Pass A  retile: any window in fullscreen/maximized state is sent `set-tiling`
-//           so native-maximized windows snap back into the grid.
-//   Pass B  equalize: every tiling sibling in a split is driven toward 1/n of its
-//           parent. GlazeWM exposes no absolute size setter, only relative
-//           `resize --width/--height <delta>%`, so we read each sibling's
-//           `tilingSize` and issue the minimal relative delta. Nested splits recurse.
-//   Pass C  float-small: when a window is first managed, if its NATIVE size is under
-//           a fraction of its monitor's area, float + center it instead of letting it
-//           join the grid. This is what keeps transient dialogs (file-upload pickers,
-//           save prompts) from reshuffling the whole tiling layout. GlazeWM window
-//           rules can only match process/class/title — there is no size matcher — so
-//           this size-based decision has to live here, at the IPC layer.
+// Keeps the tiling grid sane, driven entirely over GlazeWM's IPC WebSocket
+// (ws://localhost:6123). Goal: ZERO floating windows. Every window lives in the grid;
+// transient windows tuck into a corner instead of reshuffling it.
 //
-// GlazeWM already equal-splits on add/remove, so Pass B is usually a no-op; it only
+//   classify  When a window is first managed (and it isn't the sole/main window), it's
+//             sorted by its NATIVE height:
+//               • small (height < SMALL_MAX_HEIGHT_RATIO of the monitor) → docked as a
+//                 narrow right column (SMALL_COLUMN_RATIO wide) and pinned, so transient
+//                 dialogs/pickers sit in the lower-right instead of splitting the grid.
+//               • large → set-fullscreen in its own column (alt+f pops it back beside
+//                 the main window). Nothing is ever floated.
+//             GlazeWM window rules can only match process/class/title — there is no size
+//             matcher — so this size-based decision has to live here, at the IPC layer.
+//
+//   equalize  Every tiling sibling in a split is driven toward 1/n of its parent (GlazeWM
+//             exposes no absolute size setter, only relative `resize --width/--height
+//             <delta>%`, so we read each sibling's tilingSize and issue the minimal
+//             relative delta; nested splits recurse). Splits that contain a pinned small
+//             window are SKIPPED so the narrow column stays narrow.
+//
+// GlazeWM already equal-splits on add/remove, so equalize is usually a no-op; it only
 // corrects drift left by manual resize or odd layouts. Convergence is bounded by an
-// epsilon and a self-induced-event guard to avoid resize feedback loops.
+// epsilon and a self-induced-event guard to avoid resize feedback loops. There is no
+// "snap native-maximized back to the grid" pass anymore: large windows are MEANT to be
+// fullscreen, so a maximized window is left as-is.
 
 const PORT = 6123;
 const RECONNECT_MS = 2000;
@@ -26,13 +33,17 @@ const RECONNECT_MAX_MS = 30000;
 const DEBOUNCE_MS = 80;
 // A split is "equal enough" when every sibling is within this fraction of 1/n.
 const EPSILON = 0.01;
-// Ignore events for this long after we issue commands, so our own resize/set-tiling
+// Ignore events for this long after we issue commands, so our own resize/set-fullscreen
 // edits don't retrigger another balance pass.
 const SELF_QUIET_MS = 250;
-// Pass C — a freshly managed window whose native area is below this fraction of its
-// monitor's area is floated + centered rather than tiled. "A quarter of the screen"
-// by area; tune freely. Area (not per-side) so the single knob matches the intent.
-const FLOAT_MAX_AREA_RATIO = 0.25;
+// A freshly managed secondary window is classified by its NATIVE height: under this
+// fraction of the monitor's height it's "small/transient" (→ narrow right column); at or
+// above it's "large" (→ fullscreen in its own column). Height, not area, because that's
+// the axis the intent is phrased in. Tune freely.
+const SMALL_MAX_HEIGHT_RATIO = 0.5;
+// Width the docked small column takes (the main window keeps the rest). Held OUT of the
+// equalizer so it stays narrow rather than snapping back to 1/n.
+const SMALL_COLUMN_RATIO = 0.25;
 
 const EVENTS = [
   'window_managed',
@@ -60,10 +71,11 @@ let debounceTimer = null;
 let suppressUntil = 0;
 let balancing = false;
 
-// Window ids we've already run the Pass-C float-small decision on, so each window is
-// judged exactly once at managed-time (not re-floated on every later event). Pruned
-// when the window is unmanaged.
-const floatJudged = new Set();
+// Window ids we've already classified, so each window is judged exactly once at
+// managed-time (not re-handled on every later event). Pruned when unmanaged.
+const classified = new Set();
+// Ids docked as the narrow small column → exempt from equalization so they stay narrow.
+const pinnedSmall = new Set();
 
 // Pending command replies keyed by the exact message text we sent (GlazeWM echoes
 // `clientMessage` on `client_response`).
@@ -140,31 +152,33 @@ function onMessage(raw) {
   if (msg.messageType === 'event_subscription') {
     const evt = msg.data;
     if (evt && evt.eventType === 'window_managed') {
-      // Pass C runs off the managed event (not the debounced balance) because it
+      // classify runs off the managed event (not the debounced balance) because it
       // needs the window's NATIVE rect, which is only meaningful before/at the moment
       // it's slotted into the grid. Fire-and-forget; it self-suppresses on action.
-      maybeFloatSmall(evt.managedWindow).catch((err) =>
-        log('float-small error:', err.message),
+      classifyWindow(evt.managedWindow).catch((err) =>
+        log('classify error:', err.message),
       );
     } else if (evt && evt.eventType === 'window_unmanaged' && evt.unmanagedId) {
-      floatJudged.delete(evt.unmanagedId);
+      classified.delete(evt.unmanagedId);
+      pinnedSmall.delete(evt.unmanagedId);
     }
     if (Date.now() < suppressUntil) return;
     schedule();
   }
 }
 
-// Pass C — float + center a freshly managed window when its native size is below
-// FLOAT_MAX_AREA_RATIO of the monitor it opened on. `floatingPlacement` is GlazeWM's
-// preserved native rect (it survives tiling, which is the whole point of the field),
-// so it reflects the window's intended size even though the window may already be
-// tiled to its grid slot by the time this fires. The comparison is an area RATIO, so
-// it's DPI-independent as long as both rects share a coordinate space — they do, both
-// being Win32 physical screen coords.
-async function maybeFloatSmall(win) {
+// Classify a freshly managed window. The sole/main window is left to fill the workspace;
+// every secondary window is either docked as a narrow right column (small height) or
+// fullscreened in its own column (large). Nothing is floated. `floatingPlacement` is
+// GlazeWM's preserved native rect (it survives tiling, which is the whole point of the
+// field), so it reflects the window's intended size even though it may already be tiled
+// to its grid slot by the time this fires. Comparisons are RATIOS, so they're
+// DPI-independent as long as both rects share a coordinate space — they do, both being
+// Win32 physical screen coords.
+async function classifyWindow(win) {
   if (!win || win.type !== 'window' || !win.id) return;
-  if (floatJudged.has(win.id)) return;
-  floatJudged.add(win.id);
+  if (classified.has(win.id)) return;
+  classified.add(win.id);
 
   // Only reconsider windows that actually landed in tiling; anything the user/app
   // already put in floating/fullscreen/minimized is left alone.
@@ -177,36 +191,115 @@ async function maybeFloatSmall(win) {
   const h = fp.bottom - fp.top;
   if (!(w > 0) || !(h > 0)) return;
 
-  // Resolve the monitor this window opened on by testing its center against each
-  // monitor's rect; fall back to the first monitor if nothing contains it.
-  let monitors;
+  let wsData, monData;
   try {
-    monitors = (await send('query monitors')).monitors || [];
+    [wsData, monData] = await Promise.all([
+      send('query workspaces'),
+      send('query monitors'),
+    ]);
   } catch (err) {
-    log('query monitors failed:', err.message);
+    log('classify query failed:', err.message);
     return;
   }
+
+  // Resolve the window's place in the tree: its workspace + parent split, and how many
+  // tiling windows already share the workspace.
+  const found = locate((wsData && wsData.workspaces) || [], win.id);
+  if (!found) return;
+  // The first/sole window is the "main"; let it fill the workspace untouched. Only
+  // secondary windows get docked or fullscreened. (At managed-time the new window is
+  // already counted, so the main-alone case reads as 1.)
+  if (countTiling(found.workspace) <= 1) return;
+
+  // The monitor the window opened on (center-point test), for the height ratio.
   const cx = fp.left + w / 2;
   const cy = fp.top + h / 2;
+  const monitors = (monData && monData.monitors) || [];
   const mon =
     monitors.find(
       (m) => cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height,
     ) || monitors[0];
-  if (!mon || !(mon.width > 0) || !(mon.height > 0)) return;
+  if (!mon || !(mon.height > 0)) return;
 
-  const ratio = (w * h) / (mon.width * mon.height);
-  if (ratio >= FLOAT_MAX_AREA_RATIO) return;
+  const heightRatio = h / mon.height;
+  const label = win.title || win.processName || win.id;
 
-  try {
-    await command('set-floating --centered=true', win.id);
+  if (heightRatio < SMALL_MAX_HEIGHT_RATIO) {
+    // Small/transient → narrow right column, exempt from equalization.
+    pinnedSmall.add(win.id);
+    await dockSmall(found);
     suppressUntil = Date.now() + SELF_QUIET_MS;
     log(
-      `floated small window "${win.title || win.processName || win.id}"`,
-      `(area ${(ratio * 100).toFixed(0)}% < ${(FLOAT_MAX_AREA_RATIO * 100).toFixed(0)}%)`,
+      `docked small window "${label}"`,
+      `(height ${(heightRatio * 100).toFixed(0)}% < ${(SMALL_MAX_HEIGHT_RATIO * 100).toFixed(0)}%)`,
     );
-  } catch (err) {
-    log('set-floating failed:', err.message);
+  } else {
+    // Large → its own column, fullscreened (alt+f pops it back beside the main window).
+    try {
+      await command('set-fullscreen', win.id);
+      suppressUntil = Date.now() + SELF_QUIET_MS;
+      log(`fullscreened large window "${label}" (height ${(heightRatio * 100).toFixed(0)}%)`);
+    } catch (err) {
+      log('set-fullscreen failed:', err.message);
+    }
   }
+}
+
+// Shrink a docked small window to SMALL_COLUMN_RATIO along its parent's split axis, via
+// the same minimal relative-delta trick equalizeSplit uses (GlazeWM has no absolute
+// setter). In the common main+transient case the parent is the horizontal workspace, so
+// this narrows the window to a right column and the main window absorbs the rest.
+async function dockSmall(found) {
+  const { node, parent } = found;
+  if (!parent) return;
+  const horizontal = parent.tilingDirection === 'horizontal';
+  const axis = horizontal ? '--width' : '--height';
+  const size = typeof node.tilingSize === 'number' ? node.tilingSize : 0.5;
+  const delta = SMALL_COLUMN_RATIO - size;
+  if (Math.abs(delta) <= EPSILON) return;
+  const pct = (delta * 100).toFixed(2);
+  const arg = `${delta >= 0 ? '+' : ''}${pct}%`;
+  try {
+    await command(`resize ${axis} ${arg}`, node.id);
+  } catch (err) {
+    log('dock resize failed:', err.message);
+  }
+}
+
+// Locate a window id in the workspace forest, returning { node, parent, workspace }.
+// A top-level window's parent is its workspace node (whose tilingDirection drives the
+// dock axis), matching what equalizeSplit reads.
+function locate(workspaces, id) {
+  const walk = (node, workspace, parent) => {
+    if (!node) return null;
+    if (node.type === 'window' && node.id === id) {
+      return { node, parent, workspace };
+    }
+    if (Array.isArray(node.children)) {
+      for (const child of node.children) {
+        const hit = walk(child, workspace, node);
+        if (hit) return hit;
+      }
+    }
+    return null;
+  };
+  for (const ws of workspaces) {
+    const hit = walk(ws, ws, null);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+// Count tiling windows anywhere under a workspace.
+function countTiling(workspace) {
+  let n = 0;
+  const visit = (node) => {
+    if (!node) return;
+    if (node.type === 'window' && isTiling(node)) n++;
+    if (Array.isArray(node.children)) node.children.forEach(visit);
+  };
+  visit(workspace);
+  return n;
 }
 
 // Send a plain-text IPC message and resolve with its `data` payload.
@@ -252,43 +345,15 @@ async function balance() {
   try {
     const data = await send('query workspaces');
     const workspaces = (data && data.workspaces) || [];
-
-    let issued = false;
-    issued = (await retileMaximized(workspaces)) || issued;
-    issued = (await equalizeAll(workspaces)) || issued;
-
+    const issued = await equalizeAll(workspaces);
     if (issued) suppressUntil = Date.now() + SELF_QUIET_MS;
   } finally {
     balancing = false;
   }
 }
 
-// Pass A — collect every fullscreen/maximized window and tile it.
-async function retileMaximized(workspaces) {
-  const targets = [];
-  const visit = (node) => {
-    if (!node) return;
-    if (node.type === 'window') {
-      const st = node.state && node.state.type;
-      if (st === 'fullscreen') targets.push(node.id);
-    }
-    if (Array.isArray(node.children)) node.children.forEach(visit);
-  };
-  workspaces.forEach(visit);
-
-  let issued = false;
-  for (const id of targets) {
-    try {
-      await command('set-tiling', id);
-      issued = true;
-    } catch (err) {
-      log('set-tiling failed:', err.message);
-    }
-  }
-  return issued;
-}
-
-// Pass B — walk every split/workspace container and equalize its tiling children.
+// Walk every split/workspace container and equalize its tiling children — EXCEPT splits
+// that hold a pinned small window, whose deliberate narrow size must survive.
 async function equalizeAll(workspaces) {
   let issued = false;
   const visit = async (node) => {
@@ -301,7 +366,11 @@ async function equalizeAll(workspaces) {
       (c) => c.type === 'split' || (c.type === 'window' && isTiling(c)),
     );
 
-    if (tiling.length > 1) {
+    const hasPinned = tiling.some(
+      (c) => c.type === 'window' && pinnedSmall.has(c.id),
+    );
+
+    if (tiling.length > 1 && !hasPinned) {
       issued = (await equalizeSplit(node, tiling)) || issued;
     }
 

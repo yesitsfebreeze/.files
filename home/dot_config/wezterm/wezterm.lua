@@ -604,6 +604,18 @@ config.keys = {
     },
 }
 
+-- CTRL-ALT-SUPER + left-drag moves the whole OS window. window_decorations is
+-- "RESIZE" (no titlebar to grab), so StartWindowDrag is the only handle for
+-- repositioning; the heavy modifier combo keeps it from stealing ordinary clicks,
+-- selection, or the scratch overlay. SUPER is the Windows/Cmd key.
+config.mouse_bindings = {
+    {
+        event = { Down = { streak = 1, button = "Left" } },
+        mods = "CTRL|ALT|SUPER",
+        action = act.StartWindowDrag,
+    },
+}
+
 -- CTRL-Space toggles a native scratchpad pane, entirely inside WezTerm (no external
 -- window manager). WezTerm has no floating panes (issue #3851), so we fake the
 -- overlay with zoom: the scratch pane and the work pane share one tab, and exactly
