@@ -1,9 +1,10 @@
 # GlazeWM — Windows tiling WM config (i3-style). Lives at the default
 # ~/.glzr/glazewm/config.yaml. Modifier is alt throughout.
-# Goal: zero floating windows. Equal panes are kept by the balance-daemon (started
-# below), which also docks small transient windows into a narrow right column and
-# fullscreens large secondary windows in their own column. Manual resize is
-# intentionally absent (superseded by always-equal).
+# Every window lives in one equal grid: `initial_state: tiling` forces new windows into
+# the tiling tree, so a window only ever leaves the grid when the user fullscreens it
+# (alt+f) or detaches/floats it (alt+shift+space). Nothing is auto-floated. Equal pane
+# sizes are kept by the balance-daemon (started below). Manual resize is intentionally
+# absent (superseded by always-equal).
 
 general:
   # Launch Zebar + the balance daemon with the WM. shell-exec runs through the
@@ -62,10 +63,9 @@ window_behavior:
 
 # Window rules run when a window is first managed; matchers are process/class/title
 # only (there is no state matcher OR size matcher in the schema). New windows tile by
-# default (initial_state above). Size-based placement therefore lives in
-# balance-daemon.js over IPC: small secondary windows (file pickers, save prompts) are
-# docked into a narrow right column, large ones are fullscreened in their own column.
-# Nothing is floated.
+# default (initial_state above) and join the equal grid like any other — transient
+# dialogs (file pickers, save prompts) included. Nothing is auto-floated or
+# auto-fullscreened; balance-daemon.js only keeps the existing panes equal.
 window_rules:
   # Zebar is our top status bar, not an app window — ignore it so GlazeWM never
   # hands it a tiling slot. Without this the bar's overlay window is managed like
