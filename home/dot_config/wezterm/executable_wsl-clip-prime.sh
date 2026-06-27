@@ -1,21 +1,37 @@
 #!/usr/bin/env bash
-# Bridge a Windows-clipboard image into the Wayland clipboard as PNG.
+# Mirror the Windows clipboard onto the Wayland clipboard, right before WezTerm
+# forwards Ctrl-V to a WSL program (e.g. Claude Code).
 #
-# WSLg mirrors a copied Windows image to the Wayland clipboard only as image/bmp,
-# and Claude Code's paste accepts just png/jpeg/gif/webp -- so it grabs the bmp,
-# fails to decode it, and reports "no image". WezTerm runs this right before it
-# forwards Ctrl-V: if the clipboard holds an unconverted image, re-encode it to PNG
-# with PowerShell and take over the Wayland selection, so Claude's first matching
-# branch (wl-paste --type image/png) wins. Fast-paths out for text or already-PNG.
-types=$(wl-paste -l 2>/dev/null || true)
-case "$types" in
-  *image/png*) exit 0 ;;   # already PNG (we primed it, or an app set one)
-  *image/*) ;;             # some other image (bmp from WSLg) -> convert below
-  *) exit 0 ;;             # no image on the clipboard -> text paste, nothing to do
-esac
-
+# Why: WezTerm runs on Windows; Wispr and terminal copies land on the WINDOWS
+# clipboard. Claude reads the WAYLAND clipboard (wl-paste). WSLg's auto-bridge is
+# unreliable once anything calls wl-copy -- wl-copy then squats the Wayland
+# selection, so newer Windows content (dictated text, a fresh copy) never crosses
+# and Claude keeps pasting the stale buffer. So we don't trust Wayland: we read
+# the Windows clipboard directly (the source of truth) and always overwrite
+# Wayland to match -- image as PNG (Claude rejects WSLg's bmp), otherwise text.
 ps=$(command -v powershell.exe 2>/dev/null || echo /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe)
-png=$(mktemp)
-trap 'rm -f "$png"' EXIT
-"$ps" -NoProfile -NonInteractive -Sta -Command 'Add-Type -AssemblyName System.Windows.Forms; $i=[System.Windows.Forms.Clipboard]::GetImage(); if($null -eq $i){exit 1}; $ms=New-Object System.IO.MemoryStream; $i.Save($ms,[System.Drawing.Imaging.ImageFormat]::Png); [Convert]::ToBase64String($ms.ToArray())' 2>/dev/null | tr -d '\r' | base64 -d >"$png"
-[ -s "$png" ] && wl-copy --type image/png <"$png"
+
+resp=$("$ps" -NoProfile -NonInteractive -Sta -Command '
+Add-Type -AssemblyName System.Windows.Forms;
+Add-Type -AssemblyName System.Drawing;
+$cb=[System.Windows.Forms.Clipboard];
+if($cb::ContainsImage()){
+  $i=$cb::GetImage();
+  if($i){
+    $ms=New-Object System.IO.MemoryStream;
+    $i.Save($ms,[System.Drawing.Imaging.ImageFormat]::Png);
+    "IMG " + [Convert]::ToBase64String($ms.ToArray());
+  } else { "NONE" }
+} elseif($cb::ContainsText()){
+  $t=($cb::GetText()) -replace "\r","";
+  "TXT " + [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($t));
+} else { "NONE" }
+' 2>/dev/null | tr -d '\r\n')
+
+kind=${resp%% *}
+data=${resp#* }
+case "$kind" in
+  IMG) printf '%s' "$data" | base64 -d | wl-copy --type image/png ;;
+  TXT) printf '%s' "$data" | base64 -d | wl-copy ;;
+  *)   : ;;  # empty Windows clipboard -> leave Wayland untouched
+esac

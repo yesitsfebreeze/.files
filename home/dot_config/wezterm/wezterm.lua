@@ -535,9 +535,10 @@ config.keys = {
     -- CTRL-V pastes text at the shell prompt, but forwards to the running program
     -- otherwise, keyed off the WEZTERM_PROG user var nushell sets (empty == prompt).
     -- Forwarding is what lets Claude/nvim grab Ctrl-V themselves; Claude's handler
-    -- then reads an image from the clipboard. On WSL we first re-encode any Windows
-    -- screenshot to PNG on the Wayland clipboard (see wsl-clip-prime.sh) -- WSLg only
-    -- offers it as bmp, which Claude rejects. The script fast-exits for text pastes.
+    -- then reads image or text from the clipboard. On WSL we first mirror the
+    -- Windows clipboard onto the Wayland one (see wsl-clip-prime.sh): image as PNG
+    -- (WSLg only offers bmp, which Claude rejects), otherwise the latest text --
+    -- so dictation/Wispr and normal copies aren't shadowed by a stale buffer.
     {
         key = "v",
         mods = "CTRL",
