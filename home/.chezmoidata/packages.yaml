@@ -157,6 +157,25 @@ packages:
       pacman: docker      # the service, and add the user to the docker group. apt is handled by the block;
       dnf: docker         # pacman/dnf just get the plain package as a baseline (no WSL there anyway).
 
+    # Chromium/Electron runtime libs (no binary, Linux-only): headless chromium and
+    # Electron link against NSS/NSPR at runtime. The playwright install-deps block
+    # pulls these too, but only when npx is present and sudo is non-interactive, so
+    # list them explicitly to guarantee them on every apt run. `lib: true` marks
+    # them binary-less so the cargo/missing-check loops skip them.
+    - name: libnss3       # Network Security Services — chromium/electron runtime dep
+      lib: true
+      brew: ""            # macOS chromium uses system frameworks; not needed
+      apt: libnss3
+      pacman: nss
+      dnf: nss
+
+    - name: libnspr4      # Netscape Portable Runtime — companion to NSS
+      lib: true
+      brew: ""
+      apt: libnspr4
+      pacman: nspr
+      dnf: nspr
+
     # Nerd Font: package-manager coverage is thin, so the installer also fetches it
     # from the nerd-fonts release when missing (nerdfont_asset, below).
     - name: nerd-font

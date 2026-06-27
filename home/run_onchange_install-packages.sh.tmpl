@@ -42,7 +42,7 @@ fetch_tarball_binary() {
 }
 
 # Package lists rendered from .chezmoidata/packages.yaml (empty fields omitted).
-names="{{ range .packages }}{{ .name }} {{ end }}"
+names="{{ range .packages }}{{ if not (hasKey . "lib") }}{{ .name }} {{ end }}{{ end }}"
 brew_pkgs="{{ range .packages }}{{ with .brew }}{{ . }} {{ end }}{{ end }}"
 apt_pkgs="{{ range .packages }}{{ with .apt }}{{ . }} {{ end }}{{ end }}"
 pacman_pkgs="{{ range .packages }}{{ with .pacman }}{{ . }} {{ end }}{{ end }}"
