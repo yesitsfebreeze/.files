@@ -111,6 +111,12 @@ keybindings:
   - commands: ['toggle-tiling-direction']
     bindings: ['alt+v']
 
+  # Regrid: pull every floating/fullscreen window on the focused workspace back into the
+  # equal grid. GlazeWM keybindings only act on the focused window, so the sweep lives in
+  # regrid.js over IPC; the balance daemon equalizes sizes afterward.
+  - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/regrid.js']
+    bindings: ['alt+g']
+
   # Window state.
   - commands: ['toggle-floating --centered']
     bindings: ['alt+shift+space']
