@@ -430,7 +430,7 @@ $env.config.hooks.env_change.PWD = (
             _dirstack_push $after
             # A z-fallback jump (below) clears the screen in pre_prompt to bury the doomed
             # "command not found"; an eager `la` here would only be wiped, so skip it.
-            if not ($env._NAV? | default false) { la }
+            if ($env._NAV? | default "" | is-empty) { la }
         }
     }
 )
@@ -534,7 +534,7 @@ def --env _z_fallback [] {
     # (`cd` → mkcd already recorded the new-shell start dir.)
     _dirstack_push $env.PWD
     _recents_add "DirList" $env.PWD "zoxide"
-    $env._NAV = true                  # signal the screen-clear in pre_prompt
+    $env._NAV = "1"                   # signal the screen-clear in pre_prompt
 }
 $env.config.hooks.pre_execution = (
     ($env.config.hooks.pre_execution? | default [])
@@ -543,8 +543,8 @@ $env.config.hooks.pre_execution = (
 $env.config.hooks.pre_prompt = (
     ($env.config.hooks.pre_prompt? | default [])
     | append {||
-        if ($env._NAV? | default false) {
-            $env._NAV = false
+        if ($env._NAV? | default "" | is-not-empty) {
+            $env._NAV = ""
             print -n $"(char -u '1b')[2J(char -u '1b')[H"   # clear screen + cursor home
         }
     }
