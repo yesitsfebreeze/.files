@@ -4,6 +4,9 @@
 /.proj/
 /.machine/
 
+# Claude Code session-id file written into cwd by a SessionStart hook — runtime only
+/.claude-session
+
 # tinty live-theme runtime state — generated in the data dir, never the source
 # tree. Belt-and-suspenders so a stray apply target can't commit it. Targets the
 # generated artifact names only, so the tracked source config (home/dot_config/
