@@ -2,13 +2,16 @@ cwd := justfile_directory()
 
 # `just` with no args = push (the first recipe is just's default — keep push here so
 # bare `just` keeps meaning "apply + commit + push" as it always has).
+#
+# The whole apply→commit→rebase→push sequence runs under a single flock so two concurrent
+# `just` invocations SERIALIZE instead of racing on the working tree. Without it, one run's
+# `git pull --rebase --autostash` (which checks the tree out) could revert files out from
+# under the other run's `git add --all`, committing a stale tree — that's the "concurrent
+# just-push" clobber that twice stripped the Ctrl+Space overlay (commits d660eab, 1467324).
+# Fixed literal lock path so every worktree's `just` contends on the same lock. The shell
+# reload stays OUTSIDE the lock (exec replaces the process, so it must run last and unheld).
 push:
-  @chezmoi init --source "{{cwd}}" --force
-  @chezmoi apply --force
-  @git add --all
-  @git diff --cached --quiet || git commit -m "intermediate"
-  @git pull --rebase --autostash
-  @git push
+  @flock /tmp/dotfiles-push.lock bash -euc 'chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git pull --rebase --autostash && git push'
   # Reload into a fresh nushell so just-applied config (theme.nu, etc.) takes effect.
   # Only when stdin is a real terminal — skip under non-TTY runs (CI, piped, `! just`).
   @test -t 0 && exec nu || true
@@ -18,14 +21,9 @@ push:
 # the remote into the local branch, so divergent histories are reconciled with a
 # merge commit instead of being replayed. Use when both sides have moved and you want
 # to preserve both lines of history rather than linearize them.
+# Shares push's lock so merge and push can't race each other on the working tree either.
 merge:
-  @chezmoi init --source "{{cwd}}" --force
-  @chezmoi apply --force
-  @git fetch
-  @git add --all
-  @git diff --cached --quiet || git commit -m "intermediate"
-  @git merge --no-edit FETCH_HEAD
-  @git push
+  @flock /tmp/dotfiles-push.lock bash -euc 'chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git fetch && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git merge --no-edit FETCH_HEAD && git push'
 
 # Headless unit tests for the nushell config (pure functions only; tty parts excluded).
 test:
