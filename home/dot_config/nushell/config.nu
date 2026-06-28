@@ -694,3 +694,13 @@ def --env tv_remote [] {
     if ($channel == "theme") { theme; return }
     _finder_open (finder --start $channel --fresh)
 }
+
+# Ctrl+Space overlay: an inline command line that routes by what the typed command DOES.
+# wezterm sets SCRATCH_FLOAT=1 when it spawns the zoomed scratch pane (see wezterm.lua
+# toggle_scratch); `scratch_dispatch` reads one command and emits a terminal user-var so
+# wezterm either inserts its result into the work pane, scrapes a quick program's output, or
+# auto-promotes a TUI into a split. Guarded so normal shells are untouched.
+source ~/.config/nushell/dispatch.nu
+if (($env.SCRATCH_FLOAT? | default "") == "1") {
+    scratch_dispatch
+}
