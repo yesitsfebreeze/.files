@@ -34,5 +34,5 @@ test:
 # Local quality gate: parse the nushell libs (load-check), then run every test suite.
 # Run before pushing to catch regressions; `just gate && just`.
 gate:
-  @nu -c 'source home/dot_config/nushell/finder.nu; source home/dot_config/nushell/quicklist.nu'
+  @nu -c 'source home/dot_config/nushell/finder.nu; source home/dot_config/nushell/quicklist.nu; source home/dot_config/nushell/dispatch.nu'
   @nu tests/nushell/run.nu

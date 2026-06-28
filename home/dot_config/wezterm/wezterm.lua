@@ -490,17 +490,29 @@ local function enter_copy_mode(window, pane)
     window:perform_action(act.ActivateCopyMode, pane)
 end
 
--- CTRL-Space toggles a quake-style dropdown terminal, entirely inside WezTerm (no external
--- window manager). WezTerm has no floating panes (issue #3851), so we fake the dropdown with
--- zoom: the quake pane and the work pane share one tab, and exactly one of them is always
--- ZOOMED (fills the tab, hiding the other). Toggling swaps which one is zoomed, so the quake
--- shell appears/vanishes as a full-window overlay while it keeps running underneath. It's a
--- plain persistent nu shell — run the finder, a TUI, anything; it stays put between toggles.
--- Caught at the GUI layer so CTRL-Space never reaches the pty. Windows-only, matching the old
--- GlazeWM float's scope; elsewhere CTRL-Space falls through to reedline.
+-- CTRL-Space toggles a native scratchpad pane, entirely inside WezTerm (no external
+-- window manager). WezTerm has no floating panes (issue #3851), so we fake the overlay
+-- with zoom: the scratch pane and the work pane share one tab, and exactly one of them is
+-- always ZOOMED (fills the tab, hiding the other). Toggling swaps which one is zoomed, so
+-- the scratch appears/vanishes as a full-window overlay while its shell keeps running
+-- underneath. Caught at the GUI layer so CTRL-Space never reaches the pty. Windows-only,
+-- matching the old GlazeWM float's scope; elsewhere CTRL-Space falls through to reedline.
+--
+-- The scratch shell is nu with SCRATCH_FLOAT=1, which runs dispatch.nu's `scratch_dispatch`:
+-- an inline command line that reads ONE command and signals back over OSC 1337 user-vars
+-- (handled below) so we either insert its result into the work pane, scrape a quick
+-- program's output, or auto-promote a TUI into a split. Defined here (above the
+-- user-var-changed handler) because that handler drives the same state.
 
--- tab_id -> quake pane_id, so we can find the dropdown again across toggles.
-local quake_pane_for_tab = {}
+-- Scrape markers: must match dispatch.nu. dispatch.nu brackets an external command's output
+-- with these lines so we can slice it out of the pane's text.
+local SCRATCH_MARK_BEGIN = "«scratch-out»"
+local SCRATCH_MARK_END = "«/scratch-out»"
+
+-- tab_id -> scratch pane_id (find the scratch again across toggles), and tab_id -> token
+-- (a monotonically-bumped guard that cancels a running TUI watch when the command finishes).
+local scratch_pane_for_tab = {}
+local scratch_run_token = {}
 
 local function find_pane(panes, id)
     if not id then
@@ -522,32 +534,147 @@ local function zoom_pane(tab, pane)
     tab:set_zoomed(true)
 end
 
--- SpawnCommand for the quake shell: the same nu as default_prog, a plain persistent shell.
-local function quake_spawn()
-    if is_windows then
-        return { args = { "wsl.exe", "-d", WSL_DISTRO, "--cd", "~", "-e", "bash", "-lc",
-            "exec nu --config ~/.config/nushell/config.nu"
-            .. " --env-config ~/.config/nushell/env.nu || exec bash" } }
+-- The work pane of a tab = the one that isn't the scratch overlay.
+local function work_pane(tab, scratch_id)
+    for _, info in ipairs(tab:panes_with_info()) do
+        if info.pane:pane_id() ~= scratch_id then
+            return info.pane
+        end
     end
-    return { args = { "nu", "--config", nu_config, "--env-config", nu_env } }
+    return nil
 end
 
--- Promote the dropdown into a normal split: unzoom it so it stops being an overlay and
--- becomes a normal pane beside the work pane (whatever's running in it keeps going), then
--- untrack it so the next CTRL-Space spawns a fresh quake shell.
-local function promote_quake_pane(tab, quake_pane)
+-- SpawnCommand for the scratch shell: the same nu as default_prog but with SCRATCH_FLOAT=1.
+-- On the WSL→Windows host the var must be set INSIDE the bash -lc string (WSL doesn't inherit
+-- Windows env without WSLENV); native hosts pass it via the env table.
+local function scratch_spawn()
+    if is_windows then
+        return { args = { "wsl.exe", "-d", WSL_DISTRO, "--cd", "~", "-e", "bash", "-lc",
+            "SCRATCH_FLOAT=1 exec nu --config ~/.config/nushell/config.nu"
+            .. " --env-config ~/.config/nushell/env.nu || exec bash" } }
+    end
+    return {
+        args = { "nu", "--config", nu_config, "--env-config", nu_env },
+        set_environment_variables = { SCRATCH_FLOAT = "1" },
+    }
+end
+
+-- Dismiss the overlay after its one command: optionally drop `text` at the work pane's prompt
+-- (un-executed), hide the overlay by zooming the work pane, then close the scratch pane (its
+-- nu has finished) and untrack so the next CTRL-Space spawns fresh.
+local function dismiss_scratch(window, tab, scratch_pane, text)
+    local tid = tab:tab_id()
+    local work = work_pane(tab, scratch_pane:pane_id())
+    if work then
+        if text and text ~= "" then
+            -- Wrap in bracketed paste so the result lands as literal text at the prompt,
+            -- un-executed even if it spans multiple lines — the user presses Enter.
+            work:send_text("\x1b[200~" .. text .. "\x1b[201~")
+        end
+        zoom_pane(tab, work)
+    end
+    scratch_pane_for_tab[tid] = nil
+    scratch_run_token[tid] = (scratch_run_token[tid] or 0) + 1
+    window:perform_action(act.CloseCurrentPane({ confirm = false }), scratch_pane)
+end
+
+-- Pull a quick program's output out of the scratch pane: the text between the markers that
+-- dispatch.nu printed around the run. "" if the markers aren't both present (e.g. a TUI that
+-- was promoted instead). Plain (non-pattern) finds — the markers are literal byte strings.
+local function scrape_between_markers(pane)
+    local txt = pane:get_lines_as_text()
+    local b = txt:find(SCRATCH_MARK_BEGIN, 1, true)
+    if not b then
+        return ""
+    end
+    local body_start = txt:find("\n", b, true)
+    if not body_start then
+        return ""
+    end
+    local e = txt:find(SCRATCH_MARK_END, body_start, true)
+    if not e then
+        return ""
+    end
+    local out = txt:sub(body_start + 1, e - 1)
+    return (out:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- Promote the overlay into a normal split (the running TUI keeps going in it). Reuses the
+-- unzoom-and-activate move and untracks it, graduating it out of the overlay; bumps the token
+-- so any in-flight TUI watch stops.
+local function promote_scratch_pane(tab, scratch_pane)
+    local tid = tab:tab_id()
     tab:set_zoomed(false)
-    quake_pane:activate()
-    quake_pane_for_tab[tab:tab_id()] = nil
+    scratch_pane:activate()
+    scratch_pane_for_tab[tid] = nil
+    scratch_run_token[tid] = (scratch_run_token[tid] or 0) + 1
+end
+
+-- After an external command starts (scratch_running), watch the scratch pane for ~600ms: a
+-- TUI flips alt-screen (parsed off the pty, so it works through WSL) -> promote to a split;
+-- a TUI that never uses alt-screen (e.g. fzf --height) is caught by the fallback timeout. The
+-- per-tab token cancels the watch the moment the command finishes (scratch_scrape) or it was
+-- already promoted.
+local SCRATCH_TUI_FALLBACK_MS = 600
+local function watch_scratch_tui(window, tid, scratch_pane, token)
+    local elapsed = 0
+    local function poll()
+        if scratch_run_token[tid] ~= token then
+            return -- finished or superseded
+        end
+        if scratch_pane_for_tab[tid] ~= scratch_pane:pane_id() then
+            return -- gone or already promoted
+        end
+        local ok, alt = pcall(function()
+            return scratch_pane:is_alt_screen_active()
+        end)
+        local tab = window:mux_window():active_tab()
+        if (ok and alt) or elapsed >= SCRATCH_TUI_FALLBACK_MS then
+            if tab then
+                promote_scratch_pane(tab, scratch_pane)
+            end
+            return
+        end
+        elapsed = elapsed + 50
+        wezterm.time.call_after(0.05, poll)
+    end
+    wezterm.time.call_after(0.05, poll)
 end
 
 -- Shell-driven entry: a nu command prints an OSC 1337 SetUserVar sequence to stdout, WezTerm
 -- parses it off the pty (even through the WSL→Windows host) and fires user-var-changed here.
---   copymode -> drop the GUI into copy mode (value ignored).
+--   copymode        -> drop the GUI into copy mode (value ignored).
+--   scratch_running -> an external command just started in the overlay; arm the TUI watch.
+--   scratch_result  -> a captured nu result; insert `value` at the work pane + dismiss.
+--   scratch_scrape  -> a quick external finished; scrape its output + dismiss.
+--   scratch_done    -> nothing to insert (empty line); just dismiss.
+-- The scratch_* signals are no-ops once the pane has been promoted (it's a normal split then).
 wezterm.on("user-var-changed", function(window, pane, name, value)
     if name == "copymode" then
         enter_copy_mode(window, pane)
         return
+    end
+    if name == "scratch_running" or name == "scratch_result"
+        or name == "scratch_scrape" or name == "scratch_done" then
+        local tab = window:mux_window():active_tab()
+        if not tab then
+            return
+        end
+        local tid = tab:tab_id()
+        if scratch_pane_for_tab[tid] ~= pane:pane_id() then
+            return -- promoted/stale: ignore
+        end
+        if name == "scratch_running" then
+            local token = (scratch_run_token[tid] or 0) + 1
+            scratch_run_token[tid] = token
+            watch_scratch_tui(window, tid, pane, token)
+        elseif name == "scratch_result" then
+            dismiss_scratch(window, tab, pane, value or "")
+        elseif name == "scratch_scrape" then
+            dismiss_scratch(window, tab, pane, scrape_between_markers(pane))
+        elseif name == "scratch_done" then
+            dismiss_scratch(window, tab, pane, "")
+        end
     end
 end)
 
@@ -657,7 +784,7 @@ config.keys = {
 -- CTRL-ALT-SUPER + left-drag moves the whole OS window. window_decorations is
 -- "RESIZE" (no titlebar to grab), so StartWindowDrag is the only handle for
 -- repositioning; the heavy modifier combo keeps it from stealing ordinary clicks,
--- selection, or the quake dropdown. SUPER is the Windows/Cmd key.
+-- selection, or the scratch overlay. SUPER is the Windows/Cmd key.
 config.mouse_bindings = {
     {
         event = { Down = { streak = 1, button = "Left" } },
@@ -666,70 +793,71 @@ config.mouse_bindings = {
     },
 }
 
--- CTRL-Space toggles the quake dropdown (state + helpers are defined above). Toggling swaps
--- which pane is zoomed so the quake shell appears/vanishes as a full-window overlay while it
--- keeps running underneath. Windows-only, matching the old GlazeWM float's scope.
-local function toggle_quake(window)
+-- CTRL-Space toggles the scratch overlay (state + helpers are defined above, next to the
+-- user-var-changed handler that the inline dispatch drives). Toggling swaps which pane is
+-- zoomed so the scratch appears/vanishes as a full-window overlay while its shell keeps
+-- running underneath. Windows-only, matching the old GlazeWM float's scope.
+local function toggle_scratch(window)
     local tab = window:mux_window():active_tab()
     if not tab then
         return
     end
     local tid = tab:tab_id()
     local panes = tab:panes_with_info()
-    local quake = find_pane(panes, quake_pane_for_tab[tid])
+    local scratch = find_pane(panes, scratch_pane_for_tab[tid])
 
-    -- No quake pane yet (first toggle, or it was closed): split one off and zoom it.
-    if not quake then
-        local cmd = quake_spawn()
+    -- No scratch yet (first toggle, or it was closed): split one off and zoom it.
+    if not scratch then
+        local cmd = scratch_spawn()
         cmd.direction = "Right"
         cmd.size = 0.5
         local new = tab:active_pane():split(cmd)
-        quake_pane_for_tab[tid] = new:pane_id()
+        scratch_pane_for_tab[tid] = new:pane_id()
         zoom_pane(tab, new)
         return
     end
 
-    if quake.is_active then
-        -- Quake is showing -> hide it by zooming the first non-quake (work) pane.
+    if scratch.is_active then
+        -- Scratch is showing -> hide it by zooming the first non-scratch (work) pane.
         for _, info in ipairs(panes) do
-            if info.pane:pane_id() ~= quake.pane:pane_id() then
+            if info.pane:pane_id() ~= scratch.pane:pane_id() then
                 zoom_pane(tab, info.pane)
                 return
             end
         end
     else
-        zoom_pane(tab, quake.pane)
+        zoom_pane(tab, scratch.pane)
     end
 end
 
--- CTRL-SHIFT-TAB promotes the quake pane: unzoom it so it stops being an overlay and
+-- CTRL-SHIFT-TAB promotes the scratch: unzoom it so it stops being an overlay and
 -- becomes a normal pane beside the active terminal — graduating whatever you did in
 -- it into your live layout. It's then untracked, so the next CTRL-Space spawns a
--- fresh quake shell. Works regardless of what the work pane runs (plain shell or a
+-- fresh scratch. Works regardless of what the work pane runs (plain shell or a
 -- burrito-multiplexed session) — at the WezTerm layer it's a single pane either way.
-local function promote_quake(window)
+local function promote_scratch(window)
     local tab = window:mux_window():active_tab()
     if not tab then
         return
     end
     local tid = tab:tab_id()
-    local quake = find_pane(tab:panes_with_info(), quake_pane_for_tab[tid])
-    if not quake then
+    local scratch = find_pane(tab:panes_with_info(), scratch_pane_for_tab[tid])
+    if not scratch then
         return
     end
-    promote_quake_pane(tab, quake.pane)
+    promote_scratch_pane(tab, scratch.pane)
 end
 
 if is_windows then
     table.insert(config.keys, {
         key = "Space",
         mods = "CTRL",
-        action = wezterm.action_callback(toggle_quake),
+        action = wezterm.action_callback(toggle_scratch),
     })
     table.insert(config.keys, {
         key = "Tab",
         mods = "CTRL|SHIFT",
-        action = wezterm.action_callback(promote_quake),
+        action = wezterm.action_callback(promote_scratch),
     })
 end
 
