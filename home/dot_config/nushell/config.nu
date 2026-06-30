@@ -228,7 +228,7 @@ def cc [...args] {
   if ($dir | is-empty) { return }
   with-env { CLAUDE_CONFIG_DIR: $dir } {
     if ($args | is-empty) {
-      claude --dangerously-skip-permissions "bring up, read current state act accordingly"
+      claude --dangerously-skip-permissions
     } else {
       claude --dangerously-skip-permissions ...$args
     }
