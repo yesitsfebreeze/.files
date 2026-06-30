@@ -183,26 +183,30 @@ def _claude_share [root: path, name: string] {
 }
 
 # _claude_login — pick a login profile and return its CLAUDE_CONFIG_DIR.
-# A profile is a subdir of ~/.claude that holds its own .credentials.json; Claude's
-# own internal dirs (projects, sessions, cache…) never have one, so they self-filter.
-# The last-used profile (recorded in ~/.claude/.last-login) is listed first, so a
-# bare Enter relaunches it. The "＋ new login" entry creates a fresh, isolated profile.
-# Returns null on cancel (Esc / empty name).
+# A profile is a subdir of ~/.claude that _claude_share seeded with its own
+# settings.json; Claude's internal dirs (projects, sessions, cache…) never carry one,
+# so they self-filter. The last-used profile (recorded in ~/.claude/.last-login) is
+# listed first, so a bare Enter relaunches it. The "＋ new login" entry creates a
+# fresh, isolated profile. Returns null on cancel (Esc / empty name).
 def _claude_login [] {
   let root = ($env.HOME | path join ".claude")
   let last_file = ($root | path join ".last-login")
   let new_label = "＋ new login"
 
-  # subdir profiles, plus the top-level credential (shown as "default") if present
+  # Detect profiles by their seeded settings.json, NOT .credentials.json: on macOS
+  # Claude keeps credentials in the login Keychain (service "Claude Code-credentials"
+  # plus a per-CLAUDE_CONFIG_DIR "…-<hash>" entry), so no per-profile .credentials.json
+  # file is ever written — the old check found nothing and the picker came up empty on
+  # Mac. settings.json is copied by _claude_share for every profile and works on both
+  # Linux (file creds) and macOS (Keychain). The top-level ~/.claude is always offered
+  # as "default".
   let profiles = (ls $root
     | where type == dir
     | get name
-    | where {|d| ($d | path join ".credentials.json" | path exists) }
+    | where {|d| ($d | path join "settings.json" | path exists) }
     | each {|d| $d | path basename }
     | sort)
-  let profiles = (if (($root | path join ".credentials.json") | path exists) {
-      (["default"] ++ $profiles)
-    } else { $profiles })
+  let profiles = (["default"] ++ ($profiles | where {|p| $p != "default" }))
 
   let last = (if ($last_file | path exists) { open $last_file | str trim } else { "" })
   let ordered = (($profiles | where {|p| $p == $last }) ++ ($profiles | where {|p| $p != $last }))
