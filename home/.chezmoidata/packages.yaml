@@ -41,6 +41,12 @@ packages:
       pacman: fzf
       dnf: fzf
 
+    - name: entr          # run arbitrary commands when files change (file-watcher)
+      brew: entr
+      apt: entr
+      pacman: entr
+      dnf: entr
+
     - name: television    # fuzzy finder TUI (binary: `tv`) — interactive in-shell finder (Ctrl-R history, Ctrl-T autocomplete)
       brew: television
       apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
