@@ -622,6 +622,14 @@ $env.config = (
                 event: { send: executehostcommand, cmd: "tv_remote" }
             }
             {
+                # Escape: close any open menu first; if none, clear the line (like Ctrl-C).
+                name: esc_clear
+                modifier: none
+                keycode: escape
+                mode: [emacs vi_insert]
+                event: { until: [{ send: esc } { edit: clear }] }
+            }
+            {
                 # Ctrl-T: open the finder, insert its selection at the cursor.
                 # Overrides tv init.nu's Ctrl-T (tv_smart_autocomplete) — appended later wins.
                 name: finder_pick
