@@ -191,6 +191,13 @@ packages:
 
     # Nerd Font: package-manager coverage is thin, so the installer also fetches it
     # from the nerd-fonts release when missing (nerdfont_asset, below).
+    - name: karabiner-elements   # macOS keyboard customizer (GUI app + DriverKit virtual-HID extension).
+      brew: karabiner-elements   # Used here ONLY for its per-device "disable the built-in keyboard while
+      cask: true                 # this device is connected" setting (see run_after_karabiner-disable-
+      apt: ""                    # internal-keyboard.sh). macOS-only — no Linux/Windows equivalent, so the
+      pacman: ""                 # non-brew managers leave it blank and skip it. First launch needs a
+      dnf: ""                    # one-time Input-Monitoring grant + driver-extension approval in Settings.
+
     - name: nerd-font
       brew: font-departure-mono-nerd-font   # cask
       cask: true
