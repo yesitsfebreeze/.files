@@ -199,7 +199,7 @@ config.font = wezterm.font_with_fallback({
 })
 -- Larger size for fullscreen WQHD (2560x1440). Fine-tune live with Ctrl/Cmd +/-
 -- until the bottom/right edge sits flush, then read rows*cols from the title.
-config.font_size = is_mac and 14.0 or 12.0
+config.font_size = is_mac and 28.0 or 12.0
 config.line_height = 1.0
 
 -- Keep the fullscreen window fixed when zooming the font. By default WezTerm
