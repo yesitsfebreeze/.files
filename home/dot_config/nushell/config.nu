@@ -627,7 +627,7 @@ $env.config = (
                 modifier: none
                 keycode: escape
                 mode: [emacs vi_insert]
-                event: { until: [{ send: esc } { edit: clear }] }
+                event: { edit: clear }
             }
             {
                 # Ctrl-T: open the finder, insert its selection at the cursor.
