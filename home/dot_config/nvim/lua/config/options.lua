@@ -41,7 +41,9 @@ opt.mouse = "a"
 opt.completeopt = "menu,menuone,noselect"
 opt.virtualedit = "block"
 opt.fillchars = { eob = " " }
+-- Mirror VS Code's renderWhitespace=boundary: dots on runs of 2+ spaces
+-- (single spaces stay clean), tab as right arrow, enter sign at eol.
 opt.list = true
-opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+opt.listchars = { eol = "↵", tab = "→ ", multispace = "·", trail = "·", nbsp = "␣" }
 
 opt.laststatus = 3

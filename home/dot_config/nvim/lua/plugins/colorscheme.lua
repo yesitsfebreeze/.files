@@ -57,10 +57,11 @@ return {
             },
         })
 
-        -- Mode-aware cursor: shape per mode, colors pulled from the active base16
-        -- palette so the cursor signals the mode and follows the theme. Re-derived
-        -- on every colorscheme change, including live tinty switches.
-        local function set_cursor_hl()
+        -- Palette-derived highlights, re-derived on every colorscheme change,
+        -- including live tinty switches. Mode-aware cursor: shape per mode,
+        -- colors pulled from the active base16 palette. Whitespace/NonText use
+        -- base02 to keep listchars as dim as VS Code's editorWhitespace.
+        local function set_palette_hl()
             local ok, tn = pcall(require, "tinted-nvim")
             if not ok then return end
             local p = tn.get_palette()
@@ -69,11 +70,13 @@ return {
             vim.api.nvim_set_hl(0, "CursorInsert", { bg = p.base0B }) -- green
             vim.api.nvim_set_hl(0, "CursorVisual", { bg = p.base0E }) -- magenta
             vim.api.nvim_set_hl(0, "CursorReplace", { bg = p.base08 }) -- red
+            vim.api.nvim_set_hl(0, "Whitespace", { fg = p.base02 })
+            vim.api.nvim_set_hl(0, "NonText", { fg = p.base02 })
         end
-        set_cursor_hl()
+        set_palette_hl()
         vim.api.nvim_create_autocmd("ColorScheme", {
-            group = vim.api.nvim_create_augroup("mode_cursor_hl", { clear = true }),
-            callback = set_cursor_hl,
+            group = vim.api.nvim_create_augroup("palette_hl", { clear = true }),
+            callback = set_palette_hl,
         })
 
         vim.opt.guicursor = table.concat({
