@@ -53,27 +53,30 @@
        number, so cells are bare swatches. Same states as before, mapped to opacity;
        the focused cell takes the accent. Tighter bubble padding (2px) buys 22px of
        inner height so the grid fits the 26px bubble: 3*6px cells + 2*2px gaps. */
-    .wsbox { padding: 2px 8px; }
+    /* 3*4px dots + 2*3px gaps + 4px padding all around = the bubble's full 26px. */
+    .wsbox { padding: 4px; }
     .workspaces {
       display: grid;
-      grid-template-columns: repeat(3, 6px);
-      grid-auto-rows: 6px;
-      gap: 2px;
+      grid-template-columns: repeat(3, 4px);
+      grid-auto-rows: 4px;
+      gap: 3px;
     }
     .ws {
       position: relative;
       border: 0; padding: 0;
-      border-radius: 2px;
-      background: currentColor;
-      opacity: 0.25; cursor: pointer;
+      border-radius: 50%;
+      /* Buttons don't inherit color (UA sets buttontext/black), so point at the
+         bar's fg directly rather than currentColor. */
+      background: var(--fg, #c1c1c1);
+      opacity: 0.35; cursor: pointer;
       transition-property: opacity, background-color;
       transition-duration: 0.15s;
     }
-    /* Cells are 6px; pad the hit target out to the gap midline so clicks land. */
-    .ws::after { content: ''; position: absolute; inset: -1px; }
-    .ws.populated { opacity: 0.5; }
-    .ws.displayed { opacity: 0.75; }
-    .ws:hover     { opacity: 0.9; }
+    /* Dots are 4px; pad the hit target out to the gap midline so clicks land. */
+    .ws::after { content: ''; position: absolute; inset: -1.5px; }
+    .ws.populated { opacity: 0.6; }
+    .ws.displayed { opacity: 0.85; }
+    .ws:hover     { opacity: 0.95; }
     .ws.focused   { opacity: 1; background: var(--accent, #7799bb); }
 
     .stats { flex: none; }
