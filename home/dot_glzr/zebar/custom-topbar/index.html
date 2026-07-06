@@ -49,13 +49,32 @@
       opacity: 0.5;
     }
 
-    .ws {
-      border: 0; background: transparent; color: inherit; font: inherit;
-      padding: 0 2px; opacity: 0.25; cursor: pointer;
+    /* Workspaces render as a 3x3 grid (row-major 1-9): the cell's position IS the
+       number, so cells are bare swatches. Same states as before, mapped to opacity;
+       the focused cell takes the accent. Tighter bubble padding (2px) buys 22px of
+       inner height so the grid fits the 26px bubble: 3*6px cells + 2*2px gaps. */
+    .wsbox { padding: 2px 8px; }
+    .workspaces {
+      display: grid;
+      grid-template-columns: repeat(3, 6px);
+      grid-auto-rows: 6px;
+      gap: 2px;
     }
+    .ws {
+      position: relative;
+      border: 0; padding: 0;
+      border-radius: 2px;
+      background: currentColor;
+      opacity: 0.25; cursor: pointer;
+      transition-property: opacity, background-color;
+      transition-duration: 0.15s;
+    }
+    /* Cells are 6px; pad the hit target out to the gap midline so clicks land. */
+    .ws::after { content: ''; position: absolute; inset: -1px; }
     .ws.populated { opacity: 0.5; }
     .ws.displayed { opacity: 0.75; }
-    .ws.focused   { opacity: 1; color: var(--accent, #7799bb); }
+    .ws:hover     { opacity: 0.9; }
+    .ws.focused   { opacity: 1; background: var(--accent, #7799bb); }
 
     .stats { flex: none; }
     .stat { display: flex; align-items: baseline; gap: 5px; }
@@ -69,7 +88,7 @@
 </head>
 <body>
   <div class="left">
-    <div class="bubble">
+    <div class="bubble wsbox">
       <div class="workspaces" id="workspaces"></div>
     </div>
     <div class="bubble tray" id="tray"></div>
@@ -178,7 +197,7 @@
     const wsButtons = WORKSPACES.map(name => {
       const b = document.createElement('button');
       b.className = 'ws';
-      b.textContent = name;
+      b.title = `Workspace ${name}`;
       b.onclick = () =>
         providers.outputMap.glazewm?.runCommand(`focus --workspace ${name}`);
       return b;
