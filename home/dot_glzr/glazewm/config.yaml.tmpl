@@ -75,6 +75,32 @@ window_rules:
     match:
       - window_process: { equals: 'zebar' }
 
+  # Browser picture-in-picture / pop-out video players (YouTube etc.). Ignoring
+  # them leaves the browser's native behavior intact: the popup keeps its own
+  # always-on-top flag, stays freely draggable/resizable and never takes a tiling
+  # slot. Rule is from the upstream sample config, extended with the German
+  # window titles ("Bild-im-Bild" / "Bild im Bild") used on localized systems.
+  # Both title AND class must match, so normal browser windows are unaffected.
+  # Chrome_WidgetWin_1 covers Chrome/Edge/Brave; MozillaDialogClass is Firefox.
+  - commands: ['ignore']
+    match:
+      - window_title: { regex: '[Pp]icture.in.[Pp]icture|[Bb]ild.im.[Bb]ild' }
+        window_class: { regex: 'Chrome_WidgetWin_1|MozillaDialogClass' }
+
+  # PowerToys popups (upstream sample-config rules): the PowerAccent character
+  # picker, the Command Palette, and Peek preview windows are transient overlays,
+  # not app windows — tiling them breaks their flow. Only the PowerToys rules are
+  # taken from upstream; its Office/Lively/CleanShot rules are omitted because
+  # those apps aren't installed here.
+  - commands: ['ignore']
+    match:
+      - window_process: { equals: 'PowerToys' }
+        window_class: { regex: 'HwndWrapper\[PowerToys\.PowerAccent.*?\]' }
+      - window_title: { equals: 'Command Palette' }
+        window_class: { equals: 'WinUIDesktopWin32WindowClass' }
+      - window_process: { equals: 'PowerToys' }
+        window_title: { regex: '.*? - Peek' }
+
 workspaces:
   - name: '1'
   - name: '2'
