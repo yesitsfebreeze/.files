@@ -8,8 +8,9 @@
 # the real terminal on every scroll, which fired tinty's hook chain — and that
 # chain kill+relaunches Zebar across the WSL->Windows boundary on every focus
 # (a "browser refresh" per keystroke that stalled the picker). The canonical apply
-# now happens exactly once, on Enter, in theme.nu. Here we only draw colors; the
-# terminal and the bar are never touched.
+# now happens exactly once, on Enter, in theme.nu. Here we draw the swatch, plus
+# one OSC 11 escape to live-retint just the terminal background (see below) —
+# hook-free, and theme.nu resets it when the picker closes.
 set -u
 
 id="${1:-}"
@@ -53,6 +54,12 @@ R=$'\033[0m'; BOLD=$'\033[1m'
 rgb() { local h="${1#\#}"; printf '%d;%d;%d' "0x${h:0:2}" "0x${h:2:2}" "0x${h:4:2}"; }
 fg() { [ "$color" = 1 ] && printf '\033[38;2;%sm' "$(rgb "${C[$1]}")"; }
 bg() { [ "$color" = 1 ] && printf '\033[48;2;%sm' "$(rgb "${C[$1]}")"; }
+
+# Live-retint ONLY the terminal background to the focused scheme's base00 so the
+# real (translucent) wezterm window previews it for real. OSC 11 is a single
+# escape straight to the tty — no `tinty apply`, no hook chain, nothing else is
+# touched. theme.nu resets it (OSC 111) once the picker closes.
+[ "$color" = 1 ] && { printf '\033]11;%s\033\\' "${C[00]}" > /dev/tty; } 2>/dev/null
 
 # roles by base24 convention (brightness carries hierarchy; two accents on top)
 BRD=$(fg 03)      # borders / dividers — muted

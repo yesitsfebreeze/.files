@@ -1,8 +1,10 @@
 # theme.nu — the live `theme` switcher, sourced by config.nu. Opens television's
 # `theme` channel over tinty's official base16/base24 catalog. The preview renders
 # a static swatch of each scheme (theme-preview.sh paints the scheme's own hex
-# values directly — it never `tinty apply`s), so browsing never touches the
-# terminal or the bar. Enter applies + persists; Esc leaves the current theme as-is.
+# values directly — it never `tinty apply`s) and live-retints only the terminal
+# background (OSC 11) so the focused scheme shows for real; browsing never fires
+# tinty's hooks or the bar. Enter applies + persists; Esc resets the background
+# (OSC 111) and leaves the current theme as-is.
 #
 # Cache: the picker surfaces a recency stack + a liked set at the TOP of the list,
 # above the alphabetical catalog (television preserves source order). Recents are
@@ -148,5 +150,10 @@ def --wrapped theme [...rest] {
     # a stripped television-action subprocess. The preview never applies live, so
     # browsing leaves the terminal, the bar, and current_scheme untouched.
     let sel = (tv theme ...$rest | str trim)
+    # The preview live-retints the terminal background per focused scheme (OSC 11,
+    # theme-preview.sh). Reset it to the config background (OSC 111) now that the
+    # picker is closed: on Esc this alone restores the current theme; on Enter
+    # tinty apply re-emits the picked scheme's colors right after.
+    print -n "\e]111\e\\"
     if ($sel | is-not-empty) { _theme_commit $sel }
 }
