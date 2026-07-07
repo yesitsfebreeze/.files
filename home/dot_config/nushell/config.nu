@@ -668,6 +668,9 @@ if (is-terminal --stdout) {
 # `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.
 source ~/.config/nushell/theme.nu
 
+# `opacity`: live WezTerm window-opacity override via OSC user-var + tv picker.
+source ~/.config/nushell/opacity.nu
+
 # `pass` (password-store) completion: subcommands + live entry names from the store.
 source ~/.config/nushell/pass.nu
 
@@ -704,5 +707,8 @@ def --env tv_remote [] {
     # would `^$env.EDITOR base16-…` (open the id in nvim). Hand off to the `theme` command,
     # which runs the same picker and applies the pick via _theme_commit (tinty apply).
     if ($channel == "theme") { theme; return }
+    # Same story for `opacity`: it produces a percentage, not a path — the `opacity`
+    # command runs the picker and emits the WezTerm user-var override itself.
+    if ($channel == "opacity") { opacity; return }
     _finder_open (finder --start $channel --fresh)
 }

@@ -287,28 +287,32 @@ config.show_new_tab_button_in_tab_bar = false
 -- theme switch retints this on the next reload). Derived only from named palette
 -- entries — never hardcoded — so it follows any scheme. Skipped on the builtin
 -- gruvbox fallback, where WezTerm already derives a bar from the scheme itself.
-if ok and type(tinty_colors) == "table" then
+-- Tint a #RRGGBB translucently as an rgba() string (a in 0..1). WezTerm rejects
+-- #RRGGBBAA hex for tab-bar colors, but accepts rgba(r, g, b, a).
+local function with_alpha(hex, a)
+    local r, g, b = (hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+    if not r then
+        return hex
+    end
+    return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
+end
+
+-- Retro tab bar colors at a given surface alpha. A function (not baked inline)
+-- because the live opacity override below rebuilds the bar at the new alpha so it
+-- keeps reading as the same translucent surface as the cells.
+local function retro_tab_bar(alpha)
     local p = config.colors
     local br = p.brights or {}
-    -- Tint a #RRGGBB translucently as an rgba() string (a in 0..1). WezTerm rejects
-    -- #RRGGBBAA hex for tab-bar colors, but accepts rgba(r, g, b, a).
-    local function with_alpha(hex, a)
-        local r, g, b = (hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
-        if not r then
-            return hex
-        end
-        return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
-    end
     -- The theme green (base0B = ansi slot 3), same accent as the GlazeWM outline.
     local green = (p.ansi and p.ansi[3]) or br[3] or p.selection_bg
     -- The translucent window surface: an explicit opaque hex paints the bar solid (it
-    -- does NOT honor window_background_opacity), so bake the theme bg + window_opacity
-    -- into an rgba — identical surface to the cells.
-    local surface = with_alpha(p.background, window_opacity)
+    -- does NOT honor window_background_opacity), so bake the theme bg + alpha into an
+    -- rgba — identical surface to the cells.
+    local surface = with_alpha(p.background, alpha)
     -- Active tab is FILLED with the green accent, with the bg color as text so it
     -- stays readable on the accent. Inactive/new tabs sit on the same translucent
     -- surface as the strip with green text, so the active tab reads as inverted.
-    p.tab_bar = {
+    return {
         background = surface,
         active_tab = { bg_color = green, fg_color = p.background },
         inactive_tab = { bg_color = surface, fg_color = green },
@@ -316,6 +320,10 @@ if ok and type(tinty_colors) == "table" then
         new_tab = { bg_color = surface, fg_color = green },
         new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = green },
     }
+end
+
+if ok and type(tinty_colors) == "table" then
+    config.colors.tab_bar = retro_tab_bar(window_opacity)
 end
 
 wezterm.on("update-right-status", function(window, pane)
@@ -495,9 +503,29 @@ end
 -- Shell-driven copy mode: a nu command prints an OSC 1337 SetUserVar `copymode` sequence to
 -- stdout, WezTerm parses it off the pty (even through the WSL→Windows host) and drops the GUI
 -- into copy mode here (the value is ignored).
+-- `opacity` (the nu command / ctrl+space tv channel) arrives the same way: the value is a
+-- percentage 0–100, applied as a per-window override — live, nothing persisted. The tab bar
+-- bakes its surface alpha into rgba colors (see retro_tab_bar), so rebuild it to match;
+-- overrides.colors replaces the whole colors table, so copy it before swapping tab_bar.
 wezterm.on("user-var-changed", function(window, pane, name, value)
     if name == "copymode" then
         enter_copy_mode(window, pane)
+    elseif name == "opacity" then
+        local pct = tonumber(value)
+        if pct then
+            local alpha = math.max(0, math.min(100, pct)) / 100
+            local overrides = window:get_config_overrides() or {}
+            overrides.window_background_opacity = alpha
+            if ok and type(tinty_colors) == "table" then
+                local colors = {}
+                for k, v in pairs(config.colors) do
+                    colors[k] = v
+                end
+                colors.tab_bar = retro_tab_bar(alpha)
+                overrides.colors = colors
+            end
+            window:set_config_overrides(overrides)
+        end
     end
 end)
 

@@ -1,0 +1,15 @@
+# television cable channel: `tv opacity` — WezTerm window opacity picker.
+# source : 0%–100% in 5% steps, plus `custom` for an arbitrary value. Enter prints
+#          the focused entry to stdout (tv's default); the `opacity` Nushell command
+#          captures it and emits the OSC 1337 SetUserVar that wezterm.lua's
+#          user-var-changed handler turns into a live window_background_opacity
+#          override (per-window, nothing persisted). `custom` makes the nu command
+#          prompt for a free value — tv itself can't confirm a non-matching query.
+
+[metadata]
+name = "opacity"
+description = "WezTerm window opacity — live override, 5% steps or a custom value"
+requirements = ["nu"]
+
+[source]
+command = "nu -n -c 'seq 0 5 100 | each {|n| $\"($n)%\" } | append custom | str join (char nl)'"
