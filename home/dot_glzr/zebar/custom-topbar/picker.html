@@ -17,12 +17,16 @@
                    "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
       font-size: 14px;
       user-select: none;
+      /* Near-black veil over everything behind the picker. Plain CSS on our
+         own transparent window — no DWM blur/acrylic (broken gray on Win11
+         22H2+, and requires the OS transparency-effects setting). */
+      background: rgba(0, 0, 0, 0.9);
     }
     body.open { display: flex; }
 
-    /* No backdrop, no panel chrome — just the bare 3x3 matrix of tiles,
+    /* No panel chrome — just the bare 3x3 matrix of tiles over the veil,
        mirroring the topbar's square grid; text inside ellipsizes, never
-       widens. The full-screen body stays (invisible) as the click-away area. */
+       widens. The full-screen body doubles as the click-away area. */
     .panel {
       display: flex;
       flex-direction: column;
@@ -111,13 +115,15 @@
     // App picker overlay (alt+tab): a big 3x3 workspace matrix mirroring the
     // topbar dots, each cell listing that workspace's windows.
     //
-    // The widget runs permanently (zebar startup) but stays hidden. It never
-    // takes keyboard focus — a background process can't reliably steal the
-    // foreground on Windows. Instead alt+tab enters the 'picker' GlazeWM binding
-    // mode, so GlazeWM owns the keys: navigation keys pulse transient
-    // 'picker-<action>' modes purely as IPC signals, which this widget observes
-    // via a binding_modes_changed subscription. Enter focuses the selection over
-    // IPC; leaving the mode (escape / after enter) hides the overlay again.
+    // The alt+tab keybinding spawns this widget fresh (zebar start-widget-preset)
+    // and enters the 'picker' GlazeWM binding mode; the widget CLOSES its window
+    // on any exit, so no invisible fullscreen window ever lingers over the
+    // desktop eating clicks. It never takes keyboard focus — a background
+    // process can't reliably steal the foreground on Windows. GlazeWM owns the
+    // keys: navigation keys pulse transient 'picker-<action>' modes purely as
+    // IPC signals, which this widget observes via a binding_modes_changed
+    // subscription. Enter focuses the selection over IPC; leaving the mode
+    // (escape / after enter) closes the window.
     const invoke = window.__TAURI_INTERNALS__?.invoke;
     const winCall = (cmd, args) =>
       invoke?.(`plugin:window|${cmd}`, args)?.catch?.(() => {});
@@ -130,42 +136,37 @@
       if (window.__trace.length > 200) window.__trace.shift();
     };
 
-    // Hidden until the picker mode enables; the window itself stays around so
-    // opening is instant. Ignore cursor events while hidden — the transparent
-    // fullscreen window must not eat clicks meant for what's underneath.
-    winCall('hide');
+    // The window exists only while the picker is on screen. Click-through
+    // until the content is ready — the transparent fullscreen window must not
+    // eat clicks meant for what's underneath.
     winCall('set_ignore_cursor_events', { ignore: true });
 
     let open = false;
+    let closing = false;
+
+    const closeSelf = () => {
+      if (closing) return;
+      closing = true;
+      open = false;
+      trace('closeSelf');
+      document.body.classList.remove('open');
+      winCall('set_ignore_cursor_events', { ignore: true });
+      invoke?.('plugin:window|close')?.catch?.(() => {});
+      // If the close ever fails, never keep squatting the screen.
+      setTimeout(() => winCall('hide'), 500);
+    };
+
     const showOverlay = async () => {
-      if (open) return;
+      if (open || closing) return;
       open = true;
       trace('showOverlay');
       document.body.classList.add('open');
       winCall('set_ignore_cursor_events', { ignore: false });
-      // DWM acrylic on the (fullscreen, transparent) window blurs everything
-      // behind the picker at the OS level — CSS backdrop-filter can't reach
-      // other windows. Applied before show so it never flashes in sharp.
-      // Explicit low-alpha tint: the default acrylic tint is a heavy gray
-      // that buries the blurred content behind it.
-      await winCall('set_effects', { value: { effects: ['acrylic'], color: [0, 0, 0, 60] } });
-      await winCall('show');
-      // Re-raise to the TOP of the topmost band on every show. Other topmost
-      // windows (topbar, floating shown_on_top windows) stack above us over
-      // time, and re-applying topmost to an already-topmost window is a no-op —
-      // so drop out of the band and rejoin, which inserts at the top.
+      // Raise to the TOP of the topmost band: re-applying topmost to an
+      // already-topmost window is a no-op, so drop out of the band and rejoin,
+      // which inserts above other topmost windows (topbar, floats).
       await winCall('set_always_on_top', { value: false });
       await winCall('set_always_on_top', { value: true });
-    };
-    const hideOverlay = () => {
-      if (!open) return;
-      open = false;
-      trace('hideOverlay');
-      document.body.classList.remove('open');
-      winCall('set_ignore_cursor_events', { ignore: true });
-      winCall('set_effects', { value: null });
-      winCall('hide');
-      reassertFocus();
     };
 
     // A mouse click on the overlay makes it the OS foreground window; hiding it
@@ -185,10 +186,12 @@
         }
       } catch {}
     }
-    const exitPicker = () => {
-      // Hide immediately for snappiness; the mode-disable event confirms it.
+    const exitPicker = async () => {
       send('command wm-disable-binding-mode --name picker').catch(() => {});
-      hideOverlay();
+      // Reassert focus (clicked case) BEFORE closing — the socket dies with
+      // the window.
+      await reassertFocus();
+      closeSelf();
     };
 
     // --- GlazeWM IPC (same protocol as regrid.js / balance-daemon.js) ---
@@ -234,10 +237,10 @@
         }
       };
       sock.onclose = () => {
-        hideOverlay();
         for (const e of pending.values()) { clearTimeout(e.timer); e.reject(new Error('closed')); }
         pending.clear();
-        setTimeout(connect, 1000);
+        // No IPC means no keyboard and no way to act — this window is useless.
+        closeSelf();
       };
       sock.onerror = () => { try { sock.close(); } catch {} };
     }
@@ -249,7 +252,12 @@
       if (fresh.length || !modes.length) trace('modes', JSON.stringify(modes));
       // Binding modes replace each other, so during a signal pulse the base
       // 'picker' mode is briefly absent — any picker* mode counts as open.
-      if (!modes.some(m => m.startsWith('picker'))) return hideOverlay();
+      // Mode gone (escape / after enter) → this window's job is done; during an
+      // activation its own exitPicker finishes the close.
+      if (!modes.some(m => m.startsWith('picker'))) {
+        if (!activating) exitPicker();
+        return;
+      }
       for (const m of fresh) {
         // The enter keybinding re-enters 'picker' right after its signal; while
         // an activation is in flight that must not re-open the overlay.
@@ -301,7 +309,7 @@
       // the whole screen.
       if (!prevModes.some(m => m.startsWith('picker'))) {
         trace('openPicker aborted, mode gone');
-        return;
+        return closeSelf();
       }
 
       // Start on the window after the currently focused one, so alt+tab, enter
@@ -450,7 +458,6 @@
       trace('activateWindow', w.processName, w.id, w.state?.type, 'ws:' + wsName);
       document.body.classList.remove('open');
       winCall('set_ignore_cursor_events', { ignore: true });
-      winCall('set_effects', { value: null });
       try {
         // Same sequence as doing it by hand: alt+N to the workspace first (this
         // is what actually switches the displayed desktop), then focus the
@@ -473,7 +480,6 @@
       trace('activateWorkspace', name);
       document.body.classList.remove('open');
       winCall('set_ignore_cursor_events', { ignore: true });
-      winCall('set_effects', { value: null });
       try { await send(`command focus --workspace ${name}`); } catch (e) { trace('ws focus FAILED', String(e)); }
       exitPicker();
       activating = false;
@@ -484,19 +490,17 @@
       if (open && !document.getElementById('panel').contains(e.target)) exitPicker();
     });
 
-    // Self-healing watchdog: whatever races the async show/hide calls lose,
-    // converge to a consistent state — closed means hidden AND click-through
-    // (a stuck fullscreen window silently eats every click on the desktop),
-    // and an overlay without an active picker mode has no keyboard, so close it.
-    setInterval(() => {
-      if (!open) {
-        winCall('hide');
-        winCall('set_ignore_cursor_events', { ignore: true });
-      } else if (!activating && !prevModes.some(m => m.startsWith('picker'))) {
-        trace('watchdog: open without mode');
-        hideOverlay();
+    // Failsafe watchdog: this window must never outlive its purpose. Whatever
+    // path was missed, a picker without an active mode (or one alive far past
+    // any plausible session) closes itself. Grace period covers startup before
+    // the first binding-modes reply arrives.
+    setTimeout(() => setInterval(() => {
+      if (!closing && !activating && !prevModes.some(m => m.startsWith('picker'))) {
+        trace('watchdog: no picker mode, closing');
+        closeSelf();
       }
-    }, 2000);
+    }, 2000), 3000);
+    setTimeout(() => { trace('watchdog: max lifetime'); closeSelf(); }, 10 * 60 * 1000);
   </script>
 </body>
 </html>

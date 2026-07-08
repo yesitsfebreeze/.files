@@ -146,12 +146,12 @@ keybindings:
   - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/regrid.js']
     bindings: ['alt+g']
 
-  # App picker overlay: alt+tab enters the 'picker' binding mode (below); the
-  # always-running Zebar picker widget observes the mode over IPC and shows a
-  # fullscreen 3x3 workspace matrix listing every window. Pure binding-mode
-  # signalling — the overlay never needs keyboard focus, which a background
-  # process can't reliably steal on Windows.
-  - commands: ['wm-enable-binding-mode --name picker']
+  # App picker overlay: alt+tab spawns the Zebar picker widget (a fresh window
+  # each time — it closes itself on exit, so nothing invisible lingers over the
+  # desktop) and enters the 'picker' binding mode (below), which the widget
+  # observes over IPC. Pure binding-mode signalling — the overlay never needs
+  # keyboard focus, which a background process can't reliably steal on Windows.
+  - commands: ['shell-exec --hide-window zebar start-widget-preset --pack custom-topbar --widget-name picker --preset default', 'wm-enable-binding-mode --name picker']
     bindings: ['alt+tab']
 
   # Window state.
