@@ -17,21 +17,16 @@
                    "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
       font-size: 14px;
       user-select: none;
-      background: rgba(0, 0, 0, 0.4);
     }
     body.open { display: flex; }
 
-    /* The whole panel mirrors the topbar's square 3x3 matrix: square cells,
-       so the grid itself is a square; text inside ellipsizes, never widens. */
+    /* No backdrop, no panel chrome — just the bare 3x3 matrix of tiles,
+       mirroring the topbar's square grid; text inside ellipsizes, never
+       widens. The full-screen body stays (invisible) as the click-away area. */
     .panel {
       display: flex;
       flex-direction: column;
-      gap: 8px;
       width: min(58vh, 620px, 90vw);
-      padding: 12px;
-      border-radius: 10px;
-      background: color-mix(in srgb, var(--bg, #000) 88%, transparent);
-      border: 1px solid color-mix(in srgb, var(--fg, #c1c1c1) 14%, transparent);
     }
 
     .grid {
@@ -49,8 +44,10 @@
       overflow-y: auto;
       padding: 7px;
       border-radius: 8px;
-      background: color-mix(in srgb, var(--fg, #c1c1c1) 5%, transparent);
-      border: 1px solid transparent;
+      /* Tiles carry the surface themselves now (no panel behind them) — same
+         recipe as the topbar bubbles. */
+      background: color-mix(in srgb, var(--bg, #000) 88%, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg, #c1c1c1) 10%, transparent);
       cursor: pointer;
     }
     .cell.displayed { border-color: color-mix(in srgb, var(--fg, #c1c1c1) 22%, transparent); }
@@ -103,23 +100,11 @@
     }
 
     .empty { padding: 4px 7px; opacity: 0.25; font-size: 12px; }
-
-    .hint {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      font-size: 11px;
-      opacity: 0.4;
-    }
   </style>
 </head>
 <body>
   <div class="panel" id="panel">
     <div class="grid" id="grid"></div>
-    <div class="hint">
-      <span>↑↓←→/hjkl move</span><span>tab cycle</span><span>1-9 workspace</span>
-      <span>enter focus</span><span>esc close</span>
-    </div>
   </div>
 
   <script>
@@ -152,18 +137,23 @@
     winCall('set_ignore_cursor_events', { ignore: true });
 
     let open = false;
-    const showOverlay = () => {
+    const showOverlay = async () => {
       if (open) return;
       open = true;
       trace('showOverlay');
       document.body.classList.add('open');
       winCall('set_ignore_cursor_events', { ignore: false });
-      winCall('show');
-      // Re-assert top-most on every show (zebar's own command, same as the
-      // topbar's zOrder handling): hide/show cycles and other top-most or
-      // fullscreen windows can push us down the z-band — the overlay must
-      // never sit behind other programs.
-      invoke?.('set_always_on_top')?.catch?.(() => {});
+      // DWM acrylic on the (fullscreen, transparent) window blurs everything
+      // behind the picker at the OS level — CSS backdrop-filter can't reach
+      // other windows. Applied before show so it never flashes in sharp.
+      await winCall('set_effects', { value: { effects: ['acrylic'] } });
+      await winCall('show');
+      // Re-raise to the TOP of the topmost band on every show. Other topmost
+      // windows (topbar, floating shown_on_top windows) stack above us over
+      // time, and re-applying topmost to an already-topmost window is a no-op —
+      // so drop out of the band and rejoin, which inserts at the top.
+      await winCall('set_always_on_top', { value: false });
+      await winCall('set_always_on_top', { value: true });
     };
     const hideOverlay = () => {
       if (!open) return;
@@ -171,16 +161,20 @@
       trace('hideOverlay');
       document.body.classList.remove('open');
       winCall('set_ignore_cursor_events', { ignore: true });
+      winCall('set_effects', { value: null });
       winCall('hide');
       reassertFocus();
     };
 
     // A mouse click on the overlay makes it the OS foreground window; hiding it
     // then leaves the foreground on a hidden window — keystrokes go nowhere and
-    // GlazeWM's state disagrees with the OS. After every hide, hand the
-    // foreground back to whatever GlazeWM considers focused (a no-op when the
-    // overlay was never clicked, since glazewm re-runs its focus routine).
+    // GlazeWM's state disagrees with the OS. Hand the foreground back to
+    // whatever GlazeWM considers focused. Only needed (and only safe) when the
+    // overlay actually held focus: in the keyboard flow it never does, and a
+    // gratuitous re-focus can race the workspace switch of a just-activated
+    // window.
     async function reassertFocus() {
+      if (!document.hasFocus()) return;
       try {
         const q = await send('query focused');
         if (q?.focused?.type === 'window') {
@@ -366,7 +360,7 @@
           row.onmouseenter = () => {
             if (sel?.cell !== ci || sel?.idx !== wi) { sel = { cell: ci, idx: wi }; updateSel(); }
           };
-          row.onclick = e => { e.stopPropagation(); activateWindow(w); };
+          row.onclick = e => { e.stopPropagation(); activateWindow(w, cell.name); };
           rowEls[ci][wi] = row;
           el.append(row);
         });
@@ -438,7 +432,7 @@
     // --- actions ---
     function confirm() {
       const w = sel && cells[sel.cell].wins[sel.idx];
-      w ? activateWindow(w) : exitPicker();
+      w ? activateWindow(w, cells[sel.cell].name) : exitPicker();
     }
 
     // Activation ordering is delicate. Hiding the OS window first makes Windows
@@ -449,12 +443,17 @@
     // the focus, and only then actually hide via exitPicker.
     let activating = false;
 
-    async function activateWindow(w) {
+    async function activateWindow(w, wsName) {
       activating = true;
-      trace('activateWindow', w.processName, w.id, w.state?.type);
+      trace('activateWindow', w.processName, w.id, w.state?.type, 'ws:' + wsName);
       document.body.classList.remove('open');
       winCall('set_ignore_cursor_events', { ignore: true });
+      winCall('set_effects', { value: null });
       try {
+        // Same sequence as doing it by hand: alt+N to the workspace first (this
+        // is what actually switches the displayed desktop), then focus the
+        // window within it.
+        if (wsName) await send(`command focus --workspace ${wsName}`);
         // Restore minimized windows straight into the tiling grid (same verb as
         // regrid.js) — toggle-minimized can resurface them as floating.
         if (w.state?.type === 'minimized') await send(`command --id ${w.id} set-tiling`);
@@ -472,6 +471,7 @@
       trace('activateWorkspace', name);
       document.body.classList.remove('open');
       winCall('set_ignore_cursor_events', { ignore: true });
+      winCall('set_effects', { value: null });
       try { await send(`command focus --workspace ${name}`); } catch (e) { trace('ws focus FAILED', String(e)); }
       exitPicker();
       activating = false;
