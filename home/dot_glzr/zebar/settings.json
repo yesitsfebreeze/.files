@@ -5,6 +5,11 @@
       "pack": "custom-topbar",
       "widget": "topbar",
       "preset": "default"
+    },
+    {
+      "pack": "custom-topbar",
+      "widget": "picker",
+      "preset": "default"
     }
   ]
 }

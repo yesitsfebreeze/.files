@@ -146,6 +146,14 @@ keybindings:
   - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/regrid.js']
     bindings: ['alt+g']
 
+  # App picker overlay: alt+tab enters the 'picker' binding mode (below); the
+  # always-running Zebar picker widget observes the mode over IPC and shows a
+  # fullscreen 3x3 workspace matrix listing every window. Pure binding-mode
+  # signalling — the overlay never needs keyboard focus, which a background
+  # process can't reliably steal on Windows.
+  - commands: ['wm-enable-binding-mode --name picker']
+    bindings: ['alt+tab']
+
   # Window state.
   - commands: ['toggle-floating --centered']
     bindings: ['alt+shift+space']
@@ -207,3 +215,39 @@ keybindings:
     bindings: ['alt+shift+8']
   - commands: ['move --workspace 9']
     bindings: ['alt+shift+9']
+
+# Picker overlay input (alt+tab). While 'picker' is active, GlazeWM owns the
+# keyboard and each navigation key pulses a transient 'picker-<action>' mode
+# purely as an IPC signal to the Zebar picker widget. Binding modes REPLACE each
+# other (no stacking), so a pulse is enable-signal + re-enable-picker; the widget
+# keeps the overlay up while any picker* mode is active. GlazeWM requires modes
+# to be declared, hence the signal-mode stubs below. Enter is confirmed by the
+# widget itself: it focuses the selection and disables 'picker'. Escape (also
+# bound in every stub as a rescue hatch in case a pulse ever sticks) always
+# drops back to the normal keybindings.
+binding_modes:
+  - name: 'picker'
+    keybindings:
+{{- range $sig, $keys := dict
+      "down"  (list "down" "j")
+      "up"    (list "up" "k")
+      "left"  (list "left" "h")
+      "right" (list "right" "l")
+      "next"  (list "tab" "alt+tab")
+      "prev"  (list "shift+tab" "alt+shift+tab")
+      "enter" (list "enter" "space") }}
+      - commands: ['wm-enable-binding-mode --name picker-{{ $sig }}', 'wm-enable-binding-mode --name picker']
+        bindings: [{{ range $i, $k := $keys }}{{ if $i }}, {{ end }}'{{ $k }}'{{ end }}]
+{{- end }}
+{{- range untilStep 1 10 1 }}
+      - commands: ['wm-enable-binding-mode --name picker-{{ . }}', 'wm-enable-binding-mode --name picker']
+        bindings: ['{{ . }}']
+{{- end }}
+      - commands: ['wm-disable-binding-mode --name picker']
+        bindings: ['escape']
+{{- range concat (list "down" "up" "left" "right" "next" "prev" "enter") (list "1" "2" "3" "4" "5" "6" "7" "8" "9") }}
+  - name: 'picker-{{ . }}'
+    keybindings:
+      - commands: ['wm-disable-binding-mode --name picker-{{ . }}']
+        bindings: ['escape']
+{{- end }}

@@ -21,6 +21,7 @@
 #   balance daemon  {{ include "dot_glzr/glazewm/balance-daemon.js" | sha256sum }}
 #   zebar settings  {{ include "dot_glzr/zebar/settings.json" | sha256sum }}
 #   topbar html     {{ include "dot_glzr/zebar/custom-topbar/index.html" | sha256sum }}
+#   picker html     {{ include "dot_glzr/zebar/custom-topbar/picker.html" | sha256sum }}
 #   topbar zpack    {{ include "dot_glzr/zebar/custom-topbar/zpack.json" | sha256sum }}
 # (theme.css is intentionally absent: it's a generated artifact, no longer tracked.
 #  A theme switch restarts Zebar via zebar-colors.sh / run_after's `tinty apply`.)
