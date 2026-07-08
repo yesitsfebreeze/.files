@@ -7,7 +7,7 @@
 #   Linux   → skipped (neither app runs on plain Linux)
 #
 # Config is deployed separately to ~/.glzr/glazewm/config.yaml (and mirrored to the
-# Windows profile by run_after_mirror-config-to-windows.sh). The balance-daemon
+# Windows profile by run_after_mirror-config-to-windows.sh). The layout-daemon
 # (ships with the config) runs on the Windows host via Node, so Node is installed
 # here too. Autostart at login is registered by run_onchange_after_register-
 # glazewm-autostart.sh.tmpl.
@@ -43,7 +43,7 @@ grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null || { log "GlazeWM: not WSL, 
 winget="$(command -v winget.exe 2>/dev/null || true)"
 [ -z "$winget" ] && { warn "GlazeWM: winget.exe not on PATH from WSL; install manually: winget install glzr-io.glazewm"; exit 0; }
 
-# GlazeWM (WM) + Zebar (status bar) + Node (balance daemon) on the Windows host,
+# GlazeWM (WM) + Zebar (status bar) + Node (layout daemon) on the Windows host,
 # each guarded. Node is detected separately since it ships its own node.exe.
 for pkg in glzr-io.glazewm glzr-io.zebar OpenJS.NodeJS; do
     if [ "$pkg" = "OpenJS.NodeJS" ] && command -v node.exe >/dev/null 2>&1; then

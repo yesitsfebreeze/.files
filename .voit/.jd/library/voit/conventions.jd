@@ -1,0 +1,81 @@
+---
+kind: knowledge
+title: voit/conventions
+---
+
+# voit/conventions
+
+Project-agnostic working conventions every VOIT agent follows everywhere. These
+graduate out of one project's `.voit/memory/decisions` via `voit/dogfood` once a decision
+proves general - voit-memory is per-project and gitignored, so a universal rule
+belongs here in the shipped plugin instead of in one repo's voit-memory.
+
+## minimal by default
+
+The best code is the code you never wrote. Before writing any, walk this ladder in
+order and stop at the first rung that meets the need:
+
+1. Does it need to exist? -> if no, skip it (YAGNI).
+2. Already in this codebase? -> reuse it, don't rewrite.
+3. Stdlib does it? -> use it.
+4. Native platform feature? -> use it.
+5. Installed dependency? -> use it.
+6. One line? -> one line.
+7. Only then: the minimum that works.
+
+Lazy about the solution, never about reading - trace the real codebase flow before
+picking a rung. Never on the chopping block: trust-boundary validation, data-loss
+handling, security, and accessibility are kept whatever the rung dictates. The
+tool, worktree, and comment conventions below are this ladder applied to specific
+cases. The `voit/review` gate audits a diff against this ladder.
+
+## dedicated tools over Bash
+
+Reach for the purpose-built tool, not a shell command. Bash is for what genuinely
+needs a shell: git, builds, tests, running programs. Reading docs/procedures -> `jd`
+(justdown `get`/`search`/`ls`/`path`); searching content -> the Grep tool (ripgrep);
+reading files -> Read; matching names -> Glob; editing -> Edit/Write. Never
+`cat`/`head`/`grep`/`find`/`sed`/`echo >` when a dedicated tool exists. Deferred
+tools (e.g. justdown MCP) load via `ToolSearch select:<name>` first, then call.
+
+## justfile + jd over bespoke scripts
+
+Do not reach for a new `.sh` or `.py` as the first instinct. New automation belongs
+in a `just` recipe and procedures/knowledge in a `.jd` doc any agent reads with `jd
+get` - both are discoverable; a loose script is not. A recipe is also where
+cross-platform lives: split the divergent body into `[unix]`/`[windows]` variants (see
+the `install` recipe) rather than maintaining parallel scripts. just shells out to
+bash for the body, so this buys discoverability and a single entry point, not magic
+portability - you still write both arms when the commands differ.
+
+Write a standalone script only when it is genuinely portable shipped logic with no
+premade equivalent and a recipe cannot host it - e.g. the `setup.sh` bootstrap the
+plugin ships and `/setup` invokes directly, because `just` is NOT a core dependency
+(core = `git`, `bash`, `python3`; everything else is optional and must never
+default-deny). Such a script stays minimal and is wrapped by a `just` recipe for dev
+ergonomics, never the other way around. When in doubt: recipe or jd, not a script.
+
+## worktrees via worktrunk
+
+Prefer `wt` (worktrunk) for worktree lifecycle over raw `git worktree`. `wt switch
+--create --no-cd <branch>` creates the branch+worktree (mapped to `.worktrees/<branch>`)
+and `wt merge <target>` merges the current worktree's branch up and removes it. See
+`wt --help` for the full surface. This is the premade-tool-over-bespoke rule applied
+to worktrees.
+
+## near-zero comments
+
+Code carries almost no comments - assume the reader reads code. Add one only when
+the logic is genuinely hard to follow, never to restate what the code says.
+Runtime-discoverable usage (CLI args, help text) lives in the code, not a header.
+
+## assert the figure, not the formatting
+
+Tests pin the semantic content, never the presentation around it. Assert the
+FIGURE a feature produces (a branch name, a `ready N` count, a `Njd Kkb` size, a
+`N%`), not the glyph, color, separator, or line count that happens to wrap it -
+those are reskinned freely, and brittle assertions on them break on every cosmetic
+change while proving nothing. Keep any unavoidable presentation check (a Nerd Font
+icon byte, an SGR escape) narrowly scoped to one line. And exercise BOTH states an
+output can take - a check that only ever runs the dirty/non-empty case hides the bug
+that appears when the tree is clean or the value is empty.

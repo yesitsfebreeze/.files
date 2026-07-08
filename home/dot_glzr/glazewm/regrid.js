@@ -3,7 +3,7 @@
 // equal grid". Bound to alt+g. GlazeWM has no native "tile everything" verb (keybindings
 // only ever act on the focused window), so this connects to the IPC socket, finds the
 // focused workspace, and forces every floating/fullscreen window in it to `set-tiling`.
-// The balance daemon then equalizes the pane sizes as usual. Minimized windows are left
+// The layout daemon then equalizes the pane sizes as usual. Minimized windows are left
 // hidden on purpose (use alt+m to restore one). Zero-dependency (Node >=21, global
 // WebSocket); launched fire-and-forget by the keybinding and exits when done.
 

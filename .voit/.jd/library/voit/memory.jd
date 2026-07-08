@@ -1,0 +1,26 @@
+---
+kind: knowledge
+title: voit/memory
+---
+
+# voit/memory
+
+`.voit/memory/` is the shared, versioned knowledge store - an **orphan-branch worktree**
+(decoupled history, it can never merge into `main` or ship as code). Plain files;
+read with Read/Grep or `jd get`.
+
+Layout:
+
+- `.voit/memory/voit/<slice>.jd` and `.voit/memory/voit/<slice>/impl/<task>.jd` - the live plans.
+- flat `.jd` files at the top - decisions, terminology, workflows, scripts, resources.
+- `.voit/memory/glossary.jd` - the shared lexicon, seeded at setup. One term per line,
+  pipe-delimited no padding (`term|type|definition|aliases|related`), greppable
+  (`grep '^foo|' glossary.jd`). Consult it before naming things; append every new
+  term/verb you coin so all agents speak the same words.
+
+The jd knowledge that ships with VOIT (this `voit/*` set) is the system manual; voit-memory
+is where THIS project's knowledge accumulates over time.
+
+**Rule for every agent: consult voit-memory first, write back what you learn.** voit-memory
+is how VOIT compounds - best workflows, decisions, terminology, scripts all land here and
+every agent is pointed at it.

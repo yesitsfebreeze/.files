@@ -13,5 +13,5 @@
 # `theme` picker), so a switch on one machine becomes a one-line commit the others
 # adopt on apply. The generated files are NO LONGER tracked, so they never conflict.
 [theme]
-scheme = "base16-gruvbox-material-dark-hard"
-green = "#a9b665"
+scheme = "base16-chinoiserie-midnight"
+green = "#aeb831"

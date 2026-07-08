@@ -2,17 +2,19 @@
 # ~/.glzr/glazewm/config.yaml. Modifier is alt throughout.
 # Every window lives in one equal grid: `initial_state: tiling` forces new windows into
 # the tiling tree, so a window only ever leaves the grid when the user fullscreens it
-# (alt+f) or detaches/floats it (alt+shift+space). Nothing is auto-floated. Equal pane
-# sizes are kept by the balance-daemon (started below). Manual resize is intentionally
-# absent (superseded by always-equal).
+# (alt+f) or detaches/floats it (alt+shift+space). Nothing is auto-floated. The
+# layout-daemon (started below) appends every new window at the right end of the grid,
+# keeps pane sizes equal, and snaps slow-launching apps (Firefox session restore etc.)
+# back into their pane. Manual resize is intentionally absent (superseded by
+# always-equal).
 
 general:
-  # Launch Zebar + the balance daemon with the WM. shell-exec runs through the
+  # Launch Zebar + the layout daemon with the WM. shell-exec runs through the
   # Windows shell, so %USERPROFILE% expands to the user profile. --hide-window keeps
   # node's console hidden (it's a background daemon). Non-fatal if absent.
   startup_commands:
     - 'shell-exec zebar startup'
-    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/balance-daemon.js'
+    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/layout-daemon.js'
   shutdown_commands: []
   config_reload_commands: []
   focus_follows_cursor: false
@@ -68,7 +70,7 @@ window_behavior:
 # only (there is no state matcher OR size matcher in the schema). New windows tile by
 # default (initial_state above) and join the equal grid like any other — transient
 # dialogs (file pickers, save prompts) included. Nothing is auto-floated or
-# auto-fullscreened; balance-daemon.js only keeps the existing panes equal.
+# auto-fullscreened; layout-daemon.js places new panes and keeps them equal.
 window_rules:
   # Zebar is our top status bar, not an app window — ignore it so GlazeWM never
   # hands it a tiling slot. Without this the bar's overlay window is managed like
@@ -142,16 +144,16 @@ keybindings:
 
   # Regrid: pull every floating/fullscreen window on the focused workspace back into the
   # equal grid. GlazeWM keybindings only act on the focused window, so the sweep lives in
-  # regrid.js over IPC; the balance daemon equalizes sizes afterward.
+  # regrid.js over IPC; the layout daemon equalizes sizes afterward.
   - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/regrid.js']
     bindings: ['alt+g']
 
-  # App picker overlay: alt+tab spawns the Zebar picker widget (a fresh window
-  # each time — it closes itself on exit, so nothing invisible lingers over the
-  # desktop) and enters the 'picker' binding mode (below), which the widget
-  # observes over IPC. Pure binding-mode signalling — the overlay never needs
-  # keyboard focus, which a background process can't reliably steal on Windows.
-  - commands: ['shell-exec --hide-window zebar start-widget-preset --pack custom-topbar --widget-name picker --preset default', 'wm-enable-binding-mode --name picker']
+  # App picker overlay: alt+tab enters the 'picker' binding mode (below); the
+  # always-running Zebar picker widget observes the mode over IPC and shows
+  # itself instantly — no process spawning, fully cross-platform. Pure
+  # binding-mode signalling: the overlay never needs keyboard focus, which a
+  # background process can't reliably steal on Windows.
+  - commands: ['wm-enable-binding-mode --name picker']
     bindings: ['alt+tab']
 
   # Window state.

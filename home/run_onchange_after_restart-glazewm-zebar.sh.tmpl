@@ -18,10 +18,9 @@
 #
 # Re-run trigger — hashes of the deployed configs (data, not executed):
 #   glazewm config  {{ includeTemplate "dot_glzr/glazewm/config.yaml.tmpl" . | sha256sum }}
-#   balance daemon  {{ include "dot_glzr/glazewm/balance-daemon.js" | sha256sum }}
+#   layout daemon   {{ include "dot_glzr/glazewm/layout-daemon.js" | sha256sum }}
 #   zebar settings  {{ include "dot_glzr/zebar/settings.json" | sha256sum }}
 #   topbar html     {{ include "dot_glzr/zebar/custom-topbar/index.html" | sha256sum }}
-#   picker html     {{ include "dot_glzr/zebar/custom-topbar/picker.html" | sha256sum }}
 #   topbar zpack    {{ include "dot_glzr/zebar/custom-topbar/zpack.json" | sha256sum }}
 # (theme.css is intentionally absent: it's a generated artifact, no longer tracked.
 #  A theme switch restarts Zebar via zebar-colors.sh / run_after's `tinty apply`.)
@@ -113,19 +112,22 @@ else
     warn "Zebar: taskkill.exe not reachable from WSL; skipping launch."
 fi
 
-# Balance daemon: ensure it's running, launched HIDDEN through GlazeWM's own
-# shell-exec (same path as startup_commands) so no console window shows. The daemon
-# holds a single-instance lock, so this is a no-op when one is already up — which
-# means a daemon-CODE change only takes effect on the next full GlazeWM restart, not
-# a bare wm-reload-config. The daemon reads no config files, so config/zebar edits
-# never need it restarted anyway.
+# Layout daemon: swap in the freshly deployed build. The daemon holds a localhost
+# lock port (16124) as its single-instance mutex and exits when a peer sends "quit"
+# over it — poke that first (powershell.exe runs Windows-side, so it CAN reach the
+# Windows loopback that WSL itself can't), then relaunch HIDDEN through GlazeWM's
+# own shell-exec (same path as startup_commands) so no console window shows. If no
+# old daemon was up the poke is a no-op and this is a plain launch.
 if [ -n "$glazewm_exe" ]; then
-    if "$glazewm_exe" command shell-exec --hide-window node "%USERPROFILE%\\.glzr\\glazewm\\balance-daemon.js" >/dev/null 2>&1; then
-        log "Balance daemon: ensured running (hidden) via GlazeWM."
+    powershell.exe -NoProfile -Command \
+        '$c = New-Object Net.Sockets.TcpClient; $c.Connect("127.0.0.1", 16124); $s = $c.GetStream(); $b = [Text.Encoding]::ASCII.GetBytes("quit"); $s.Write($b, 0, $b.Length); $c.Close()' \
+        >/dev/null 2>&1 && sleep 0.3
+    if "$glazewm_exe" command shell-exec --hide-window node "%USERPROFILE%\\.glzr\\glazewm\\layout-daemon.js" >/dev/null 2>&1; then
+        log "Layout daemon: (re)started (hidden) via GlazeWM."
     else
-        log "Balance daemon: GlazeWM not running; it starts on next GlazeWM launch."
+        log "Layout daemon: GlazeWM not running; it starts on next GlazeWM launch."
     fi
 else
-    warn "Balance daemon: glazewm.exe not on interop PATH; it starts on next GlazeWM launch."
+    warn "Layout daemon: glazewm.exe not on interop PATH; it starts on next GlazeWM launch."
 fi
 {{- end }}

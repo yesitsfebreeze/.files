@@ -1,0 +1,60 @@
+---
+kind: knowledge
+title: voit/dogfood
+---
+
+# voit/dogfood
+
+Turn VOIT on itself: find where the workflow's promises and its behavior have
+drifted apart, and close the gap at the root. The plugin is the deliverable - fix
+the code or the doc, never journal the fix in voit-memory (`.voit/memory/` is gitignored and
+never ships; the commit is the record). Dogfood also runs the other direction:
+harvest voit-memory for decisions that are general enough to hold in EVERY project and
+graduate them into the plugin (see "harvest" below).
+
+## what counts as a mismatch
+
+- A manual/procedure claims a guarantee the code does not enforce ("confines", "denies",
+  "blocks", "green") - the promise outruns the mechanism.
+- A command/agent `.md` names a path, flag, branch, or arg that no longer exists.
+- A jd procedure describes behavior the code has since changed.
+- `voit/review` references a step with no runnable check.
+- A rule everyone "knows" is enforced nowhere - advisory dressed as guaranteed.
+
+## the loop
+
+1. SCAN three surfaces and cross-read them: docs (`.voit/.jd/library/voit/*`,
+   `.voit/commands/*`, `.voit/agents/*`, README), code (`hooks/*`, `bus.py`,
+   `setup.sh`, `test.sh`), runtime (what the hooks actually emit). Run the mechanical
+   check first:
+   - dead references: grep every command/agent `.md` for the paths and flags it
+     names, and confirm each still exists.
+2. NAME each mismatch in one line: "<doc> promises X; <code> does Y."
+3. FIX precisely - the smallest change at the root. Decide per case whether the
+   code rises to the promise or the doc drops to reality. One change, no half-
+   measures, no new abstraction unless it removes more than it adds.
+4. GUARD it: add or extend an assertion in `.voit/scripts/test.sh` so the mismatch cannot
+   silently return. If a fix genuinely can't be tested, say so.
+5. VERIFY: `bash .voit/scripts/test.sh` green; run `voit/review` on the diff.
+
+## harvest: graduate general decisions into the plugin
+
+voit-memory (`.voit/memory/decisions`, plus the flat voit-memory `.jd` files) is per-project and
+gitignored. Some of what it holds is project-specific - this repo's facts, one-off
+events, mechanisms unique to it - and stays put. Other entries are project-agnostic
+conventions that should hold in EVERY project; those belong in the shipped plugin so
+they travel with VOIT.
+
+1. CLASSIFY each voit-memory decision: "would this be true and useful in an unrelated
+   project?" A convention or working rule -> general. An instance fact, event log,
+   or this-repo mechanism -> project-specific, skip.
+2. PLACE each general one where it belongs: a cross-cutting working rule ->
+   `voit/conventions`; a behavior the manual or an agent must state -> the relevant
+   procedure. Phrase it project-neutrally; drop repo-specific detail.
+3. DEDUPE + MARK: skip any decision already present in the target (idempotent), and
+   append "-> graduated to <procedure>" to voit-memory entry so it is not promoted twice.
+   The plugin commit is the record.
+
+Precise and efficient: touch only what the mismatch requires, prove it with a test,
+let the commit be the record. No slice, no voit-memory entry - this is the plugin
+improving itself.
