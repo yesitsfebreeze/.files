@@ -15,3 +15,11 @@
 .DS_Store
 Thumbs.db
 /.mesh/
+
+# VOIT orchestration runtime + research vault — machine-local, never committed
+/.voit/
+/.voitbus.pid
+/vicky/
+
+# Obsidian workspace state (vault UI + vendored plugins)
+/.obsidian/

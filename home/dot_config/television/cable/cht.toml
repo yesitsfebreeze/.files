@@ -1,0 +1,46 @@
+# television cable channel: `tv cht` — fuzzy-browse cht.sh cheatsheets with a
+# live preview pane. The tmux+fzf cht.sh tool, reimagined as a tv channel.
+#
+# source : a curated, OFFLINE list of languages + CLI tools (same set as the
+#          `cht` script in the machine's `cheat` skill). Offline on purpose —
+#          cht.sh is a shared service that 500s under load; a network-fetched
+#          source (cht.sh/:list) leaves an empty picker whenever it's down.
+#          Here the picker always populates; only the preview needs the network.
+# preview: curl the selected sheet, colored ANSI (cht.sh colorizes for curl by
+#          default; tv renders the ANSI in the preview panel).
+# enter / ctrl-e : open the full sheet in a pager.
+
+[metadata]
+name = "cht"
+description = "Browse cht.sh cheatsheets — languages and CLI tools, live preview"
+requirements = ["curl"]
+
+[source]
+command = """printf '%s\\n' \
+  golang python javascript typescript nodejs deno rust c cpp objc \
+  java kotlin scala swift ruby php perl lua elixir erlang clojure \
+  haskell ocaml fsharp csharp dart julia r matlab groovy zig nim \
+  bash zsh fish powershell sql solidity \
+  awk sed grep ripgrep find fd xargs cut sort uniq tr tee \
+  tar zip gzip rsync scp ssh curl wget \
+  git docker docker-compose kubectl helm terraform ansible \
+  jq yq make cmake systemctl journalctl ip ss netstat lsof \
+  ffmpeg imagemagick openssl tmux vim chmod chown ln mount"""
+
+[preview]
+command = "curl -sf --max-time 15 'cht.sh/{}' || echo 'cht.sh unreachable (overloaded or offline) — retry'"
+
+[ui]
+preview_panel = { size = 65 }
+
+[ui.input_bar]
+header = "cht.sh: {}"
+
+[keybindings]
+shortcut = "f5"
+ctrl-e = "actions:open"
+
+[actions.open]
+description = "Open the full cheatsheet in a pager"
+command = "curl -sf --max-time 20 'cht.sh/{}' | less -R"
+mode = "fork"
