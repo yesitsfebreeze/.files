@@ -26,3 +26,12 @@ Thumbs.db
 /.git-fs/
 
 home/dot_config/wezterm/colors.lua
+
+# VOIT orchestration runtime + research vault — machine-local, never committed
+/.voit/
+/.voitbus.pid
+/.voitbus.json
+/vicky/
+
+# Obsidian workspace state (vault UI + vendored plugins)
+/.obsidian/
