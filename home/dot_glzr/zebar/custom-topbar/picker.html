@@ -146,7 +146,9 @@
       // DWM acrylic on the (fullscreen, transparent) window blurs everything
       // behind the picker at the OS level — CSS backdrop-filter can't reach
       // other windows. Applied before show so it never flashes in sharp.
-      await winCall('set_effects', { value: { effects: ['acrylic'] } });
+      // Explicit low-alpha tint: the default acrylic tint is a heavy gray
+      // that buries the blurred content behind it.
+      await winCall('set_effects', { value: { effects: ['acrylic'], color: [0, 0, 0, 60] } });
       await winCall('show');
       // Re-raise to the TOP of the topmost band on every show. Other topmost
       // windows (topbar, floating shown_on_top windows) stack above us over

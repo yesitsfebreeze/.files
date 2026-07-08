@@ -239,13 +239,16 @@ config.colors.background = overlay
 -- bar reads as the same translucent surface as the cells, not a separate shade.
 local window_opacity = 0.95
 config.window_background_opacity = window_opacity
--- Blur: macOS frosts the desktop behind the window directly. Windows and Linux
--- have no reliable per-window blur from WezTerm — the Acrylic backdrop renders a
--- flat gray fallback whenever the window is unfocused or transparency effects are
--- off, and Linux blur is the compositor's job. But the wallpaper we set below is
--- ALREADY gaussian-blurred, so plain transparency shows a blurred backdrop on
--- every OS regardless; only macOS gets the extra live frosting.
+-- Blur: macOS frosts the desktop behind the window directly. On Windows the
+-- Acrylic system backdrop gives live per-window blur, with a known trade-off:
+-- it falls back to a flat gray tint whenever the window is unfocused (DWM
+-- disables system backdrops on inactive windows). The wallpaper below is
+-- pre-gaussian-blurred anyway, so unfocused windows still read soft; Linux
+-- blur remains the compositor's job.
 config.macos_window_background_blur = 30
+if is_windows then
+    config.win32_system_backdrop = "Acrylic"
+end
 config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
