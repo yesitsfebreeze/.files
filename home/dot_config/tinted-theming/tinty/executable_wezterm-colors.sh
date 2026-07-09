@@ -111,17 +111,17 @@ DEPLOY="$HOME/.config/wezterm/colors.lua"
 # truth: .chezmoidata/theme.toml. The generated artifacts (colors.lua, theme.css)
 # are no longer tracked — other machines run `tinty apply <scheme>` from this on
 # `chezmoi apply` (run_after_generate-shell-init.sh.tmpl) and regenerate them
-# locally, so they can never conflict. We rewrite only the two value lines in place
-# (portable sed -i.bak) to preserve the file's comment header; `green` is base0B,
-# the one palette value GlazeWM's config.yaml.tmpl inlines. We reach here only on a
-# real theme change (the unchanged-content guard above already exited), so theme.toml
-# — and the one-line commit `just push` makes from it — changes only when you switch.
+# locally, so they can never conflict. We rewrite only the one `scheme` value line in
+# place (portable sed -i.bak) to preserve the file's comment header; the border green
+# GlazeWM needs is derived from this scheme by config.yaml.tmpl (scheme-base0b.sh), so
+# there's no second value to write here. We reach here only on a real theme change (the
+# unchanged-content guard above already exited), so theme.toml — and the one-line commit
+# `just push` makes from it — changes only when you switch.
 CHEZMOI_SRC="$(chezmoi source-path 2>/dev/null)"
 theme_data="$CHEZMOI_SRC/.chezmoidata/theme.toml"
-if [[ -n "$CHEZMOI_SRC" && -f "$theme_data" && -n "$base0b" ]]; then
+if [[ -n "$CHEZMOI_SRC" && -f "$theme_data" ]]; then
     sed -i.bak -E \
         -e "s|^([[:space:]]*scheme[[:space:]]*=[[:space:]]*).*|\\1\"${SCHEME}\"|" \
-        -e "s|^([[:space:]]*green[[:space:]]*=[[:space:]]*).*|\\1\"${base0b}\"|" \
         "$theme_data" 2>/dev/null && rm -f "$theme_data.bak"
 fi
 

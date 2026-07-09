@@ -42,12 +42,14 @@ window_effects:
   focused_window:
     border:
       enabled: true
-      # Active-window outline tracks the tinty theme's green (base0B). The value
-      # is rendered by chezmoi from .chezmoidata/theme.toml's `green` (the single
-      # synced source of truth), so this file never carries a per-machine color and
-      # never conflicts. On a live `theme` switch wezterm-colors.sh also rewrites the
-      # deployed copy's `tinty:base0B` line for instant effect — edit neither by hand.
-      color: '{{ .theme.green }}' # tinty:base0B
+      # Active-window outline tracks the tinty theme's green (base0B). chezmoi derives
+      # it at render time from the ONLY synced value — the scheme name in
+      # .chezmoidata/theme.toml — by extracting base0B from that scheme's yaml
+      # (scheme-base0b.sh). So this file never carries a per-machine color and never
+      # conflicts, and there's no second `green` key to keep in sync. On a live `theme`
+      # switch wezterm-colors.sh also rewrites the deployed copy's `tinty:base0B` line
+      # for instant effect — edit neither by hand.
+      color: '{{ output (joinPath .chezmoi.sourceDir "dot_config/tinted-theming/tinty/executable_scheme-base0b.sh") .theme.scheme | trim }}' # tinty:base0B
   other_windows:
     border:
       enabled: false
