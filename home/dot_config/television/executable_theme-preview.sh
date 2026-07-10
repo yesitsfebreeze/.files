@@ -10,7 +10,7 @@
 # (a "browser refresh" per keystroke that stalled the picker). The canonical apply
 # now happens exactly once, on Enter, in theme.nu. Here we draw the swatch, plus
 # one OSC 11 escape to live-retint just the terminal background (see below) —
-# hook-free, and theme.nu resets it when the picker closes.
+# hook-free, and theme.nu re-asserts the active background when the picker closes.
 set -u
 
 id="${1:-}"
@@ -58,7 +58,7 @@ bg() { [ "$color" = 1 ] && printf '\033[48;2;%sm' "$(rgb "${C[$1]}")"; }
 # Live-retint ONLY the terminal background to the focused scheme's base00 so the
 # real (translucent) wezterm window previews it for real. OSC 11 is a single
 # escape straight to the tty — no `tinty apply`, no hook chain, nothing else is
-# touched. theme.nu resets it (OSC 111) once the picker closes.
+# touched. theme.nu re-asserts the active background once the picker closes.
 [ "$color" = 1 ] && { printf '\033]11;%s\033\\' "${C[00]}" > /dev/tty; } 2>/dev/null
 
 # roles by base24 convention (brightness carries hierarchy; two accents on top)

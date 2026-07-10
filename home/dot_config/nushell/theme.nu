@@ -3,8 +3,8 @@
 # a static swatch of each scheme (theme-preview.sh paints the scheme's own hex
 # values directly — it never `tinty apply`s) and live-retints only the terminal
 # background (OSC 11) so the focused scheme shows for real; browsing never fires
-# tinty's hooks or the bar. Enter applies + persists; Esc resets the background
-# (OSC 111) and leaves the current theme as-is.
+# tinty's hooks or the bar. Enter applies + persists; Esc re-asserts the active
+# background (override or the current scheme's base00) and leaves the theme as-is.
 #
 # Cache: the picker surfaces a recency stack + a liked set at the TOP of the list,
 # above the alphabetical catalog (television preserves source order). Recents are
@@ -15,6 +15,9 @@
 #
 # Subcommands:
 #   theme                  open the picker
+#   theme bg               fine-tune the background override live (R/G/B stepper)
+#   theme bg <#hex>        set the background override directly
+#   theme bg clear         drop the override — track the scheme's own base00
 #   theme like [<id>]      add the current pick (or <id>) to the liked set
 #   theme unlike [<id>]    remove the current pick (or <id>) from the liked set
 #   theme liked            print the liked set
@@ -49,6 +52,47 @@ def _theme_current [] {
     if ($f | path exists) { open $f | str trim } else { "" }
 }
 
+def _theme_cfg_file [] { $env.HOME | path join ".config" "tinted-theming" "tinty" "config.toml" }
+
+# _theme_override: the background-override hex from the live tinty config, or "".
+def _theme_override [] {
+    let f = (_theme_cfg_file)
+    if not ($f | path exists) { return "" }
+    open $f | get -o "background-override" | default "" | str trim | str downcase
+}
+
+# _theme_scheme_bg: a scheme id's own background (palette.base00 hex), or "".
+def _theme_scheme_bg [id: string] {
+    if ($id | is-empty) { return "" }
+    let system = ($id | split row "-" | first)
+    let slug = ($id | str replace $"($system)-" "")
+    let data = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share")
+        | path join "tinted-theming" "tinty")
+    let f = ([
+        ($data | path join "repos" "schemes" $system $"($slug).yaml")
+        ($data | path join "custom-schemes" $system $"($slug).yaml")
+    ] | where { |x| $x | path exists } | get 0? | default "")
+    if ($f | is-empty) { return "" }
+    open $f | get -o palette.base00 | default "" | str downcase
+}
+
+# _theme_osc_bg: set the terminal background to a "#rrggbb" hex via OSC 11.
+def _theme_osc_bg [hex: string] {
+    if ($hex | is-empty) { return }
+    print -n $"\e]11;($hex)\e\\"
+}
+
+# _theme_bg_restore: re-assert the background the terminal SHOULD be showing —
+# the override when set, else the current scheme's base00. Used after anything
+# that live-retinted the background (the picker's per-focus preview, `theme bg`).
+# An explicit OSC 11 set, not OSC 111: the reset restores wezterm's config
+# background (colors.lua), which may lag, and some hosts ignore 111 entirely.
+def _theme_bg_restore [] {
+    let o = (_theme_override)
+    let bg = (if ($o | is-not-empty) { $o } else { _theme_scheme_bg (_theme_current) })
+    if ($bg | is-empty) { print -n "\e]111\e\\" } else { _theme_osc_bg $bg }
+}
+
 # _theme_recent_list / _theme_liked_list: the cache contents, newest-first /
 # as-curated. Exported so the television channel source can call them.
 export def _theme_recent_list [] { _theme_lines (_theme_recent_file) }
@@ -79,6 +123,108 @@ export def _theme_commit [id: string] {
     print $"theme: ($id)"
 }
 
+# ── background override (`theme bg`) ──────────────────────────────────────────
+# The override lives as `background-override = "#hex"` in tinty's config.toml and
+# is honored by wezterm-colors.sh / zebar-colors.sh / bg-override.sh over the
+# scheme's base00. `theme bg` fine-tunes it live: an R/G/B stepper that retints
+# the terminal (OSC 11) on every keypress, then persists on Enter.
+
+def _theme_hex_rgb [hex: string] {
+    let h = ($hex | str replace "#" "" | str downcase)
+    [0 2 4] | each { |i| $h | str substring $i..($i + 1) | into int --radix 16 }
+}
+
+def _theme_rgb_hex [rgb: list<int>] {
+    "#" + ($rgb | each { |c|
+        $c | format number | get lowerhex | str replace "0x" "" | fill -a right -c "0" -w 2
+    } | str join "")
+}
+
+# _theme_bg_persist: write the override hex ("" clears it) into BOTH the chezmoi
+# source and the live config (source alone would wait for an apply; live alone
+# gets clobbered by the next one), then regenerate the derived artifacts the way
+# the run_onchange hook would (colors.lua hot-reloads wezterm, zebar restarts).
+def _theme_bg_persist [hex: string] {
+    let live = (_theme_cfg_file)
+    let src = (try { ^chezmoi source-path $live | str trim } catch { "" })
+    for f in ([$src $live] | uniq | where { |x| ($x | is-not-empty) and ($x | path exists) }) {
+        open --raw $f
+        | str replace --regex 'background-override[ \t]*=[ \t]*"[^"]*"' $'background-override = "($hex)"'
+        | save -f $f
+    }
+    let gen = ($env.HOME | path join ".config" "tinted-theming" "tinty")
+    try { ^($gen | path join "wezterm-colors.sh") e> /dev/null }
+    try { ^($gen | path join "zebar-colors.sh") e> /dev/null }
+}
+
+def _theme_bg_draw [rgb: list<int>, ch: int] {
+    let hex = (_theme_rgb_hex $rgb)
+    let sw = $"\e[48;2;($rgb.0);($rgb.1);($rgb.2)m      \e[0m"
+    let vals = ([R G B] | enumerate | each { |it|
+        let cell = $"($it.item) (($rgb | get $it.index) | fill -a right -c ' ' -w 3)"
+        if $it.index == $ch { $"\e[7m ($cell) \e[0m" } else { $" ($cell) " }
+    } | str join " ")
+    let help = "←→ channel · ↑↓ step · shift ±16 · enter save · c clear · esc cancel"
+    print -n $"\r\e[2K  ($sw)  ($hex)  ($vals)   \e[2m($help)\e[0m"
+}
+
+# _theme_bg_tune: the interactive stepper. Every change is previewed live with a
+# single OSC 11 (no hooks fire while browsing); Enter persists via
+# _theme_bg_persist, c clears the override, Esc/q reverts to the starting color.
+def _theme_bg_tune [] {
+    let start = (do {
+        let o = (_theme_override)
+        if ($o | is-not-empty) { $o } else {
+            let s = (_theme_scheme_bg (_theme_current))
+            if ($s | is-not-empty) { $s } else { "#000000" }
+        }
+    })
+    mut rgb = (_theme_hex_rgb $start)
+    mut ch = 0
+    print -n (ansi cursor_off)
+    loop {
+        _theme_bg_draw $rgb $ch
+        let ev = (input listen --types [key])
+        let mods = ($ev | get -o modifiers | default [])
+        let step = (if ("shift" in $mods) { 16 } else { 1 })
+        # raw mode: ctrl-c arrives as a plain "c" key event with the control
+        # modifier — route it to cancel, never to the clear arm.
+        let code = (do {
+            let c = ($ev | get -o code | default "")
+            if ("control" in $mods) and $c == "c" { "esc" } else { $c }
+        })
+        match $code {
+            "left"  => { $ch = (($ch + 2) mod 3) }
+            "right" => { $ch = (($ch + 1) mod 3) }
+            "up"    => { $rgb = ($rgb | update $ch { |v| [([($v + $step) 255] | math min) 0] | math max }) }
+            "down"  => { $rgb = ($rgb | update $ch { |v| [([($v - $step) 255] | math min) 0] | math max }) }
+            "enter" => {
+                let hex = (_theme_rgb_hex $rgb)
+                _theme_bg_persist $hex
+                _theme_osc_bg $hex
+                print -n (ansi cursor_on)
+                print $"\ntheme: background override ($hex)"
+                return
+            }
+            "c" => {
+                _theme_bg_persist ""
+                _theme_bg_restore
+                print -n (ansi cursor_on)
+                print "\ntheme: background override cleared"
+                return
+            }
+            "esc" | "q" => {
+                _theme_osc_bg $start
+                print -n (ansi cursor_on)
+                print "\ntheme: background unchanged"
+                return
+            }
+            _ => { }
+        }
+        _theme_osc_bg (_theme_rgb_hex $rgb)
+    }
+}
+
 # _theme_catalog: every scheme id tinty can apply — the official base16/base24
 # catalog plus our custom-schemes (base24-feb, base16-feb-neon, the converted
 # gogh-* themes). Deduped + alphabetical; the cache is prepended separately.
@@ -107,6 +253,26 @@ def --wrapped theme [...rest] {
     # --wrapped types each rest item as `glob`; `match` compares structurally and a
     # glob never equals a string arm, so coerce to string before dispatching.
     let sub = ($rest | get 0? | default "" | into string)
+
+    # Background override — the live R/G/B stepper, a direct hex, or clear.
+    if $sub == "bg" {
+        let arg = ($rest | get 1? | default "" | into string | str trim)
+        if $arg == "clear" {
+            _theme_bg_persist ""
+            _theme_bg_restore
+            print "theme: background override cleared"
+        } else if ($arg =~ '^#?[0-9a-fA-F]{6}$') {
+            let hex = ("#" + ($arg | str replace "#" "" | str downcase))
+            _theme_bg_persist $hex
+            _theme_osc_bg $hex
+            print $"theme: background override ($hex)"
+        } else if ($arg | is-not-empty) {
+            print $"theme bg: expected a #rrggbb hex or 'clear', got: ($arg)"
+        } else {
+            _theme_bg_tune
+        }
+        return
+    }
 
     # Cache subcommands — manage the liked set / recency stack without the picker.
     if $sub in ["like" "unlike" "liked" "recent" "forget"] {
@@ -151,9 +317,10 @@ def --wrapped theme [...rest] {
     # browsing leaves the terminal, the bar, and current_scheme untouched.
     let sel = (tv theme ...$rest | str trim)
     # The preview live-retints the terminal background per focused scheme (OSC 11,
-    # theme-preview.sh). Reset it to the config background (OSC 111) now that the
-    # picker is closed: on Esc this alone restores the current theme; on Enter
-    # tinty apply re-emits the picked scheme's colors right after.
-    print -n "\e]111\e\\"
-    if ($sel | is-not-empty) { _theme_commit $sel }
+    # theme-preview.sh). The picker is closed now: on Enter, apply the pick —
+    # tinty re-emits the scheme's colors and bg-override.sh re-asserts any
+    # override. On Esc, explicitly re-set the background to what it should be
+    # (_theme_bg_restore); the old OSC 111 reset restored wezterm's config
+    # background, which can lag the live theme and is ignored by some hosts.
+    if ($sel | is-not-empty) { _theme_commit $sel } else { _theme_bg_restore }
 }

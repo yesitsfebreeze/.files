@@ -8,8 +8,8 @@
 # preview: theme-preview.sh draws a self-contained swatch of the scheme (banner,
 # UI mockup, palette) from its own hex values — no live apply, so focusing never
 # fires tinty's hooks or restarts the bar. It does emit one OSC 11 escape to
-# live-retint just the terminal background to the focused scheme; theme.nu resets
-# it (OSC 111) when the picker closes. Driven by the `theme` Nushell
+# live-retint just the terminal background to the focused scheme; theme.nu
+# re-asserts the active background when the picker closes. Driven by the `theme` Nushell
 # command: Enter persists + pushes to the recency cache; Esc cancels (nothing to
 # revert). Like/unlike via `theme like` / `theme unlike`.
 

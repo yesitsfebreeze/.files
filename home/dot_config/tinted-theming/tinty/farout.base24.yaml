@@ -1,0 +1,30 @@
+system: "base24"
+name: "Farout"
+author: "thallada (https://github.com/thallada/farout.nvim), after fcpg/vim-farout — converted to base24"
+description: "Dark retro theme: warm orange/amber/brown accents on a near-black ember background. Converted from farout.nvim's night-variant wezterm extra. Tracked source lives here in the config dir; run_after copies it into the (gitignored) tinty data-dir custom-schemes/ so tinty and wezterm-colors.sh can resolve base24-farout."
+variant: "dark"
+palette:
+  base00: "#0f0908" # background
+  base01: "#0c0706" # black (ansi 0)
+  base02: "#6b442f" # selection background
+  base03: "#392d2b" # comments — bright black (ansi 8)
+  base04: "#a67458" # darker foreground
+  base05: "#e0ccae" # foreground
+  base06: "#f2a766" # light foreground
+  base07: "#e0ccae" # bright white (ansi 15)
+  base08: "#bf472c" # red (ansi 1)
+  base09: "#d47d49" # orange — split/accent
+  base0A: "#f2a766" # yellow (ansi 3)
+  base0B: "#a4896f" # green (ansi 2)
+  base0C: "#a67458" # cyan (ansi 6)
+  base0D: "#d47d49" # blue (ansi 4)
+  base0E: "#8a4b53" # magenta (ansi 5)
+  base0F: "#6b442f" # brown
+  base10: "#0c0706" # darker background
+  base11: "#0c0706" # darkest background
+  base12: "#bf472c" # bright red (ansi 9)
+  base13: "#f2a766" # bright yellow (ansi 11)
+  base14: "#a4896f" # bright green (ansi 10)
+  base15: "#a67458" # bright cyan (ansi 14)
+  base16: "#d47d49" # bright blue (ansi 12)
+  base17: "#8a4b53" # bright magenta (ansi 13)
