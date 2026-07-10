@@ -11,6 +11,13 @@ packages:
       dnf: ""
       cargo_git: https://github.com/yesitsfebreeze/burrito   # source of truth: `cargo install --git` this repo
 
+    - name: keydr         # terminal typing tutor with adaptive learning (keybr-style weak-key drills)
+      brew: ""            # not packaged anywhere; built from source via cargo (cargo_git)
+      apt: ""
+      pacman: ""
+      dnf: ""
+      cargo_git: https://github.com/thallada/keydr
+
     - name: neovim
       brew: neovim
       apt: neovim

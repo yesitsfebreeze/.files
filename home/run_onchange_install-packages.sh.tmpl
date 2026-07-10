@@ -539,29 +539,32 @@ if command -v cargo >/dev/null 2>&1; then
     done
 fi
 
-# burrito — the multiplexer. No package on any manager and no prebuilt release
-# yet, so it is built from its GitHub repo with cargo (edition 2024 -> needs a
-# recent toolchain). The repo URL is the single source of truth in packages.yaml
-# (cargo_git). Bootstrap rustup non-interactively if cargo is missing, then
-# `cargo install --git`. Idempotent: skipped once `burrito` is on PATH.
-burrito_repo="{{ range .packages }}{{ if hasKey . "cargo_git" }}{{ .cargo_git }}{{ end }}{{ end }}"
-if [ -n "$burrito_repo" ] && ! command -v burrito >/dev/null 2>&1; then
+# cargo_git packages (burrito, keydr, ...) — no package on any manager and no
+# prebuilt release, so they are built from their GitHub repos with cargo. The
+# repo URLs are the single source of truth in packages.yaml (cargo_git).
+# Bootstrap rustup non-interactively if cargo is missing, then
+# `cargo install --git`. Idempotent: skipped once the binary is on PATH.
+cargo_git_pkgs="{{ range .packages }}{{ if hasKey . "cargo_git" }}{{ .name }}={{ .cargo_git }} {{ end }}{{ end }}"
+for entry in $cargo_git_pkgs; do
+    name="${entry%%=*}"
+    repo="${entry#*=}"
+    command -v "$name" >/dev/null 2>&1 && continue
     if ! command -v cargo >/dev/null 2>&1; then
-        log "install rustup (toolchain needed to build burrito)"
+        log "install rustup (toolchain needed to build $name)"
         curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs \
             | sh -s -- -y --profile minimal >/dev/null 2>&1 \
             || warn "  rustup bootstrap failed; install a Rust toolchain manually"
         [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
     fi
     if command -v cargo >/dev/null 2>&1; then
-        log "install burrito (cargo install --git $burrito_repo)"
-        cargo install --git "$burrito_repo" --locked burrito >/dev/null 2>&1 \
-            && log "  installed burrito" \
-            || warn "  could not build burrito from $burrito_repo"
+        log "install $name (cargo install --git $repo)"
+        cargo install --git "$repo" --locked "$name" >/dev/null 2>&1 \
+            && log "  installed $name" \
+            || warn "  could not build $name from $repo"
     else
-        warn "burrito: no cargo available; install a Rust toolchain and re-run"
+        warn "$name: no cargo available; install a Rust toolchain and re-run"
     fi
-fi
+done
 
 # --- Nerd Font: guarantee the patched font is present (release fallback) ---
 # Font identity comes from packages.yaml (nerdfont_asset); fetch the nerd-fonts
