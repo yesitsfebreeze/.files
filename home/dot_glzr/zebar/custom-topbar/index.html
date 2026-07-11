@@ -205,7 +205,7 @@
 
   <script type="module">
     import * as zebar from 'https://esm.sh/zebar@3.0';
-    import { PhysicalSize, PhysicalPosition } from 'https://esm.sh/@tauri-apps/api@2.0.2/window';
+    import { PhysicalSize, PhysicalPosition, currentMonitor } from 'https://esm.sh/@tauri-apps/api@2.0.2/window';
 
     if (!navigator.userAgent.includes('Windows')) {
       document.body.classList.add('reveal-on-hover');
@@ -310,6 +310,10 @@
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
     const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
 
+    // Latest GlazeWM output, captured for the picker's focused-monitor test below.
+    // This provider is monitor-scoped, so currentWorkspaces belongs to THIS bar.
+    let gw = null;
+
     providers.onOutput(() => {
       const { glazewm, systray, cpu, memory, network, battery, clock, cal } =
         providers.outputMap;
@@ -331,6 +335,7 @@
       }
 
       if (glazewm) {
+        gw = glazewm;
         const byName = new Map(
           glazewm.currentWorkspaces.map(ws => [ws.name, ws]),
         );
@@ -385,6 +390,14 @@
     let barRect = null;
     let pickerOpen = false;
     let activating = false;
+    let opening = false;
+
+    // The picker shows on exactly one monitor: the bar whose monitor owns the
+    // focused workspace. Every monitor's bar observes the same GlazeWM binding-mode
+    // events over IPC, but only the active monitor's bar grows into the overlay; the
+    // rest stay bars. hasFocus is globally unique within currentWorkspaces (which is
+    // monitor-scoped), so it's present here only when this is the active monitor.
+    const onFocusedMonitor = () => !!gw?.currentWorkspaces?.some(ws => ws.hasFocus);
 
     async function showPicker() {
       if (pickerOpen) return;
@@ -397,11 +410,25 @@
         barRect = { pos, size };
       }
       document.body.classList.add('picker-open');
-      await tauriWin.setPosition(new PhysicalPosition(0, 0));
-      await tauriWin.setSize(new PhysicalSize(
+      // Cover THIS bar's monitor: position at the monitor origin and match its size,
+      // so the overlay lands on whichever monitor opened it — not always the primary.
+      // (setPosition(0,0) is the desktop origin = the primary monitor's top-left,
+      // which is wrong for a bar on a secondary monitor.) Fall back to the screen the
+      // window reports if the monitor query is unavailable.
+      let pos = new PhysicalPosition(0, 0);
+      let size = new PhysicalSize(
         Math.round(screen.width * devicePixelRatio),
         Math.round(screen.height * devicePixelRatio),
-      ));
+      );
+      try {
+        const mon = await currentMonitor();
+        if (mon) {
+          pos = new PhysicalPosition(mon.position.x, mon.position.y);
+          size = new PhysicalSize(mon.size.width, mon.size.height);
+        }
+      } catch {}
+      await tauriWin.setPosition(pos);
+      await tauriWin.setSize(size);
       // The bar sits low in the topmost band over time; drop out and rejoin to
       // land above other topmost windows (floats) for this session.
       await tauriWin.setAlwaysOnTop(false);
@@ -497,14 +524,22 @@
       if (fresh.length || !modes.length) trace('modes', JSON.stringify(modes));
       // Binding modes replace each other, so during a signal pulse the base
       // 'picker' mode is briefly absent — any picker* mode counts as open.
-      // Mode gone (escape / after enter) → shrink; a running activation's own
-      // exitPicker finishes the job.
+      // Mode gone (escape / after enter) → the bar holding the overlay shrinks; a
+      // running activation's own exitPicker finishes the job. Bars on other monitors
+      // never opened, so they have nothing to undo.
       if (!modes.some(m => m.startsWith('picker'))) {
-        if (!activating) { shrinkToBar(); reassertFocus(); }
+        if (pickerOpen && !activating) { shrinkToBar(); reassertFocus(); }
+        return;
+      }
+      // Only the active monitor's bar owns the picker. Until this bar has opened it,
+      // ignore every pulse except the initial 'picker' on the focused monitor — that
+      // keeps the overlay on one screen and the nav keys driving that one grid.
+      if (!pickerOpen) {
+        if (!activating && !opening && fresh.includes('picker') && onFocusedMonitor()) openPicker();
         return;
       }
       for (const m of fresh) {
-        if (m === 'picker') { if (!pickerOpen && !activating) openPicker(); }
+        if (m === 'picker') { /* re-enable pulse — overlay already up */ }
         else if (m === 'picker-down') moveVertical(1);
         else if (m === 'picker-up') moveVertical(-1);
         else if (m === 'picker-left') moveCell(0, -1, len => Math.min(sel?.idx ?? 0, len - 1));
@@ -527,8 +562,14 @@
     let sel = null;
 
     async function openPicker() {
+      opening = true;
       try {
-        const data = await send('query workspaces');
+        let data;
+        try {
+          data = await send('query workspaces');
+        } catch {
+          return;
+        }
         const byName = new Map((data?.workspaces || []).map(w => [w.name, w]));
         cells = WORKSPACES.map(name => {
           const ws = byName.get(name);
@@ -541,24 +582,24 @@
             focused: !!ws && (ws.hasFocus || wins.some(w => w.hasFocus)),
           };
         });
-      } catch {
-        return;
-      }
 
-      // The mode can be exited again while the query above was in flight.
-      if (!prevModes.some(m => m.startsWith('picker'))) {
-        trace('openPicker aborted, mode gone');
-        return;
-      }
+        // The mode can be exited again while the query above was in flight.
+        if (!prevModes.some(m => m.startsWith('picker'))) {
+          trace('openPicker aborted, mode gone');
+          return;
+        }
 
-      // Start on the window after the currently focused one, so alt+tab, enter
-      // hops to the next window — like a classic switcher.
-      const f = flat();
-      const cur = f.findIndex(e => e.w.hasFocus);
-      const start = f.length ? f[(cur + 1) % f.length] : null;
-      sel = start ? { cell: start.cell, idx: start.idx } : null;
-      buildGrid();
-      showPicker();
+        // Start on the window after the currently focused one, so alt+tab, enter
+        // hops to the next window — like a classic switcher.
+        const f = flat();
+        const cur = f.findIndex(e => e.w.hasFocus);
+        const start = f.length ? f[(cur + 1) % f.length] : null;
+        sel = start ? { cell: start.cell, idx: start.idx } : null;
+        buildGrid();
+        showPicker();
+      } finally {
+        opening = false;
+      }
     }
 
     const gridEl = document.getElementById('grid');
