@@ -14,8 +14,15 @@ cwd := justfile_directory()
 # Locking is portable: Linux always has `flock` (util-linux), which auto-releases the lock
 # when the holding process exits. macOS has no `flock`, so we fall back to an atomic
 # `mkdir` lock with an EXIT trap that removes the lock dir on any normal/error exit.
+#
+# theme.toml merge driver: .gitattributes routes home/.chezmoidata/theme.toml through
+# the "theme-pick" driver, which resolves any conflict by taking the incoming side
+# (%B). During this recipe's pull --rebase the incoming side is the local commit
+# being replayed, so the theme you just picked always wins and theme switches on two
+# machines can never wedge the rebase. The config line is idempotent and runs on
+# every push so fresh clones self-configure.
 push:
-  @bash -euc 'run() { chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git pull --rebase --autostash && git push; }; lock=/tmp/dotfiles-push.lock; if command -v flock >/dev/null 2>&1; then exec 9>"$lock"; flock 9; run; else until mkdir "$lock.d" 2>/dev/null; do sleep 0.2; done; trap "rmdir \"$lock.d\" 2>/dev/null || true" EXIT; run; fi'
+  @bash -euc 'run() { git config merge.theme-pick.driver "cp -f %B %A" && chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git pull --rebase --autostash && git push; }; lock=/tmp/dotfiles-push.lock; if command -v flock >/dev/null 2>&1; then exec 9>"$lock"; flock 9; run; else until mkdir "$lock.d" 2>/dev/null; do sleep 0.2; done; trap "rmdir \"$lock.d\" 2>/dev/null || true" EXIT; run; fi'
   # Bring the desktop stack up (macOS) after applying config, so a fresh apply lands
   # a running WM + bar. No-op if already running / off macOS (see `wm`).
   @just wm
@@ -30,8 +37,11 @@ push:
 # to preserve both lines of history rather than linearize them.
 # Shares push's lock so merge and push can't race each other on the working tree either.
 # Same portable flock/mkdir fallback as push (see the push comment above).
+# NOTE: under `git merge FETCH_HEAD` the theme-pick driver's incoming side (%B) is
+# the REMOTE, so a theme.toml collision here resolves to the remote's pick — the
+# opposite of push. Use bare `just` (push) after switching themes.
 merge:
-  @bash -euc 'run() { chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git fetch && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git merge --no-edit FETCH_HEAD && git push; }; lock=/tmp/dotfiles-push.lock; if command -v flock >/dev/null 2>&1; then exec 9>"$lock"; flock 9; run; else until mkdir "$lock.d" 2>/dev/null; do sleep 0.2; done; trap "rmdir \"$lock.d\" 2>/dev/null || true" EXIT; run; fi'
+  @bash -euc 'run() { git config merge.theme-pick.driver "cp -f %B %A" && chezmoi init --source "{{cwd}}" --force && chezmoi apply --force && git fetch && git add --all && { git diff --cached --quiet || git commit -m "intermediate"; } && git merge --no-edit FETCH_HEAD && git push; }; lock=/tmp/dotfiles-push.lock; if command -v flock >/dev/null 2>&1; then exec 9>"$lock"; flock 9; run; else until mkdir "$lock.d" 2>/dev/null; do sleep 0.2; done; trap "rmdir \"$lock.d\" 2>/dev/null || true" EXIT; run; fi'
 
 # Ensure the desktop stack is up on macOS: GlazeWM (the tiling WM, cross-platform since
 # 3.x) plus Zebar (the bar that also renders the alt+tab picker overlay). The picker is

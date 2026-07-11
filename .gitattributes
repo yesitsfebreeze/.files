@@ -14,6 +14,15 @@
 *.nu        text eol=lf
 *.toml      text eol=lf
 
+# theme.toml is a single-value file (the active tinty scheme) edited independently
+# on every machine, so any two picks collide on the same line. The theme-pick merge
+# driver (configured by the justfile: `cp -f %B %A`) auto-resolves by taking the
+# INCOMING side. Under `just push` (pull --rebase) the incoming side is the local
+# commit being replayed — i.e. the theme you just picked wins and the push never
+# conflicts. On a machine with no local pick the pull fast-forwards and the remote
+# theme lands normally, so the net effect is "last picked theme wins".
+home/.chezmoidata/theme.toml merge=theme-pick
+
 # The wezterm background.png is committed as a runtime artifact; mark PNGs binary
 # so git never applies text/CRLF normalization and corrupts the image bytes.
 *.png   binary
