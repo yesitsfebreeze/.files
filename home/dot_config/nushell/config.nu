@@ -110,7 +110,7 @@ def decorate-ls [du: bool]: table -> table {
             ""
         } else {
             $LS_ICONS
-            | get --optional ($row.name | path parse | get extension | str downcase)
+            | get --optional ($row.name | path parse | get extension | str lowercase)
             | default ""
         }
     }

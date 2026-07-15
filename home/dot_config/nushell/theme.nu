@@ -58,7 +58,7 @@ def _theme_cfg_file [] { $env.HOME | path join ".config" "tinted-theming" "tinty
 def _theme_override [] {
     let f = (_theme_cfg_file)
     if not ($f | path exists) { return "" }
-    open $f | get -o "background-override" | default "" | str trim | str downcase
+    open $f | get -o "background-override" | default "" | str trim | str lowercase
 }
 
 # _theme_scheme_bg: a scheme id's own background (palette.base00 hex), or "".
@@ -73,7 +73,7 @@ def _theme_scheme_bg [id: string] {
         ($data | path join "custom-schemes" $system $"($slug).yaml")
     ] | where { |x| $x | path exists } | get 0? | default "")
     if ($f | is-empty) { return "" }
-    open $f | get -o palette.base00 | default "" | str downcase
+    open $f | get -o palette.base00 | default "" | str lowercase
 }
 
 # _theme_osc_bg: set the terminal background to a "#rrggbb" hex via OSC 11.
@@ -130,7 +130,7 @@ export def _theme_commit [id: string] {
 # the terminal (OSC 11) on every keypress, then persists on Enter.
 
 def _theme_hex_rgb [hex: string] {
-    let h = ($hex | str replace "#" "" | str downcase)
+    let h = ($hex | str replace "#" "" | str lowercase)
     [0 2 4] | each { |i| $h | str substring $i..($i + 1) | into int --radix 16 }
 }
 
@@ -262,7 +262,7 @@ def --wrapped theme [...rest] {
             _theme_bg_restore
             print "theme: background override cleared"
         } else if ($arg =~ '^#?[0-9a-fA-F]{6}$') {
-            let hex = ("#" + ($arg | str replace "#" "" | str downcase))
+            let hex = ("#" + ($arg | str replace "#" "" | str lowercase))
             _theme_bg_persist $hex
             _theme_osc_bg $hex
             print $"theme: background override ($hex)"
