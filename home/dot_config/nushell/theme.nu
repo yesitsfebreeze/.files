@@ -15,7 +15,8 @@
 #
 # Subcommands:
 #   theme                  open the picker
-#   theme bg               fine-tune the background override live (R/G/B stepper)
+#   theme bg               pick a background override in tv (ladder + tints, live preview)
+#   theme bg tune          fine-tune the override live (R/G/B stepper)
 #   theme bg <#hex>        set the background override directly
 #   theme bg clear         drop the override — track the scheme's own base00
 #   theme like [<id>]      add the current pick (or <id>) to the liked set
@@ -140,6 +141,50 @@ def _theme_rgb_hex [rgb: list<int>] {
     } | str join "")
 }
 
+# _theme_bg_active: the background showing right now — override, else the current
+# scheme's base00, else a neutral fallback.
+def _theme_bg_active [] {
+    let o = (_theme_override)
+    if ($o | is-not-empty) { return $o }
+    let s = (_theme_scheme_bg (_theme_current))
+    if ($s | is-not-empty) { $s } else { "#1d2021" }
+}
+
+# _theme_bg_list: the `tv bg` channel's source — candidate backgrounds around the
+# active one: a lightness ladder (mix toward black/white) plus single-channel
+# tints. Lines are "#rrggbb  <label>"; the preview and the commit both take the
+# first token. Exported for the channel's [source] command.
+export def _theme_bg_list [] {
+    let base = (_theme_bg_active)
+    let rgb = (_theme_hex_rgb $base)
+    let mix = { |to: int, t: float|
+        _theme_rgb_hex ($rgb | each { |c| (($c + (($to - $c) * $t)) | math round) })
+    }
+    let nudge = { |i: int, d: int|
+        _theme_rgb_hex ($rgb | enumerate | each { |it|
+            if $it.index == $i { [([($it.item + $d) 255] | math min) 0] | math max } else { $it.item }
+        })
+    }
+    let ladder = (1..8 | each { |n|
+        let t = ($n * 0.03)
+        [
+            $"(do $mix 0 $t)  darker ($n * 3)%"
+            $"(do $mix 255 $t)  lighter ($n * 3)%"
+        ]
+    } | flatten)
+    let tints = ([R G B] | enumerate | each { |ch|
+        [6 12 24] | each { |d|
+            [
+                $"(do $nudge $ch.index $d)  +($ch.item) ($d)"
+                $"(do $nudge $ch.index (0 - $d))  -($ch.item) ($d)"
+            ]
+        } | flatten
+    } | flatten)
+    [$"($base)  current"] ++ $ladder ++ $tints
+    | each { |l| { hex: ($l | split row " " | first), line: $l } }
+    | uniq-by hex | get line
+}
+
 # _theme_bg_persist: write the override hex ("" clears it) into BOTH the chezmoi
 # source and the live config (source alone would wait for an apply; live alone
 # gets clobbered by the next one), then regenerate the derived artifacts the way
@@ -172,13 +217,7 @@ def _theme_bg_draw [rgb: list<int>, ch: int] {
 # single OSC 11 (no hooks fire while browsing); Enter persists via
 # _theme_bg_persist, c clears the override, Esc/q reverts to the starting color.
 def _theme_bg_tune [] {
-    let start = (do {
-        let o = (_theme_override)
-        if ($o | is-not-empty) { $o } else {
-            let s = (_theme_scheme_bg (_theme_current))
-            if ($s | is-not-empty) { $s } else { "#000000" }
-        }
-    })
+    let start = (_theme_bg_active)
     mut rgb = (_theme_hex_rgb $start)
     mut ch = 0
     print -n (ansi cursor_off)
@@ -254,22 +293,37 @@ def --wrapped theme [...rest] {
     # glob never equals a string arm, so coerce to string before dispatching.
     let sub = ($rest | get 0? | default "" | into string)
 
-    # Background override — the live R/G/B stepper, a direct hex, or clear.
+    # Background override — the tv picker, the R/G/B stepper, a direct hex, or clear.
     if $sub == "bg" {
         let arg = ($rest | get 1? | default "" | into string | str trim)
         if $arg == "clear" {
             _theme_bg_persist ""
             _theme_bg_restore
             print "theme: background override cleared"
+        } else if $arg == "tune" {
+            _theme_bg_tune
         } else if ($arg =~ '^#?[0-9a-fA-F]{6}$') {
             let hex = ("#" + ($arg | str replace "#" "" | str lowercase))
             _theme_bg_persist $hex
             _theme_osc_bg $hex
             print $"theme: background override ($hex)"
         } else if ($arg | is-not-empty) {
-            print $"theme bg: expected a #rrggbb hex or 'clear', got: ($arg)"
+            print $"theme bg: expected 'tune', 'clear' or a #rrggbb hex, got: ($arg)"
+        } else if (which tv | is-empty) {
+            print "television (tv) not installed — run: chezmoi apply"
         } else {
-            _theme_bg_tune
+            # Same contract as the theme picker: the preview live-retints per
+            # focused candidate (OSC 11, bg-preview.sh); Enter prints the entry,
+            # we persist its hex here in the live shell; Esc restores.
+            let sel = (tv bg | str trim)
+            if ($sel | is-not-empty) {
+                let hex = ($sel | split row " " | first)
+                _theme_bg_persist $hex
+                _theme_osc_bg $hex
+                print $"theme: background override ($hex)"
+            } else {
+                _theme_bg_restore
+            }
         }
         return
     }

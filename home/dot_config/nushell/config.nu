@@ -227,26 +227,20 @@ def _claude_login [] {
   $dir
 }
 
-def cc [...args] {
+# Claude in the current terminal, scoped to the chosen login profile.
+def _claude_run [args: list<string>] {
   let dir = (_claude_login)
   if ($dir | is-empty) { return }
   with-env { CLAUDE_CONFIG_DIR: $dir } {
-    if ($args | is-empty) {
-      claude --dangerously-skip-permissions
-    } else {
-      claude --dangerously-skip-permissions ...$args
-    }
+    ^claude --dangerously-skip-permissions ...$args
   }
 }
 
+def cc [...args] { _claude_run $args }
+
 # cr — like cc, but resume a session within the chosen profile.
-def cr [...args] {
-  let dir = (_claude_login)
-  if ($dir | is-empty) { return }
-  with-env { CLAUDE_CONFIG_DIR: $dir } {
-    claude --dangerously-skip-permissions --resume ...$args
-  }
-}
+def cr [...args] { _claude_run (["--resume"] | append $args) }
+
 alias bb = burrito                                # spawn-or-attach default session
 alias ba = burrito --attach                       # attach to an existing session
 # Vim/editor muscle memory for quitting the shell.

@@ -16,7 +16,7 @@ packages:
       apt: ""
       pacman: ""
       dnf: ""
-      cargo_git: https://github.com/thallada/keydr
+      cargo_git: https://github.com/yesitsfebreeze/keydr   # fork of thallada/keydr (adds centered drill layout)
 
     - name: neovim
       brew: neovim

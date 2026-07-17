@@ -1,0 +1,12 @@
+{"ts":1784135373651026867,"kind":"layout","layout":"{\"view\":[1,1,1,1],\"active\":4,\"panes\":[1,2,3,4,5,6,7,8,9]}"}
+{"ts":1784135373901557448,"kind":"pane","pane_id":5,"slot":4,"text":"died"}
+{"ts":1784135373903843860,"kind":"pane","pane_id":5,"gen":1,"slot":4,"text":"respawned"}
+{"ts":1784135374154213674,"kind":"pane","pane_id":5,"gen":1,"slot":4,"text":"died"}
+{"ts":1784135374155944985,"kind":"pane","pane_id":5,"gen":2,"slot":4,"text":"respawned"}
+{"ts":1784135374406934716,"kind":"pane","pane_id":5,"gen":2,"slot":4,"text":"died"}
+{"ts":1784135374408374779,"kind":"pane","pane_id":5,"gen":3,"slot":4,"text":"respawned"}
+{"ts":1784135380342439063,"kind":"pane","pane_id":5,"gen":3,"slot":4,"text":"died"}
+{"ts":1784135380343894929,"kind":"pane","pane_id":5,"gen":4,"slot":4,"text":"respawned"}
+{"ts":1784135389794027841,"kind":"child-hello","pane_id":5}
+{"ts":1784135397161475740,"kind":"pane","pane_id":5,"gen":4,"slot":4,"text":"child-detached"}
+{"ts":1784136642069132338,"kind":"layout","layout":"{\"view\":[1,1,1,1],\"active\":4,\"panes\":[1,2,3,4,5,6,7,8,9]}"}

@@ -1,0 +1,21 @@
+# television cable channel: `tv bg` — background-override candidates around the
+# active background (override or the current scheme's base00): a lightness ladder
+# plus single-channel R/G/B tints. _theme_bg_list (theme.nu) builds the list;
+# each line is "#rrggbb  <label>" and the preview/commit take the first token.
+# preview: bg-preview.sh paints a swatch and emits one OSC 11 escape so the real
+# terminal previews the candidate live — hook-free, same contract as the theme
+# channel. Driven by `theme bg` (theme.nu): Enter persists the hex into
+# background-override (chezmoi source + live config + regenerated artifacts);
+# Esc restores the active background. `theme bg tune` steps single R/G/B values.
+
+[metadata]
+name = "bg"
+description = "Background override — lightness ladder + RGB tints around the active background, live preview"
+requirements = ["tinty"]
+
+# See theme.toml for why the bodies delegate to `bash -c '...'` ($SHELL is nu).
+[source]
+command = "nu -n -c 'source ~/.config/nushell/theme.nu; _theme_bg_list | str join (char nl)'"
+
+[preview]
+command = "bash -c '\"$HOME/.config/television/bg-preview.sh\" \"{}\"'"

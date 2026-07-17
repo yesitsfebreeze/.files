@@ -35,3 +35,5 @@ home/dot_config/wezterm/colors.lua
 
 # Obsidian workspace state (vault UI + vendored plugins)
 /.obsidian/
+# assembly secrets store
+.assembly.env
