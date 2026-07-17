@@ -1,6 +1,6 @@
 # quicklist.nu — the cross-channel "recent things" picker, layered on finder's recents
-# log (see finder.nu). `tv_remote` (ctrl+space) opens the tv channels remote; picking the
-# `quicklist` channel (type `q`) drops you here.
+# log (see finder.nu). Reach it two ways: ctrl+q drops you here directly; or `tv_remote`
+# (ctrl+space) opens the tv channels remote and picking the `quicklist` channel (type `q`).
 #
 # Two actions per entry (tv --expect intercepts both as confirm keys):
 #   enter   → OPEN by type: file → editor, dir → cd, commit → git show. The default.

@@ -2,7 +2,8 @@
 
 `quicklist` is a single **cross-channel "recent picks" list**: the things you actually
 selected through the [finder](finder.md), across every channel, newest-first. It is
-reached from the tv channels remote (`ctrl+space`, then type `q`) and lets you re-open
+reached two ways: `ctrl+q` opens it directly, or from the tv channels remote
+(`ctrl+space`, then type `q`). It lets you re-open
 or replay any of them. It lives in `home/dot_config/nushell/quicklist.nu` plus the
 `quicklist` cable channel, and builds entirely on finder's recents log.
 
@@ -16,7 +17,7 @@ by jumping shows up in the quicklist alongside what you pick through the finder.
 entry records enough to both **re-open** and **replay** it:
 
 | Field | Why |
-|-------|-----|
+| ------- | ----- |
 | `kind` | the channel's produced type (`FileList`/`DirList`/`GrepList`/`Commits`/…) — how to open it |
 | `value` | the raw selected line (a path, `file:line:text`, a commit row, …) |
 | `channel` | the channel that produced it — what to re-run on replay |
@@ -68,6 +69,7 @@ propagates out to the shell (the same constraint that shapes finder).
 
 ## Entry points
 
+- **`ctrl+q` → `quicklist`** — opens this list directly (skips the remote detour).
 - **`ctrl+space` → `tv_remote`** — opens the channels remote and *acts* on the pick;
   picking `quicklist` drops into this list, anything else runs the finder chain and
   opens the result by type.

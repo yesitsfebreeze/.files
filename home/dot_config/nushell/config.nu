@@ -616,6 +616,16 @@ $env.config = (
                 event: { send: executehostcommand, cmd: "tv_remote" }
             }
             {
+                # ctrl+q: open the quicklist (television recent picks) directly — skips the
+                # ctrl+space → `q` detour. Overrides reedline's default ctrl+q (reverse
+                # history search); appended later wins, same as the ctrl+t override below.
+                name: quicklist
+                modifier: control
+                keycode: char_q
+                mode: [vi_normal vi_insert emacs]
+                event: { send: executehostcommand, cmd: "quicklist" }
+            }
+            {
                 # Escape: close any open menu first; if none, clear the line (like Ctrl-C).
                 name: esc_clear
                 modifier: none
