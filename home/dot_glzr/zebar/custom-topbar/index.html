@@ -310,6 +310,16 @@
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
     const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
 
+    // gpu-daemon.js writes gpu.json here every 2s (zebar has no GPU provider).
+    let gpu = null;
+    const pollGpu = () =>
+      fetch('./gpu.json', { cache: 'no-store' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => (gpu = d))
+        .catch(() => {});
+    pollGpu();
+    setInterval(pollGpu, 2000);
+
     // Latest GlazeWM output, captured for the picker's focused-monitor test below.
     // This provider is monitor-scoped, so currentWorkspaces belongs to THIS bar.
     let gw = null;
@@ -350,6 +360,10 @@
       }
 
       const parts = [];
+      if (gpu) {
+        parts.push(stat('GPU', `${gpu.usage.toFixed(0)}%`));
+        parts.push(stat('VRAM', `${((gpu.used / gpu.total) * 100).toFixed(0)}%`));
+      }
       if (cpu) parts.push(stat('CPU', `${cpu.usage.toFixed(0)}%`));
       if (memory) parts.push(stat('RAM', `${memory.usage.toFixed(0)}%`));
       if (network?.traffic) {
