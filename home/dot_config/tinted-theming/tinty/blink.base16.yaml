@@ -1,0 +1,22 @@
+system: "base16"
+name: "blink"
+author: "feb — from rainglow blink-contrast: orange + blue accents, white text, muted slate-blue ramp"
+description: "base16 subset of blink.base24 for base16-only consumers."
+variant: "dark"
+palette:
+  base00: "#131719" # background — near-black, blue tint
+  base01: "#1e2427" # lighter background
+  base02: "#2b3a41" # selection — teal-tinted
+  base03: "#5d707c" # comments — legible slate
+  base04: "#8b9aa8" # darker foreground / punctuation
+  base05: "#d0d9e4" # foreground — bright off-white
+  base06: "#e8edf2" # light foreground
+  base07: "#ffffff" # brightest white
+  base08: "#f03e5f" # red — errors / variables
+  base09: "#d4856a" # orange — numbers / constants
+  base0A: "#ebc6b9" # muted peach — classes / attributes
+  base0B: "#84c4ce" # ice blue — strings
+  base0C: "#43b5b3" # teal — support / escapes
+  base0D: "#5298c4" # blue — primary accent (functions)
+  base0E: "#d4856a" # orange — primary accent (keywords)
+  base0F: "#6f8391" # dim slate

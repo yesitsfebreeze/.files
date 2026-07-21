@@ -643,6 +643,16 @@ config.mouse_bindings = {
         mods = "CTRL|ALT|SUPER",
         action = act.StartWindowDrag,
     },
+    -- CTRL + left-click opens the hyperlink under the cursor. mouse_reporting=true
+    -- keeps it working while an app (burrito enables DECSET 1002/1006 on the outer
+    -- terminal) is capturing the mouse — without it WezTerm forwards the click to
+    -- the app and no one opens the URL. Plain clicks still reach burrito/nvim.
+    {
+        event = { Up = { streak = 1, button = "Left" } },
+        mods = "CTRL",
+        mouse_reporting = true,
+        action = act.OpenLinkAtMouseCursor,
+    },
 }
 
 return config

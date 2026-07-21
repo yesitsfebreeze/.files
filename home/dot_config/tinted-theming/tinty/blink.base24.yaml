@@ -1,0 +1,30 @@
+system: "base24"
+name: "blink"
+author: "feb — from rainglow blink-contrast: orange + blue accents, white text, muted slate-blue ramp"
+description: "Port of rainglow's blink-contrast VS Code theme (base24 superset of blink.base16). A cool slate-blue grayscale ramp on a near-black blue background carries hierarchy; two accent hues on top — orange (keywords/constants, base09/0A/0E) and blue (functions/tags, base0D) with teal/ice-blue support tones (base0B/0C). Text is bright off-white. Tracked source lives here in the config dir; run_after copies it into the (gitignored) tinty data-dir custom-schemes/ so tinty and wezterm-colors.sh can resolve base24-blink."
+variant: "dark"
+palette:
+  base00: "#131719" # background — near-black, blue tint
+  base01: "#1e2427" # lighter background
+  base02: "#2b3a41" # selection — teal-tinted
+  base03: "#5d707c" # comments — legible slate
+  base04: "#8b9aa8" # darker foreground / punctuation
+  base05: "#d0d9e4" # foreground — bright off-white
+  base06: "#e8edf2" # light foreground
+  base07: "#ffffff" # brightest white
+  base08: "#f03e5f" # red — errors / variables
+  base09: "#d4856a" # orange — numbers / constants
+  base0A: "#ebc6b9" # muted peach — classes / attributes
+  base0B: "#84c4ce" # ice blue — strings
+  base0C: "#43b5b3" # teal — support / escapes
+  base0D: "#5298c4" # blue — primary accent (functions)
+  base0E: "#d4856a" # orange — primary accent (keywords)
+  base0F: "#6f8391" # dim slate
+  base10: "#0e1214" # darker background
+  base11: "#0a0d0f" # darkest background
+  base12: "#ff6b87" # bright red
+  base13: "#f2d8cd" # bright peach
+  base14: "#9ec5de" # bright ice blue
+  base15: "#8ad4d2" # bright teal
+  base16: "#7db4dd" # bright blue
+  base17: "#e8a58c" # bright orange

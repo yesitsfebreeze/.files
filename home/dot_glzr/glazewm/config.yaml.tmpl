@@ -14,9 +14,7 @@ general:
   # node's console hidden (it's a background daemon). Non-fatal if absent.
   startup_commands:
     - 'shell-exec zebar startup'
-    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/layout-daemon.js'
-    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/zebar/custom-topbar/gpu-daemon.js'
-  shutdown_commands: []
+    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/layout-daemon.js'  shutdown_commands: []
   config_reload_commands: []
   focus_follows_cursor: false
   toggle_workspace_on_refocus: false

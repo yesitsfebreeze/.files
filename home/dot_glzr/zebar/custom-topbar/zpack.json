@@ -15,7 +15,7 @@
       "transparent": true,
       "includeFiles": ["*.html", "*.css"],
       "caching": { "defaultDuration": 0, "rules": [] },
-      "privileges": { "shellCommands": [] },
+      "privileges": { "shellCommands": [{ "program": "nvidia-smi", "argsRegex": ".*" }] },
       "presets": [
         {
           "name": "default",

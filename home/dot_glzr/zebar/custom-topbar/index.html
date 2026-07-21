@@ -310,12 +310,19 @@
       `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
     const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
 
-    // gpu-daemon.js writes gpu.json here every 2s (zebar has no GPU provider).
+    // Zebar has no GPU provider — poll nvidia-smi ourselves (allowed by
+    // zpack.json privileges.shellCommands).
     let gpu = null;
     const pollGpu = () =>
-      fetch('./gpu.json', { cache: 'no-store' })
-        .then(r => (r.ok ? r.json() : null))
-        .then(d => (gpu = d))
+      zebar
+        .shellExec('nvidia-smi', [
+          '--query-gpu=utilization.gpu,memory.used,memory.total',
+          '--format=csv,noheader,nounits',
+        ])
+        .then(({ stdout }) => {
+          const [usage, used, total] = stdout.trim().split('\n')[0].split(',').map(Number);
+          gpu = { usage, used, total };
+        })
         .catch(() => {});
     pollGpu();
     setInterval(pollGpu, 2000);

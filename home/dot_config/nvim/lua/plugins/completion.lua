@@ -13,6 +13,7 @@ return {
         keymap = {
             preset = "super-tab",
             ["<CR>"] = { "accept", "fallback" },
+            ["<Esc>"] = { "cancel", "fallback" },
         },
         appearance = { nerd_font_variant = "mono" },
         completion = {
