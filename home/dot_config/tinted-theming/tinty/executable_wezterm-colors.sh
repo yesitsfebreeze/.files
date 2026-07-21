@@ -56,16 +56,16 @@ bg_override=$(grep -iE '^[[:space:]]*background-override[[:space:]]*=[[:space:]]
     | head -n1 | sed -E 's/.*"(#[0-9A-Fa-f]{6})".*/\1/' | tr 'A-F' 'a-f')
 [[ -n "$bg_override" ]] && base00="$bg_override"
 
-# GlazeWM's focused-window outline tracks the theme's green (base0B), the same way
-# colors.lua tracks the palette: rewrite the single border line tagged `tinty:base0B`
-# in a deployed glazewm config.yaml, leaving every other line (incl. other_windows'
-# border) untouched. -i.bak is the portable in-place form across GNU and BSD sed
-# (macOS bash 3.2). No-op when the file is absent (plain Linux, no GlazeWM).
+# GlazeWM's focused-window outline tracks the theme's primary accent (base0D), the
+# same way colors.lua tracks the palette: rewrite the single border line tagged
+# `tinty:accent` in a deployed glazewm config.yaml, leaving every other line (incl.
+# other_windows' border) untouched. -i.bak is the portable in-place form across GNU
+# and BSD sed (macOS bash 3.2). No-op when the file is absent (plain Linux, no GlazeWM).
 set_glazewm_border() {
     local file="$1"
-    [[ -n "$base0b" && -f "$file" ]] || return 0
+    [[ -n "$base0d" && -f "$file" ]] || return 0
     sed -i.bak -E \
-        "s|^([[:space:]]*color:[[:space:]]*')#[0-9A-Fa-f]{6}('[[:space:]]*#[[:space:]]*tinty:base0B.*)\$|\\1${base0b}\\2|" \
+        "s|^([[:space:]]*color:[[:space:]]*')#[0-9A-Fa-f]{6}('[[:space:]]*#[[:space:]]*tinty:accent.*)\$|\\1${base0d}\\2|" \
         "$file" 2>/dev/null && rm -f "$file.bak"
 }
 
@@ -112,8 +112,8 @@ DEPLOY="$HOME/.config/wezterm/colors.lua"
 # are no longer tracked — other machines run `tinty apply <scheme>` from this on
 # `chezmoi apply` (run_after_generate-shell-init.sh.tmpl) and regenerate them
 # locally, so they can never conflict. We rewrite only the one `scheme` value line in
-# place (portable sed -i.bak) to preserve the file's comment header; the border green
-# GlazeWM needs is derived from this scheme by config.yaml.tmpl (scheme-base0b.sh), so
+# place (portable sed -i.bak) to preserve the file's comment header; the border accent
+# GlazeWM needs is derived from this scheme by config.yaml.tmpl (scheme-accent.sh), so
 # there's no second value to write here. We reach here only on a real theme change (the
 # unchanged-content guard above already exited), so theme.toml — and the one-line commit
 # `just push` makes from it — changes only when you switch.

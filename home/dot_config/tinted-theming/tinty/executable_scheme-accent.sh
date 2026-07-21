@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Print base0B (the theme's "green") of a tinty scheme id, e.g.
-#   scheme-base0b.sh base16-chinoiserie-midnight  ->  #aeb831
+# Print base0D (the theme's primary accent) of a tinty scheme id, e.g.
+#   scheme-accent.sh base24-blink  ->  #5298c4
 #
 # This is what lets .chezmoidata/theme.toml carry ONLY the scheme name: chezmoi calls
-# this from config.yaml.tmpl to inline GlazeWM's focused-border color, so `green` is
+# this from config.yaml.tmpl to inline GlazeWM's focused-border color, so the accent is
 # always derived from the scheme, never stored as a second synced value that can drift
 # or conflict. Resolution mirrors wezterm-colors.sh (official repos clone first, then
 # our chezmoi-shipped custom-schemes). Always exits 0 so a template `output` call never
@@ -12,8 +12,8 @@
 # the deployed border once the yaml exists.
 set -uo pipefail
 
-# Neutral green used only until the real scheme yaml is available.
-FALLBACK="#aeb831"
+# Neutral accent used only until the real scheme yaml is available.
+FALLBACK="#5298c4"
 
 SCHEME="${1:-}"
 [ -n "$SCHEME" ] || { printf '%s\n' "$FALLBACK"; exit 0; }
@@ -28,8 +28,8 @@ YAML="$SCHEMES_DIR/$SYSTEM/$NAME.yaml"
 [ -f "$YAML" ] || { printf '%s\n' "$FALLBACK"; exit 0; }
 
 # Same portable extraction as wezterm-colors.sh's color() (bash 3.2 / BSD+GNU sed):
-# match `base0B: "#rrggbb"` case-insensitively, take the first, lowercase it.
-val="$(grep -iE "^[[:space:]]*base0B:[[:space:]]*\"#[0-9A-Fa-f]{6}\"" "$YAML" \
+# match `base0D: "#rrggbb"` case-insensitively, take the first, lowercase it.
+val="$(grep -iE "^[[:space:]]*base0D:[[:space:]]*\"#[0-9A-Fa-f]{6}\"" "$YAML" \
     | head -n1 \
     | sed -E 's/.*"(#[0-9A-Fa-f]{6})".*/\1/' \
     | tr 'A-F' 'a-f')"

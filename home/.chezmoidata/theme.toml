@@ -5,8 +5,8 @@
 #   - scheme : the last-picked tinty scheme id. run_after_generate-shell-init.sh.tmpl
 #              reads it on `chezmoi apply` and runs `tinty apply <scheme>`, which fires
 #              the color hooks to regenerate every deployed artifact on this machine.
-#              GlazeWM's focused-border green (base0B) that config.yaml.tmpl needs
-#              inlined is derived from this same scheme at render time (scheme-base0b.sh),
+#              GlazeWM's focused-border accent (base0D) that config.yaml.tmpl needs
+#              inlined is derived from this same scheme at render time (scheme-accent.sh),
 #              so it's never a second value stored here that could drift or conflict.
 #
 # `scheme` is rewritten by wezterm-colors.sh when you switch themes (the live `theme`

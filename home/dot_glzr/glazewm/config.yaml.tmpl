@@ -14,7 +14,8 @@ general:
   # node's console hidden (it's a background daemon). Non-fatal if absent.
   startup_commands:
     - 'shell-exec zebar startup'
-    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/layout-daemon.js'  shutdown_commands: []
+    - 'shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/layout-daemon.js'
+  shutdown_commands: []
   config_reload_commands: []
   focus_follows_cursor: false
   toggle_workspace_on_refocus: false
@@ -41,14 +42,14 @@ window_effects:
   focused_window:
     border:
       enabled: true
-      # Active-window outline tracks the tinty theme's green (base0B). chezmoi derives
-      # it at render time from the ONLY synced value — the scheme name in
-      # .chezmoidata/theme.toml — by extracting base0B from that scheme's yaml
-      # (scheme-base0b.sh). So this file never carries a per-machine color and never
-      # conflicts, and there's no second `green` key to keep in sync. On a live `theme`
-      # switch wezterm-colors.sh also rewrites the deployed copy's `tinty:base0B` line
+      # Active-window outline tracks the tinty theme's primary accent (base0D). chezmoi
+      # derives it at render time from the ONLY synced value — the scheme name in
+      # .chezmoidata/theme.toml — by extracting base0D from that scheme's yaml
+      # (scheme-accent.sh). So this file never carries a per-machine color and never
+      # conflicts, and there's no second accent key to keep in sync. On a live `theme`
+      # switch wezterm-colors.sh also rewrites the deployed copy's `tinty:accent` line
       # for instant effect — edit neither by hand.
-      color: '{{ output (joinPath .chezmoi.sourceDir "dot_config/tinted-theming/tinty/executable_scheme-base0b.sh") .theme.scheme | trim }}' # tinty:base0B
+      color: '{{ output (joinPath .chezmoi.sourceDir "dot_config/tinted-theming/tinty/executable_scheme-accent.sh") .theme.scheme | trim }}' # tinty:accent
   other_windows:
     # Painted (not off) so glazewm's own subtle border overrides the chunky blue
     # Windows 11 system accent border that otherwise shows on unfocused windows.
