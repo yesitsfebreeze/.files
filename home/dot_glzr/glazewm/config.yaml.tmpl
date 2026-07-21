@@ -26,16 +26,20 @@ general:
   show_all_in_taskbar: false
 
 gaps:
-  # Flat logical px on every display: with scale_with_dpi the same 12px was
+  # Flat logical px on every display: with scale_with_dpi the same gap was
   # multiplied by each monitor's DPI factor, so macOS (Retina 2x) drew gaps
-  # ~2x larger than Windows. Off → 12px means 12px everywhere, unified.
+  # ~2x larger than Windows. Off → 8px means 8px everywhere, unified.
   scale_with_dpi: false
-  inner_gap: '12px'
+  inner_gap: '8px'
   outer_gap:
-    top: '12px'
-    right: '12px'
-    bottom: '12px'
-    left: '12px'
+    # Top gap lives inside the Zebar window: the bar is 42px (8 + 26px bubble
+    # row + 8, vertically centered), so the bar's own bottom padding IS the
+    # bubble→window spacing — 8px, same as every other gap. A top gap here
+    # would double it.
+    top: '0px'
+    right: '8px'
+    bottom: '8px'
+    left: '8px'
 
 window_effects:
   # Borders are Windows 11-only.
