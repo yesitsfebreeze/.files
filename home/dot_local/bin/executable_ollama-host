@@ -1,0 +1,30 @@
+#!/bin/sh
+# ollama-host — print the reachable Ollama endpoint.
+# On WSL, prefers the Windows host (default gateway, changes per boot), then
+# the resolv.conf nameserver, then localhost. Elsewhere only localhost is a
+# candidate. Exits 1 loudly if none respond.
+
+PORT="${OLLAMA_PORT:-11434}"
+TIMEOUT="${OLLAMA_PROBE_TIMEOUT:-0.4}"
+
+probe() {
+	curl -fs --max-time "$TIMEOUT" "http://$1:$PORT/api/version" >/dev/null 2>&1
+}
+
+candidates="127.0.0.1"
+if grep -qi microsoft /proc/version 2>/dev/null; then
+	gateway=$(ip route show default 2>/dev/null | awk '{print $3; exit}')
+	nameserver=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null)
+	candidates="$gateway $nameserver 127.0.0.1"
+fi
+
+for host in $candidates; do
+	[ -n "$host" ] || continue
+	if probe "$host"; then
+		printf 'http://%s:%s\n' "$host" "$PORT"
+		exit 0
+	fi
+done
+
+echo "ollama-host: no Ollama reachable on port $PORT (tried: $candidates)" >&2
+exit 1
