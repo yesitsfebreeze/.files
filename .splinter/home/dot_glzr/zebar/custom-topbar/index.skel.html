@@ -1,0 +1,811 @@
+<!-- §source home/dot_glzr/zebar/custom-topbar/index.html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="./theme.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    ::-webkit-scrollbar { display: none; }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-sizing: border-box;
+      color: var(--fg, #c1c1c1);
+      font-family: "DepartureMono Nerd Font", "Departure Mono",
+                   "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
+      font-size: 16px;
+      user-select: none;
+      transition: opacity 0.18s ease;
+      margin: 0 8px;
+    }
+
+    body.reveal-on-hover.at-top { opacity: 0; }
+
+    .left  { display: flex; align-items: center; gap: 6px; flex: none; }
+    .right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+    .bubble {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      height: 26px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--bg, #000) 82.1%, transparent);
+     }
+
+    .tray { gap: 8px; }
+    .tray:empty { display: none; }
+    .tray img {
+      width: 13px; height: 13px; display: block; cursor: pointer;
+      filter: brightness(0) invert(1);
+      opacity: 0.5;
+    }
+
+    /* Workspaces render as a 3x3 grid (row-major 1-9): the cell's position IS the
+       number, so cells are bare swatches. Same states as before, mapped to opacity;
+       the focused cell takes the accent. Tighter bubble padding (2px) buys 22px of
+       inner height so the grid fits the 26px bubble: 3*6px cells + 2*2px gaps. */
+    /* 3*4px dots + 2*3px gaps + 4px padding all around = the bubble's full 26px. */
+    .wsbox { padding: 4px; }
+    .workspaces {
+      display: grid;
+      grid-template-columns: repeat(3, 4px);
+      grid-auto-rows: 4px;
+      gap: 3px;
+    }
+    .ws {
+      position: relative;
+      border: 0; padding: 0;
+      border-radius: 50%;
+      /* Buttons don't inherit color (UA sets buttontext/black), so point at the
+         bar's fg directly rather than currentColor. */
+      background: var(--fg, #c1c1c1);
+      opacity: 0.35; cursor: pointer;
+      transition-property: opacity, background-color;
+      transition-duration: 0.15s;
+    }
+    /* Dots are 4px; pad the hit target out to the gap midline so clicks land. */
+    .ws::after { content: ''; position: absolute; inset: -1.5px; }
+    .ws.populated { opacity: 0.6; }
+    .ws.displayed { opacity: 0.85; }
+    .ws:hover     { opacity: 0.95; }
+    .ws.focused   { opacity: 1; background: var(--accent, #7799bb); }
+
+    .stats { flex: none; }
+    .stat { display: flex; align-items: baseline; gap: 5px; }
+    .stat .lbl { opacity: 0.5; }
+    .stat .val { font-variant-numeric: tabular-nums; }
+
+    .clockbox { flex: none; }
+    .clock { font-variant-numeric: tabular-nums; }
+    .date  { opacity: 0.85; }
+
+    /* --- App picker (alt+tab) ---------------------------------------------
+       The bar window itself is temporarily resized to fullscreen and this
+       overlay fills it: instant (no window/process creation on the hot path)
+       and there is never a hidden window that could strand invisibly over the
+       desktop. The bar chrome hides while the picker is open. */
+    #picker {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.9);
+      font-size: 14px;
+    }
+    body.picker-open #picker { display: flex; }
+    body.picker-open .left, body.picker-open .right { display: none; }
+
+    /* Bare square 3x3 matrix of tiles mirroring the workspace dots; text
+       inside ellipsizes, never widens. The veil doubles as click-away area. */
+    #picker .panel {
+      display: flex;
+      flex-direction: column;
+      width: min(58vh, 620px, 90vw);
+    }
+    #picker .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      aspect-ratio: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 7px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg, #000) 88%, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg, #c1c1c1) 10%, transparent);
+      cursor: pointer;
+    }
+    .cell.displayed { border-color: color-mix(in srgb, var(--fg, #c1c1c1) 22%, transparent); }
+    .cell.focused   { border-color: color-mix(in srgb, var(--accent, #7799bb) 55%, transparent); }
+
+    .cell-head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 0 4px 4px;
+      opacity: 0.55;
+      font-size: 12px;
+    }
+    .cell.focused .cell-head { opacity: 0.9; color: var(--accent, #7799bb); }
+    .cell-head .num { font-weight: bold; }
+
+    .win {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 3px 6px;
+      border-radius: 5px;
+      min-width: 0;
+      flex: none;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .win .proc {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .win .title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.5;
+      font-size: 11px;
+    }
+    .win .tag { flex: none; opacity: 0.4; font-size: 11px; }
+    .win.minimized { opacity: 0.55; }
+    .win.active .proc { color: var(--accent, #5298c4); }
+    .win.selected {
+      background: color-mix(in srgb, var(--accent, #7799bb) 28%, transparent);
+      opacity: 1;
+    }
+    .empty { padding: 4px 7px; opacity: 0.25; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="left">
+    <div class="bubble wsbox">
+      
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/workspaces.fs
+
+    </div>
+    
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/tray.fs
+
+  </div>
+
+  <div class="right">
+    
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/stats.fs
+
+    <div class="bubble clockbox">
+      
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/clock.fs
+
+      
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/date.fs
+
+    </div>
+  </div>
+
+  
+<!-- §.splinter/home/dot_glzr/zebar/custom-topbar/index/picker.fs
+
+
+  <script type="module">
+    import * as zebar from 'https://esm.sh/zebar@3.0';
+    import { PhysicalSize, PhysicalPosition, currentMonitor } from 'https://esm.sh/@tauri-apps/api@2.0.2/window';
+
+    if (!navigator.userAgent.includes('Windows')) {
+      document.body.classList.add('reveal-on-hover');
+
+      const inv = window.__TAURI_INTERNALS__?.invoke;
+      const winCall = (cmd, args) =>
+        inv?.(`plugin:window|${cmd}`, args)?.catch?.(() => {});
+      // Reveal-on-hover: when the cursor enters the bar we go click-through so the
+      // native (auto-hidden) menu bar beneath reveals on hover. Zebar grants the
+      // set_ignore_cursor_events capability, so this is reliable on macOS.
+      //
+      // We deliberately do NOT hide the whole window as a fallback: macOS suspends a
+      // hidden webview's timers (window occlusion / App Nap), which freezes the cursor
+      // poll below — so once hidden the bar never un-hides and vanishes for good.
+      // Opacity + click-through keeps the window shown so the poll keeps running.
+      const setClickThrough = on => winCall('set_ignore_cursor_events', { ignore: on });
+
+      let faded = false;
+      const fade = () => {
+        if (faded || document.body.classList.contains('picker-open')) return;
+        faded = true;
+        document.body.classList.add('at-top');
+        setClickThrough(true);
+      };
+      const show = () => {
+        if (!faded) return;
+        faded = false;
+        document.body.classList.remove('at-top');
+        setClickThrough(false);
+      };
+
+      if (inv) {
+        const barPx = () =>
+          Math.round(window.innerHeight * window.devicePixelRatio) || 80;
+        let rect = null, n = 0;
+        const refreshRect = async () => {
+          const [p, s] = await Promise.all([
+            inv('plugin:window|outer_position'),
+            inv('plugin:window|outer_size'),
+          ]);
+          rect = { x: p.x, y: p.y, w: s.width, h: s.height };
+        };
+        setInterval(async () => {
+          try {
+            // The docked geometry is static, so cache it; re-measure periodically to
+            // catch monitor / resolution changes. (The window is always shown now, so
+            // the rect is never stale — no need to gate this on the faded state.)
+            if (!rect || n++ % 25 === 0) await refreshRect();
+            if (!rect) return;
+            const c = await inv('plugin:window|cursor_position');
+            const band = Math.min(rect.h, barPx());
+            const over = c.x >= rect.x && c.x <= rect.x + rect.w &&
+                         c.y >= rect.y && c.y <= rect.y + band;
+            over ? fade() : show();
+          } catch {
+            // Never get stuck click-through: if a poll throws while faded, fail safe
+            // to shown so the bar stays visible and interactive.
+            if (faded) show();
+          }
+        }, 100);
+      } else {
+        let idle;
+        document.addEventListener('mousemove', e => {
+          clearTimeout(idle);
+          e.clientY <= 30 ? fade() : show();
+          idle = setTimeout(show, 1200);
+        });
+        document.addEventListener('mouseleave', show);
+      }
+    }
+
+    const providers = zebar.createProviderGroup({
+      glazewm: { type: 'glazewm' },
+      systray: { type: 'systray' },
+      cpu:     { type: 'cpu',     refreshInterval: 2000 },
+      memory:  { type: 'memory',  refreshInterval: 5000 },
+      network: { type: 'network', refreshInterval: 2000 },
+      battery: { type: 'battery', refreshInterval: 10000 },
+      clock:   { type: 'date', formatting: 'HH:mm' },
+      cal:     { type: 'date', formatting: 'EEE, MMM d' },
+    });
+
+    const WORKSPACES = ['1','2','3','4','5','6','7','8','9'];
+
+    const workspacesEl = document.getElementById('workspaces');
+    const trayEl = document.getElementById('tray');
+    const statsEl = document.getElementById('stats');
+    const clockEl = document.getElementById('clock');
+    const dateEl = document.getElementById('date');
+
+    const wsButtons = WORKSPACES.map(name => {
+      const b = document.createElement('button');
+      b.className = 'ws';
+      b.title = `Workspace ${name}`;
+      b.onclick = () =>
+        providers.outputMap.glazewm?.runCommand(`focus --workspace ${name}`);
+      return b;
+    });
+    workspacesEl.replaceChildren(...wsButtons);
+
+    const stat = (lbl, val) =>
+      `<span class="stat"><span class="lbl">${lbl}</span><span class="val">${val}</span></span>`;
+    const rate = t => t ? `${t.siValue.toFixed(1)}${t.siUnit}` : '--';
+
+    // Zebar has no GPU provider — poll nvidia-smi ourselves (allowed by
+    // zpack.json privileges.shellCommands).
+    let gpu = null;
+    const pollGpu = () =>
+      zebar
+        .shellExec('nvidia-smi', [
+          '--query-gpu=utilization.gpu,memory.used,memory.total',
+          '--format=csv,noheader,nounits',
+        ])
+        .then(({ stdout }) => {
+          const [usage, used, total] = stdout.trim().split('\n')[0].split(',').map(Number);
+          gpu = { usage, used, total };
+        })
+        .catch(() => {});
+    pollGpu();
+    setInterval(pollGpu, 2000);
+
+    // Latest GlazeWM output, captured for the picker's focused-monitor test below.
+    // This provider is monitor-scoped, so currentWorkspaces belongs to THIS bar.
+    let gw = null;
+
+    providers.onOutput(() => {
+      const { glazewm, systray, cpu, memory, network, battery, clock, cal } =
+        providers.outputMap;
+
+      if (systray) {
+        trayEl.replaceChildren(
+          ...systray.icons.map(icon => {
+            const img = document.createElement('img');
+            img.src = icon.iconUrl;
+            img.title = icon.tooltip ?? '';
+            img.onclick = () => systray.onLeftClick(icon.id);
+            img.oncontextmenu = e => {
+              e.preventDefault();
+              systray.onRightClick(icon.id);
+            };
+            return img;
+          }),
+        );
+      }
+
+      if (glazewm) {
+        gw = glazewm;
+        const byName = new Map(
+          glazewm.currentWorkspaces.map(ws => [ws.name, ws]),
+        );
+        wsButtons.forEach((b, i) => {
+          const ws = byName.get(WORKSPACES[i]);
+          b.className =
+            'ws' +
+            (ws ? ' populated' : '') +
+            (ws?.hasFocus ? ' focused' : '') +
+            (ws?.isDisplayed ? ' displayed' : '');
+        });
+      }
+
+      const parts = [];
+      if (gpu) {
+        parts.push(stat('GPU', `${gpu.usage.toFixed(0)}%`));
+        parts.push(stat('VRAM', `${((gpu.used / gpu.total) * 100).toFixed(0)}%`));
+      }
+      if (cpu) parts.push(stat('CPU', `${cpu.usage.toFixed(0)}%`));
+      if (memory) parts.push(stat('RAM', `${memory.usage.toFixed(0)}%`));
+      if (network?.traffic) {
+        parts.push(stat('↓', rate(network.traffic.received)));
+        parts.push(stat('↑', rate(network.traffic.transmitted)));
+      }
+      if (battery && battery.chargePercent != null) {
+        const t = battery.isCharging
+          ? battery.timeTillFull
+          : battery.timeTillEmpty;
+        const eta = t != null ? ` ${Math.round(t / 60000)}m` : '';
+        const icon = battery.isCharging ? '⚡' : '';
+        parts.push(stat('BAT', `${icon}${battery.chargePercent.toFixed(0)}%${eta}`));
+      }
+      statsEl.innerHTML = parts.join('');
+
+      if (clock) clockEl.textContent = clock.formatted;
+      if (cal) dateEl.textContent = cal.formatted;
+    });
+
+    // === App picker (alt+tab) =============================================
+    // alt+tab enters the 'picker' GlazeWM binding mode; this bar observes it
+    // over raw IPC and resizes its own (always-alive, always-visible) window
+    // to fullscreen to show the matrix — instant, native, cross-platform, and
+    // with no hidden window that could ever strand over the desktop. GlazeWM
+    // owns the keys: navigation keys pulse transient 'picker-<action>' modes
+    // purely as IPC signals (modes REPLACE each other, hence pulse =
+    // enable-signal + re-enable-picker in the config). Enter focuses the
+    // selection (workspace first — that switches the displayed desktop);
+    // leaving the mode shrinks the window back to the bar.
+    const trace = (...a) => {
+      window.__trace = window.__trace || [];
+      window.__trace.push([new Date().toISOString().slice(11, 23), ...a].join(' '));
+      if (window.__trace.length > 200) window.__trace.shift();
+    };
+
+    const tauriWin = zebar.currentWidget().window.tauri;
+    let barRect = null;
+    let pickerOpen = false;
+    let activating = false;
+    let opening = false;
+
+    // The picker shows on exactly one monitor: the bar whose monitor owns the
+    // focused workspace. Every monitor's bar observes the same GlazeWM binding-mode
+    // events over IPC, but only the active monitor's bar grows into the overlay; the
+    // rest stay bars. hasFocus is globally unique within currentWorkspaces (which is
+    // monitor-scoped), so it's present here only when this is the active monitor.
+    const onFocusedMonitor = () => !!gw?.currentWorkspaces?.some(ws => ws.hasFocus);
+
+    async function showPicker() {
+      if (pickerOpen) return;
+      pickerOpen = true;
+      trace('showPicker');
+      if (!barRect) {
+        const [pos, size] = await Promise.all([
+          tauriWin.outerPosition(), tauriWin.outerSize(),
+        ]);
+        barRect = { pos, size };
+      }
+      document.body.classList.add('picker-open');
+      // Cover THIS bar's monitor: position at the monitor origin and match its size,
+      // so the overlay lands on whichever monitor opened it — not always the primary.
+      // (setPosition(0,0) is the desktop origin = the primary monitor's top-left,
+      // which is wrong for a bar on a secondary monitor.) Fall back to the screen the
+      // window reports if the monitor query is unavailable.
+      let pos = new PhysicalPosition(0, 0);
+      let size = new PhysicalSize(
+        Math.round(screen.width * devicePixelRatio),
+        Math.round(screen.height * devicePixelRatio),
+      );
+      try {
+        const mon = await currentMonitor();
+        if (mon) {
+          pos = new PhysicalPosition(mon.position.x, mon.position.y);
+          size = new PhysicalSize(mon.size.width, mon.size.height);
+        }
+      } catch {}
+      await tauriWin.setPosition(pos);
+      await tauriWin.setSize(size);
+      // The bar sits low in the topmost band over time; drop out and rejoin to
+      // land above other topmost windows (floats) for this session.
+      await tauriWin.setAlwaysOnTop(false);
+      await tauriWin.setAlwaysOnTop(true);
+    }
+
+    function shrinkToBar() {
+      if (!pickerOpen) return;
+      pickerOpen = false;
+      trace('shrinkToBar');
+      document.body.classList.remove('picker-open');
+      tauriWin.setSize(new PhysicalSize(barRect.size.width, barRect.size.height))
+        .then(() => tauriWin.setPosition(new PhysicalPosition(barRect.pos.x, barRect.pos.y)))
+        .catch(() => {});
+    }
+
+    const exitPicker = () => {
+      send('command wm-disable-binding-mode --name picker').catch(() => {});
+      shrinkToBar();
+      reassertFocus();
+    };
+
+    // A click on the overlay focuses this window; hand the foreground back to
+    // whatever GlazeWM considers focused. Only needed (and only safe) when we
+    // actually hold focus — a gratuitous re-focus can race a just-activated
+    // window's workspace switch.
+    async function reassertFocus() {
+      if (!document.hasFocus()) return;
+      try {
+        const q = await send('query focused');
+        if (q?.focused?.type === 'window') {
+          await send(`command focus --container-id ${q.focused.id}`);
+          trace('reassertFocus', q.focused.processName);
+        }
+      } catch {}
+    }
+
+    // --- GlazeWM IPC (same protocol as regrid.js / layout-daemon.js) ---
+    const pending = new Map();
+    let sock = null;
+    let prevModes = [];
+
+    function send(message) {
+      return new Promise((resolve, reject) => {
+        if (sock?.readyState !== WebSocket.OPEN) return reject(new Error('closed'));
+        let key = message;
+        while (pending.has(key)) key += ' ';
+        const timer = setTimeout(() => {
+          pending.delete(key);
+          reject(new Error('timeout'));
+        }, 4000);
+        pending.set(key, { resolve, reject, timer });
+        sock.send(key);
+      });
+    }
+
+    function connect() {
+      sock = new WebSocket('ws://localhost:6123');
+      sock.onopen = async () => {
+        try {
+          await send('sub --events binding_modes_changed');
+          // Catch up in case the mode was entered while we were down.
+          const q = await send('query binding-modes');
+          onModes((q?.bindingModes || []).map(m => m.name ?? m));
+        } catch {}
+      };
+      sock.onmessage = ev => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.messageType === 'client_response') {
+          const entry = pending.get(msg.clientMessage);
+          if (!entry) return;
+          pending.delete(msg.clientMessage);
+          clearTimeout(entry.timer);
+          msg.success ? entry.resolve(msg.data) : entry.reject(new Error(msg.error || 'failed'));
+        } else if (msg.data?.eventType === 'binding_modes_changed') {
+          onModes((msg.data.newBindingModes || []).map(m => m.name ?? m));
+        }
+      };
+      sock.onclose = () => {
+        shrinkToBar();
+        for (const e of pending.values()) { clearTimeout(e.timer); e.reject(new Error('closed')); }
+        pending.clear();
+        setTimeout(connect, 1000);
+      };
+      sock.onerror = () => { try { sock.close(); } catch {} };
+    }
+    connect();
+
+    function onModes(modes) {
+      const fresh = modes.filter(m => !prevModes.includes(m));
+      prevModes = modes;
+      if (fresh.length || !modes.length) trace('modes', JSON.stringify(modes));
+      // Binding modes replace each other, so during a signal pulse the base
+      // 'picker' mode is briefly absent — any picker* mode counts as open.
+      // Mode gone (escape / after enter) → the bar holding the overlay shrinks; a
+      // running activation's own exitPicker finishes the job. Bars on other monitors
+      // never opened, so they have nothing to undo.
+      if (!modes.some(m => m.startsWith('picker'))) {
+        if (pickerOpen && !activating) { shrinkToBar(); reassertFocus(); }
+        return;
+      }
+      // Only the active monitor's bar owns the picker. Until this bar has opened it,
+      // ignore every pulse except the initial 'picker' on the focused monitor — that
+      // keeps the overlay on one screen and the nav keys driving that one grid.
+      if (!pickerOpen) {
+        if (!activating && !opening && fresh.includes('picker') && onFocusedMonitor()) openPicker();
+        return;
+      }
+      for (const m of fresh) {
+        if (m === 'picker') { /* re-enable pulse — overlay already up */ }
+        else if (m === 'picker-down') moveVertical(1);
+        else if (m === 'picker-up') moveVertical(-1);
+        else if (m === 'picker-left') moveCell(0, -1, len => Math.min(sel?.idx ?? 0, len - 1));
+        else if (m === 'picker-right') moveCell(0, 1, len => Math.min(sel?.idx ?? 0, len - 1));
+        else if (m === 'picker-next') moveFlat(1);
+        else if (m === 'picker-prev') moveFlat(-1);
+        else if (m === 'picker-enter') confirmSel();
+        else if (/^picker-[1-9]$/.test(m)) pickCell(Number(m.slice(7)) - 1);
+      }
+    }
+
+    function collectWindows(node, out) {
+      if (!node) return;
+      if (node.type === 'window') out.push(node);
+      (node.children || []).forEach(c => collectWindows(c, out));
+    }
+
+    // cells[i] = { name, wins, displayed, focused }; sel = { cell, idx }.
+    let cells = WORKSPACES.map(name => ({ name, wins: [], displayed: false, focused: false }));
+    let sel = null;
+
+    async function openPicker() {
+      opening = true;
+      try {
+        let data;
+        try {
+          data = await send('query workspaces');
+        } catch {
+          return;
+        }
+        const byName = new Map((data?.workspaces || []).map(w => [w.name, w]));
+        cells = WORKSPACES.map(name => {
+          const ws = byName.get(name);
+          const wins = [];
+          collectWindows(ws, wins);
+          return {
+            name,
+            wins,
+            displayed: !!ws?.isDisplayed,
+            focused: !!ws && (ws.hasFocus || wins.some(w => w.hasFocus)),
+          };
+        });
+
+        // The mode can be exited again while the query above was in flight.
+        if (!prevModes.some(m => m.startsWith('picker'))) {
+          trace('openPicker aborted, mode gone');
+          return;
+        }
+
+        // Start on the window after the currently focused one, so alt+tab, enter
+        // hops to the next window — like a classic switcher.
+        const f = flat();
+        const cur = f.findIndex(e => e.w.hasFocus);
+        const start = f.length ? f[(cur + 1) % f.length] : null;
+        sel = start ? { cell: start.cell, idx: start.idx } : null;
+        buildGrid();
+        showPicker();
+      } finally {
+        opening = false;
+      }
+    }
+
+    const gridEl = document.getElementById('grid');
+    let rowEls = [];
+
+    const escHtml = s => (s ?? '').replace(/[&<>"]/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // Built ONCE per open. Selection changes must only toggle classes — a
+    // rebuild here destroys the element under the cursor, which re-fires
+    // mouseenter on its replacement in an endless loop and leaves real clicks
+    // hitting orphaned nodes instead of the row handlers.
+    function buildGrid() {
+      rowEls = cells.map(() => []);
+      gridEl.replaceChildren(...cells.map((cell, ci) => {
+        const el = document.createElement('div');
+        el.className = 'cell'
+          + (cell.displayed ? ' displayed' : '')
+          + (cell.focused ? ' focused' : '');
+        el.onmousedown = e => e.stopPropagation();
+        el.onclick = () => activateWorkspace(cell.name);
+
+        const head = document.createElement('div');
+        head.className = 'cell-head';
+        head.innerHTML = `<span class="num">${cell.name}</span>`;
+        el.append(head);
+
+        if (!cell.wins.length) {
+          const e2 = document.createElement('div');
+          e2.className = 'empty';
+          e2.textContent = 'empty';
+          el.append(e2);
+        }
+
+        cell.wins.forEach((w, wi) => {
+          const row = document.createElement('div');
+          const st = w.state?.type;
+          row.className = 'win'
+            + (st === 'minimized' ? ' minimized' : '')
+            + (w.hasFocus ? ' active' : '');
+          const tag = st === 'minimized' ? 'min'
+                    : st === 'fullscreen' ? 'full'
+                    : st === 'floating' ? 'float' : '';
+          row.innerHTML =
+            `<span class="proc">${escHtml(w.processName)}</span>` +
+            `<span class="title">${escHtml(w.title)}</span>` +
+            (tag ? `<span class="tag">${tag}</span>` : '');
+          row.onmouseenter = () => {
+            if (sel?.cell !== ci || sel?.idx !== wi) { sel = { cell: ci, idx: wi }; updateSel(); }
+          };
+          row.onclick = e => { e.stopPropagation(); activateWindow(w, cell.name); };
+          rowEls[ci][wi] = row;
+          el.append(row);
+        });
+        return el;
+      }));
+      updateSel();
+    }
+
+    function updateSel() {
+      gridEl.querySelectorAll('.win.selected')
+        .forEach(el => el.classList.remove('selected'));
+      const el = sel && rowEls[sel.cell]?.[sel.idx];
+      if (el) {
+        el.classList.add('selected');
+        // Square cells can overflow; keep the selection in view.
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    // --- selection movement over the 3x3 grid ---
+    const flat = () =>
+      cells.flatMap((c, ci) => c.wins.map((w, wi) => ({ cell: ci, idx: wi, w })));
+
+    function moveFlat(step) {
+      const f = flat();
+      if (!f.length) return;
+      const cur = f.findIndex(e => sel && e.cell === sel.cell && e.idx === sel.idx);
+      const next = f[((cur < 0 ? 0 : cur + step) + f.length) % f.length];
+      sel = { cell: next.cell, idx: next.idx };
+      updateSel();
+    }
+
+    // Step cell-wise through the grid (wrapping), skipping workspaces with no
+    // windows; pick keeps the vertical position sensible per direction.
+    function moveCell(dr, dc, pick) {
+      if (!sel) return moveFlat(1);
+      let r = Math.floor(sel.cell / 3), c = sel.cell % 3;
+      for (let i = 0; i < 3; i++) {
+        r = (r + dr + 3) % 3;
+        c = (c + dc + 3) % 3;
+        const cell = r * 3 + c;
+        if (cells[cell].wins.length) {
+          sel = { cell, idx: pick(cells[cell].wins.length) };
+          updateSel();
+          return;
+        }
+      }
+    }
+
+    function moveVertical(dir) {
+      if (!sel) return moveFlat(1);
+      const next = sel.idx + dir;
+      if (next >= 0 && next < cells[sel.cell].wins.length) {
+        sel = { cell: sel.cell, idx: next };
+        updateSel();
+      } else {
+        moveCell(dir, 0, len => (dir > 0 ? 0 : len - 1));
+      }
+    }
+
+    function pickCell(ci) {
+      if (!cells[ci].wins.length) return activateWorkspace(WORKSPACES[ci]);
+      // Repeated presses of the same digit cycle through that workspace's windows.
+      const idx = sel?.cell === ci ? (sel.idx + 1) % cells[ci].wins.length : 0;
+      sel = { cell: ci, idx };
+      updateSel();
+    }
+
+    // --- actions ---
+    function confirmSel() {
+      const w = sel && cells[sel.cell].wins[sel.idx];
+      w ? activateWindow(w, cells[sel.cell].name) : exitPicker();
+    }
+
+    async function activateWindow(w, wsName) {
+      activating = true;
+      trace('activateWindow', w.processName, w.id, w.state?.type, 'ws:' + wsName);
+      // Shrink first: the window stays visible as the bar (never hidden), so
+      // the OS re-activates nothing and the focus below can't be overridden.
+      shrinkToBar();
+      try {
+        // Same sequence as doing it by hand: alt+N to the workspace first
+        // (that switches the displayed desktop), then focus the window in it.
+        if (wsName) await send(`command focus --workspace ${wsName}`);
+        // Restore minimized windows straight into the tiling grid (same verb
+        // as regrid.js) — toggle-minimized can resurface them as floating.
+        if (w.state?.type === 'minimized') await send(`command --id ${w.id} set-tiling`);
+        await send(`command focus --container-id ${w.id}`);
+        trace('focus ok', w.id);
+      } catch (e) {
+        trace('focus FAILED', String(e));
+      }
+      send('command wm-disable-binding-mode --name picker').catch(() => {});
+      await reassertFocus();
+      activating = false;
+    }
+
+    async function activateWorkspace(name) {
+      activating = true;
+      trace('activateWorkspace', name);
+      shrinkToBar();
+      try { await send(`command focus --workspace ${name}`); } catch (e) { trace('ws focus FAILED', String(e)); }
+      send('command wm-disable-binding-mode --name picker').catch(() => {});
+      await reassertFocus();
+      activating = false;
+    }
+
+    // Click on the veil (outside the panel) closes.
+    document.getElementById('picker').addEventListener('mousedown', e => {
+      if (!document.getElementById('panel').contains(e.target)) exitPicker();
+    });
+
+    // Self-healing watchdog: an overlay without an active picker mode has no
+    // keyboard, so shrink it; and if the window is somehow still fullscreen
+    // while "closed" (a lost resize race), re-assert the bar geometry —
+    // otherwise an invisible stretch of window would cover the desktop.
+    setInterval(() => {
+      if (pickerOpen) {
+        if (!activating && !prevModes.some(m => m.startsWith('picker'))) {
+          trace('watchdog: open without mode');
+          shrinkToBar();
+        }
+      } else if (barRect && window.innerHeight * devicePixelRatio > barRect.size.height * 1.5) {
+        trace('watchdog: window not bar-sized while closed');
+        tauriWin.setSize(new PhysicalSize(barRect.size.width, barRect.size.height)).catch(() => {});
+        tauriWin.setPosition(new PhysicalPosition(barRect.pos.x, barRect.pos.y)).catch(() => {});
+      }
+    }, 2000);
+  </script>
+</body>
+</html>

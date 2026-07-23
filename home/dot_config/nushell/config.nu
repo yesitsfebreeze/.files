@@ -252,6 +252,12 @@ alias q = exit
 # without prompting.
 alias rr = chezmoi update --force
 
+# pi — self-update (core + extensions) before every launch.
+def --wrapped pi [...args] {
+  ^pi update --all
+  ^pi ...$args
+}
+
 # `dirstack`: directory-history helpers. Sourced HERE (before mkcd and the PWD hook
 # below) so `_startdir_save` is in scope for mkcd and `_dirstack_push` for the hook.
 # Drives both the new-shell start dir (env.nu reads startdir.txt) and the Alt-O picker.
