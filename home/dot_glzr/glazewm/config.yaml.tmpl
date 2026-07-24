@@ -114,6 +114,15 @@ window_rules:
       - window_process: { equals: 'PowerToys' }
         window_title: { regex: '.*? - Peek' }
 
+  # Roam's annotations overlay is a transient overlay window, not an app window —
+  # ignore it so GlazeWM never gives it a tiling slot. Process + title both match
+  # so roam's main window is unaffected. Regexes are case-insensitive since the
+  # exact process/title casing is unconfirmed; tighten if it matches too broadly.
+  - commands: ['ignore']
+    match:
+      - window_process: { regex: '(?i)roam' }
+        window_title: { regex: '(?i)annotations overlay' }
+
 workspaces:
   - name: '1'
   - name: '2'
