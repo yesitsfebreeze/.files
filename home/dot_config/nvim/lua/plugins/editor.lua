@@ -25,6 +25,7 @@ return {
                 { "<leader>b", group = "buffer" },
                 { "<leader>c", group = "code" },
                 { "<leader>r", group = "rename/refactor" },
+                { "<leader>t", group = "table" },
             },
         },
     },
@@ -53,8 +54,35 @@ return {
                 lua = { "stylua" },
                 rust = { "rustfmt" },
                 python = { "black" },
+                -- prettier aligns markdown table pipes and normalizes lists;
+                -- prose stays unwrapped (proseWrap defaults to "preserve").
+                markdown = { "prettier" },
+                ["markdown.mdx"] = { "prettier" },
             },
             format_on_save = { timeout_ms = 500, lsp_format = "fallback" },
         },
+    },
+
+    -- Live table alignment while typing: pipes realign on every `|` in insert mode.
+    {
+        "dhruvasagar/vim-table-mode",
+        ft = { "markdown", "markdown.mdx" },
+        cmd = { "TableModeToggle", "TableModeEnable", "TableModeRealign", "Tableize" },
+        init = function()
+            -- GitHub-flavored corners: `|` instead of vim-table-mode's default `+`.
+            vim.g.table_mode_corner = "|"
+            vim.g.table_mode_map_prefix = "<leader>t"
+        end,
+        config = function()
+            local function enable()
+                vim.cmd("silent! TableModeEnable")
+            end
+            vim.api.nvim_create_autocmd("FileType", {
+                pattern = { "markdown", "markdown.mdx" },
+                callback = enable,
+            })
+            -- The FileType event that lazy-loaded us already fired for this buffer.
+            enable()
+        end,
     },
 }
