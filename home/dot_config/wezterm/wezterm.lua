@@ -327,6 +327,72 @@ if ok and type(tinty_colors) == "table" then
     config.colors.tab_bar = retro_tab_bar(window_opacity)
 end
 
+-- Opacity follows what's BEHIND the window: over bare wallpaper the terminal is
+-- translucent (the configured/user alpha); drawn over other window content it goes
+-- fully opaque so that content can't bleed through the text. WezTerm can't see the
+-- z-order, so the GlazeWM layout daemon (layout-daemon.js) decides — it watches
+-- window geometry over the WM's IPC and publishes `overlay.lua` next to this
+-- config: `return true` while a wezterm window is fullscreen/floating with another
+-- visible window under its rect, `return false` otherwise (a TILED terminal never
+-- overlaps anything: tiles are disjoint and floats stack above). Hosts without the
+-- daemon (mac/Linux) have no file and stay translucent. On restore the alpha is
+-- whatever the user last chose (the `opacity` user-var below, else window_opacity);
+-- the choice lives in wezterm.GLOBAL so a config reload can't forget it.
+local OVERLAY_STATE = wezterm.config_dir .. "/overlay.lua"
+-- Watching the state file makes a flip re-apply immediately via the config reload
+-- it triggers (window-config-reloaded below), instead of waiting for a status tick.
+wezterm.add_to_config_reload_watch_list(OVERLAY_STATE)
+
+local function overlaying_content()
+    local okf, v = pcall(dofile, OVERLAY_STATE)
+    return okf and v == true
+end
+
+local function user_alpha(window)
+    local t = wezterm.GLOBAL.user_opacity
+    local v = t and t[tostring(window:window_id())]
+    return tonumber(v) or window_opacity
+end
+
+local function set_user_alpha(window, alpha)
+    local t = wezterm.GLOBAL.user_opacity or {}
+    t[tostring(window:window_id())] = alpha
+    wezterm.GLOBAL.user_opacity = t
+end
+
+-- Apply an opacity as a per-window override, rebuilding the tab bar at the same
+-- alpha (its surface color is baked rgba, see retro_tab_bar). overrides.colors
+-- replaces the whole colors table, so copy it before swapping tab_bar. The
+-- equality guard matters: set_config_overrides re-fires window-config-reloaded,
+-- which calls back into sync_overlay_opacity below.
+local function apply_opacity(window, alpha)
+    local overrides = window:get_config_overrides() or {}
+    if overrides.window_background_opacity == alpha then
+        return
+    end
+    overrides.window_background_opacity = alpha
+    if ok and type(tinty_colors) == "table" then
+        local colors = {}
+        for k, v in pairs(config.colors) do
+            colors[k] = v
+        end
+        colors.tab_bar = retro_tab_bar(alpha)
+        overrides.colors = colors
+    end
+    window:set_config_overrides(overrides)
+end
+
+local function sync_overlay_opacity(window)
+    apply_opacity(window, overlaying_content() and 1.0 or user_alpha(window))
+end
+
+-- window-config-reloaded is the fast path (the overlay.lua watch above fires it on
+-- every state flip); the other two are cheap belt-and-braces, kept near-free by
+-- the equality guard in apply_opacity.
+wezterm.on("window-resized", sync_overlay_opacity)
+wezterm.on("window-config-reloaded", sync_overlay_opacity)
+wezterm.on("update-status", sync_overlay_opacity)
+
 wezterm.on("update-right-status", function(window, pane)
     -- Show the pane's current working directory instead of the workspace name
     -- ("default", which never changes here — burrito owns multiplexing). Needs the
@@ -514,18 +580,11 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
     elseif name == "opacity" then
         local pct = tonumber(value)
         if pct then
-            local alpha = math.max(0, math.min(100, pct)) / 100
-            local overrides = window:get_config_overrides() or {}
-            overrides.window_background_opacity = alpha
-            if ok and type(tinty_colors) == "table" then
-                local colors = {}
-                for k, v in pairs(config.colors) do
-                    colors[k] = v
-                end
-                colors.tab_bar = retro_tab_bar(alpha)
-                overrides.colors = colors
-            end
-            window:set_config_overrides(overrides)
+            -- Remember the choice, then let the overlay rule decide what's
+            -- painted NOW (overlaying content wins; the choice applies once
+            -- only wallpaper is behind again).
+            set_user_alpha(window, math.max(0, math.min(100, pct)) / 100)
+            sync_overlay_opacity(window)
         end
     end
 end)

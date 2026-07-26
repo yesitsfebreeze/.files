@@ -176,6 +176,10 @@
       opacity: 1;
     }
     .empty { padding: 4px 7px; opacity: 0.25; font-size: 12px; }
+    .empty.selected {
+      background: color-mix(in srgb, var(--accent, #7799bb) 28%, transparent);
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -560,8 +564,8 @@
         if (m === 'picker') { /* re-enable pulse — overlay already up */ }
         else if (m === 'picker-down') moveVertical(1);
         else if (m === 'picker-up') moveVertical(-1);
-        else if (m === 'picker-left') moveCell(0, -1, len => Math.min(sel?.idx ?? 0, len - 1));
-        else if (m === 'picker-right') moveCell(0, 1, len => Math.min(sel?.idx ?? 0, len - 1));
+        else if (m === 'picker-left') moveCell(0, -1, len => Math.max(0, Math.min(sel?.idx ?? 0, len - 1)));
+        else if (m === 'picker-right') moveCell(0, 1, len => Math.max(0, Math.min(sel?.idx ?? 0, len - 1)));
         else if (m === 'picker-next') moveFlat(1);
         else if (m === 'picker-prev') moveFlat(-1);
         else if (m === 'picker-enter') confirmSel();
@@ -612,7 +616,11 @@
         const f = flat();
         const cur = f.findIndex(e => e.w.hasFocus);
         const start = f.length ? f[(cur + 1) % f.length] : null;
-        sel = start ? { cell: start.cell, idx: start.idx } : null;
+        // No windows anywhere: still start somewhere (the focused/displayed
+        // cell, idx -1) so the arrows can walk the empty grid.
+        sel = start
+          ? { cell: start.cell, idx: start.idx }
+          : { cell: Math.max(0, cells.findIndex(c => c.focused || c.displayed)), idx: -1 };
         buildGrid();
         showPicker();
       } finally {
@@ -622,6 +630,7 @@
 
     const gridEl = document.getElementById('grid');
     let rowEls = [];
+    let emptyEls = [];
 
     const escHtml = s => (s ?? '').replace(/[&<>"]/g,
       c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -632,6 +641,7 @@
     // hitting orphaned nodes instead of the row handlers.
     function buildGrid() {
       rowEls = cells.map(() => []);
+      emptyEls = [];
       gridEl.replaceChildren(...cells.map((cell, ci) => {
         const el = document.createElement('div');
         el.className = 'cell'
@@ -649,6 +659,10 @@
           const e2 = document.createElement('div');
           e2.className = 'empty';
           e2.textContent = 'empty';
+          e2.onmouseenter = () => {
+            if (sel?.cell !== ci || sel?.idx !== -1) { sel = { cell: ci, idx: -1 }; updateSel(); }
+          };
+          emptyEls[ci] = e2;
           el.append(e2);
         }
 
@@ -678,9 +692,10 @@
     }
 
     function updateSel() {
-      gridEl.querySelectorAll('.win.selected')
+      gridEl.querySelectorAll('.win.selected, .empty.selected')
         .forEach(el => el.classList.remove('selected'));
-      const el = sel && rowEls[sel.cell]?.[sel.idx];
+      // idx -1 = the empty cell itself is the selection.
+      const el = sel && (sel.idx < 0 ? emptyEls[sel.cell] : rowEls[sel.cell]?.[sel.idx]);
       if (el) {
         el.classList.add('selected');
         // Square cells can overflow; keep the selection in view.
@@ -701,27 +716,24 @@
       updateSel();
     }
 
-    // Step cell-wise through the grid (wrapping), skipping workspaces with no
-    // windows; pick keeps the vertical position sensible per direction.
+    // Step exactly one cell through the grid (wrapping). Empty workspaces are
+    // regular stops: their selection is the cell itself (idx -1) and enter
+    // switches to that workspace. pick keeps the vertical position sensible
+    // per direction when the target cell has windows.
     function moveCell(dr, dc, pick) {
       if (!sel) return moveFlat(1);
-      let r = Math.floor(sel.cell / 3), c = sel.cell % 3;
-      for (let i = 0; i < 3; i++) {
-        r = (r + dr + 3) % 3;
-        c = (c + dc + 3) % 3;
-        const cell = r * 3 + c;
-        if (cells[cell].wins.length) {
-          sel = { cell, idx: pick(cells[cell].wins.length) };
-          updateSel();
-          return;
-        }
-      }
+      const r = (Math.floor(sel.cell / 3) + dr + 3) % 3;
+      const c = ((sel.cell % 3) + dc + 3) % 3;
+      const cell = r * 3 + c;
+      const len = cells[cell].wins.length;
+      sel = { cell, idx: len ? pick(len) : -1 };
+      updateSel();
     }
 
     function moveVertical(dir) {
       if (!sel) return moveFlat(1);
       const next = sel.idx + dir;
-      if (next >= 0 && next < cells[sel.cell].wins.length) {
+      if (sel.idx >= 0 && next >= 0 && next < cells[sel.cell].wins.length) {
         sel = { cell: sel.cell, idx: next };
         updateSel();
       } else {
@@ -739,8 +751,10 @@
 
     // --- actions ---
     function confirmSel() {
-      const w = sel && cells[sel.cell].wins[sel.idx];
-      w ? activateWindow(w, cells[sel.cell].name) : exitPicker();
+      if (!sel) return exitPicker();
+      const w = cells[sel.cell].wins[sel.idx];
+      // Enter on an empty cell switches to that (empty) workspace.
+      w ? activateWindow(w, cells[sel.cell].name) : activateWorkspace(cells[sel.cell].name);
     }
 
     async function activateWindow(w, wsName) {
