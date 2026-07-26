@@ -123,6 +123,33 @@ window_rules:
       - window_process: { regex: '(?i)roam' }
         window_title: { regex: '(?i)annotations overlay' }
 
+  # Games. A game that launches fullscreen (borderless or exclusive) is the one
+  # window class this WM must NOT own: `initial_state: tiling` yanks it into a pane,
+  # and layout-daemon.js is worse — its settle() pass reads "fullscreen 400ms after
+  # manage" as an app that maximized itself (Firefox session restore) and forces
+  # `set-tiling`, so even a `set-fullscreen` rule here would be undone twice. `ignore`
+  # is the only clean answer: an ignored window emits no window_managed event, so
+  # neither the WM nor the daemon ever touches it and the game keeps whatever mode it
+  # launched in — fullscreen stays fullscreen.
+  #
+  # Tradeoff: ignored windows are not in `query workspaces`, so a running game does
+  # NOT appear in the alt+tab picker overlay. Switch out with the Windows switcher
+  # (win+tab / alt+esc) or the taskbar.
+  #
+  # Matchers are process/class/title only — there is no "is fullscreen" matcher — so
+  # games are identified by engine window class (covers most titles without naming
+  # them) plus an explicit process list for the rest. Add your own below.
+  - commands: ['ignore']
+    match:
+      # Engine window classes. Unity, Unreal (modern + legacy), SDL2, Source,
+      # CryEngine, RAGE (GTA V / RDR2), Riot's client engine. Anchored so a normal
+      # app can't match on a substring.
+      - window_class:
+          regex: '^(UnityWndClass|UnrealWindow|LaunchUnrealUWindowsClient|SDL_app|Valve001|CryENGINE|grcWindow|RiotWindowClass)$'
+      # Explicit processes for games whose window class is generic. Extend here.
+      - window_process:
+          regex: '(?i)^(steam_app_\d+|factorio|dota2|csgo|cs2|hl2|eu4|stellaris|hoi4|Cyberpunk2077|witcher3|EscapeFromTarkov|RustClient|bg3|bg3_dx11)$'
+
 workspaces:
   - name: '1'
   - name: '2'
