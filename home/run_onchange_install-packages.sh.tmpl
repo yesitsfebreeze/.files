@@ -508,6 +508,7 @@ bin_for() {
         bubblewrap) echo bwrap ;;
         gnupg)      echo gpg ;;
         worktrunk)  echo wt ;;
+        burrito)    echo brr ;;
         *)          echo "$1" ;;
     esac
 }
@@ -539,7 +540,7 @@ if command -v cargo >/dev/null 2>&1; then
     done
 fi
 
-# cargo_git packages (burrito, keydr, ...) — no package on any manager and no
+# cargo_git packages (keydr, ...) — no package on any manager and no
 # prebuilt release, so they are built from their GitHub repos with cargo. The
 # repo URLs are the single source of truth in packages.yaml (cargo_git).
 # Bootstrap rustup non-interactively if cargo is missing, then
@@ -564,6 +565,33 @@ for entry in $cargo_git_pkgs; do
     else
         warn "$name: no cargo available; install a Rust toolchain and re-run"
     fi
+done
+
+# just_git packages (burrito -> brr) — repos that own their build via a
+# `just install` recipe. burrito is Go, not Rust: cargo cannot build it, and a
+# bare `cargo install burrito` silently pulls an unrelated crates.io crate that
+# shadows the real binary. The repo's justfile is the source of truth for the
+# toolchain and the install destination (~/.local/bin, under bin_for's name).
+# Idempotent: skipped once the binary is on PATH.
+just_git_pkgs="{{ range .packages }}{{ if hasKey . "just_git" }}{{ .name }}={{ .just_git }} {{ end }}{{ end }}"
+for entry in $just_git_pkgs; do
+    name="${entry%%=*}"
+    repo="${entry#*=}"
+    b="$(bin_for "$name")"
+    command -v "$b" >/dev/null 2>&1 && continue
+    if ! command -v just >/dev/null 2>&1; then
+        warn "$name: just not on PATH yet; re-run chezmoi apply once just is installed"
+        continue
+    fi
+    tmp="$(mktemp -d)"
+    log "install $name (git clone + just install: $repo)"
+    if git clone --depth 1 "$repo" "$tmp/$name" >/dev/null 2>&1 \
+        && (cd "$tmp/$name" && just install) >/dev/null 2>&1; then
+        log "  installed $b"
+    else
+        warn "  could not build $name from $repo (check its justfile's toolchain, e.g. Go)"
+    fi
+    rm -rf "$tmp"
 done
 
 # --- Nerd Font: guarantee the patched font is present (release fallback) ---

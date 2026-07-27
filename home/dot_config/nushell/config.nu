@@ -241,8 +241,8 @@ def cc [...args] { _claude_run $args }
 # cr — like cc, but resume a session within the chosen profile.
 def cr [...args] { _claude_run (["--resume"] | append $args) }
 
-alias bb = burrito                                # spawn-or-attach default session
-alias ba = burrito --attach                       # attach to an existing session
+alias bb = brr                                    # spawn-or-attach default session
+alias ba = brr --attach                           # attach to an existing session
 # Vim/editor muscle memory for quitting the shell.
 alias "/exit" = exit
 alias ":q" = exit

@@ -1,11 +1,11 @@
 [metadata]
 name = "burrito-sessions"
 description = "Browse and attach to live burrito multiplexer sessions"
-requirements = ["burrito"]
+requirements = ["brr"]
 
 [source]
-# `burrito ls` prints one live session per line as: name<TAB>cwd<TAB>socket.
-command = "burrito ls"
+# `brr ls` prints one live session per line as: name<TAB>cwd<TAB>socket.
+command = "brr ls"
 # Show the friendly name and its cwd; the actionable output is the socket path.
 display = "{split:\t:0}  ({split:\t:1})"
 output = "{split:\t:2}"
@@ -27,5 +27,5 @@ enter = "actions:attach"
 
 [actions.attach]
 description = "Attach to the selected session"
-command = "burrito attach '{split:\t:2}'"
+command = "brr --attach '{split:\t:2}'"
 mode = "execute"

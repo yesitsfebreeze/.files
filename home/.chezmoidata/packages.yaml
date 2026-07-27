@@ -5,11 +5,11 @@
 
 packages:
     - name: burrito       # terminal multiplexer (daemon + 9x9 grid nav, tool overlays), shell-side
-      brew: ""            # not packaged on any manager; built from source via cargo (see cargo_git + installer)
+      brew: ""            # not packaged on any manager; Go repo, built by its own `just install` (see just_git + installer)
       apt: ""
       pacman: ""
       dnf: ""
-      cargo_git: https://github.com/yesitsfebreeze/burrito   # source of truth: `cargo install --git` this repo
+      just_git: https://github.com/yesitsfebreeze/burrito   # source of truth: clone + `just install`; installs the binary as `brr`
 
     - name: keydr         # terminal typing tutor with adaptive learning (keybr-style weak-key drills)
       brew: ""            # not packaged anywhere; built from source via cargo (cargo_git)
