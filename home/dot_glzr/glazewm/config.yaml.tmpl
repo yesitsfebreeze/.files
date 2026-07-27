@@ -32,11 +32,13 @@ gaps:
   scale_with_dpi: false
   inner_gap: '8px'
   outer_gap:
-    # Top gap lives inside the Zebar window: the bar is 42px (8 + 26px bubble
-    # row + 8, vertically centered), so the bar's own bottom padding IS the
-    # bubble→window spacing — 8px, same as every other gap. A top gap here
-    # would double it.
-    top: '0px'
+    # Windows: the bar is a hidden overlay (no dock reservation), so the top
+    # gap matches the other edges; hovering the screen's top edge makes
+    # bar-reveal.js rewrite this tagged line to the bar height (42px — the
+    # bar's own bottom padding IS the bubble→window spacing) and reload, which
+    # slides the tiled grid down under the revealed bar. macOS: the bar still
+    # docks and reserves its band, so the gap stays 0.
+    top: '{{ if eq .chezmoi.os "darwin" }}0px{{ else }}8px{{ end }}' # bar-reveal:top
     right: '8px'
     bottom: '8px'
     left: '8px'

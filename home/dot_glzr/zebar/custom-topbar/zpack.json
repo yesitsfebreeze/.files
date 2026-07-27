@@ -26,6 +26,16 @@
           "height": "42px",
           "monitorSelection": { "type": "all" },
           "dockToEdge": { "enabled": true, "edge": "top", "windowMargin": "0px" }
+        },
+        {
+          "name": "overlay",
+          "anchor": "top_left",
+          "offsetX": "0px",
+          "offsetY": "0px",
+          "width": "100%",
+          "height": "42px",
+          "monitorSelection": { "type": "all" },
+          "dockToEdge": { "enabled": false, "edge": "top", "windowMargin": "0px" }
         }
       ]
     }

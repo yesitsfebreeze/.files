@@ -4,7 +4,7 @@
     {
       "pack": "custom-topbar",
       "widget": "topbar",
-      "preset": "default"
+      "preset": "{{ if eq .chezmoi.os "darwin" }}default{{ else }}overlay{{ end }}"
     }
   ]
 }
