@@ -329,15 +329,16 @@
       // e.g. a fullscreen window closing would flip a still-hidden bar back to
       // clickable, and the invisible band would swallow clicks meant for the
       // window now occupying it.
+      // NOTE: raw invoke with `{ ignore }` silently rejects — the Tauri v2
+      // plugin command takes `{ label, value }` — so go through the Window API
+      // wrapper, which passes them correctly.
       let barHidden = false;
       let fsHidden = false;
       let syncBarGap = () => {};
       const syncClickThrough = () =>
-        window.__TAURI_INTERNALS__
-          ?.invoke?.("plugin:window|set_ignore_cursor_events", {
-            ignore: (barHidden || fsHidden) && !pickerOpen,
-          })
-          ?.catch?.(() => {});
+        tauriWin
+          .setIgnoreCursorEvents((barHidden || fsHidden) && !pickerOpen)
+          .catch(() => {});
 
       if (!navigator.userAgent.includes("Windows")) {
         document.body.classList.add("reveal-on-hover");
@@ -354,7 +355,7 @@
         // poll below — so once hidden the bar never un-hides and vanishes for good.
         // Opacity + click-through keeps the window shown so the poll keeps running.
         const setClickThrough = (on) =>
-          winCall("set_ignore_cursor_events", { ignore: on });
+          winCall("set_ignore_cursor_events", { value: on });
 
         let faded = false;
         const fade = () => {
