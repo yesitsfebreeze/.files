@@ -23,6 +23,7 @@
     }
 
     body.reveal-on-hover.at-top { opacity: 0; }
+    body.fs-hidden:not(.picker-open) { opacity: 0; }
 
     .left  { display: flex; align-items: center; gap: 6px; flex: none; }
     .right { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -424,6 +425,7 @@
     async function showPicker() {
       if (pickerOpen) return;
       pickerOpen = true;
+      setFsHidden(false);
       trace('showPicker');
       if (!barRect) {
         const [pos, size] = await Promise.all([
@@ -811,6 +813,49 @@
         tauriWin.setPosition(new PhysicalPosition(barRect.pos.x, barRect.pos.y)).catch(() => {});
       }
     }, 2000);
+
+    // === Fullscreen hide ==================================================
+    // A GlazeWM-fullscreen window (alt+f) covers the whole monitor, but this
+    // bar is top_most and would stay drawn over it. alt+f emits no reliably
+    // subscribed event (same reason the layout daemon polls), so poll
+    // `query windows` over the raw IPC socket and hide the bar — opacity 0
+    // plus click-through — while a visible fullscreen window sits on this
+    // bar's monitor. Opening the picker unhides immediately.
+    const setFsClickThrough = on =>
+      window.__TAURI_INTERNALS__
+        ?.invoke?.('plugin:window|set_ignore_cursor_events', { ignore: on })
+        ?.catch?.(() => {});
+    let fsHidden = false;
+    function setFsHidden(on) {
+      if (on === fsHidden) return;
+      fsHidden = on;
+      document.body.classList.toggle('fs-hidden', on);
+      setFsClickThrough(on && !pickerOpen);
+    }
+    let fsMon = null;
+    let fsChecking = false;
+    if (navigator.userAgent.includes('Windows')) setInterval(async () => {
+      if (fsChecking || pickerOpen) return;
+      fsChecking = true;
+      try {
+        if (!fsMon) fsMon = await currentMonitor().catch(() => null);
+        const data = await send('query windows');
+        const hit = (data?.windows || []).some(w =>
+          w.state?.type === 'fullscreen' &&
+          (w.displayState === 'shown' || w.displayState === 'showing') &&
+          (!fsMon ||
+            (w.x < fsMon.position.x + fsMon.size.width &&
+             fsMon.position.x < w.x + w.width &&
+             w.y < fsMon.position.y + fsMon.size.height &&
+             fsMon.position.y < w.y + w.height)));
+        setFsHidden(hit);
+      } catch {
+        // Fail safe: never strand the bar invisible or click-through.
+        setFsHidden(false);
+      } finally {
+        fsChecking = false;
+      }
+    }, 500);
   </script>
 </body>
 </html>
