@@ -38,18 +38,6 @@
       body.reveal-on-hover.at-top {
         opacity: 0;
       }
-      /* Windows slide-reveal: the bar hides above the screen edge instead of
-       fading in place. The picker always wins — its overlay lives in this same
-       body, so a translated body would carry it off-screen. */
-      body.slide-reveal {
-        transition:
-          opacity 0.18s ease,
-          transform 0.22s ease;
-      }
-      body.slide-reveal.bar-hidden:not(.picker-open) {
-        opacity: 0;
-        transform: translateY(-100%);
-      }
       body.fs-hidden:not(.picker-open) {
         opacity: 0;
       }
@@ -323,23 +311,6 @@
         currentMonitor,
       } from "https://esm.sh/@tauri-apps/api@2.0.2/window";
 
-      // Click-through has ONE arbiter: the slide-reveal hover state, the
-      // fullscreen-hide poll and the picker all influence
-      // set_ignore_cursor_events, and independent writers clobber each other —
-      // e.g. a fullscreen window closing would flip a still-hidden bar back to
-      // clickable, and the invisible band would swallow clicks meant for the
-      // window now occupying it.
-      // NOTE: raw invoke with `{ ignore }` silently rejects — the Tauri v2
-      // plugin command takes `{ label, value }` — so go through the Window API
-      // wrapper, which passes them correctly.
-      let barHidden = false;
-      let fsHidden = false;
-      let syncBarGap = () => {};
-      const syncClickThrough = () =>
-        tauriWin
-          .setIgnoreCursorEvents((barHidden || fsHidden) && !pickerOpen)
-          .catch(() => {});
-
       if (!navigator.userAgent.includes("Windows")) {
         document.body.classList.add("reveal-on-hover");
 
@@ -412,80 +383,6 @@
             idle = setTimeout(show, 1200);
           });
           document.addEventListener("mouseleave", show);
-        }
-      }
-
-      if (navigator.userAgent.includes("Windows")) {
-        document.body.classList.add("slide-reveal");
-
-        // Slide-reveal: the bar is a pure overlay (dockToEdge off in the
-        // 'overlay' preset, so it reserves no work area), hidden above the
-        // screen edge and click-through while the full-height grid beneath
-        // stays interactive. Hovering the screen's top edge slides the bar
-        // down and runs bar-reveal.js, which grows GlazeWM's top outer gap
-        // (config rewrite + wm-reload-config — GlazeWM has no runtime gap
-        // command), so the grid slides down with it. Leaving the bar band
-        // reverses both. The gap change is global while the reveal is
-        // per-monitor: hovering one monitor's bar shifts every monitor's grid.
-        const gapCmd = (shown) =>
-          send(
-            "command shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/bar-reveal.js " +
-              (shown ? "show" : "hide"),
-          ).catch(() => {});
-        // Re-assert on every IPC (re)connect: the first hide usually beats the
-        // socket opening, and a chezmoi mirror or WM restart can reset the
-        // deployed config underneath us.
-        syncBarGap = () => gapCmd(!barHidden);
-
-        const hideBar = () => {
-          if (barHidden) return;
-          barHidden = true;
-          document.body.classList.add("bar-hidden");
-          syncClickThrough();
-          gapCmd(false);
-        };
-        const revealBar = () => {
-          if (!barHidden) return;
-          barHidden = false;
-          document.body.classList.remove("bar-hidden");
-          syncClickThrough();
-          gapCmd(true);
-        };
-
-        const inv = window.__TAURI_INTERNALS__?.invoke;
-        if (inv) {
-          let rect = null,
-            n = 0;
-          const refreshRect = async () => {
-            const [p, s] = await Promise.all([
-              inv("plugin:window|outer_position"),
-              inv("plugin:window|outer_size"),
-            ]);
-            rect = { x: p.x, y: p.y, w: s.width, h: s.height };
-          };
-          setInterval(async () => {
-            // The picker resizes this window fullscreen and fs-hidden owns the
-            // hidden state outright — both suspend hover tracking.
-            if (pickerOpen || fsHidden) return;
-            try {
-              if (!rect || n++ % 25 === 0) await refreshRect();
-              if (!rect) return;
-              const c = await inv("plugin:window|cursor_position");
-              const inX = c.x >= rect.x && c.x <= rect.x + rect.w;
-              // Hysteresis: revealing takes the top few physical px of the
-              // screen edge; hiding waits until the cursor leaves the whole
-              // bar band, so the revealed bar is hoverable without flapping.
-              const edge = Math.max(2, Math.round(2 * devicePixelRatio));
-              if (barHidden) {
-                if (inX && c.y >= rect.y && c.y <= rect.y + edge) revealBar();
-              } else if (!inX || c.y < rect.y || c.y > rect.y + rect.h) {
-                hideBar();
-              }
-            } catch {
-              // Never strand the bar hidden + click-through on a failing poll.
-              if (barHidden) revealBar();
-            }
-          }, 100);
         }
       }
 
@@ -647,7 +544,6 @@
         if (pickerOpen) return;
         pickerOpen = true;
         setFsHidden(false);
-        syncClickThrough();
         trace("showPicker");
         if (!barRect) {
           const [pos, size] = await Promise.all([
@@ -687,7 +583,6 @@
         pickerOpen = false;
         trace("shrinkToBar");
         document.body.classList.remove("picker-open");
-        syncClickThrough();
         tauriWin
           .setSize(new PhysicalSize(barRect.size.width, barRect.size.height))
           .then(() =>
@@ -748,7 +643,6 @@
             const q = await send("query binding-modes");
             onModes((q?.bindingModes || []).map((m) => m.name ?? m));
           } catch {}
-          syncBarGap();
         };
         sock.onmessage = (ev) => {
           let msg;
@@ -1147,11 +1041,16 @@
       // maximized windows as state 'fullscreen', but those respect the work
       // area (they start below the bar), so a covers-the-monitor rect test is
       // the discriminator, not the state alone. Opening the picker unhides.
+      const setFsClickThrough = (on) =>
+        window.__TAURI_INTERNALS__
+          ?.invoke?.("plugin:window|set_ignore_cursor_events", { value: on })
+          ?.catch?.(() => {});
+      let fsHidden = false;
       function setFsHidden(on) {
         if (on === fsHidden) return;
         fsHidden = on;
         document.body.classList.toggle("fs-hidden", on);
-        syncClickThrough();
+        setFsClickThrough(on && !pickerOpen);
       }
       let fsMon = null;
       let fsChecking = false;
