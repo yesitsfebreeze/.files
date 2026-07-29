@@ -153,7 +153,7 @@
         opacity: 0.85;
       }
 
-      /* --- App picker (alt+tab) ---------------------------------------------
+      /* --- App picker (shift+f12) ------------------------------------------
        The bar window itself is temporarily resized to fullscreen and this
        overlay fills it: instant (no window/process creation on the hot path)
        and there is never a hidden window that could strand invisibly over the
@@ -162,38 +162,45 @@
         position: fixed;
         inset: 0;
         display: none;
-        align-items: center;
-        justify-content: center;
         background: rgba(0, 0, 0, 0.9);
-        font-size: 14px;
+        font-family:
+          "DepartureMono Nerd Font", "Departure Mono",
+          "JetBrainsMono Nerd Font", "Cascadia Code", Menlo, monospace;
+        font-size: 20px;
       }
       body.picker-open #picker {
-        display: flex;
+        display: block;
       }
       body.picker-open .left,
       body.picker-open .right {
         display: none;
       }
 
-      /* Bare square 3x3 matrix of tiles mirroring the workspace dots; text
-       inside ellipsizes, never widens. The veil doubles as click-away area. */
+      /* 3x3 workspace grid filling the picker area.
+         Outer padding 42px top (bar) + 8px sides/bottom = GlazeWM gaps.
+         Gap 8px = inner_gap. Each cell shows windows in that workspace. */
       #picker .panel {
         display: flex;
         flex-direction: column;
-        width: min(58vh, 620px, 90vw);
+        width: 100%;
+        height: 100%;
+        padding: 42px 8px 8px 8px;
+        box-sizing: border-box;
       }
       #picker .grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
         gap: 8px;
+        flex: 1;
+        min-height: 0;
       }
       .cell {
+        position: relative;
         display: flex;
         flex-direction: column;
-        gap: 3px;
-        aspect-ratio: 1;
         min-width: 0;
-        overflow-y: auto;
+        min-height: 0;
         padding: 7px;
         border-radius: 8px;
         background: color-mix(in srgb, var(--bg, #000) 88%, transparent);
@@ -211,23 +218,6 @@
           transparent
         );
       }
-
-      .cell-head {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
-        padding: 0 4px 4px;
-        opacity: 0.55;
-        font-size: 12px;
-      }
-      .cell.focused .cell-head {
-        opacity: 0.9;
-        color: var(--accent, #7799bb);
-      }
-      .cell-head .num {
-        font-weight: bold;
-      }
-
       .win {
         display: flex;
         align-items: baseline;
@@ -255,11 +245,6 @@
         opacity: 0.5;
         font-size: 11px;
       }
-      .win .tag {
-        flex: none;
-        opacity: 0.4;
-        font-size: 11px;
-      }
       .win.minimized {
         opacity: 0.55;
       }
@@ -273,11 +258,48 @@
       .empty {
         padding: 4px 7px;
         opacity: 0.25;
-        font-size: 12px;
+        font-size: 15px;
       }
       .empty.selected {
         background: color-mix(in srgb, var(--accent, #7799bb) 28%, transparent);
         opacity: 0.7;
+      }
+      /* Mini layout inside each cell — windows as positioned rectangles */
+      .cell-layout {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .cell-win {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--fg, #c1c1c1) 8%, transparent);
+        border: 1px solid
+          color-mix(in srgb, var(--fg, #c1c1c1) 12%, transparent);
+        font-size: 15px;
+        padding: 1px 2px;
+        box-sizing: border-box;
+        min-width: 0;
+        cursor: pointer;
+      }
+      .cell-win.active {
+        border-color: var(--accent, #5298c4);
+        border-width: 2px;
+      }
+      .cell-win.selected {
+        background: color-mix(in srgb, var(--accent, #7799bb) 20%, transparent);
+        border-color: var(--accent, #7799bb);
+        border-width: 2px;
+      }
+      .cell-win .proc {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     </style>
   </head>
@@ -508,8 +530,8 @@
         if (cal) dateEl.textContent = cal.formatted;
       });
 
-      // === App picker (alt+tab) =============================================
-      // alt+tab enters the 'picker' GlazeWM binding mode; this bar observes it
+      // === App picker (shift+f12) ===========================================
+      // shift+f12 enters the 'picker' GlazeWM binding mode; this bar observes it
       // over raw IPC and resizes its own (always-alive, always-visible) window
       // to fullscreen to show the matrix — instant, native, cross-platform, and
       // with no hidden window that could ever strand over the desktop. GlazeWM
@@ -713,16 +735,10 @@
         for (const m of fresh) {
           if (m === "picker") {
             /* re-enable pulse — overlay already up */
-          } else if (m === "picker-down") moveVertical(1);
-          else if (m === "picker-up") moveVertical(-1);
-          else if (m === "picker-left")
-            moveCell(0, -1, (len) =>
-              Math.max(0, Math.min(sel?.idx ?? 0, len - 1)),
-            );
-          else if (m === "picker-right")
-            moveCell(0, 1, (len) =>
-              Math.max(0, Math.min(sel?.idx ?? 0, len - 1)),
-            );
+          } else if (m === "picker-down") moveInCellOrCell(0, 1);
+          else if (m === "picker-up") moveInCellOrCell(0, -1);
+          else if (m === "picker-left") moveInCellOrCell(-1, 0);
+          else if (m === "picker-right") moveInCellOrCell(1, 0);
           else if (m === "picker-next") moveFlat(1);
           else if (m === "picker-prev") moveFlat(-1);
           else if (m === "picker-enter") confirmSel();
@@ -766,31 +782,18 @@
               wins,
               displayed: !!ws?.isDisplayed,
               focused: !!ws && (ws.hasFocus || wins.some((w) => w.hasFocus)),
+              x: ws?.x ?? 0,
+              y: ws?.y ?? 0,
+              width: ws?.width ?? 0,
+              height: ws?.height ?? 0,
             };
           });
 
-          // The mode can be exited again while the query above was in flight.
           if (!prevModes.some((m) => m.startsWith("picker"))) {
             trace("openPicker aborted, mode gone");
             return;
           }
 
-          // Start on the window after the currently focused one, so alt+tab, enter
-          // hops to the next window — like a classic switcher.
-          const f = flat();
-          const cur = f.findIndex((e) => e.w.hasFocus);
-          const start = f.length ? f[(cur + 1) % f.length] : null;
-          // No windows anywhere: still start somewhere (the focused/displayed
-          // cell, idx -1) so the arrows can walk the empty grid.
-          sel = start
-            ? { cell: start.cell, idx: start.idx }
-            : {
-                cell: Math.max(
-                  0,
-                  cells.findIndex((c) => c.focused || c.displayed),
-                ),
-                idx: -1,
-              };
           buildGrid();
           showPicker();
         } finally {
@@ -808,13 +811,12 @@
           (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
         );
 
-      // Built ONCE per open. Selection changes must only toggle classes — a
-      // rebuild here destroys the element under the cursor, which re-fires
-      // mouseenter on its replacement in an endless loop and leaves real clicks
-      // hitting orphaned nodes instead of the row handlers.
+      // Fullscreen 3x3 grid — each cell shows a mini layout of its windows as
+      // rectangles positioned in percent of that workspace's own rect.
       function buildGrid() {
         rowEls = cells.map(() => []);
         emptyEls = [];
+
         gridEl.replaceChildren(
           ...cells.map((cell, ci) => {
             const el = document.createElement("div");
@@ -825,11 +827,6 @@
             el.onmousedown = (e) => e.stopPropagation();
             el.onclick = () => activateWorkspace(cell.name);
 
-            const head = document.createElement("div");
-            head.className = "cell-head";
-            head.innerHTML = `<span class="num">${cell.name}</span>`;
-            el.append(head);
-
             if (!cell.wins.length) {
               const e2 = document.createElement("div");
               e2.className = "empty";
@@ -837,62 +834,59 @@
               e2.onmouseenter = () => {
                 if (sel?.cell !== ci || sel?.idx !== -1) {
                   sel = { cell: ci, idx: -1 };
-                  updateSel();
+                  updateGridSel();
                 }
               };
               emptyEls[ci] = e2;
               el.append(e2);
+            } else {
+              const layout = document.createElement("div");
+              layout.className = "cell-layout";
+              // Percent of the workspace rect, not scaled pixels: the cell's real
+              // box is unknown here (the picker is still display:none, so every
+              // measured size is 0), and percentages let CSS resolve the geometry
+              // against whatever the cell ends up being.
+              const pctX = (v) => (v / cell.width) * 100;
+              const pctY = (v) => (v / cell.height) * 100;
+              cell.wins.forEach((w, wi) => {
+                const we = document.createElement("div");
+                we.className = "cell-win" + (w.hasFocus ? " active" : "");
+                we.style.cssText =
+                  `left:${pctX(w.x - cell.x)}%;` +
+                  `top:${pctY(w.y - cell.y)}%;` +
+                  `width:${pctX(w.width)}%;` +
+                  `height:${pctY(w.height)}%;`;
+                we.innerHTML = `<span class="proc">${escHtml(w.processName)}</span>`;
+                we.onmouseenter = () => {
+                  if (sel?.cell !== ci || sel?.idx !== wi) {
+                    sel = { cell: ci, idx: wi };
+                    updateGridSel();
+                  }
+                };
+                we.onclick = (e) => {
+                  e.stopPropagation();
+                  activateWindow(w, cell.name);
+                };
+                rowEls[ci][wi] = we;
+                layout.append(we);
+              });
+              el.append(layout);
             }
-
-            cell.wins.forEach((w, wi) => {
-              const row = document.createElement("div");
-              const st = w.state?.type;
-              row.className =
-                "win" +
-                (st === "minimized" ? " minimized" : "") +
-                (w.hasFocus ? " active" : "");
-              const tag =
-                st === "minimized"
-                  ? "min"
-                  : st === "fullscreen"
-                    ? "full"
-                    : st === "floating"
-                      ? "float"
-                      : "";
-              row.innerHTML =
-                `<span class="proc">${escHtml(w.processName)}</span>` +
-                `<span class="title">${escHtml(w.title)}</span>` +
-                (tag ? `<span class="tag">${tag}</span>` : "");
-              row.onmouseenter = () => {
-                if (sel?.cell !== ci || sel?.idx !== wi) {
-                  sel = { cell: ci, idx: wi };
-                  updateSel();
-                }
-              };
-              row.onclick = (e) => {
-                e.stopPropagation();
-                activateWindow(w, cell.name);
-              };
-              rowEls[ci][wi] = row;
-              el.append(row);
-            });
             return el;
           }),
         );
-        updateSel();
+        updateGridSel();
       }
 
-      function updateSel() {
+      function updateGridSel() {
         gridEl
-          .querySelectorAll(".win.selected, .empty.selected")
+          .querySelectorAll(".cell-win.selected, .empty.selected")
           .forEach((el) => el.classList.remove("selected"));
-        // idx -1 = the empty cell itself is the selection.
         const el =
           sel &&
           (sel.idx < 0 ? emptyEls[sel.cell] : rowEls[sel.cell]?.[sel.idx]);
         if (el) {
           el.classList.add("selected");
-          // Square cells can overflow; keep the selection in view.
           el.scrollIntoView({ block: "nearest" });
         }
       }
@@ -911,48 +905,82 @@
         );
         const next = f[((cur < 0 ? 0 : cur + step) + f.length) % f.length];
         sel = { cell: next.cell, idx: next.idx };
-        updateSel();
+        updateGridSel();
       }
 
-      // Step exactly one cell through the grid (wrapping). Empty workspaces are
-      // regular stops: their selection is the cell itself (idx -1) and enter
-      // switches to that workspace. pick keeps the vertical position sensible
-      // per direction when the target cell has windows.
-      function moveCell(dr, dc, pick) {
-        if (!sel) return moveFlat(1);
-        const r = (Math.floor(sel.cell / 3) + dr + 3) % 3;
-        const c = ((sel.cell % 3) + dc + 3) % 3;
-        const cell = r * 3 + c;
-        const len = cells[cell].wins.length;
-        sel = { cell, idx: len ? pick(len) : -1 };
-        updateSel();
+      // Find nearest window in direction (dx, dy) within a cell.
+      function findNearestInCell(cellIdx, dx, dy) {
+        const wins = cells[cellIdx].wins;
+        if (!wins.length || !sel) return -1;
+        const cur = wins[sel.idx];
+        if (!cur) return -1;
+        const cx = cur.x + cur.width / 2;
+        const cy = cur.y + cur.height / 2;
+        let best = -1;
+        let bestDist = Infinity;
+        for (let i = 0; i < wins.length; i++) {
+          if (i === sel.idx) continue;
+          const w = wins[i];
+          const wcx = w.x + w.width / 2;
+          const wcy = w.y + w.height / 2;
+          const ddx = wcx - cx;
+          const ddy = wcy - cy;
+          if (dx !== 0 && ddx * dx <= 0) continue;
+          if (dy !== 0 && ddy * dy <= 0) continue;
+          if (dx !== 0 && dy === 0 && Math.abs(ddy) > Math.abs(ddx) * 0.6)
+            continue;
+          if (dy !== 0 && dx === 0 && Math.abs(ddx) > Math.abs(ddy) * 0.6)
+            continue;
+          const dist = ddx * ddx + ddy * ddy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = i;
+          }
+        }
+        return best;
       }
 
-      function moveVertical(dir) {
+      // Move within cell; at edge, move to adjacent cell.
+      function moveInCellOrCell(dx, dy) {
         if (!sel) return moveFlat(1);
-        const next = sel.idx + dir;
-        if (sel.idx >= 0 && next >= 0 && next < cells[sel.cell].wins.length) {
-          sel = { cell: sel.cell, idx: next };
-          updateSel();
+        if (sel.idx < 0) {
+          // Empty cell — move to adjacent.
+          const r = Math.floor(sel.cell / 3);
+          const c = sel.cell % 3;
+          const nr = (r + dy + 3) % 3;
+          const nc = (c + dx + 3) % 3;
+          const nci = nr * 3 + nc;
+          if (nci !== sel.cell) {
+            sel = { cell: nci, idx: cells[nci].wins.length ? 0 : -1 };
+            updateGridSel();
+          }
+          return;
+        }
+        const best = findNearestInCell(sel.cell, dx, dy);
+        if (best >= 0) {
+          sel = { cell: sel.cell, idx: best };
+          updateGridSel();
         } else {
-          moveCell(dir, 0, (len) => (dir > 0 ? 0 : len - 1));
+          const r = Math.floor(sel.cell / 3);
+          const c = sel.cell % 3;
+          const nr = (r + dy + 3) % 3;
+          const nc = (c + dx + 3) % 3;
+          const nci = nr * 3 + nc;
+          if (nci !== sel.cell) {
+            sel = { cell: nci, idx: cells[nci].wins.length ? 0 : -1 };
+            updateGridSel();
+          }
         }
       }
 
       function pickCell(ci) {
-        if (!cells[ci].wins.length) return activateWorkspace(WORKSPACES[ci]);
-        // Repeated presses of the same digit cycle through that workspace's windows.
-        const idx =
-          sel?.cell === ci ? (sel.idx + 1) % cells[ci].wins.length : 0;
-        sel = { cell: ci, idx };
-        updateSel();
+        activateWorkspace(WORKSPACES[ci]);
       }
 
       // --- actions ---
       function confirmSel() {
         if (!sel) return exitPicker();
         const w = cells[sel.cell].wins[sel.idx];
-        // Enter on an empty cell switches to that (empty) workspace.
         w
           ? activateWindow(w, cells[sel.cell].name)
           : activateWorkspace(cells[sel.cell].name);

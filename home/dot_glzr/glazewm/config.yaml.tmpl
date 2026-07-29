@@ -133,7 +133,7 @@ window_rules:
   # launched in — fullscreen stays fullscreen.
   #
   # Tradeoff: ignored windows are not in `query workspaces`, so a running game does
-  # NOT appear in the alt+tab picker overlay. Switch out with the Windows switcher
+  # NOT appear in the app picker overlay. Switch out with the Windows switcher
   # (win+tab / alt+esc) or the taskbar.
   #
   # Matchers are process/class/title only — there is no "is fullscreen" matcher — so
@@ -192,13 +192,20 @@ keybindings:
   - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/regrid.js']
     bindings: ['alt+g']
 
-  # App picker overlay: alt+tab enters the 'picker' binding mode (below); the
-  # always-running Zebar picker widget observes the mode over IPC and shows
+  # App picker overlay: shift+f12 enters the 'picker' binding mode (below);
+  # the always-running Zebar picker widget observes the mode over IPC and shows
   # itself instantly — no process spawning, fully cross-platform. Pure
   # binding-mode signalling: the overlay never needs keyboard focus, which a
   # background process can't reliably steal on Windows.
   - commands: ['wm-enable-binding-mode --name picker']
-    bindings: ['alt+tab']
+    bindings: ['shift+f12']
+
+  # Snap the focused window to an absolute screen zone: alt+p enters the 'snap'
+  # binding mode (below), then one mnemonic key places the window and leaves the
+  # mode. The rect arithmetic depends on which monitor owns the window, which a
+  # keybinding can't compute, so it lives in snap.js over IPC.
+  - commands: ['wm-enable-binding-mode --name snap']
+    bindings: ['alt+p']
 
   # Window state.
   - commands: ['toggle-floating --centered']
@@ -262,7 +269,7 @@ keybindings:
   - commands: ['move --workspace 9']
     bindings: ['alt+shift+9']
 
-# Picker overlay input (alt+tab). While 'picker' is active, GlazeWM owns the
+# Picker overlay input (shift+f12). While 'picker' is active, GlazeWM owns the
 # keyboard and each navigation key pulses a transient 'picker-<action>' mode
 # purely as an IPC signal to the Zebar picker widget. Binding modes REPLACE each
 # other (no stacking), so a pulse is enable-signal + re-enable-picker; the widget
@@ -275,19 +282,20 @@ binding_modes:
   - name: 'picker'
     keybindings:
 {{- range $sig, $keys := dict
-      "down"  (list "down" "j")
-      "up"    (list "up" "k")
-      "left"  (list "left" "h")
-      "right" (list "right" "l")
-      "next"  (list "tab" "alt+tab")
-      "prev"  (list "shift+tab" "alt+shift+tab")
+      "down"  (list "down")
+      "up"    (list "up")
+      "left"  (list "left")
+      "right" (list "right")
+      "next"  (list "f12")
+      "prev"  (list "f11")
       "enter" (list "enter" "space") }}
       - commands: ['wm-enable-binding-mode --name picker-{{ $sig }}', 'wm-enable-binding-mode --name picker']
         bindings: [{{ range $i, $k := $keys }}{{ if $i }}, {{ end }}'{{ $k }}'{{ end }}]
 {{- end }}
-{{- range untilStep 1 10 1 }}
-      - commands: ['wm-enable-binding-mode --name picker-{{ . }}', 'wm-enable-binding-mode --name picker']
-        bindings: ['{{ . }}']
+{{- $letters := list "l" "w" "d" "r" "s" "t" "x" "c" "v" }}
+{{- range $i := untilStep 1 10 1 }}
+      - commands: ['wm-enable-binding-mode --name picker-{{ $i }}', 'wm-enable-binding-mode --name picker']
+        bindings: ['{{ $i }}', '{{ index $letters (sub $i 1) }}']
 {{- end }}
       - commands: ['wm-disable-binding-mode --name picker']
         bindings: ['escape']
@@ -297,3 +305,23 @@ binding_modes:
       - commands: ['wm-disable-binding-mode --name picker-{{ . }}']
         bindings: ['escape']
 {{- end }}
+
+  # Snap mode (alt+p). One key = one placement, then straight back to the normal
+  # keybindings — a mode rather than nine alt+<key> globals so the mnemonics stay
+  # free for everything else. The key block mirrors the screen:
+  #   u i     top-left / top-right          h l   left half / right half
+  #   j k     bottom-left / bottom-right    y n   top half  / bottom half
+  #   m       full working area             t     back to tiling
+  - name: 'snap'
+    keybindings:
+{{- range $key, $zone := dict
+      "u" "tl" "i" "tr" "j" "bl" "k" "br"
+      "h" "lh" "l" "rh" "y" "th" "n" "bh"
+      "m" "full" }}
+      - commands: ['shell-exec --hide-window node %USERPROFILE%/.glzr/glazewm/snap.js {{ $zone }}', 'wm-disable-binding-mode --name snap']
+        bindings: ['{{ $key }}']
+{{- end }}
+      - commands: ['set-tiling', 'wm-disable-binding-mode --name snap']
+        bindings: ['t']
+      - commands: ['wm-disable-binding-mode --name snap']
+        bindings: ['escape']
