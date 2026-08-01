@@ -620,6 +620,27 @@ config.keys = {
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(enter_copy_mode),
     },
+    -- CTRL-SHIFT-G: proof-of-concept floating overlay -- spawns a small pane
+    -- painted solid red, titled so the GlazeWM window_rules match on it and
+    -- float+center it instead of tiling it into the grid. Primitive for the
+    -- NxN launchpad: this is one cell of that grid, drawn and positioned.
+    {
+        key = "g",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function()
+            local script = "printf '\\033]0;wezterm-launchpad\\007'; clear; "
+                .. "printf '\\e[41m'; rows=$(tput lines); cols=$(tput cols); "
+                .. "for i in $(seq 1 \"$rows\"); do printf '\\e[%d;1H%*s' \"$i\" \"$cols\" ''; done; "
+                .. "printf '\\e[0m'; read -n1"
+            local argv
+            if is_windows then
+                argv = { "wsl.exe", "-d", WSL_DISTRO, "-e", "bash", "-lc", script }
+            else
+                argv = { "sh", "-lc", script }
+            end
+            wezterm.mux.spawn_window({ args = argv, width = 30, height = 14 })
+        end),
+    },
     -- CTRL-SHIFT-T: spawn tab next to the current one instead of at the end.
     {
         key = "t",
