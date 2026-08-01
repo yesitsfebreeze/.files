@@ -620,6 +620,21 @@ config.keys = {
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(enter_copy_mode),
     },
+    -- CTRL-SHIFT-T: spawn tab next to the current one instead of at the end.
+    {
+        key = "t",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(window, pane)
+            local mux_window = window:mux_window()
+            for _, item in ipairs(mux_window:tabs_with_info()) do
+                if item.is_active then
+                    mux_window:spawn_tab({})
+                    window:perform_action(act.MoveTab(item.index + 1), pane)
+                    return
+                end
+            end
+        end),
+    },
     -- CTRL-V: native paste. Sends the Windows clipboard as a bracketed paste, which is
     -- how text reaches both the shell and a running program (Claude, nvim). Fast, no
     -- subprocess -- and it's what makes Wispr dictation (clipboard + paste) land here.
