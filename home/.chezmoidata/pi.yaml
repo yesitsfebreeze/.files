@@ -1,0 +1,72 @@
+# Single source of truth for the pi agent stack: the extension workspace checkout
+# and pi's own synced settings. The `pi` BINARY is installed from packages.yaml
+# (npm) by run_onchange_install-packages.sh; everything around it lives here and is
+# applied by run_onchange_after_install-pi.sh. Editing this file re-triggers that
+# installer on the next apply.
+#
+# Linux/WSL is the target; macOS works identically (git + nvm node + npm). Windows
+# is reached through WSL like every other tool here — pi is a terminal agent, so
+# there is nothing to install on the Windows host itself (see .chezmoiignore).
+
+pi:
+    # Workspace checkout, relative to $HOME. Each package below is its own git repo
+    # cloned side by side in here; the root is not a package. `hub` is the only
+    # entry pi loads, and it watches this directory — a package dir appearing here
+    # is registered automatically, so nothing else needs installing.
+    workspace: dev/_pi_extensions
+
+    # Package repos are <owner>/<repo_prefix><name> on GitHub.
+    owner: yesitsfebreeze
+    repo_prefix: pi-
+
+    # The one package pi installs; loads all the others from the workspace.
+    hub: hub
+
+    # Extension sources installed into pi's settings alongside the workspace hub.
+    # Published to npm, so they are pulled by pi itself, not cloned here.
+    npm_packages:
+        - pi-mcp-adapter                    # MCP gateway — connect/call MCP servers from pi
+        - "@vanillagreen/pi-claude-bridge"  # claude-bridge provider (Claude via the local claude CLI)
+
+    # Synced pi preferences, deep-merged into ~/.pi/agent/settings.json with these
+    # values winning. A merge, not a copy: pi writes runtime keys into the same file
+    # (lastChangelogVersion, the resolved `packages` array), and those must survive.
+    settings:
+        defaultProvider: claude-bridge
+        defaultModel: claude-opus-5
+        theme: terminal
+        language: English
+        quietStartup: true
+        hideThinkingBlock: true
+        defaultThinkingLevel: high
+
+    # The workspace packages. One dir per repo; order is cosmetic (hub loads them
+    # all). Adding a name here clones it on the next apply.
+    packages:
+        - bridge-guard    # claude-bridge resilience — stall recovery, rate-limit backoff
+        - crawl           # focused research crawler + topic knowledge base
+        - crew            # multi-agent crew orchestration
+        - doctor          # /doctor — update, heal, audit for operational drift
+        - file-awareness  # external-edit awareness across sessions
+        - gantt           # routine board — file-per-ticket, computed views, loop
+        - hub             # the one extension pi installs (see .pi.hub above)
+        - justdown        # the .jd recipe library as a playbook over the jd CLI
+        - kern            # durable cross-session memory glue (needs the `kern` binary)
+        - launch          # background job manager
+        - library         # many books on one topic distilled into one cited book
+        - mem             # MCP server — process memory introspection, ptrace, valgrind
+        - ollama-models   # Ollama model auto-discovery + endpoint healing; owns pi-launch.sh
+        - ontology        # typed world model over kern
+        - persona         # base operating character + the ladder tool-override chain
+        - reflex          # surface economist — doctrine, trigger table, cold-tool band
+        - rigor           # post-pass verification against the repo's own checks
+        - session-ledger  # terminal-session registry + resume
+        - splinter        # per-project function-index glue (needs the `splinter` server)
+        - todo            # session todo state + dots timeline
+        - tracking        # GitHub issue capture + gh-issues playbook
+        - trunk           # worktree experiment isolation + write-scope sandboxing
+        - tui-design      # terminal-UI design doctrine and the fix pass (skills)
+        - ui              # unified TUI — editor stack, chrome, starship widget
+        - until           # one loop surface — goals, schedules, paced timeboxes
+        - walkie-talkie   # the one channel — session↔session, browser drops, dashboard
+        - windmill-gate   # pre-commit gate refusing unrecorded decisions
