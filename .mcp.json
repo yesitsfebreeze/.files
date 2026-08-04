@@ -5,6 +5,15 @@
         "mcp"
       ],
       "command": "kern"
+    },
+    "ctrl": {
+      "command": "ctrl",
+      "args": [
+        "mcp",
+        "/home/feb/dev/.files/.mcp-ctrl/graph.json"
+      ],
+      "directTools": true,
+      "lifecycle": "lazy-keep-alive"
     }
   }
 }
