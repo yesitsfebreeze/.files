@@ -32,11 +32,11 @@ gaps:
   scale_with_dpi: false
   inner_gap: '8px'
   outer_gap:
-    # Top gap lives inside the Zebar window: the bar is 42px (8 + 26px bubble
-    # row + 8, vertically centered), so the bar's own bottom padding IS the
-    # bubble→window spacing — 8px, same as every other gap. A top gap here
-    # would double it.
-    top: '0px'
+    # On Windows Zebar reserves screen space like a taskbar, so the work area
+    # already starts below the bar — top gap is just the visual 8px.
+    # On macOS Zebar cannot reserve space, so the top gap must include the bar
+    # height (28px) + the visual gap (8px) = 36px.
+    top: '{{ if eq .chezmoi.os "darwin" }}36px{{ else }}8px{{ end }}'
     right: '8px'
     bottom: '8px'
     left: '8px'

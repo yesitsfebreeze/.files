@@ -47,9 +47,10 @@ function monitorFor(monitors, win) {
 	);
 }
 
-// Working area minus outer gaps: the box every zone is carved out of. workingRect.top is
-// already below the bar (the bar docks to the edge), so no top gap is subtracted here —
-// same reasoning as outer_gap.top: '0px' in the config.
+// Working area minus outer gaps: the box every zone is carved out of.
+// On Windows workingRect.top is already below the bar (Zebar reserves space).
+// On macOS it's 0 — the bar is just an overlay — so we add the bar height.
+const BAR_H = 28;
 function areaOf(mon) {
 	const r = mon.workingRect || {
 		left: mon.x,
@@ -57,11 +58,12 @@ function areaOf(mon) {
 		right: mon.x + mon.width,
 		bottom: mon.y + mon.height,
 	};
+	const topOffset = r.top === 0 ? BAR_H + GAP : r.top + GAP;
 	return {
 		x: r.left + GAP,
-		y: r.top,
+		y: topOffset,
 		w: r.right - r.left - GAP * 2,
-		h: r.bottom - r.top - GAP,
+		h: r.bottom - r.top - GAP * 2,
 	};
 }
 
