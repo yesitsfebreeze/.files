@@ -19,6 +19,7 @@ require("lazy").setup({
         { import = "plugins" },
     },
     defaults = { lazy = false, version = false },
+    rocks = { hererocks = false },
     install = { colorscheme = { "base16-gruvbox-dark-hard" } },
     checker = { enabled = true, notify = false },
     change_detection = { notify = false },

@@ -52,7 +52,7 @@ return {
 
             -- Install + auto-enable. bashls/pyright/rust_analyzer use defaults.
             require("mason-lspconfig").setup({
-                ensure_installed = { "lua_ls", "bashls", "pyright", "rust_analyzer" },
+                ensure_installed = { "lua_ls", "bashls", "pyright", "rust_analyzer", "tailwindcss" },
             })
         end,
     },
