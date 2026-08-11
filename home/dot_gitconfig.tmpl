@@ -18,6 +18,16 @@
     helper =
     helper = !gh auth git-credential
 
+# The pi-extensions workspace (run_onchange_after_install-pi.sh) clones
+# yesitsfebreeze's private pi-* repos into a plain, non-chezmoi-managed
+# directory. Without an override it hits the same wrong-account 404 as a bare
+# `git clone` against a yesitsfebreeze repo would: gh's *active* account can be
+# sh-diw, which can't see them. `includeIf` scopes the yesitsfebreeze-forced
+# credential helper to that whole directory tree — it applies to every
+# extension's own nested clone too, not just the workspace root.
+[includeIf "gitdir:~/dev/_pi_extensions/"]
+    path = ~/.config/git/pi-extensions.gitconfig
+
 [core]
     pager = delta
     # Linux/WSL/macOS only — chezmoi never runs on the Windows host, so `input`

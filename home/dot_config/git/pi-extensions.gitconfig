@@ -1,0 +1,6 @@
+# Included via [includeIf "gitdir:~/dev/_pi_extensions/"] in ~/.gitconfig.
+# Forces GitHub auth to yesitsfebreeze regardless of gh's active account, same
+# trick as .files' repo-local credential helper — see [[github-two-accounts]].
+[credential "https://github.com"]
+    helper =
+    helper = "!f() { if [ \"$1\" = get ]; then echo username=yesitsfebreeze; echo \"password=$(gh auth token --user yesitsfebreeze)\"; fi; }; f"
