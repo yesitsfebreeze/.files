@@ -434,6 +434,38 @@ if [ -n "$pi_real" ] && [ -x "$pi_real" ] && [ ! -e "$HOME/.local/bin/pi" ]; the
     ln -sfn "$pi_real" "$HOME/.local/bin/pi"
 fi
 
+# tree-sitter CLI — nvim-treesitter's `:TSInstall` shells out to `tree-sitter build`
+# (the standalone CLI), but Homebrew's `tree-sitter` formula ships only the shared
+# library, no `tree-sitter` binary. The CLI is published to npm as tree-sitter-cli.
+# `npm install -g` puts it in npm's global bin (`npm prefix -g`/bin) — which for
+# nvm node is a version-dir that only bash reaches via nvm.sh, so we also symlink
+# it into ~/.local/bin (like node/npm/npx) for nu and other shells. Idempotent:
+# skipped once the binary resolves on PATH. Needs node/npm: warns and skips if absent.
+if command -v tree-sitter >/dev/null 2>&1; then
+    :
+elif ! command -v npm >/dev/null 2>&1; then
+    warn "tree-sitter-cli: npm not found; install Node.js/npm and re-run"
+else
+    log "install tree-sitter-cli (npm global)"
+    # NOTE: unlike pi, tree-sitter-cli MUST run its postinstall (install.js) — it
+    # fetches the native binary. --ignore-scripts leaves a broken JS launcher that
+    # throws on every run, so pass --allow-scripts for this package explicitly.
+    npm install -g --allow-scripts=tree-sitter-cli tree-sitter-cli >/dev/null 2>&1 \
+        && log "  installed tree-sitter-cli" \
+        || warn "  could not install tree-sitter-cli via npm"
+    # Expose on PATH in every shell: resolve the real binary via npm's global bin
+    # (the source of truth for where -g installs land — NOT dirname(node), which on
+    # brew node points at the Cellar, not /opt/homebrew/bin where npm -g lands).
+    npm_bin="$(npm prefix -g 2>/dev/null)"
+    [ -n "$npm_bin" ] && npm_bin="$npm_bin/bin"
+    ts_real="$npm_bin/tree-sitter"
+    if [ -x "$ts_real" ] && [ "$ts_real" != "$HOME/.local/bin/tree-sitter" ] \
+        && [ ! -e "$HOME/.local/bin/tree-sitter" ]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -sfn "$ts_real" "$HOME/.local/bin/tree-sitter"
+    fi
+fi
+
 # playwright chromium deps — headless chromium needs a set of system libs
 # (libnss3, libatk, libgbm, …) that aren't pulled in by the package lists. The
 # `playwright install-deps` helper resolves and apt-installs exactly that set, so
