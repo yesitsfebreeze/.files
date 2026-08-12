@@ -188,11 +188,11 @@ else
 end
 config.default_cursor_style = "BlinkingBlock"
 
--- Font: DepartureMono Nerd Font (installed via packages.yaml `nerd-font`);
+-- Font: CaskaydiaCove Nerd Font (installed via packages.yaml `nerd-font`);
 -- the rest are fallbacks.
 config.font = wezterm.font_with_fallback({
-    "DepartureMono Nerd Font",
-    "Departure Mono",
+    "CaskaydiaCove Nerd Font",
+    "CaskaydiaCove NF",
     "JetBrainsMono Nerd Font",
     "Cascadia Code",
     "Menlo",

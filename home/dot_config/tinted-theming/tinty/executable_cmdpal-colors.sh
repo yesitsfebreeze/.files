@@ -23,7 +23,7 @@
 #   BackdropOpacity           95          WezTerm's window_background_opacity = 0.95, in percent
 #
 # Font is deliberately absent: CmdPal exposes no font setting anywhere in its settings
-# model, so DepartureMono cannot reach it. The only lever would be a system-wide Segoe UI
+# model, so CaskaydiaCove cannot reach it. The only lever would be a system-wide Segoe UI
 # FontSubstitutes override, which repaints every Windows surface — not a theme hook's job.
 
 ARTIFACTS="$HOME/.local/share/tinted-theming/tinty/artifacts"

@@ -206,9 +206,9 @@ packages:
       dnf: ""                    # one-time Input-Monitoring grant + driver-extension approval in Settings.
 
     - name: nerd-font
-      brew: font-departure-mono-nerd-font   # cask
+      brew: font-caskaydia-cove-nerd-font   # cask
       cask: true
       apt: ""               # not packaged; installed via nerd-fonts release fallback
-      pacman: ""            # AUR-only (otf-departure-mono-nerd); use release fallback
+      pacman: ""            # AUR-only (otf-cascadia-code-nerd); use release fallback
       dnf: ""               # not packaged; release fallback
-      nerdfont_asset: DepartureMono         # nerd-fonts release zip basename -> download fallback source
+      nerdfont_asset: CaskaydiaCove         # nerd-fonts release zip basename -> download fallback source
