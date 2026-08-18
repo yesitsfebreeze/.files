@@ -82,7 +82,6 @@ if [ -n "$scheme" ]; then
         tinty apply "$scheme" >/dev/null 2>&1 || true
     fi
     [ -x "$tinty_cfg/wezterm-colors.sh" ] && bash "$tinty_cfg/wezterm-colors.sh" "$scheme" || true
-    [ -x "$tinty_cfg/zebar-colors.sh" ]   && bash "$tinty_cfg/zebar-colors.sh" "$scheme" || true
 fi
 
 # pass (password-store) — installing the binary does not create a store; that
