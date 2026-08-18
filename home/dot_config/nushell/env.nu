@@ -1,5 +1,4 @@
-# env.nu — evaluated before config.nu, launched explicitly by WezTerm so this is
-# the single env file used on every OS.
+# env.nu — evaluated before config.nu, launched explicitly by WezTerm.
 
 # PATH <-> list conversions — required because we override the stock env.nu.
 $env.ENV_CONVERSIONS = {
