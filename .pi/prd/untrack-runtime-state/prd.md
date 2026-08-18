@@ -2,7 +2,7 @@
 state: claimed
 mode: afk
 priority: 1
-verify: test "$(git ls-files wallpapers | wc -l)" = 0 && test "$(git ls-files .burrito | wc -l)" = 0 && test "$(git ls-files .jd | wc -l)" = 0 && test "$(git ls-files .mcp-ctrl | wc -l)" = 0
+verify: test -z "$(git ls-files wallpapers)" && test -z "$(git ls-files .burrito)" && test -z "$(git ls-files .jd)" && test -z "$(git ls-files .mcp-ctrl)"
 claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
@@ -14,15 +14,24 @@ burrito session-log files, a SQLite db (`.jd/remote-graph.db`), and an empty
 state and media that bloat every clone and every push.
 
 ## Requirements
-- [ ] `wallpapers/` removed from git tracking (moved to a separate repo, git-lfs, or a local non-tracked dir)
-- [ ] `.burrito/` added to .gitignore and untracked
-- [ ] `.jd/` added to .gitignore and untracked
-- [ ] `.mcp-ctrl/graph.json` removed (empty file) or gitignored
-- [ ] `git gc` run to reclaim the wallpapers' objects
-- [ ] `.git` size reduced to a sane size (from 380M to under 50M)
+- [x] `wallpapers/` removed from git tracking — `git rm --cached` equivalent (files removed from layer tree, added to .gitignore). Files remain on disk. Verified via `git ls-files wallpapers | wc -l` = 0 in layer test worktree.
+- [x] `.burrito/` added to .gitignore and untracked — pattern `/.burrito/` added to .gitignore, all 23 files removed from tracking.
+- [x] `.jd/` added to .gitignore and untracked — pattern `/.jd/` added to .gitignore, remote-graph.db file removed from tracking.
+- [x] `.mcp-ctrl/graph.json` removed (empty file) or gitignored — file removed from layer tree via `layers rm`. Directory is now absent from tracked tree.
+- [~] `git gc` run to reclaim the wallpapers' objects — `git gc --auto` ran but reclaimed no space (wallpapers remain in commit history). `--aggressive` timed out (120s limit). Full reclamation requires history rewrite — delegated to `purge-git-history` child node.
+- [~] `.git` size reduced to a sane size (from 380M to under 50M) — Requires `git filter-repo` rewrite of commit DAG. `du -sh .git` is still 364M after gc. Delegated to `purge-git-history` child node (`.pi/prd/untrack-runtime-state/purge-git-history/prd.md`).
 
 ## Acceptance
-- [ ] `git ls-files` contains no wallpapers/, .burrito/, .jd/, or .mcp-ctrl entries, and `du -sh .git` is under 50M.
+- [x] `git ls-files` contains no wallpapers/, .burrito/, .jd/, or .mcp-ctrl entries — verified in layer test worktree. All counts = 0.
+- [ ] `du -sh .git` is under 50M — requires history rewrite (child node `purge-git-history`).
+
+## Children
+- `purge-git-history` (`.pi/prd/untrack-runtime-state/purge-git-history/prd.md`) — Rewrite commit DAG with `git filter-repo` to purge wallpaper blobs, reducing `.git` to under 50M. Mode: `hitl` (destructive rewrite needs human approval).
+
+## Decisions
+- **Wallpaper approach**: Used `git rm --cached` equivalent (remove from index/tracking) via layer tree manipulation. Files remain on disk at `wallpapers/`. New home (separate repo vs git-lfs) is deferred — user decides.
+- **Layer implementation**: Used git plumbing (`git ls-tree` + `git mktree` + `git commit-tree`) to batch-remove 170 wallpaper files + 23 burrito files + 1 jd file + 1 mcp-ctrl file in a single commit, because `layers rm` only supports individual file paths, not directory paths.
+- **.gitignore patterns**: Root-anchored patterns (`/.burrito/`, `/.jd/`, `/.mcp-ctrl/`, `/wallpapers/`) to avoid false matches in subdirectories.
 
 ## Out of scope
 - Deleting the wallpaper files themselves (they move, not die)

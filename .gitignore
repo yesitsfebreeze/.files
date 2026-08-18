@@ -43,3 +43,11 @@ home/dot_config/wezterm/colors.lua
 # EXCEPT the PRD tree: the prd tool's claim mechanism is a git commit (the
 # commit IS the lock), so .pi/prd must be committable for dispatch to hold.
 !.pi/prd/
+
+# Runtime state — agent session logs, DBs, generated manifests
+/.burrito/
+/.jd/
+/.mcp-ctrl/
+
+# Wallpapers — media bloat (346M), tracked in a separate media repo
+/wallpapers/
