@@ -24,9 +24,8 @@ default-scheme = "base16-gruvbox-dark-hard"
 shell = "bash -c '{}'"
 
 # Force the background to this hex regardless of the active scheme's base00. The
-# wezterm-colors.sh / zebar-colors.sh / cmdpal-colors.sh hooks read this key and
-# substitute it for base00. Leave blank or remove the value to track the scheme's
-# own background.
+# wezterm-colors.sh hook reads this key and substitutes it for base00. Leave blank
+# or remove the value to track the scheme's own background.
 background-override = ""
 
 
