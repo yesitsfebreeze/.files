@@ -187,9 +187,7 @@ export def _theme_bg_list [] {
 
 # _theme_bg_persist: write the override hex ("" clears it) into BOTH the chezmoi
 # source and the live config (source alone would wait for an apply; live alone
-# gets clobbered by the next one), then regenerate the derived artifacts the way
-# the run_onchange hook would (colors.lua hot-reloads wezterm, zebar and the
-# Command Palette restart).
+# gets clobbered by the next one), then regenerate colors.lua (hot-reloads wezterm).
 def _theme_bg_persist [hex: string] {
     let live = (_theme_cfg_file)
     let src = (try { ^chezmoi source-path $live | str trim } catch { "" })
@@ -200,8 +198,6 @@ def _theme_bg_persist [hex: string] {
     }
     let gen = ($env.HOME | path join ".config" "tinted-theming" "tinty")
     try { ^($gen | path join "wezterm-colors.sh") e> /dev/null }
-    try { ^($gen | path join "zebar-colors.sh") e> /dev/null }
-    try { ^($gen | path join "cmdpal-colors.sh") e> /dev/null }
 }
 
 # _theme_catalog: every scheme id tinty can apply — the official base16/base24
