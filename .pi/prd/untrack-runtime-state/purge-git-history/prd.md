@@ -1,6 +1,6 @@
 ---
 state: open
-mode: hitl           # needs human: history rewrite is destructive — user must approve
+mode: afk            # hitl cleared: user approved the rewrite (2026-08-18)
 priority: 0
 verify: test "$(du -s .git | awk '{print $1}')" -lt 51200
 ---
@@ -25,3 +25,6 @@ Purpose: The repo's `.git` is 364M, dominated by wallpaper binary blobs (346M) i
 
 ## Decisions
 - Approach: `git filter-repo` was chosen over `git filter-branch` because it's faster (written in C+Python), safer (no shell escaping issues), and already installed (`/opt/homebrew/bin/git-filter-repo`, v2.47.0).
+- **User approved the rewrite (2026-08-18)** — "Approve the rewrite". Destructive: all commit hashes change, re-clone + force-push needed.
+- **Wallpaper home (user decision)**: separate repo / git-lfs — follow-on work outside this node.
+- **Sequencing**: the purge runs AFTER de-windows + installer land (it rewrites the whole DAG; running it mid-flight would invalidate their layers). The conductor runs it directly on the live repo — it cannot run in a layer.
