@@ -405,8 +405,8 @@ fi
 # itself in a loop; in the node bin dir the two can't collide.
 #
 # Idempotent: guard on that node-bin target, never on `command -v pi` — ~/.local/
-# bin/pi is the wrapper, and on WSL a Windows-global `pi` npm shim also leaks onto
-# PATH via interop (/mnt/c/.../npm/pi); either would fool the guard into skipping
+# bin/pi is the wrapper, and a global `pi` npm shim could also leak onto
+# PATH via another install; either would fool the guard into skipping
 # the install while leaving nothing runnable behind it.
 pi_npm_pkg="{{ range .packages }}{{ if hasKey . "npm" }}{{ .npm }}{{ end }}{{ end }}"
 pi_real=""
