@@ -1,8 +1,9 @@
 ---
-state: open
+state: claimed
 mode: afk
 priority: 2
 verify: test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html && test "$(git ls-files | grep -c '^\.splinter/')" = 0
+claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
 # Remove build/codegen systems
