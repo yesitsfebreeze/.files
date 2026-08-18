@@ -5,11 +5,9 @@
 # reading the scheme's own hex values and painting them with truecolor escapes.
 #
 # It deliberately does NOT `tinty apply`. The old apply-on-focus preview retinted
-# the real terminal on every scroll, which fired tinty's hook chain — and that
-# chain kill+relaunches Zebar across the WSL->Windows boundary on every focus
-# (a "browser refresh" per keystroke that stalled the picker). The canonical apply
-# now happens exactly once, on Enter, in theme.nu. Here we draw the swatch, plus
-# one OSC 11 escape to live-retint just the terminal background (see below) —
+# the real terminal on every scroll, which fired tinty's hook chain. The canonical
+# apply now happens exactly once, on Enter, in theme.nu. Here we draw the swatch,
+# plus one OSC 11 escape to live-retint just the terminal background (see below) —
 # hook-free, and theme.nu re-asserts the active background when the picker closes.
 set -u
 
