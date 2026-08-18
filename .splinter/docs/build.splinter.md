@@ -1,2 +1,0 @@
-# splinter: docs/build.py
-
