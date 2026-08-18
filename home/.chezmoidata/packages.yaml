@@ -1,7 +1,7 @@
 # Single source of truth for what the dotfiles install: each entry maps one tool
 # to its package name per manager (empty string = not packaged there, installer
-# skips or falls back). Linux/WSL is the target; macOS via Homebrew; Windows boots
-# into WSL. Editing this re-triggers the run_onchange installer on next apply.
+# skips or falls back). Linux is the target; macOS via Homebrew.
+# Editing this re-triggers the run_onchange installer on next apply.
 
 packages:
     - name: burrito       # terminal multiplexer (daemon + 9x9 grid nav, tool overlays), shell-side
