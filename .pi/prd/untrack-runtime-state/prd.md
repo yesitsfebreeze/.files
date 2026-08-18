@@ -1,8 +1,9 @@
 ---
-state: open
+state: claimed
 mode: afk
 priority: 1
 verify: test "$(git ls-files wallpapers | wc -l)" = 0 && test "$(git ls-files .burrito | wc -l)" = 0 && test "$(git ls-files .jd | wc -l)" = 0 && test "$(git ls-files .mcp-ctrl | wc -l)" = 0
+claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
 # Untrack runtime state and repo bloat
