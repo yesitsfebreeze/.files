@@ -1,9 +1,8 @@
 # `opacity`: set the WezTerm window opacity LIVE, as a per-window config override —
 # nothing is persisted (window_opacity in wezterm.lua stays the startup default).
-# The value travels as an OSC 1337 SetUserVar off the pty (works through the
-# WSL→Windows host, same route as `copymode`); wezterm.lua's user-var-changed
-# handler applies it via set_config_overrides and rebuilds the translucent tab bar
-# at the new alpha.
+# The value travels as an OSC 1337 SetUserVar off the pty; wezterm.lua's
+# user-var-changed handler applies it via set_config_overrides and rebuilds the
+# translucent tab bar at the new alpha.
 #   opacity        -> tv picker: 0%–100% in 5% steps, `custom` prompts for a value
 #   opacity 37     -> set directly (bare number or "37%" both work)
 
