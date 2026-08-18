@@ -59,8 +59,8 @@ if [ -x "$tinty_cfg/gogh-to-base24.sh" ]; then
     bash "$tinty_cfg/gogh-to-base24.sh" || true
 fi
 
-# WezTerm colors.lua and Zebar theme.css are generated HERE, at apply time — not
-# on shell/WezTerm launch — and are NOT tracked in git (they used to be, and caused
+# WezTerm colors.lua is generated HERE, at apply time — not
+# on shell/WezTerm launch — and is NOT tracked in git (it used to be, and caused
 # cross-machine merge conflicts). The single tracked source of truth is the scheme
 # name in .chezmoidata/theme.toml, which chezmoi renders below. This is what makes a
 # `theme` switch on one machine propagate: that machine commits the new scheme name,
