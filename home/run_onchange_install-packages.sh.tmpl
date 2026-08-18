@@ -86,7 +86,7 @@ fi
 log "Package manager: $MGR"
 
 # apt/pacman/dnf all shell out to sudo. In environments without root or
-# passwordless sudo (CI, restricted shells) every per-package
+# passwordless sudo (CI, restricted shells, some WSL setups) every per-package
 # install would fail identically, spamming a misleading "could not install X via
 # $MGR (will try fallback)" for each one — even for apt-only tools that have no
 # fallback. Detect that once here and skip the doomed loop; the Linux GitHub-
@@ -405,8 +405,8 @@ fi
 # itself in a loop; in the node bin dir the two can't collide.
 #
 # Idempotent: guard on that node-bin target, never on `command -v pi` — ~/.local/
-# bin/pi is the wrapper, and a global `pi` npm shim could also leak onto
-# PATH via another install; either would fool the guard into skipping
+# bin/pi is the wrapper, and on WSL a Windows-global `pi` npm shim also leaks onto
+# PATH via interop (/mnt/c/.../npm/pi); either would fool the guard into skipping
 # the install while leaving nothing runnable behind it.
 pi_npm_pkg="{{ range .packages }}{{ if hasKey . "npm" }}{{ .npm }}{{ end }}{{ end }}"
 pi_real=""
@@ -486,14 +486,30 @@ if [ "$(uname -s)" = "Linux" ] && [ "$MGR" = apt ]; then
     fi
 fi
 
-# docker — install Docker Engine natively on apt-systems; add Docker's official
-# apt repo, install the engine + CLI + compose plugin, enable the service, and
-# add the user to the docker group. macOS brew does not ship docker as a formula;
-# install Docker.dmg manually. Idempotent: skipped once `docker` resolves.
+# docker — special-cased: "windows ?? local". On WSL where a Windows Docker
+# Desktop CLI is reachable (docker.exe on PATH), we do NOT install a second engine
+# inside the distro — we shim `docker` (+ compose) to the Windows binary, which
+# talks to the Desktop engine over the shared socket. When Desktop's WSL
+# integration is already mounted, `docker` is on PATH and this whole block is
+# skipped. Off WSL (or no Windows Docker), install Docker Engine natively: add
+# Docker's official apt repo, install the engine + CLI + compose plugin, enable
+# the service, and add the user to the docker group. Idempotent: skipped once
+# `docker` resolves. Only scripted for apt/brew/pacman/dnf via the lists above;
+# the native path here is apt-only (Debian/Ubuntu, the WSL/Linux target).
 docker_in_packages="{{ range .packages }}{{ if eq .name "docker" }}yes{{ end }}{{ end }}"
 if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
-    if [ "$MGR" = apt ]; then
-        log "install Docker Engine natively (Docker official apt repo)"
+    is_wsl=0
+    grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null && is_wsl=1
+    win_docker="$(command -v docker.exe 2>/dev/null || true)"
+    if [ "$is_wsl" = 1 ] && [ -n "$win_docker" ]; then
+        log "docker: WSL + Windows Docker Desktop detected -> shim to $win_docker"
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$win_docker" "$HOME/.local/bin/docker"
+        win_compose="$(command -v docker-compose.exe 2>/dev/null || true)"
+        [ -n "$win_compose" ] && ln -sf "$win_compose" "$HOME/.local/bin/docker-compose"
+        log "  docker -> Windows Docker Desktop (windows)"
+    elif [ "$MGR" = apt ]; then
+        log "install Docker Engine natively (Docker official apt repo) (local)"
         if sudo install -m 0755 -d /etc/apt/keyrings \
             && curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
                 | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg \
@@ -504,8 +520,11 @@ if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
                 | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
             if sudo apt-get update -y >/dev/null 2>&1 \
                 && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null 2>&1; then
+                # systemd-managed where available (Ubuntu 24.04 WSL has systemd); else
+                # fall back to the SysV service wrapper. Neither failing is fatal.
                 sudo systemctl enable --now docker >/dev/null 2>&1 \
                     || sudo service docker start >/dev/null 2>&1 || true
+                # rootless-friendly: run docker without sudo after the next login.
                 sudo usermod -aG docker "$USER" >/dev/null 2>&1 || true
                 log "  installed docker $("$(command -v docker || echo docker)" --version 2>/dev/null | sed -n '1p')"
                 warn "  log out/in (or 'newgrp docker') for the docker group to take effect"
@@ -521,9 +540,12 @@ if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
 fi
 
 # docker buildx — the modern (BuildKit) builder, shipped as a CLI plugin. The
-# native apt path above already pulls docker-buildx-plugin. For other install
-# methods, drop the prebuilt Linux buildx binary into the per-user CLI-plugins dir.
-# Idempotent: skipped once `docker buildx` works.
+# native apt path above already pulls docker-buildx-plugin, but the WSL + Docker
+# Desktop case does NOT: Desktop only injects a Linux `docker` CLI, no Linux
+# buildx, so `docker build` silently falls back to the deprecated legacy builder
+# (which SIGBUS-crashes on memory-pressured WSL2). So whenever `docker` resolves
+# but `docker buildx` does not, drop the prebuilt Linux buildx binary into the
+# per-user CLI-plugins dir. Idempotent: skipped once `docker buildx` works.
 if [ -n "$docker_in_packages" ] && command -v docker >/dev/null 2>&1 \
     && ! docker buildx version >/dev/null 2>&1; then
     case "$(uname -m)" in
