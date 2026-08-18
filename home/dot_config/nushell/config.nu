@@ -538,7 +538,7 @@ $env.config.hooks.pre_prompt = (
 # no-op when no menu is open, then runs ours), so completion menus still work.
 #
 # use_kitty_protocol stays OFF: with it on, reedline fires the kitty support query
-# twice at startup and the WSL2<->WezTerm PTY returns the reply too late to consume,
+# twice at startup and the WezTerm PTY returns the reply too late to consume,
 # so it leaks as `^[[?0u` above the prompt. The only thing kitty bought us was
 # telling Ctrl-Shift-R apart from Ctrl-R (shift is lost on control+letter); the
 # global picker now uses Alt-R, which is byte-distinct without kitty.
