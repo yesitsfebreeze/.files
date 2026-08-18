@@ -43,7 +43,7 @@ triple the maintenance surface of the configs they generate.
   task definition, not a runtime reference to the codegen.
 
 ## Acceptance
-- [ ] `test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html` passes, `git ls-files | grep -c '^\.splinter/'` is 0, and no tracked file outside `.pi/prd/` references `docs/index.html` (covers requirement 4 — strengthened by conductor after the first collect missed the stale pointer).
+- [x] `test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html` passes, `git ls-files | grep -c '^\.splinter/'` is 0, and no tracked file outside `.pi/prd/` references `docs/index.html` (covers requirement 4 — strengthened by conductor after the first collect missed the stale pointer). Marked [x] by conductor: the strengthened verify passed against the merge result at collect (e8d5cc59).
 
 ## Out of scope
 - The "splinter" pi extension referenced in mirror-config-to-windows.sh (a different tool, unrelated to the codegen)
