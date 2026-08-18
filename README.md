@@ -1,6 +1,6 @@
 # Dotfiles
 
-A Linux dev environment — native, inside WSL on Windows, or on macOS — managed
+A Linux dev environment — native on Linux or macOS — managed
 with [chezmoi](https://chezmoi.io). One command installs the tools and writes
 every config into place.
 
