@@ -62,7 +62,17 @@ Worker: worker-5, layer `prd-de-windows`.
 ### Acceptance
 - [x] `just gate` passes — __26 tests passed, 0 failed__
 - [~] `chezmoi apply` works — cannot test in this environment (no chezmoi binary); verified by just gate + diff-based review
-- [x] grep for Windows-specific terms (windows|wsl|winget|powertoys|glazewm|zebar|wp-stat-overlay|cmdpal) over `home/` — verified via layer diff; all references removed from in-scope files
+- [x] grep for Windows-specific terms (windows|wsl|winget|powertoys|glazewm|zebar|wp-stat-overlay|cmdpal) over `home/` — verified via full-tree grep; only intentional refs remain (wezterm.lua "SUPER is the Windows/Cmd key" keyboard terminology, README's "removed" description)
+
+### Conductor follow-up (post-merge, commit 7cc1962)
+The full-tree grep found stale references the layer diff missed; fixed by the conductor:
+- `justfile` — removed dead `wm` recipe (revived GlazeWM/Zebar on macOS; apps deleted) + its `@just wm` call in `push`
+- `home/.chezmoiignore` — stale Zebar/GlazeWM comments + dead `.glzr/zebar/custom-topbar/theme.css` ignore entry removed
+- `home/dot_config/television/exact_cable/theme.toml` — "wezterm/zebar hooks" → "tinty's hooks"
+- `home/dot_config/nushell/finder.nu` — "NOT Windows cmd/PowerShell" contrast comment trimmed
+- `home/dot_gitconfig.tmpl` — stale "chezmoi never runs on the Windows host" clause removed
+- `home/.chezmoidata/packages.yaml` — "no Linux/Windows equivalent" → "no Linux equivalent"
+- `docs/concepts/finder.md` — "Linux/WSL2/macOS" → "Linux/macOS"
 
 ## Out of scope
 - The wallpaper content itself (handled by untrack-runtime-state)
