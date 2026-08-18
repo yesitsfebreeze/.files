@@ -18,7 +18,7 @@ triple the maintenance surface of the configs they generate.
 - [x] `.splinter/` directory deleted from the working tree and git
 - [x] `docs/build.py` deleted
 - [x] `docs/index.html` deleted (generated artifact)
-- [ ] No tracked file references the codegen system (paths under `.splinter/` or the splinter build) — REOPENED by conductor: `home/run_after_generate-shell-init.sh.tmpl` line 96 still points to the deleted `docs/index.html` ("see the README (or docs/index.html)"). Remove the stale parenthetical.
+- [x] No tracked file references the codegen system (paths under `.splinter/` or the splinter build)
 - [x] All generated configs in `home/` remain intact and functional (they are the source of truth now)
 
 ## Decisions
@@ -27,9 +27,8 @@ triple the maintenance surface of the configs they generate.
   stale documentation about a dead feature and referenced the splinter build
   (violating requirement 4).
 - Conductor re-opened requirement 4: `home/run_after_generate-shell-init.sh.tmpl`
-  line 96 still says "see the README (or docs/index.html)" — a stale pointer to
-  the deleted build output. Same class of reference as docs/README.md; the next
-  worker removes the parenthetical.
+  line 96 said "see the README (or docs/index.html)" — a stale pointer to
+  the deleted build output. The parenthetical was removed.
 - `docs/concepts/*.md` were kept: they are standalone markdown content files,
   not build system components.
 - The `.kern/intake/done/pi-surface-index.md` file references symbols from
