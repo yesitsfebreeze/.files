@@ -1,7 +1,6 @@
 # lazygit configuration. Theme colors use standard ANSI color names, so lazygit
-# is drawn from the terminal's live palette — the shell `theme` switcher (tinty /
-# tinted-shell) retints those ANSI colors and lazygit follows the active scheme.
-# No hardcoded hex, no templating.
+# is drawn from the terminal's live palette (gruvbox dark hard). No hardcoded
+# hex, no templating.
 gui:
   nerdFontsVersion: "3"
   scrollHeight: 2

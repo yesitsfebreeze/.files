@@ -388,7 +388,7 @@ def cf [file: path] {
 # clean; thereafter every real cd lists the new directory in an interactive shell.
 #
 # `stty sane` first: a cd may arrive via a full-screen TUI (television in `finder`,
-# zoxide, the theme picker) that crashed or exited without restoring cooked-mode
+# zoxide) that crashed or exited without restoring cooked-mode
 # output. With `onlcr` off, the table's `\n` line breaks drop a row without
 # returning to column 0 and the listing staircases. Restoring sane mode before we
 # print makes the auto-list immune to whatever left the terminal half-raw. It is
@@ -628,32 +628,6 @@ $env.config = (
     )
 )
 
-# Live theme: re-emit the last `theme` pick's palette so it persists into new shells.
-# A fresh shell only needs the OSC retint. `tinty init` would deliver it, but it first
-# spawns the tinty binary AND its hook chain (wezterm-colors.sh) — ~65ms — and those
-# hooks are no-ops on an unchanged scheme (they regenerate only on
-# a real `theme` switch). So source tinty's cached tinted-shell artifact directly: it is
-# the exact file `tinty init` sources ($TINTY_THEME_FILE_PATH), writing the same palette
-# OSC straight to the tty in a single bash spawn (~5ms). Fall back to `tinty init` only
-# when the artifact is absent (fresh machine, before the first apply). stdout is left
-# attached on purpose — that IS the retint. No-op until you pick a theme, so Gruvbox stands.
-if (is-terminal --stdout) {
-    let data = ($env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share"))
-    let palette = ($data | path join "tinted-theming" "tinty" "artifacts" "tinted-shell-scripts-file.sh")
-    if ($palette | path exists) {
-        try { ^bash $palette e> /dev/null }
-    } else if (which tinty | is-not-empty) {
-        try { ^tinty init e> /dev/null }
-    }
-    # tinted-shell's OSC 11 above sets bg to the scheme's base00; re-emit our
-    # background-override (if any) so it wins. stdout stays attached — that IS the retint.
-    let bg_override = ($nu.home-dir | path join ".config" "tinted-theming" "tinty" "bg-override.sh")
-    if ($bg_override | path exists) { try { ^bash $bg_override e> /dev/null } }
-}
-
-# `theme`: fuzzy picker over tinty's official base16/base24 catalog with apply-on-focus preview.
-source ~/.config/nushell/theme.nu
-
 # `opacity`: live WezTerm window-opacity override via OSC user-var + tv picker.
 source ~/.config/nushell/opacity.nu
 
@@ -689,10 +663,6 @@ def --env tv_remote [] {
     let channel = (_finder_pick_channel)
     if ($channel | is-empty) { return }
     if ($channel == "quicklist") { quicklist; return }
-    # `theme` produces scheme-id strings, not paths — routing them through _finder_open
-    # would `^$env.EDITOR base16-…` (open the id in nvim). Hand off to the `theme` command,
-    # which runs the same picker and applies the pick via _theme_commit (tinty apply).
-    if ($channel == "theme") { theme; return }
     # Same story for `opacity`: it produces a percentage, not a path — the `opacity`
     # command runs the picker and emits the WezTerm user-var override itself.
     if ($channel == "opacity") { opacity; return }

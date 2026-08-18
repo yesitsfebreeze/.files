@@ -1,8 +1,6 @@
 -- WezTerm: a plain cross-platform host terminal. Multiplexing lives in the shell
 -- via burrito, not here, so the setup is portable to any terminal. Colors come
--- from WezTerm's builtin "Gruvbox dark, hard (base16)" scheme as the base; the
--- shell's tinty `theme` switcher retints the ANSI palette live on top via
--- tinted-shell OSC sequences, so WezTerm follows your pick without templating.
+-- from WezTerm's builtin "Gruvbox dark, hard (base16)" scheme.
 
 local wezterm = require("wezterm")
 local act = wezterm.action
@@ -146,31 +144,11 @@ wezterm.on("window-config-reloaded", center_grid)
 -- actually changes, so these idle ticks are nearly free.
 wezterm.on("update-status", center_grid)
 
--- Colors from the active tinty theme, written by wezterm-colors.sh whenever the
--- theme changes. Falls back to the builtin gruvbox scheme if the file is absent
--- (e.g. first run before any theme has been picked).
-local ok, tinty_colors = pcall(dofile, wezterm.config_dir .. "/colors.lua")
--- Live preview: the tinty `theme` switcher rewrites colors.lua on every focus, so
--- watch it and let WezTerm auto-reload. That refreshes the bits only the config can
--- set — window background / overlay wash, cursor, selection — across the whole
--- window (the ANSI palette already retints live via tinted-shell OSC).
-wezterm.add_to_config_reload_watch_list(wezterm.config_dir .. "/colors.lua")
--- Capture the theme background; the background overlay layer (below) uses it as the
--- heavy wash over the blurred image, and the no-image fallback paints it solid.
-local tinty_bg = (ok and type(tinty_colors) == "table") and tinty_colors.background or nil
-if ok and type(tinty_colors) == "table" then
-    -- Keep tinty's background: the layered background model below is opaque (no
-    -- see-through canvas to protect), so the terminal cells should paint the real
-    -- theme bg for text legibility over the image/overlay. The ANSI/fg/cursor
-    -- palette retints live as before.
-    config.colors = tinty_colors
-else
-    config.color_scheme = "Gruvbox dark, hard (base16)"
-end
+-- Static theme: Gruvbox Dark Hard (base16), WezTerm's builtin scheme.
+config.color_scheme = "Gruvbox dark, hard (base16)"
 config.default_cursor_style = "BlinkingBlock"
 
--- Font: CaskaydiaCove Nerd Font (installed via packages.yaml `nerd-font`);
--- the rest are fallbacks.
+-- Font: CaskaydiaCove Nerd Font (installed by install.sh); the rest are fallbacks.
 config.font = wezterm.font_with_fallback({
     "CaskaydiaCove Nerd Font",
     "CaskaydiaCove NF",
@@ -205,16 +183,14 @@ end
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
--- The translucent tint is the live tinty theme bg, falling back to gruvbox dark
--- hard base00 (NOT pure black, which diverges from the scheme) before any theme.
-local overlay = tinty_bg or "#1d2021"
+-- The translucent tint is gruvbox dark hard base00 (NOT pure black, which
+-- diverges from the scheme).
+local overlay = "#1d2021"
 config.colors = config.colors or {}
 config.colors.background = overlay
 
 -- Use the terminal background color for the opacity: the cell bg above goes
 -- translucent at this alpha so the blurred desktop shows through it on every OS.
--- The retro tab bar reuses this exact value (baked into its rgba bg below) so the
--- bar reads as the same translucent surface as the cells, not a separate shade.
 local window_opacity = 0.95
 config.window_background_opacity = window_opacity
 -- Blur: macOS frosts the desktop behind the window directly. Linux has no reliable
@@ -256,50 +232,11 @@ config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
 config.show_new_tab_button_in_tab_bar = false
 
--- Theme the retro tab bar from the active tinty palette so it tracks the live
--- scheme like the rest of the window (colors.lua is on the reload-watch list, so a
--- theme switch retints this on the next reload). Derived only from named palette
--- entries — never hardcoded — so it follows any scheme. Skipped on the builtin
--- gruvbox fallback, where WezTerm already derives a bar from the scheme itself.
--- Tint a #RRGGBB translucently as an rgba() string (a in 0..1). WezTerm rejects
--- #RRGGBBAA hex for tab-bar colors, but accepts rgba(r, g, b, a).
-local function with_alpha(hex, a)
-    local r, g, b = (hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
-    if not r then
-        return hex
-    end
-    return string.format("rgba(%d, %d, %d, %s)", tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), a)
-end
-
--- Retro tab bar colors at a given surface alpha. A function (not baked inline)
--- because the live opacity override below rebuilds the bar at the new alpha so it
--- keeps reading as the same translucent surface as the cells.
-local function retro_tab_bar(alpha)
-    local p = config.colors
-    local br = p.brights or {}
-    local accent = (p.ansi and p.ansi[5]) or br[5] or p.selection_bg
-    local surface = with_alpha(p.background, alpha)
-    return {
-        background = surface,
-        active_tab = { bg_color = accent, fg_color = p.background },
-        inactive_tab = { bg_color = surface, fg_color = accent },
-        inactive_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = accent, italic = false },
-        new_tab = { bg_color = surface, fg_color = accent },
-        new_tab_hover = { bg_color = with_alpha(br[4] or p.selection_bg, "0.5"), fg_color = accent },
-    }
-end
-
-if ok and type(tinty_colors) == "table" then
-    config.colors.tab_bar = retro_tab_bar(window_opacity)
-end
-
 -- Shell-driven copy mode: a nu command prints an OSC 1337 SetUserVar `copymode` sequence to
 -- stdout, WezTerm parses it off the pty and drops the GUI
 -- into copy mode here (the value is ignored).
 -- `opacity` (the nu command / ctrl+space tv channel) arrives the same way: the value is a
--- percentage 0–100, applied as a per-window override — live, nothing persisted. The tab bar
--- bakes its surface alpha into rgba colors (see retro_tab_bar), so rebuild it to match;
--- overrides.colors replaces the whole colors table, so copy it before swapping tab_bar.
+-- percentage 0–100, applied as a per-window override — live, nothing persisted.
 wezterm.on("user-var-changed", function(window, pane, name, value)
     if name == "copymode" then
         enter_copy_mode(window, pane)
@@ -310,14 +247,6 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
             local overrides = window:get_config_overrides() or {}
             if overrides.window_background_opacity ~= alpha then
                 overrides.window_background_opacity = alpha
-                if ok and type(tinty_colors) == "table" then
-                    local colors = {}
-                    for k, v in pairs(config.colors) do
-                        colors[k] = v
-                    end
-                    colors.tab_bar = retro_tab_bar(alpha)
-                    overrides.colors = colors
-                end
                 window:set_config_overrides(overrides)
             end
         end

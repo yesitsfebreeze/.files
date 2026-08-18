@@ -18,30 +18,27 @@ every config into place.
 - **CLI core** — ripgrep, fd, fzf, bat, zoxide, jq
 - **Television** — fuzzy finder (`tv`); interactive shell finder (Ctrl-R history,
   Ctrl-T autocomplete) and the `ff`/`fcd`/`fg` helpers
-- **Theme** — Gruvbox Dark Hard, live-switchable via
-  [tinty](https://github.com/tinted-theming/tinty) (base16). The terminal palette
-  and Neovim follow your pick; ANSI-aware tools (Starship, lazygit, delta) ride the
-  terminal palette; bat, Television, and WezTerm ship the gruvbox theme themselves.
-  Switch live with **`theme`** (see below)
+- **Theme** — Gruvbox Dark Hard (static, via WezTerm's builtin scheme and
+  tinted-nvim)
 
 Run from a normal (non-admin) shell in your home directory.
 
-## Desktop apps (removed)
-
-GlazeWM, Zebar, and Wallpaper Engine apps — previously part of these dotfiles —
-have been removed entirely. They are Windows-only and are no longer managed here.
-Their source repos still exist under github.com/yesitsfebreeze for reference.
-
 ## Install
 
-One command. It installs chezmoi, then pulls and applies the dotfiles. Run it on
-**Linux or macOS**:
+Two steps: install the tools, then apply the configs. Run on **Linux or macOS**:
 
 ```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesitsfebreeze/.files
+# 1. Install chezmoi and pull the repo
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init yesitsfebreeze/.files
+
+# 2. Install tools + apply configs
+cd ~/.local/share/chezmoi && ./install.sh
 ```
 
-Already have chezmoi? Just `chezmoi init --apply yesitsfebreeze/.files`.
+`install.sh` is a plain, idempotent script: package-manager batch install
+(Homebrew on macOS, apt/pacman/dnf on Linux), a few GitHub-release/cargo/npm
+fallbacks, and the small system tweaks (macOS menu-bar auto-hide, sudo PATH).
+It ends by running `chezmoi apply` to write the configs.
 
 > **Linux requirement:** the Claude CLI needs `bubblewrap` (`bwrap`) for
 > subprocess sandboxing. It is installed automatically with the package set; on
@@ -59,26 +56,6 @@ chezmoi cd        # enter source dir (exit returns)
 **Finding the repo:** Use `chezmoi source-path` to locate your local .files directory.
 It is usually cloned to `~/.local/share/chezmoi`, but you can verify with that command
 or navigate directly via `chezmoi cd`.
-
-## Theme switcher
-
-Each tool ships the Gruvbox Dark Hard default — builtin themes (bat, Television,
-WezTerm) or ANSI colors that ride the terminal palette (Starship, lazygit, delta).
-To change theme live, without editing files:
-
-```sh
-theme             # fuzzy-pick from tinty's official base16/base24 catalog
-```
-
-Scroll to preview each theme (terminal + shell retint via
-[tinty](https://github.com/tinted-theming/tinty) OSC sequences); **Enter** applies
-and persists it into new shells, **Esc** reverts to where you started. The picker
-lists tinty's prebuilt tinted-shell schemes (~314 base16 + ~187 base24), so every
-entry applies cleanly; the live pick is runtime state, layered on top of each
-tool's gruvbox default.
-
-Known limit: inside burrito, live palette passthrough to WezTerm depends on the
-multiplexer (the OSC retint may be intercepted by the mux before WezTerm sees it).
 
 ## Password manager
 
@@ -120,17 +97,29 @@ pass rm email/personal         # remove
 relocate the store. Nushell tab-completion offers the subcommands and your live
 entry names (sourced from `pass.nu`).
 
+## pi extensions
+
+`install.sh` installs the `pi` binary (npm) and its npm-published extensions
+(`pi-mcp-adapter`, `pi-claude-bridge`). The extension workspace
+(`~/dev/_pi_extensions`, one git repo per package) is not auto-installed — set
+it up once per machine:
+
+```sh
+pi install npm:pi-mcp-adapter npm:@vanillagreen/pi-claude-bridge
+mkdir -p ~/dev/_pi_extensions
+# clone each pi-* package repo you use into ~/dev/_pi_extensions/
+```
+
 ## Develop
 
 ```sh
 git clone https://github.com/yesitsfebreeze/.files
-chezmoi execute-template < home/<file>.tmpl   # render a template to check it
 chezmoi apply --source <path-to-checkout>     # apply local WIP without pushing
 git commit -am "..." && git push              # push; machines pick it up on update
 ```
 
-Add/remove tools by editing `home/.chezmoidata/packages.yaml`; the next
-`chezmoi apply` installs the difference.
+Add/remove tools by editing the package lists in `install.sh`; the next run
+installs the difference.
 
 ## Keys
 

@@ -1,8 +1,7 @@
 # Television (tv) config. "default" is the builtin tv theme whose colors are ANSI
 # names (bright-blue, white, …) with no fixed `background`, so tv inherits the
-# terminal's 16 ANSI slots — exactly what tinty retints via OSC. That makes tv
-# follow the live `theme` switcher; the hex themes (gruvbox-dark, television, …)
-# bake their palette and never follow tinty.
+# terminal's 16 ANSI slots (gruvbox dark hard). The hex themes (gruvbox-dark,
+# television, …) bake their palette and never follow the terminal.
 [ui]
 theme = "default"
 

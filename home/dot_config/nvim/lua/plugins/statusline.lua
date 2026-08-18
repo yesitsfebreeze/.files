@@ -2,10 +2,10 @@
 -- bundled "base16" theme, which requires the separate nvim-base16 plugin and
 -- errors when it is absent. tinted-nvim is not that plugin, so we never let
 -- lualine fall back to "auto": we build the theme directly from tinted-nvim's
--- active palette and rebuild it on every ColorScheme event (keeping the
--- statusline in lockstep with tinty). Before the palette is ready, we fall back
--- to lualine's own builtin "gruvbox_dark" theme (a real theme file, no
--- nvim-base16 dependency), so the base16 lualine theme is never requested.
+-- active palette and rebuild it on every ColorScheme event. Before the palette
+-- is ready, we fall back to lualine's own builtin "gruvbox_dark" theme (a real
+-- theme file, no nvim-base16 dependency), so the base16 lualine theme is never
+-- requested.
 local fallback_theme = "gruvbox_dark"
 
 return {
@@ -53,7 +53,7 @@ return {
             opts.options.theme = lualine_theme()
             require("lualine").setup(opts)
             vim.api.nvim_create_autocmd("ColorScheme", {
-                group = vim.api.nvim_create_augroup("lualine_tinty", { clear = true }),
+                group = vim.api.nvim_create_augroup("lualine_theme", { clear = true }),
                 callback = function()
                     opts.options.theme = lualine_theme()
                     require("lualine").setup(opts)

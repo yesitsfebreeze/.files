@@ -1,6 +1,6 @@
 # Custom nu-history channel. Overrides tv's builtin default, which runs
 # `nu -c '...'` — that cold-starts a full Nushell (re-sourcing starship, zoxide,
-# the tv init, theme.nu) on every Ctrl-R, and assumes the plaintext history.txt
+# the tv init) on every Ctrl-R, and assumes the plaintext history.txt
 # format. Our Nushell uses `file_format: sqlite` (see nushell/config.nu), so the
 # default both lagged AND mangled the list (read a SQLiteDatabase as text).
 #

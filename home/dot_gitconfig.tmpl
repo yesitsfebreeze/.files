@@ -10,7 +10,7 @@
 # empty `helper =` resets the inherited helper list for these URLs only, so the
 # system-level `manager` helper does NOT also fire for github.com; every other
 # host (e.g. Azure DevOps) still uses `manager`. Requires gh on PATH (installed
-# via packages.yaml). This is what `gh auth setup-git` writes, made declarative.
+# via install.sh). This is what `gh auth setup-git` writes, made declarative.
 [credential "https://github.com"]
     helper =
     helper = !gh auth git-credential
@@ -42,8 +42,8 @@
     line-numbers = true
     side-by-side = false
     # "ansi" is a builtin bat/delta syntax theme (no fetch) that maps tokens onto
-    # the terminal's 16 ANSI slots, so delta's code syntax highlighting follows
-    # the live (tinty / tinted-shell) palette instead of a pinned gruvbox one.
+    # the terminal's 16 ANSI slots (gruvbox dark hard), so delta's code syntax
+    # highlighting follows the terminal palette instead of a pinned gruvbox one.
     # Frame accents already use ANSI color names; diff backgrounds use delta's
     # own defaults.
     syntax-theme = ansi
