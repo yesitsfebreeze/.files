@@ -16,7 +16,6 @@
 # Subcommands:
 #   theme                  open the picker
 #   theme bg               pick a background override in tv (ladder + tints, live preview)
-#   theme bg tune          fine-tune the override live (R/G/B stepper)
 #   theme bg <#hex>        set the background override directly
 #   theme bg clear         drop the override — track the scheme's own base00
 #   theme like [<id>]      add the current pick (or <id>) to the liked set
@@ -127,8 +126,9 @@ export def _theme_commit [id: string] {
 # ── background override (`theme bg`) ──────────────────────────────────────────
 # The override lives as `background-override = "#hex"` in tinty's config.toml and
 # is honored by wezterm-colors.sh / zebar-colors.sh / bg-override.sh over the
-# scheme's base00. `theme bg` fine-tunes it live: an R/G/B stepper that retints
-# the terminal (OSC 11) on every keypress, then persists on Enter.
+# scheme's base00. `theme bg` opens the tv bg cable for picking; Enter persists
+# via _theme_bg_persist. `theme bg #hex` sets the override directly. `theme bg
+# clear` removes it.
 
 def _theme_hex_rgb [hex: string] {
     let h = ($hex | str replace "#" "" | str lowercase)
@@ -204,68 +204,6 @@ def _theme_bg_persist [hex: string] {
     try { ^($gen | path join "cmdpal-colors.sh") e> /dev/null }
 }
 
-def _theme_bg_draw [rgb: list<int>, ch: int] {
-    let hex = (_theme_rgb_hex $rgb)
-    let sw = $"\e[48;2;($rgb.0);($rgb.1);($rgb.2)m      \e[0m"
-    let vals = ([R G B] | enumerate | each { |it|
-        let cell = $"($it.item) (($rgb | get $it.index) | fill -a right -c ' ' -w 3)"
-        if $it.index == $ch { $"\e[7m ($cell) \e[0m" } else { $" ($cell) " }
-    } | str join " ")
-    let help = "←→ channel · ↑↓ step · shift ±16 · enter save · c clear · esc cancel"
-    print -n $"\r\e[2K  ($sw)  ($hex)  ($vals)   \e[2m($help)\e[0m"
-}
-
-# _theme_bg_tune: the interactive stepper. Every change is previewed live with a
-# single OSC 11 (no hooks fire while browsing); Enter persists via
-# _theme_bg_persist, c clears the override, Esc/q reverts to the starting color.
-def _theme_bg_tune [] {
-    let start = (_theme_bg_active)
-    mut rgb = (_theme_hex_rgb $start)
-    mut ch = 0
-    print -n (ansi cursor_off)
-    loop {
-        _theme_bg_draw $rgb $ch
-        let ev = (input listen --types [key])
-        let mods = ($ev | get -o modifiers | default [])
-        let step = (if ("shift" in $mods) { 16 } else { 1 })
-        # raw mode: ctrl-c arrives as a plain "c" key event with the control
-        # modifier — route it to cancel, never to the clear arm.
-        let code = (do {
-            let c = ($ev | get -o code | default "")
-            if ("control" in $mods) and $c == "c" { "esc" } else { $c }
-        })
-        match $code {
-            "left"  => { $ch = (($ch + 2) mod 3) }
-            "right" => { $ch = (($ch + 1) mod 3) }
-            "up"    => { $rgb = ($rgb | update $ch { |v| [([($v + $step) 255] | math min) 0] | math max }) }
-            "down"  => { $rgb = ($rgb | update $ch { |v| [([($v - $step) 255] | math min) 0] | math max }) }
-            "enter" => {
-                let hex = (_theme_rgb_hex $rgb)
-                _theme_bg_persist $hex
-                _theme_osc_bg $hex
-                print -n (ansi cursor_on)
-                print $"\ntheme: background override ($hex)"
-                return
-            }
-            "c" => {
-                _theme_bg_persist ""
-                _theme_bg_restore
-                print -n (ansi cursor_on)
-                print "\ntheme: background override cleared"
-                return
-            }
-            "esc" | "q" => {
-                _theme_osc_bg $start
-                print -n (ansi cursor_on)
-                print "\ntheme: background unchanged"
-                return
-            }
-            _ => { }
-        }
-        _theme_osc_bg (_theme_rgb_hex $rgb)
-    }
-}
-
 # _theme_catalog: every scheme id tinty can apply — the official base16/base24
 # catalog plus our custom-schemes (base24-feb, base16-feb-neon, the converted
 # gogh-* themes). Deduped + alphabetical; the cache is prepended separately.
@@ -303,7 +241,7 @@ def --wrapped theme [...rest] {
             _theme_bg_restore
             print "theme: background override cleared"
         } else if $arg == "tune" {
-            _theme_bg_tune
+            print "theme bg tune removed — use `theme bg` (tv picker) or `theme bg #hex` directly"
         } else if ($arg =~ '^#?[0-9a-fA-F]{6}$') {
             let hex = ("#" + ($arg | str replace "#" "" | str lowercase))
             _theme_bg_persist $hex

@@ -37,7 +37,7 @@ def --env _recents_replay [entry: record] {
     if (($entry.cwd | is-not-empty) and ($entry.cwd | path exists)) {
         cd $entry.cwd                    # records the new-shell start dir via mkcd, like any move
     }
-    if ($entry.channel | is-not-empty) { _finder_open (finder --start $entry.channel --fresh) }
+    if ($entry.channel | is-not-empty) { _finder_open (finder --start $entry.channel) }
 }
 
 # quicklist: run the `quicklist` tv channel (its cable TOML reads the live recents log),

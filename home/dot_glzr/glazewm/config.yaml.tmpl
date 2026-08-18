@@ -150,14 +150,6 @@ window_rules:
       - window_process:
           regex: '(?i)^(steam_app_\d+|factorio|dota2|csgo|cs2|hl2|eu4|stellaris|hoi4|Cyberpunk2077|witcher3|EscapeFromTarkov|RustClient|bg3|bg3_dx11)$'
 
-  # wezterm launchpad overlay (ctrl+shift+g, wezterm.lua): the spawned pane sets
-  # its own title via OSC so this rule can float+center it instead of tiling it
-  # into the grid. `set-floating` with no x/y/width/height uses state_defaults
-  # above (centered: true) and the window's own spawn size.
-  - commands: ['set-floating']
-    match:
-      - window_title: { equals: 'wezterm-launchpad' }
-
 workspaces:
   - name: '1'
   - name: '2'

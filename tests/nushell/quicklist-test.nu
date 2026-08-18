@@ -34,12 +34,12 @@ let tests = [
     { name: "entry round-trips a real recents_lines row", run: {||
         let dir = (mktemp -d | str trim)
         let line = (with-env { XDG_STATE_HOME: $dir } {
-            _recents_log [{ channel: "dirs", produces: "DirList", results: ["/tmp"], query: "t" }]
+            _recents_add "DirList" "/tmp" "dirs"
             _recents_lines
         })
         rm -r -f $dir
         let e = (_recents_entry $line)
-        check eq $e.kind "DirList" "kind survives the log->lines->entry round-trip"
+        check eq $e.kind "DirList" "kind survives the add->lines->entry round-trip"
         check eq $e.value "/tmp" "value survives"
         check eq $e.channel "dirs" "channel survives"
     }}

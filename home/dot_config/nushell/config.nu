@@ -692,7 +692,7 @@ source ~/.config/nushell/pass.nu
 # Paths/grep-files/commit-hashes are shell-quoted (reusing finder's own quoter) so
 # spaces survive. Empty/aborted pick leaves the line untouched.
 def tv_finder [] {
-    let sel = (finder --fresh)
+    let sel = (finder)
     if ($sel | is-empty) { return }
     let parts = ($sel | each { |it|
         let s = (match (($it | describe -d).type) {
@@ -713,7 +713,7 @@ source ~/.config/nushell/quicklist.nu
 # dir -> cd, commit -> git show). --env so a cd from the pick reaches the shell.
 def --env tv_remote [] {
     if not (is-terminal --stdin) { return }
-    let channel = (_finder_pick_channel [] null)
+    let channel = (_finder_pick_channel)
     if ($channel | is-empty) { return }
     if ($channel == "quicklist") { quicklist; return }
     # `theme` produces scheme-id strings, not paths — routing them through _finder_open
@@ -723,5 +723,5 @@ def --env tv_remote [] {
     # Same story for `opacity`: it produces a percentage, not a path — the `opacity`
     # command runs the picker and emits the WezTerm user-var override itself.
     if ($channel == "opacity") { opacity; return }
-    _finder_open (finder --start $channel --fresh)
+    _finder_open (finder --start $channel)
 }
