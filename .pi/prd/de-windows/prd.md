@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 mode: afk
 priority: 0
 verify: just gate
