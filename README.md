@@ -26,22 +26,11 @@ every config into place.
 
 Run from a normal (non-admin) shell in your home directory.
 
-## Desktop apps (external repos)
+## Desktop apps
 
-Three desktop-customization apps that were previously managed by these dotfiles
-have been extracted to their own repos. They are **not** required for the dev
-environment — only if you use the GlazeWM/Zebar desktop stack or Wallpaper Engine:
-
-| App | Repo | What it does |
-|---|---|---|
-| **wp-stat-overlay** | [github.com/yesitsfebreeze/wp-stat-overlay](https://github.com/yesitsfebreeze/wp-stat-overlay) | Wallpaper Engine wallpaper + stats helper (Go + JS) |
-| **custom-topbar** | [github.com/yesitsfebreeze/zebar-custom-topbar](https://github.com/yesitsfebreeze/zebar-custom-topbar) | GlazeWM + Zebar status bar widget (HTML bar) |
-| **layout-daemon** | [github.com/yesitsfebreeze/glazewm-layout-daemon](https://github.com/yesitsfebreeze/glazewm-layout-daemon) | GlazeWM auto-tiling daemon (Node.js) |
-
-Clone each repo and follow its README to install. Each deploys its files to the
-standard paths (`~/.config/wp-stat-overlay`, `~/.glzr/glazewm/`, `~/.glzr/zebar/`)
-so the GlazeWM config (`config.yaml`) and Zebar settings (`settings.json`) — still
-managed by these dotfiles — pick them up automatically.
+Previously managed apps related to the GlazeWM/Zebar desktop stack and Wallpaper
+Engine have been removed entirely (Windows-only; git history preserves them).
+They are available at their original upstream repos if needed:
 
 ## Install
 
