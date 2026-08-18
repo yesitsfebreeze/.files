@@ -6,11 +6,10 @@
 # stale until the next of those — the locked background lagged behind the config.
 #
 # The generators resolve the LAST picked scheme (current_scheme), re-apply
-# background-override over base00, rewrite colors.lua / theme.css / the Command
-# Palette's settings.json, and self-propagate: zebar-colors.sh restarts Zebar (no
-# reload IPC), cmdpal-colors.sh restarts CmdPal (which only reads its settings at
-# startup), wezterm-colors.sh reloads GlazeWM and mirrors colors.lua where the running
-# terminal hot-reloads it. All three already guard an unchanged scheme with an
+# background-override over base00, rewrite colors.lua / theme.css, and
+# self-propagate: zebar-colors.sh restarts Zebar (no reload IPC),
+# wezterm-colors.sh reloads GlazeWM and mirrors colors.lua where the running
+# terminal hot-reloads it. Both already guard an unchanged scheme with an
 # early-exit, so a no-op apply stays a no-op.
 #
 # run_onchange: the embedded config hash below IS the re-run trigger — chezmoi only
@@ -23,4 +22,3 @@ set -uo pipefail
 GEN="$HOME/.config/tinted-theming/tinty"
 [ -x "$GEN/wezterm-colors.sh" ] && "$GEN/wezterm-colors.sh" || true
 [ -x "$GEN/zebar-colors.sh" ]   && "$GEN/zebar-colors.sh"   || true
-[ -x "$GEN/cmdpal-colors.sh" ]  && "$GEN/cmdpal-colors.sh"  || true
