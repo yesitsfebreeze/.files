@@ -14,8 +14,8 @@ configuration: no codegen, no apps, no tracked runtime state, trimmed configs �
 while `chezmoi apply` keeps working on Linux/WSL/macOS.
 
 ## Requirements
-- [ ] All four child nodes are done: remove-build-systems, untrack-runtime-state, extract-apps, trim-configs
-- [ ] `chezmoi apply` succeeds on the target OSes (Linux/WSL/macOS)
+- [ ] All child nodes are done: remove-build-systems, untrack-runtime-state, extract-apps, trim-configs, de-windows
+- [ ] `chezmoi apply` succeeds on the target OSes (Linux/macOS)
 - [ ] `just gate` passes (nushell libs parse + test suites pass)
 - [ ] README reflects the simplified structure (no mention of removed systems; apps documented as external)
 
@@ -25,11 +25,11 @@ while `chezmoi apply` keeps working on Linux/WSL/macOS.
 ## Out of scope
 - Rewriting the nvim config (already reasonable)
 - Changing the justfile locking scheme (justified by past clobber incidents)
-- Building the apps' new homes (separate repos) — only their removal from chezmoi management is in scope
+- Building the apps' new homes (separate repos) — moot: the Windows apps are deleted, not relocated
 - The wallpaper content itself (only its removal from git tracking is in scope)
 
 ## Assumptions
-- The desktop apps (wp-stat-overlay, zebar custom-topbar, glazewm layout-daemon) are still wanted — they are moved out of chezmoi management, not deleted.
+- REVERSED by user (2026-08-18): the desktop apps (wp-stat-overlay, zebar custom-topbar, glazewm layout-daemon) are NOT still wanted — the user is moving to Linux-first and wants Windows stripped entirely ("i want to strip windows we have everything in git so its fine"). Git history preserves them; no separate repos are built.
 - The wallpapers are still wanted — they move to a separate location (own repo or git-lfs), not deleted.
 - The ranked list from the analysis turn is the source of truth for what is over-complicated.
 - "Trim" means cut unused/dead behavior, not rewrite from scratch.

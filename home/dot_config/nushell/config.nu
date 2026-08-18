@@ -657,8 +657,8 @@ $env.config = (
 
 # Live theme: re-emit the last `theme` pick's palette so it persists into new shells.
 # A fresh shell only needs the OSC retint. `tinty init` would deliver it, but it first
-# spawns the tinty binary AND its hook chain (wezterm-colors.sh, zebar-colors.sh) —
-# ~65ms — and those hooks are no-ops on an unchanged scheme (they regenerate only on
+# spawns the tinty binary AND its hook chain (wezterm-colors.sh, zebar-colors.sh,
+# cmdpal-colors.sh) — ~65ms — and those hooks are no-ops on an unchanged scheme (they regenerate only on
 # a real `theme` switch). So source tinty's cached tinted-shell artifact directly: it is
 # the exact file `tinty init` sources ($TINTY_THEME_FILE_PATH), writing the same palette
 # OSC straight to the tty in a single bash spawn (~5ms). Fall back to `tinty init` only
