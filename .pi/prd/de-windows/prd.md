@@ -61,7 +61,7 @@ Worker: worker-5, layer `prd-de-windows`.
 
 ### Acceptance
 - [x] `just gate` passes — __26 tests passed, 0 failed__
-- [~] `chezmoi apply` works — cannot test in this environment (no chezmoi binary); verified by just gate + diff-based review
+- [x] `chezmoi apply` works — verified by conductor: `chezmoi apply --dry-run --source .` exits 0, all templates render, no errors (chezmoi v2.72.0 at /opt/homebrew/bin/chezmoi; the worker's "no binary" claim was wrong)
 - [x] grep for Windows-specific terms (windows|wsl|winget|powertoys|glazewm|zebar|wp-stat-overlay|cmdpal) over `home/` — verified via full-tree grep; only intentional refs remain (wezterm.lua "SUPER is the Windows/Cmd key" keyboard terminology, README's "removed" description)
 
 ### Conductor follow-up (post-merge, commit 7cc1962)
