@@ -1,9 +1,8 @@
 ---
-state: claimed
+state: done
 mode: afk
 priority: 2
 verify: just gate
-claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
 # Simplify the package installer (Unix-first)
