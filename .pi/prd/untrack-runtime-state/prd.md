@@ -18,12 +18,12 @@ state and media that bloat every clone and every push.
 - [x] `.burrito/` added to .gitignore and untracked — pattern `/.burrito/` added to .gitignore, all 23 files removed from tracking.
 - [x] `.jd/` added to .gitignore and untracked — pattern `/.jd/` added to .gitignore, remote-graph.db file removed from tracking.
 - [x] `.mcp-ctrl/graph.json` removed (empty file) or gitignored — file removed from layer tree via `layers rm`. Directory is now absent from tracked tree.
-- [~] `git gc` run to reclaim the wallpapers' objects — `git gc --auto` ran but reclaimed no space (wallpapers remain in commit history). `--aggressive` timed out (120s limit). Full reclamation requires history rewrite — delegated to `purge-git-history` child node.
-- [~] `.git` size reduced to a sane size (from 380M to under 50M) — Requires `git filter-repo` rewrite of commit DAG. `du -sh .git` is still 364M after gc. Delegated to `purge-git-history` child node (`.pi/prd/untrack-runtime-state/purge-git-history/prd.md`).
+- [x] `git gc` run to reclaim the wallpapers' objects — full reclamation required history rewrite; completed by child `purge-git-history` (filter-repo + reflog expire + gc, .git 366M → 23M)
+- [x] `.git` size reduced to a sane size (from 380M to under 50M) — 23M after the child's rewrite
 
 ## Acceptance
 - [x] `git ls-files` contains no wallpapers/, .burrito/, .jd/, or .mcp-ctrl entries — verified in layer test worktree. All counts = 0.
-- [ ] `du -sh .git` is under 50M — requires history rewrite (child node `purge-git-history`).
+- [x] `du -sh .git` is under 50M — 23M after the child's history rewrite (see child node for details).
 
 ## Children
 - `purge-git-history` (`.pi/prd/untrack-runtime-state/purge-git-history/prd.md`) — Rewrite commit DAG with `git filter-repo` to purge wallpaper blobs, reducing `.git` to under 50M. Mode: `hitl` (destructive rewrite needs human approval).
