@@ -35,7 +35,7 @@ Their source repos still exist under github.com/yesitsfebreeze for reference.
 ## Install
 
 One command. It installs chezmoi, then pulls and applies the dotfiles. Run it on
-**Linux, WSL, or macOS**:
+**Linux or macOS**:
 
 ```sh
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesitsfebreeze/.files
@@ -46,10 +46,6 @@ Already have chezmoi? Just `chezmoi init --apply yesitsfebreeze/.files`.
 > **Linux requirement:** the Claude CLI needs `bubblewrap` (`bwrap`) for
 > subprocess sandboxing. It is installed automatically with the package set; on
 > macOS the built-in Seatbelt sandbox is used instead, so no extra package.
-
-> **Windows:** there is no native Windows setup. Install WezTerm on Windows, then
-> run the command above inside WSL Ubuntu (`wsl -d Ubuntu`). WezTerm boots straight
-> into that WSL session, so everything you use lives in Linux.
 
 ## Commands
 
