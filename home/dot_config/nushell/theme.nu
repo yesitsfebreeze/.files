@@ -302,9 +302,9 @@ def --wrapped theme [...rest] {
 
     # television prints the chosen entry on Enter, nothing on Esc/Ctrl-C. We apply
     # it HERE, in this live interactive shell, after tv has fully exited — so the
-    # OSC retint and tinty's hooks (wezterm/zebar) run with the real shell env, not
+    # OSC retint and tinty's hooks (wezterm-colors.sh) run with the real shell env, not
     # a stripped television-action subprocess. The preview never applies live, so
-    # browsing leaves the terminal, the bar, and current_scheme untouched.
+    # browsing leaves the terminal, current_scheme, and colors.lua untouched.
     let sel = (tv theme ...$rest | str trim)
     # The preview live-retints the terminal background per focused scheme (OSC 11,
     # theme-preview.sh). The picker is closed now: on Enter, apply the pick —
