@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 mode: afk            # hitl cleared: user approved the rewrite (2026-08-18)
 priority: 0
 verify: test "$(du -s .git | awk '{print $1}')" -lt 51200
