@@ -1,13 +1,13 @@
 # television cable channel: `tv theme` — the live theme switcher's picker.
 # source : the cache (liked set + recency stack) at the TOP, then every scheme
 #          tinty knows — the official base16/base24 catalog plus our
-#          custom-schemes (base24-feb, base16-feb-neon, the converted base24-gogh-*
+#          custom-schemes (base24-feb, base16-feb-neon, the converted gogh-*
 #          themes). _theme_list (theme.nu) builds the ordered, deduped list;
 #          television preserves source order so the cache sits at the head. Each
 #          entry is a "<system>-<slug>" id that `tinty apply` can build + apply.
 # preview: theme-preview.sh draws a self-contained swatch of the scheme (banner,
 # UI mockup, palette) from its own hex values — no live apply, so focusing never
-# fires tinty's hooks or restarts the bar. It does emit one OSC 11 escape to
+# fires tinty's hooks. It does emit one OSC 11 escape to
 # live-retint just the terminal background to the focused scheme; theme.nu
 # re-asserts the active background when the picker closes. Driven by the `theme` Nushell
 # command: Enter persists + pushes to the recency cache; Esc cancels (nothing to
