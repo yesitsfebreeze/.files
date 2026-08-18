@@ -51,3 +51,4 @@ home/dot_config/wezterm/colors.lua
 
 # Wallpapers — media bloat (346M), tracked in a separate media repo
 /wallpapers/
+home/wallpapers/
