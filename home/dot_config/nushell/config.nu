@@ -360,7 +360,7 @@ def --env _hist_local [--down] {
 
 # cf — copy a file's contents into the system clipboard. Picks the clipboard
 # tool that matches the current session: pbcopy (macOS), wl-copy (Wayland),
-# xclip (X11), then clip.exe (WSL). Display-var guards keep us from picking a
+# xclip (X11). Display-var guards keep us from picking a
 # Linux GUI tool that would hang when no compositor/server is attached.
 #
 # The `path`-typed argument gives filesystem tab-completion for free —
@@ -377,37 +377,10 @@ def cf [file: path] {
         $data | wl-copy
     } else if ($env.DISPLAY? | is-not-empty) and (which xclip | is-not-empty) {
         $data | xclip -selection clipboard
-    } else if (which clip.exe | is-not-empty) {
-        $data | clip.exe
     } else {
-        error make { msg: "cf: no clipboard tool found (need wl-copy, xclip, clip.exe, or pbcopy)" }
+        error make { msg: "cf: no clipboard tool found (need wl-copy, xclip, or pbcopy)" }
     }
     print $"copied ($f) to clipboard"
-}
-
-# o — open a location in the host file manager, à la macOS `open`. WSL only: hand
-# the path to Windows Explorer, which pops a File Explorer window at a folder (or
-# opens a file in its default Windows app). We guard on explorer.exe (same WSL
-# test as `cf`'s clip.exe) so a non-WSL shell gets a clear error, not a hang.
-#
-# Named `o`, not `open`: Nushell's builtin `open` reads/parses files and is used
-# above by the history (sqlite), cf (--raw), and theme readers. A custom `open`
-# def or alias hoists across the whole config scope and would shadow the builtin
-# for those readers too — so we leave `open` alone and add the launcher as `o`.
-#
-# explorer.exe wants a Windows path (wslpath translates) and exits 1 even on
-# success, so we capture and drop its status to avoid a spurious nu error.
-def o [path?: path] {
-    if (which explorer.exe | is-empty) {
-        error make { msg: "o: not on WSL (no explorer.exe) — nothing to open" }
-    }
-    let target = (if ($path | is-empty) { $env.PWD } else { $path | path expand })
-    if not ($target | path exists) {
-        error make { msg: $"o: no such path: ($target)" }
-    }
-    let win = (do { wslpath -w $target } | complete)
-    let arg = (if $win.exit_code == 0 { $win.stdout | str trim } else { $target })
-    ^explorer.exe $arg | complete | ignore
 }
 
 # Append the auto-list closure now that the `la` alias is in scope. `$before`
@@ -565,7 +538,7 @@ $env.config.hooks.pre_prompt = (
 # no-op when no menu is open, then runs ours), so completion menus still work.
 #
 # use_kitty_protocol stays OFF: with it on, reedline fires the kitty support query
-# twice at startup and the WSL2<->WezTerm PTY returns the reply too late to consume,
+# twice at startup and the WezTerm PTY returns the reply too late to consume,
 # so it leaks as `^[[?0u` above the prompt. The only thing kitty bought us was
 # telling Ctrl-Shift-R apart from Ctrl-R (shift is lost on control+letter); the
 # global picker now uses Alt-R, which is byte-distinct without kitty.
@@ -657,8 +630,8 @@ $env.config = (
 
 # Live theme: re-emit the last `theme` pick's palette so it persists into new shells.
 # A fresh shell only needs the OSC retint. `tinty init` would deliver it, but it first
-# spawns the tinty binary AND its hook chain (wezterm-colors.sh, zebar-colors.sh,
-# cmdpal-colors.sh) — ~65ms — and those hooks are no-ops on an unchanged scheme (they regenerate only on
+# spawns the tinty binary AND its hook chain (wezterm-colors.sh) — ~65ms — and those
+# hooks are no-ops on an unchanged scheme (they regenerate only on
 # a real `theme` switch). So source tinty's cached tinted-shell artifact directly: it is
 # the exact file `tinty init` sources ($TINTY_THEME_FILE_PATH), writing the same palette
 # OSC straight to the tty in a single bash spawn (~5ms). Fall back to `tinty init` only

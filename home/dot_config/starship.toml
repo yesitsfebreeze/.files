@@ -1,4 +1,4 @@
-# Starship prompt — identical on Nushell across Linux / WSL / macOS.
+# Starship prompt — identical on Nushell across Linux / macOS.
 # The palette below maps layout-slot names to standard ANSI color names, so the
 # prompt is drawn from the terminal's live palette: the shell `theme` switcher
 # (tinty / tinted-shell) retints those ANSI colors, and the prompt follows the

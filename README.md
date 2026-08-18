@@ -1,6 +1,6 @@
 # Dotfiles
 
-A Linux dev environment — native, inside WSL on Windows, or on macOS — managed
+A Linux dev environment — native on Linux or macOS — managed
 with [chezmoi](https://chezmoi.io). One command installs the tools and writes
 every config into place.
 
@@ -26,27 +26,16 @@ every config into place.
 
 Run from a normal (non-admin) shell in your home directory.
 
-## Desktop apps (external repos)
+## Desktop apps (removed)
 
-Three desktop-customization apps that were previously managed by these dotfiles
-have been extracted to their own repos. They are **not** required for the dev
-environment — only if you use the GlazeWM/Zebar desktop stack or Wallpaper Engine:
-
-| App | Repo | What it does |
-|---|---|---|
-| **wp-stat-overlay** | [github.com/yesitsfebreeze/wp-stat-overlay](https://github.com/yesitsfebreeze/wp-stat-overlay) | Wallpaper Engine wallpaper + stats helper (Go + JS) |
-| **custom-topbar** | [github.com/yesitsfebreeze/zebar-custom-topbar](https://github.com/yesitsfebreeze/zebar-custom-topbar) | GlazeWM + Zebar status bar widget (HTML bar) |
-| **layout-daemon** | [github.com/yesitsfebreeze/glazewm-layout-daemon](https://github.com/yesitsfebreeze/glazewm-layout-daemon) | GlazeWM auto-tiling daemon (Node.js) |
-
-Clone each repo and follow its README to install. Each deploys its files to the
-standard paths (`~/.config/wp-stat-overlay`, `~/.glzr/glazewm/`, `~/.glzr/zebar/`)
-so the GlazeWM config (`config.yaml`) and Zebar settings (`settings.json`) — still
-managed by these dotfiles — pick them up automatically.
+GlazeWM, Zebar, and Wallpaper Engine apps — previously part of these dotfiles —
+have been removed entirely. They are Windows-only and are no longer managed here.
+Their source repos still exist under github.com/yesitsfebreeze for reference.
 
 ## Install
 
 One command. It installs chezmoi, then pulls and applies the dotfiles. Run it on
-**Linux, WSL, or macOS**:
+**Linux or macOS**:
 
 ```sh
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply yesitsfebreeze/.files
@@ -57,10 +46,6 @@ Already have chezmoi? Just `chezmoi init --apply yesitsfebreeze/.files`.
 > **Linux requirement:** the Claude CLI needs `bubblewrap` (`bwrap`) for
 > subprocess sandboxing. It is installed automatically with the package set; on
 > macOS the built-in Seatbelt sandbox is used instead, so no extra package.
-
-> **Windows:** there is no native Windows setup. Install WezTerm on Windows, then
-> run the command above inside WSL Ubuntu (`wsl -d Ubuntu`). WezTerm boots straight
-> into that WSL session, so everything you use lives in Linux.
 
 ## Commands
 
