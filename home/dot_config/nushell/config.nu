@@ -360,7 +360,7 @@ def --env _hist_local [--down] {
 
 # cf — copy a file's contents into the system clipboard. Picks the clipboard
 # tool that matches the current session: pbcopy (macOS), wl-copy (Wayland),
-# xclip (X11), then clip.exe (WSL). Display-var guards keep us from picking a
+# xclip (X11). Display-var guards keep us from picking a
 # Linux GUI tool that would hang when no compositor/server is attached.
 #
 # The `path`-typed argument gives filesystem tab-completion for free —
