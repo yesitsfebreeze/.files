@@ -1,34 +1,39 @@
 # Single source of truth for what the dotfiles install: each entry maps one tool
 # to its package name per manager (empty string = not packaged there, installer
-# skips or falls back). Linux/WSL is the target; macOS via Homebrew; Windows boots
-# into WSL. Editing this re-triggers the run_onchange installer on next apply.
+# skips or falls back). macOS + Linux target. Editing this re-triggers the
+# run_onchange installer on next apply.
 
 packages:
     - name: burrito       # terminal multiplexer (daemon + 9x9 grid nav, tool overlays), shell-side
-      brew: ""            # not packaged on any manager; Go repo, built by its own `just install` (see just_git + installer)
+      brew: ""            # not packaged on any manager; Go repo, built by its own `just install`
       apt: ""
       pacman: ""
       dnf: ""
-      just_git: https://github.com/yesitsfebreeze/burrito   # source of truth: clone + `just install`; installs the binary as `brr`
+      just_git: https://github.com/yesitsfebreeze/burrito
+      bin: brr
 
     - name: keydr         # terminal typing tutor with adaptive learning (keybr-style weak-key drills)
-      brew: ""            # not packaged anywhere; built from source via cargo (cargo_git)
+      brew: ""            # not packaged anywhere; built from source via cargo_git
       apt: ""
       pacman: ""
       dnf: ""
-      cargo_git: https://github.com/yesitsfebreeze/keydr   # fork of thallada/keydr (adds centered drill layout)
+      cargo_git: https://github.com/yesitsfebreeze/keydr
 
     - name: neovim
       brew: neovim
       apt: neovim
       pacman: neovim
       dnf: neovim
+      gh_release: neovim/neovim
+      bin: nvim
 
     - name: nushell
       brew: nushell
-      apt: ""           # not in default apt; cargo/brew/official repo
+      apt: ""             # not in default apt; brew/pacman/gh-release install
       pacman: nushell
       dnf: ""
+      gh_release: nushell/nushell
+      bin: nu
 
     - name: ripgrep
       brew: ripgrep
@@ -38,7 +43,7 @@ packages:
 
     - name: fd
       brew: fd
-      apt: fd-find       # binary is `fdfind` on Debian/Ubuntu
+      apt: fd-find        # binary is `fdfind` on Debian/Ubuntu
       pacman: fd
       dnf: fd-find
 
@@ -54,15 +59,17 @@ packages:
       pacman: entr
       dnf: entr
 
-    - name: television    # fuzzy finder TUI (binary: `tv`) — interactive in-shell finder (Ctrl-R history, Ctrl-T autocomplete)
+    - name: television    # fuzzy finder TUI (binary: `tv`)
       brew: television
-      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
+      apt: ""             # not in Debian/Ubuntu repos; brew/pacman/gh-release install
       pacman: television
-      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
+      dnf: ""             # not packaged for Fedora; gh-release / cargo fallback
+      gh_release: alexpasmantier/television
+      bin: tv
 
     - name: bat
       brew: bat
-      apt: bat           # binary is `batcat` on Debian/Ubuntu
+      apt: bat            # binary is `batcat` on Debian/Ubuntu
       pacman: bat
       dnf: bat
 
@@ -74,7 +81,7 @@ packages:
 
     - name: starship
       brew: starship
-      apt: ""            # use official installer; not in apt
+      apt: ""             # use official installer; not in apt
       pacman: starship
       dnf: ""
 
@@ -90,8 +97,8 @@ packages:
       pacman: imagemagick
       dnf: imagemagick
 
-    - name: python3       # used to extract Nerd Font zips during install and as a
-      brew: python        # common base dep. Stdlib only — no pip packages needed.
+    - name: python3       # stdlib only — no pip packages needed
+      brew: python
       apt: python3
       pacman: python
       dnf: python3
@@ -104,46 +111,49 @@ packages:
 
     - name: delta
       brew: git-delta
-      apt: ""            # `git-delta` not in default apt; cargo/brew/repo
+      apt: ""             # `git-delta` not in default apt; cargo/brew/repo
       pacman: git-delta
       dnf: git-delta
 
     - name: lazygit
       brew: lazygit
-      apt: ""            # PPA/repo needed; not in default apt
+      apt: ""             # PPA/repo needed; not in default apt
       pacman: lazygit
       dnf: lazygit
+      gh_release: jesseduffield/lazygit
 
     - name: gh
       brew: gh
-      apt: ""            # not in default apt (needs GitHub's apt repo); installed via GitHub-release binary fallback (see installer)
+      apt: ""             # not in default apt (needs GitHub's apt repo); gh-release install
       pacman: github-cli
       dnf: gh
+      gh_release: cli/cli
 
-    - name: worktrunk     # git worktree manager (binary: `wt`) — parallel-agent worktree workflows
-      brew: worktrunk     # in homebrew-core; covers macOS + Linuxbrew
-      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
-      pacman: ""          # AUR-only; GitHub-release binary / cargo fallback
-      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
-      gh_release: max-sixty/worktrunk   # source of truth: prebuilt `wt` binary (.tar.xz) from this repo's latest release
+    - name: worktrunk     # git worktree manager (binary: `wt`)
+      brew: worktrunk
+      apt: ""             # not in Debian/Ubuntu repos; gh-release install
+      pacman: ""          # AUR-only; gh-release / cargo fallback
+      dnf: ""             # not packaged for Fedora; gh-release / cargo fallback
+      gh_release: max-sixty/worktrunk
+      bin: wt
 
-    - name: just          # command runner / `.justfile` task automation (casey/just)
+    - name: just          # command runner / `.justfile` task automation
       brew: just
-      apt: just           # in Debian 13+/Ubuntu 24.04+; older releases fall back to cargo
+      apt: just           # Debian 13+/Ubuntu 24.04+; older releases fall back to cargo
       pacman: just
       dnf: just
 
-    - name: bubblewrap    # Linux subprocess sandbox (binary: `bwrap`); the `claude` CLI requires it for
-      brew: ""            # env scrubbing / plugin installs. macOS uses Seatbelt (sandbox-exec), so no brew pkg.
+    - name: bubblewrap    # Linux subprocess sandbox (binary: `bwrap`)
+      brew: ""            # macOS uses Seatbelt; no brew pkg
       apt: bubblewrap
       pacman: bubblewrap
       dnf: bubblewrap
 
-    - name: gnupg         # GPG (binary: `gpg`) — required backend for `pass`; encrypts each entry
+    - name: gnupg         # GPG (binary: `gpg`) — required backend for `pass`
       brew: gnupg
       apt: gnupg
       pacman: gnupg
-      dnf: gnupg2         # Fedora packages GnuPG 2 as `gnupg2` (provides `gpg`)
+      dnf: gnupg2         # Fedora packages GnuPG 2 as `gnupg2`
 
     - name: pass          # standard unix password manager (gpg-backed password-store)
       brew: pass
@@ -152,44 +162,42 @@ packages:
       dnf: pass
 
     - name: tinty         # Tinted Theming CLI — base16/base24 engine behind the live `theme` switcher
-      brew: tinted-theming/tinty/tinty   # not in homebrew-core; fully-qualified name auto-taps tinted-theming/tinty
-      apt: ""             # not in Debian/Ubuntu repos; installed via GitHub-release musl binary fallback (see installer)
-      pacman: ""          # AUR-only (tinty); GitHub-release binary / cargo fallback
-      dnf: ""             # not packaged for Fedora; GitHub-release binary / cargo fallback
+      brew: tinted-theming/tinty/tinty   # not in homebrew-core; fully-qualified name auto-taps
+      apt: ""             # not in Debian/Ubuntu repos; gh-release install
+      pacman: ""          # AUR-only; gh-release / cargo fallback
+      dnf: ""             # not packaged for Fedora; gh-release / cargo fallback
+      gh_release: tinted-theming/tinty
 
-    - name: kern          # self-learning memory daemon + MCP server for AI agents (per-cwd knowledge graph)
-      brew: ""            # not packaged on any manager; installed via GitHub-release binary fallback (see installer)
+    - name: kern          # self-learning memory daemon + MCP server for AI agents
+      brew: ""            # not packaged on any manager; gh-release install
       apt: ""
       pacman: ""
       dnf: ""             # the crates.io `kern` is an unrelated library, so no cargo fallback
-      gh_release: yesitsfebreeze/relay-kern   # source of truth: prebuilt `kern` binary from this repo's latest release
+      gh_release: yesitsfebreeze/relay-kern
 
-    - name: pi            # pi coding agent (earendil-works) — npm-published CLI (binary: `pi`)
-      brew: ""            # not on any package manager; installed globally via npm (see installer)
+    - name: pi            # pi coding agent — npm-published CLI
+      brew: ""            # not on any package manager; installed globally via npm
       apt: ""
       pacman: ""
       dnf: ""
-      npm: "@earendil-works/pi-coding-agent"   # source of truth: global npm package name
+      npm: "@earendil-works/pi-coding-agent"
 
-    - name: docker        # container engine. Special-cased in the installer (see the "docker" block):
-      brew: ""            # WSL + Windows Docker Desktop reachable -> shim `docker` to it (windows ?? local);
-      apt: ""             # otherwise install Docker Engine natively from Docker's official apt repo, enable
-      pacman: docker      # the service, and add the user to the docker group. apt is handled by the block;
-      dnf: docker         # pacman/dnf just get the plain package as a baseline (no WSL there anyway).
+    - name: docker        # container engine. pacman/dnf are covered by the package lists;
+      brew: ""            # macOS installs Docker Desktop manually.
+      apt: ""             # Use Docker's official apt repo or Docker Desktop.
+      pacman: docker
+      dnf: docker
 
-    # Chromium/Electron runtime libs (no binary, Linux-only): headless chromium and
-    # Electron link against NSS/NSPR at runtime. The playwright install-deps block
-    # pulls these too, but only when npx is present and sudo is non-interactive, so
-    # list them explicitly to guarantee them on every apt run. `lib: true` marks
+    # Chromium/Electron runtime libs (no binary, Linux-only). `lib: true` marks
     # them binary-less so the cargo/missing-check loops skip them.
-    - name: libnss3       # Network Security Services — chromium/electron runtime dep
+    - name: libnss3
       lib: true
-      brew: ""            # macOS chromium uses system frameworks; not needed
+      brew: ""
       apt: libnss3
       pacman: nss
       dnf: nss
 
-    - name: libnspr4      # Netscape Portable Runtime — companion to NSS
+    - name: libnspr4
       lib: true
       brew: ""
       apt: libnspr4
@@ -197,18 +205,18 @@ packages:
       dnf: nspr
 
     # Nerd Font: package-manager coverage is thin, so the installer also fetches it
-    # from the nerd-fonts release when missing (nerdfont_asset, below).
-    - name: karabiner-elements   # macOS keyboard customizer (GUI app + DriverKit virtual-HID extension).
-      brew: karabiner-elements   # Used here ONLY for its per-device "disable the built-in keyboard while
-      cask: true                 # this device is connected" setting (see run_after_karabiner-disable-
-      apt: ""                    # internal-keyboard.sh). macOS-only — no Linux/Windows equivalent, so the
-      pacman: ""                 # non-brew managers leave it blank and skip it. First launch needs a
-      dnf: ""                    # one-time Input-Monitoring grant + driver-extension approval in Settings.
+    # from the nerd-fonts release when missing.
+    - name: karabiner-elements   # macOS keyboard customizer (GUI app). macOS-only.
+      brew: karabiner-elements
+      cask: true
+      apt: ""
+      pacman: ""
+      dnf: ""
 
     - name: nerd-font
-      brew: font-caskaydia-cove-nerd-font   # cask
+      brew: font-caskaydia-cove-nerd-font
       cask: true
       apt: ""               # not packaged; installed via nerd-fonts release fallback
-      pacman: ""            # AUR-only (otf-cascadia-code-nerd); use release fallback
+      pacman: ""            # AUR-only (otf-cascadia-code-nerd); release fallback
       dnf: ""               # not packaged; release fallback
-      nerdfont_asset: CaskaydiaCove         # nerd-fonts release zip basename -> download fallback source
+      nerdfont_asset: CaskaydiaCove

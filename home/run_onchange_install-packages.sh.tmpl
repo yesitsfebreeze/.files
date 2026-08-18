@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# chezmoi run_onchange — installs/updates the CLI tool set on Unix.
-# Re-runs automatically whenever the rendered package list below changes.
+# chezmoi run_onchange — installs CLI tools on macOS + Linux.
+# Driven by packages.yaml: package manager batch install → GitHub release → cargo
+# → cargo_git → just_git. Re-runs when packages.yaml changes.
 #
 # packages.yaml sha256: {{ include ".chezmoidata/packages.yaml" | sha256sum }}
 set -uo pipefail
@@ -9,45 +10,34 @@ log()  { printf '\033[1;34m::\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 
 # Pick up a Homebrew that run_once_before_install-homebrew may have just installed
-# in this same `chezmoi apply` (its shellenv is not yet on our PATH).
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 [ -x /usr/local/bin/brew ] && eval "$(/usr/local/bin/brew shellenv)"
 
-# User-local bin dirs on PATH for the fallbacks below, and for tools an earlier
-# step installed there this same apply.
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
-# Bootstrap `make` — needed by telescope-fzf-native.nvim (lazy.nvim `build`).
-# macOS: Xcode CLI tools (`xcode-select --install`). Linux: build-essential / base-devel.
+# Bootstrap `make` — needed by lazy.nvim's `build` and some cargo crates.
 if ! command -v make >/dev/null 2>&1; then
     if [ "$(uname -s)" = "Darwin" ]; then
-        log "install Xcode Command Line Tools (provides make, git, cc)"
+        log "install Xcode Command Line Tools"
         xcode-select --install 2>/dev/null || true
-        warn "  Xcode CLI tools install triggered (GUI prompt); re-run chezmoi apply once it finishes"
+        warn "  Xcode CLI tools install triggered (GUI prompt); re-run once it finishes"
     elif command -v apt-get >/dev/null 2>&1; then
-        log "install build-essential (provides make)"
         sudo apt-get install -y build-essential >/dev/null 2>&1 || warn "  could not install build-essential"
     elif command -v pacman >/dev/null 2>&1; then
-        log "install base-devel (provides make)"
         sudo pacman -S --needed --noconfirm base-devel >/dev/null 2>&1 || warn "  could not install base-devel"
     elif command -v dnf >/dev/null 2>&1; then
-        log "install make"
         sudo dnf install -y make >/dev/null 2>&1 || warn "  could not install make"
     else
-        warn "make not found; install manually (Xcode CLI tools / build-essential / base-devel)"
+        warn "make not found; install manually"
     fi
 fi
 
-# Resolve the latest release tag (e.g. "0.99.1") for a GitHub repo "owner/name".
+# --- helpers ---
 gh_latest_tag() {
     curl -fsSL "https://api.github.com/repos/$1/releases/latest" 2>/dev/null \
         | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/'
 }
 
-# Download the tarball at $2 and install the binary named $1 into ~/.local/bin.
-# Warns + returns non-zero on any download/extract/place failure, so the cargo
-# fallback can still try. Callers guard on `command -v`, so this stays idempotent.
-# Extracts with autodetecting `tar -xf` so both .tar.gz and .tar.xz assets work.
 fetch_tarball_binary() {
     _bin="$1"; _url="$2"; _rc=1
     mkdir -p "$HOME/.local/bin"
@@ -63,13 +53,47 @@ fetch_tarball_binary() {
     return "$_rc"
 }
 
-# Package lists rendered from .chezmoidata/packages.yaml (empty fields omitted).
+bin_for() {
+    case "$1" in
+        ripgrep)    echo rg ;;
+        neovim)     echo nvim ;;
+        imagemagick) echo magick ;;
+        nushell)    echo nu ;;
+        television) echo tv ;;
+        bubblewrap) echo bwrap ;;
+        gnupg)      echo gpg ;;
+        worktrunk)  echo wt ;;
+        burrito)    echo brr ;;
+        *)          echo "$1" ;;
+    esac
+}
+
+crate_for() {
+    case "$1" in
+        rg)      echo ripgrep ;;
+        fd)      echo fd-find ;;
+        bat)     echo bat ;;
+        zoxide)  echo zoxide ;;
+        starship) echo starship ;;
+        delta)   echo git-delta ;;
+        nu)      echo nu ;;
+        tv)      echo television ;;
+        tinty)   echo tinty ;;
+        just)    echo just ;;
+        wt)      echo worktrunk-sync ;;
+        *)       echo "" ;;
+    esac
+}
+
+# --- package lists (rendered from packages.yaml) ---
 names="{{ range .packages }}{{ if not (hasKey . "lib") }}{{ .name }} {{ end }}{{ end }}"
 brew_pkgs="{{ range .packages }}{{ with .brew }}{{ . }} {{ end }}{{ end }}"
 apt_pkgs="{{ range .packages }}{{ with .apt }}{{ . }} {{ end }}{{ end }}"
 pacman_pkgs="{{ range .packages }}{{ with .pacman }}{{ . }} {{ end }}{{ end }}"
 dnf_pkgs="{{ range .packages }}{{ with .dnf }}{{ . }} {{ end }}{{ end }}"
+gh_pkgs="{{ range .packages }}{{ if hasKey . "gh_release" }}{{ .name }}={{ .gh_release }} {{ end }}{{ end }}"
 
+# --- package manager detection ---
 if command -v brew >/dev/null 2>&1; then
     MGR=brew
 elif command -v apt-get >/dev/null 2>&1; then
@@ -80,29 +104,24 @@ elif command -v dnf >/dev/null 2>&1; then
     MGR=dnf
 else
     warn "No supported package manager found (brew/apt/pacman/dnf)."
-    warn "Install Homebrew (https://brew.sh) for a one-command experience, then re-run: chezmoi apply"
+    warn "Install Homebrew (https://brew.sh) then re-run: chezmoi apply"
     MGR=none
 fi
 log "Package manager: $MGR"
 
-# apt/pacman/dnf all shell out to sudo. In environments without root or
-# passwordless sudo (CI, restricted shells, some WSL setups) every per-package
-# install would fail identically, spamming a misleading "could not install X via
-# $MGR (will try fallback)" for each one — even for apt-only tools that have no
-# fallback. Detect that once here and skip the doomed loop; the Linux GitHub-
-# release + cargo fallbacks below cover most tools, and the final missing-check
-# reports whatever genuinely could not be installed.
+# apt/pacman/dnf need sudo. Detect availability once to skip the doomed loop.
 MGR_USABLE=1
 case "$MGR" in
     apt|pacman|dnf)
         if [ "$(id -u)" != 0 ] && ! sudo -n true >/dev/null 2>&1; then
             MGR_USABLE=0
             warn "$MGR needs root, but passwordless sudo is unavailable — skipping system packages."
-            warn "  relying on user-local fallbacks (~/.local, cargo); run 'sudo -v' then re-apply for the rest."
+            warn "  relying on user-local fallbacks (~/.local, cargo)"
         fi
         ;;
 esac
 
+# --- batch install via package manager ---
 install_one() {
     pkg="$1"
     case "$MGR" in
@@ -132,257 +151,169 @@ mkdir -p "$HOME/.local/bin"
 command -v batcat >/dev/null 2>&1 && [ ! -e "$HOME/.local/bin/bat" ] && ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
 command -v fdfind >/dev/null 2>&1 && [ ! -e "$HOME/.local/bin/fd" ]  && ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 
-# Prebuilt-binary fallbacks for tools missing from Linux package repos. nushell
-# and tv aren't in apt/dnf, and cargo-building them is heavy, so on Linux we fetch
-# the prebuilt release binary BEFORE the cargo fallback (keeping cargo last
-# resort). macOS is covered by brew. All guarded by `command -v`, so idempotent.
-
-# neovim — apt/dnf ship a stale release (Ubuntu's 0.9.x) that is too old for the
-# modern config (nvim-lspconfig needs 0.11.3+; native vim.lsp.enable + blink.cmp
-# expect 0.11+). The package install above gives a baseline; here we override it
-# with the official release tarball into ~/.local when nvim is missing or < 0.11.
-# macOS gets a current neovim from brew, so this is Linux-only. The tarball ships
-# a full bin/lib/share tree (nvim resolves its runtime relative to the real
-# binary path), so we extract it whole and symlink the binary into ~/.local/bin.
-nvim_need=0
-if ! command -v nvim >/dev/null 2>&1; then
-    nvim_need=1
-else
-    # Captures the minor for 0.x builds only (e.g. "11" from "NVIM v0.11.3");
-    # 1.x+ leaves it empty and is treated as new enough.
-    nvim_minor="$(nvim --version 2>/dev/null | sed -n '1s/^NVIM v0\.\([0-9]*\).*/\1/p')"
-    [ -n "$nvim_minor" ] && [ "$nvim_minor" -lt 11 ] && nvim_need=1
-fi
-if [ "$(uname -s)" = "Linux" ] && [ "$nvim_need" = 1 ]; then
-    case "$(uname -m)" in
-        x86_64|amd64)  nvim_arch=x86_64 ;;
-        aarch64|arm64) nvim_arch=arm64 ;;
-        *)             nvim_arch="" ;;
-    esac
-    if [ -z "$nvim_arch" ]; then
-        warn "neovim: no prebuilt binary for $(uname -m); install manually"
+# --- GitHub release binary fallbacks ---
+# For tools in packages.yaml with gh_release: "<owner>/<repo>". On macOS the
+# batch install above already covers most (brew), so gh_release only fires for
+# tools brew didn't have or couldn't install. neovim is special: the apt/dnf
+# version may be too old for the modern nvim config, so we also upgrade it on
+# Linux when < 0.11.
+for entry in $gh_pkgs; do
+    name="${entry%%=*}"
+    repo="${entry#*=}"
+    b="$(bin_for "$name")"
+    # neovim: apt/dnf ship a stale 0.9.x too old for modern config (< 0.11).
+    # Also upgrade when present but outdated (Linux-only; macOS gets current from brew).
+    if [ "$name" = neovim ] && command -v nvim >/dev/null 2>&1; then
+        nvim_minor="$(nvim --version 2>/dev/null | sed -n '1s/^NVIM v0\.\([0-9]*\).*/\1/p')"
+        [ -z "$nvim_minor" ] || [ "$nvim_minor" -ge 11 ] && continue
+        # Fall through to reinstall from GitHub release.
     else
-        log "install neovim (official $nvim_arch release tarball -> ~/.local)"
-        nd="$(mktemp -d)"
-        if curl -fsSL -o "$nd/nvim.tar.gz" \
-            "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$nvim_arch.tar.gz" \
-            && tar -xzf "$nd/nvim.tar.gz" -C "$nd" 2>/dev/null; then
-            nvim_src="$(find "$nd" -maxdepth 1 -type d -name 'nvim-linux-*' | head -n1)"
-            if [ -n "$nvim_src" ]; then
-                rm -rf "$HOME/.local/opt/neovim"
-                mkdir -p "$HOME/.local/opt" "$HOME/.local/bin"
-                cp -r "$nvim_src" "$HOME/.local/opt/neovim"
-                ln -sf "$HOME/.local/opt/neovim/bin/nvim" "$HOME/.local/bin/nvim"
-                log "  installed $("$HOME/.local/bin/nvim" --version 2>/dev/null | sed -n '1p')"
+        command -v "$b" >/dev/null 2>&1 && continue
+    fi
+
+    # Platform/arch detection. macOS Darwin releases use the target triple suffix;
+    # Linux uses various conventions per tool, handled per-case below.
+    os="$(uname -s)"
+    arch="$(uname -m)"
+    case "$arch" in
+        x86_64|amd64)  ;;
+        aarch64|arm64)  ;;
+        *)  warn "$name: no prebuilt binary for $arch"; continue ;;
+    esac
+
+    # Resolve the latest release tag.
+    tag="$(gh_latest_tag "$repo")"
+    [ -z "$tag" ] && { warn "$name: could not resolve latest release tag"; continue; }
+    ver="${tag#v}"
+
+    log "install $name (GitHub release fallback: $repo/$tag)"
+
+    case "$name" in
+        neovim)
+            # neovim official release tarball — extract full tree to ~/.local/opt
+            # so the binary can resolve its runtime relative to its real path.
+            # Linux-only: macOS gets neovim from brew.
+            [ "$os" != Linux ] && continue
+            case "$arch" in x86_64|amd64) narch=x86_64 ;; aarch64|arm64) narch=arm64 ;; esac
+            nd="$(mktemp -d)"
+            url="https://github.com/$repo/releases/download/$tag/nvim-linux-$narch.tar.gz"
+            if curl -fsSL -o "$nd/nvim.tar.gz" "$url" && tar -xzf "$nd/nvim.tar.gz" -C "$nd" 2>/dev/null; then
+                nvim_src="$(find "$nd" -maxdepth 1 -type d -name 'nvim-linux-*' | head -n1)"
+                if [ -n "$nvim_src" ]; then
+                    rm -rf "$HOME/.local/opt/neovim"
+                    mkdir -p "$HOME/.local/opt" "$HOME/.local/bin"
+                    cp -r "$nvim_src" "$HOME/.local/opt/neovim"
+                    ln -sf "$HOME/.local/opt/neovim/bin/nvim" "$HOME/.local/bin/nvim"
+                    log "  installed $("$HOME/.local/bin/nvim" --version 2>/dev/null | sed -n '1p')"
+                fi
             else
-                warn "  neovim tarball had an unexpected layout"
+                warn "  could not download neovim release tarball"
             fi
-        else
-            warn "  could not download the neovim release tarball"
-        fi
-        rm -rf "$nd"
-    fi
-fi
+            rm -rf "$nd"
+            ;;
 
-# nushell — musl binary; assets are version-stamped, so resolve the tag first.
-if [ "$(uname -s)" = "Linux" ] && ! command -v nu >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  nu_arch=x86_64 ;;
-        aarch64|arm64) nu_arch=aarch64 ;;
-        *)             nu_arch="" ;;
+        nushell)
+            [ "$os" != Linux ] && continue
+            case "$arch" in x86_64|amd64) narch=x86_64 ;; aarch64|arm64) narch=aarch64 ;; esac
+            url="https://github.com/$repo/releases/download/$tag/nu-${tag}-${narch}-unknown-linux-musl.tar.gz"
+            fetch_tarball_binary nu "$url" && log "  installed nushell" || warn "  could not install nushell"
+            ;;
+
+        television)
+            [ "$os" != Linux ] && continue
+            case "$arch" in
+                x86_64|amd64)  tv_target="x86_64-unknown-linux-musl" ;;
+                aarch64|arm64) tv_target="aarch64-unknown-linux-gnu" ;;
+            esac
+            url="https://github.com/$repo/releases/download/$tag/tv-${tag}-${tv_target}.tar.gz"
+            fetch_tarball_binary tv "$url" && log "  installed television" || warn "  could not install television"
+            ;;
+
+        gh)
+            [ "$os" != Linux ] && continue
+            case "$arch" in x86_64|amd64) garch=amd64 ;; aarch64|arm64) garch=arm64 ;; esac
+            url="https://github.com/$repo/releases/download/$tag/gh_${ver}_linux_${garch}.tar.gz"
+            fetch_tarball_binary gh "$url" && log "  installed gh" || warn "  could not install gh"
+            ;;
+
+        lazygit)
+            [ "$os" != Linux ] && continue
+            case "$arch" in x86_64|amd64) larch=x86_64 ;; aarch64|arm64) larch=arm64 ;; esac
+            url="https://github.com/$repo/releases/download/$tag/lazygit_${ver}_linux_${larch}.tar.gz"
+            fetch_tarball_binary lazygit "$url" && log "  installed lazygit" || warn "  could not install lazygit"
+            ;;
+
+        tinty)
+            case "$os" in
+                Linux)
+                    case "$arch" in
+                        x86_64|amd64)  ttarget="x86_64-unknown-linux-musl" ;;
+                        aarch64|arm64) ttarget="aarch64-unknown-linux-gnu" ;;
+                    esac ;;
+                Darwin)
+                    case "$arch" in
+                        x86_64|amd64)  ttarget="x86_64-apple-darwin" ;;
+                        aarch64|arm64) ttarget="aarch64-apple-darwin" ;;
+                    esac ;;
+            esac
+            url="https://github.com/$repo/releases/latest/download/tinty-${ttarget}.tar.gz"
+            fetch_tarball_binary tinty "$url" && log "  installed tinty" || warn "  could not install tinty"
+            ;;
+
+        kern)
+            case "$os" in
+                Linux)
+                    case "$arch" in
+                        x86_64|amd64)  ktarget="x86_64-unknown-linux-gnu" ;;
+                        aarch64|arm64) ktarget="aarch64-unknown-linux-gnu" ;;
+                    esac ;;
+                Darwin)
+                    case "$arch" in
+                        aarch64|arm64) ktarget="aarch64-apple-darwin" ;;
+                        *) ktarget="" ;;
+                    esac ;;
+            esac
+            [ -z "$ktarget" ] && { warn "kern: no binary for $os/$arch"; continue; }
+            url="https://github.com/$repo/releases/latest/download/kern-${ktarget}.tar.gz"
+            fetch_tarball_binary kern "$url" && log "  installed kern" || warn "  could not install kern"
+            ;;
+
+        worktrunk)
+            [ "$os" != Linux ] && continue
+            case "$arch" in
+                x86_64|amd64)  wtarget="x86_64-unknown-linux-musl" ;;
+                aarch64|arm64) wtarget="aarch64-unknown-linux-musl" ;;
+            esac
+            url="https://github.com/$repo/releases/latest/download/worktrunk-${wtarget}.tar.xz"
+            fetch_tarball_binary wt "$url" && log "  installed worktrunk" || warn "  could not install worktrunk"
+            ;;
     esac
-    nu_tag="$(gh_latest_tag nushell/nushell)"
-    if [ -z "$nu_arch" ]; then
-        warn "nushell: no prebuilt binary for $(uname -m); install manually"
-    elif [ -z "$nu_tag" ]; then
-        warn "nushell: could not resolve latest release tag; will rely on cargo fallback"
-    else
-        log "install nushell $nu_tag ($nu_arch musl binary, GitHub release fallback)"
-        fetch_tarball_binary nu \
-            "https://github.com/nushell/nushell/releases/download/$nu_tag/nu-$nu_tag-$nu_arch-unknown-linux-musl.tar.gz" \
-            && log "  installed nushell" \
-            || warn "  could not install nushell from the GitHub release"
-    fi
-fi
+done
 
-# television (tv) — musl on x86_64, gnu on aarch64; assets are version-stamped.
-if [ "$(uname -s)" = "Linux" ] && ! command -v tv >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  tv_target=x86_64-unknown-linux-musl ;;
-        aarch64|arm64) tv_target=aarch64-unknown-linux-gnu ;;
-        *)             tv_target="" ;;
-    esac
-    tv_tag="$(gh_latest_tag alexpasmantier/television)"
-    if [ -z "$tv_target" ]; then
-        warn "television: no prebuilt binary for $(uname -m); install manually"
-    elif [ -z "$tv_tag" ]; then
-        warn "television: could not resolve latest release tag; will rely on cargo fallback"
-    else
-        log "install television $tv_tag ($tv_target binary, GitHub release fallback)"
-        fetch_tarball_binary tv \
-            "https://github.com/alexpasmantier/television/releases/download/$tv_tag/tv-$tv_tag-$tv_target.tar.gz" \
-            && log "  installed television" \
-            || warn "  could not install television from the GitHub release"
-    fi
-fi
-
-# gh (GitHub CLI) — version-stamped tarball. The release tag is "vX.Y.Z" but the
-# asset filename drops the leading "v" (gh_X.Y.Z_linux_<arch>.tar.gz), and gh
-# names arches amd64/arm64. Extracts to gh_X.Y.Z_linux_<arch>/bin/gh, which
-# fetch_tarball_binary finds by name. There is no gh crate, so no cargo fallback.
-if [ "$(uname -s)" = "Linux" ] && ! command -v gh >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  gh_arch=amd64 ;;
-        aarch64|arm64) gh_arch=arm64 ;;
-        *)             gh_arch="" ;;
-    esac
-    gh_tag="$(gh_latest_tag cli/cli)"
-    gh_ver="${gh_tag#v}"
-    if [ -z "$gh_arch" ]; then
-        warn "gh: no prebuilt binary for $(uname -m); install manually"
-    elif [ -z "$gh_tag" ]; then
-        warn "gh: could not resolve latest release tag; install manually"
-    else
-        log "install gh $gh_tag ($gh_arch binary, GitHub release fallback)"
-        fetch_tarball_binary gh \
-            "https://github.com/cli/cli/releases/download/$gh_tag/gh_${gh_ver}_linux_${gh_arch}.tar.gz" \
-            && log "  installed gh" \
-            || warn "  could not install gh from the GitHub release"
-    fi
-fi
-
-# lazygit — version-stamped gzip tarball with a top-level `lazygit` binary, so it
-# drops straight through fetch_tarball_binary. Not in default apt/dnf; macOS and
-# Arch are covered by brew/pacman above. lazygit names arches x86_64/arm64.
-if [ "$(uname -s)" = "Linux" ] && ! command -v lazygit >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  lg_arch=x86_64 ;;
-        aarch64|arm64) lg_arch=arm64 ;;
-        *)             lg_arch="" ;;
-    esac
-    lg_tag="$(gh_latest_tag jesseduffield/lazygit)"
-    lg_ver="${lg_tag#v}"
-    if [ -z "$lg_arch" ]; then
-        warn "lazygit: no prebuilt binary for $(uname -m); install manually"
-    elif [ -z "$lg_tag" ]; then
-        warn "lazygit: could not resolve latest release tag; install manually"
-    else
-        log "install lazygit $lg_tag ($lg_arch binary, GitHub release fallback)"
-        fetch_tarball_binary lazygit \
-            "https://github.com/jesseduffield/lazygit/releases/download/$lg_tag/lazygit_${lg_ver}_linux_${lg_arch}.tar.gz" \
-            && log "  installed lazygit" \
-            || warn "  could not install lazygit from the GitHub release"
-    fi
-fi
-
-# tinty — drives the live `theme` switcher. Release assets are tag-agnostic
-# (latest/download) and cover Linux + macOS. Unlike the brew-core tools above,
-# tinty's brew name is a third-party tap (tinted-theming/tinty) that can fail to
-# fetch, so we keep a release-binary fallback on macOS too — not just Linux —
-# before the cargo last resort.
-if ! command -v tinty >/dev/null 2>&1; then
-    case "$(uname -s)-$(uname -m)" in
-        Linux-x86_64|Linux-amd64)    tinty_target=x86_64-unknown-linux-musl ;;
-        Linux-aarch64|Linux-arm64)   tinty_target=aarch64-unknown-linux-gnu ;;
-        Darwin-x86_64)               tinty_target=x86_64-apple-darwin ;;
-        Darwin-arm64|Darwin-aarch64) tinty_target=aarch64-apple-darwin ;;
-        *)                           tinty_target="" ;;
-    esac
-    if [ -z "$tinty_target" ]; then
-        warn "tinty: no prebuilt binary for $(uname -s)/$(uname -m); will rely on cargo fallback"
-    else
-        log "install tinty ($tinty_target binary, GitHub release fallback)"
-        fetch_tarball_binary tinty \
-            "https://github.com/tinted-theming/tinty/releases/latest/download/tinty-$tinty_target.tar.gz" \
-            && log "  installed tinty" \
-            || warn "  could not install tinty from the GitHub release"
-    fi
-fi
-
-# kern — self-learning memory daemon / MCP server. Not in any package manager,
-# and the crates.io `kern` is an unrelated library (so no cargo fallback). Fetch
-# the prebuilt binary from its latest GitHub release; the repo is the single
-# source of truth in packages.yaml (gh_release). Release assets cover Linux
-# x86_64 and Apple-Silicon macOS; other targets warn and fall through (build
-# from source). The tarball holds a top-level `kern`, so it drops straight
-# through fetch_tarball_binary. Idempotent: skipped once `kern` is on PATH.
-# (gh_release is name-scoped here since worktrunk below carries it too.)
-kern_repo="{{ range .packages }}{{ if eq .name "kern" }}{{ .gh_release }}{{ end }}{{ end }}"
-if [ -n "$kern_repo" ] && ! command -v kern >/dev/null 2>&1; then
-    case "$(uname -s)-$(uname -m)" in
-        Linux-x86_64|Linux-amd64)    kern_target=x86_64-unknown-linux-gnu ;;
-        Darwin-arm64|Darwin-aarch64) kern_target=aarch64-apple-darwin ;;
-        *)                           kern_target="" ;;
-    esac
-    if [ -z "$kern_target" ]; then
-        warn "kern: no prebuilt binary for $(uname -s)/$(uname -m); build from source (https://github.com/$kern_repo)"
-    else
-        log "install kern ($kern_target binary, GitHub release fallback)"
-        fetch_tarball_binary kern \
-            "https://github.com/$kern_repo/releases/latest/download/kern-$kern_target.tar.gz" \
-            && log "  installed kern" \
-            || warn "  could not install kern from the GitHub release"
-    fi
-fi
-
-# worktrunk — git worktree manager (binary: `wt`), built for parallel-agent
-# workflows. In homebrew-core (covers macOS) but absent from apt/dnf, so on Linux
-# fetch the prebuilt musl binary from its latest GitHub release. The repo is the
-# single source of truth in packages.yaml (gh_release). Release tarballs are
-# tag-agnostic (latest/download) .tar.xz with a top-level `wt` (fetch_tarball_binary
-# autodetects xz). Idempotent: skipped once `wt` is on PATH; cargo (worktrunk-sync)
-# is the last resort below.
-worktrunk_repo="{{ range .packages }}{{ if eq .name "worktrunk" }}{{ .gh_release }}{{ end }}{{ end }}"
-if [ "$(uname -s)" = "Linux" ] && [ -n "$worktrunk_repo" ] && ! command -v wt >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  wt_target=x86_64-unknown-linux-musl ;;
-        aarch64|arm64) wt_target=aarch64-unknown-linux-musl ;;
-        *)             wt_target="" ;;
-    esac
-    if [ -z "$wt_target" ]; then
-        warn "worktrunk: no prebuilt binary for $(uname -m); build from source (https://github.com/$worktrunk_repo)"
-    else
-        log "install worktrunk ($wt_target binary, GitHub release fallback)"
-        fetch_tarball_binary wt \
-            "https://github.com/$worktrunk_repo/releases/latest/download/worktrunk-$wt_target.tar.xz" \
-            && log "  installed worktrunk" \
-            || warn "  could not install worktrunk from the GitHub release"
-    fi
-fi
-
-# nvm + Node.js — npm CLIs (pi below) need a Node toolchain, which isn't in the
-# package lists. Install it via nvm (Node Version Manager): bootstrap nvm from its
-# latest release when missing, then install the latest Node ("nvm install node").
-# Finally symlink node/npm/npx into ~/.local/bin so they're on PATH in every shell
-# — nushell included, since nvm.sh is a bash function nu can't source — matching
-# how the rest of this script routes binaries through ~/.local. Idempotent: nvm
-# bootstrap skipped once ~/.nvm exists; Node install skipped once `node` resolves.
+# --- nvm + Node.js ---
+# Bootstraps nvm from its latest release, installs the latest Node, and
+# symlinks node/npm/npx into ~/.local/bin for visibility outside bash.
 export NVM_DIR="$HOME/.nvm"
 if [ ! -s "$NVM_DIR/nvm.sh" ]; then
     nvm_tag="$(gh_latest_tag nvm-sh/nvm)"
     if [ -z "$nvm_tag" ]; then
-        warn "nvm: could not resolve latest release tag; install manually (https://github.com/nvm-sh/nvm)"
+        warn "nvm: could not resolve latest release tag"
     else
-        log "install nvm $nvm_tag (Node Version Manager)"
+        log "install nvm $nvm_tag"
         curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$nvm_tag/install.sh" | bash >/dev/null 2>&1 \
-            && log "  installed nvm" \
-            || warn "  could not install nvm"
+            && log "  installed nvm" || warn "  could not install nvm"
     fi
 fi
 if [ -s "$NVM_DIR/nvm.sh" ]; then
     # shellcheck disable=SC1091
     . "$NVM_DIR/nvm.sh"
     if ! command -v node >/dev/null 2>&1; then
-        log "install latest Node.js (nvm install node)"
+        log "install latest Node.js"
         nvm install node >/dev/null 2>&1 && nvm alias default node >/dev/null 2>&1 \
             && log "  installed Node.js $(node --version 2>/dev/null)" \
             || warn "  could not install Node.js via nvm"
     fi
-    # Expose node/npm/npx on PATH for every shell by symlinking the active version's
-    # binaries into ~/.local/bin (nvm's own PATH wiring is bash-only). Resolve the
-    # real version dir via `nvm which` — NOT `command -v node`, which (with ~/.local
-    # /bin first on PATH) would resolve to the symlink we manage here and link each
-    # file to itself.
+    # Expose node/npm/npx on PATH for every shell (nvm's PATH wiring is bash-only).
     nvm_bin="$(dirname "$(nvm which current 2>/dev/null)" 2>/dev/null)"
     if [ -n "$nvm_bin" ] && [ -d "$nvm_bin" ] && [ "$nvm_bin" != "$HOME/.local/bin" ]; then
         mkdir -p "$HOME/.local/bin"
@@ -392,22 +323,7 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
     fi
 fi
 
-# pi — the pi coding agent (earendil-works). Published only to npm, so install it
-# globally with npm; the package name is the single source of truth in
-# packages.yaml (npm). Run with --ignore-scripts (pi needs no dependency lifecycle
-# scripts). Needs node/npm: warns and skips if absent.
-#
-# It goes into the ACTIVE NODE's global prefix — NOT --prefix ~/.local, which is
-# where the rest of this script routes binaries. Reason: run_onchange_after_install-
-# pi.sh symlinks the pi-launch.sh wrapper over ~/.local/bin/pi, and that wrapper
-# execs the real pi at "$(dirname "$(readlink -f "$(command -v node)")")/pi". Put
-# the real binary in ~/.local/bin and the wrapper would either shadow it or exec
-# itself in a loop; in the node bin dir the two can't collide.
-#
-# Idempotent: guard on that node-bin target, never on `command -v pi` — ~/.local/
-# bin/pi is the wrapper, and on WSL a Windows-global `pi` npm shim also leaks onto
-# PATH via interop (/mnt/c/.../npm/pi); either would fool the guard into skipping
-# the install while leaving nothing runnable behind it.
+# --- npm packages (pi, tree-sitter-cli) ---
 pi_npm_pkg="{{ range .packages }}{{ if hasKey . "npm" }}{{ .npm }}{{ end }}{{ end }}"
 pi_real=""
 if [ -n "${nvm_bin:-}" ]; then
@@ -417,191 +333,41 @@ elif command -v node >/dev/null 2>&1; then
 fi
 if [ -n "$pi_npm_pkg" ] && [ -n "$pi_real" ] && [ ! -x "$pi_real" ]; then
     if command -v npm >/dev/null 2>&1; then
-        log "install pi ($pi_npm_pkg, global npm package -> $(dirname "$pi_real"))"
+        log "install pi ($pi_npm_pkg, global npm)"
         npm install -g --ignore-scripts "$pi_npm_pkg" >/dev/null 2>&1 \
-            && log "  installed pi" \
-            || warn "  could not install pi via npm"
+            && log "  installed pi" || warn "  could not install pi via npm"
     else
-        warn "pi: npm not found; install Node.js/npm and re-run (https://github.com/earendil-works/pi)"
+        warn "pi: npm not found; install Node.js/npm and re-run"
     fi
 fi
-# Baseline `pi` on PATH: link the real binary into ~/.local/bin so pi works before
-# (and without) the wrapper. Only when nothing is there — the wrapper installed by
-# run_onchange_after_install-pi.sh must not be clobbered. A dangling wrapper link
-# (workspace gone) fails -e and is replaced by this baseline, so pi self-heals.
+# Baseline `pi` on PATH: link the real binary into ~/.local/bin.
 if [ -n "$pi_real" ] && [ -x "$pi_real" ] && [ ! -e "$HOME/.local/bin/pi" ]; then
     mkdir -p "$HOME/.local/bin"
     ln -sfn "$pi_real" "$HOME/.local/bin/pi"
 fi
 
-# tree-sitter CLI — nvim-treesitter's `:TSInstall` shells out to `tree-sitter build`
-# (the standalone CLI), but Homebrew's `tree-sitter` formula ships only the shared
-# library, no `tree-sitter` binary. The CLI is published to npm as tree-sitter-cli.
-# `npm install -g` puts it in npm's global bin (`npm prefix -g`/bin) — which for
-# nvm node is a version-dir that only bash reaches via nvm.sh, so we also symlink
-# it into ~/.local/bin (like node/npm/npx) for nu and other shells. Idempotent:
-# skipped once the binary resolves on PATH. Needs node/npm: warns and skips if absent.
-if command -v tree-sitter >/dev/null 2>&1; then
-    :
-elif ! command -v npm >/dev/null 2>&1; then
-    warn "tree-sitter-cli: npm not found; install Node.js/npm and re-run"
-else
-    log "install tree-sitter-cli (npm global)"
-    # NOTE: unlike pi, tree-sitter-cli MUST run its postinstall (install.js) — it
-    # fetches the native binary. --ignore-scripts leaves a broken JS launcher that
-    # throws on every run, so pass --allow-scripts for this package explicitly.
-    npm install -g --allow-scripts=tree-sitter-cli tree-sitter-cli >/dev/null 2>&1 \
-        && log "  installed tree-sitter-cli" \
-        || warn "  could not install tree-sitter-cli via npm"
-    # Expose on PATH in every shell: resolve the real binary via npm's global bin
-    # (the source of truth for where -g installs land — NOT dirname(node), which on
-    # brew node points at the Cellar, not /opt/homebrew/bin where npm -g lands).
-    npm_bin="$(npm prefix -g 2>/dev/null)"
-    [ -n "$npm_bin" ] && npm_bin="$npm_bin/bin"
-    ts_real="$npm_bin/tree-sitter"
-    if [ -x "$ts_real" ] && [ "$ts_real" != "$HOME/.local/bin/tree-sitter" ] \
-        && [ ! -e "$HOME/.local/bin/tree-sitter" ]; then
-        mkdir -p "$HOME/.local/bin"
-        ln -sfn "$ts_real" "$HOME/.local/bin/tree-sitter"
-    fi
-fi
-
-# playwright chromium deps — headless chromium needs a set of system libs
-# (libnss3, libatk, libgbm, …) that aren't pulled in by the package lists. The
-# `playwright install-deps` helper resolves and apt-installs exactly that set, so
-# browser automation works out of the box. apt-only (it shells out to apt-get),
-# and needs npx from the Node setup above; warns and skips otherwise.
-if [ "$(uname -s)" = "Linux" ] && [ "$MGR" = apt ]; then
-    if ! command -v npx >/dev/null 2>&1; then
-        warn "playwright deps: npx not found; install Node.js and re-run"
-    elif [ "$(id -u)" != 0 ] && ! sudo -n true >/dev/null 2>&1; then
-        # install-deps shells out to its own sudo and can't prompt non-interactively.
-        warn "playwright chromium deps: need root (passwordless sudo unavailable)"
-        warn "  run once manually: npx playwright install-deps chromium"
+# tree-sitter CLI — needed by nvim-treesitter's `:TSInstall`. The brew formula
+# ships only the shared library, so install the npm-published CLI globally.
+if ! command -v tree-sitter >/dev/null 2>&1; then
+    if ! command -v npm >/dev/null 2>&1; then
+        warn "tree-sitter-cli: npm not found; install Node.js and re-run"
     else
-        log "install playwright chromium system deps (npx playwright install-deps chromium)"
-        npx --yes playwright install-deps chromium >/dev/null 2>&1 \
-            && log "  installed playwright chromium deps" \
-            || warn "  could not install playwright chromium deps"
-    fi
-fi
-
-# docker — special-cased: "windows ?? local". On WSL where a Windows Docker
-# Desktop CLI is reachable (docker.exe on PATH), we do NOT install a second engine
-# inside the distro — we shim `docker` (+ compose) to the Windows binary, which
-# talks to the Desktop engine over the shared socket. When Desktop's WSL
-# integration is already mounted, `docker` is on PATH and this whole block is
-# skipped. Off WSL (or no Windows Docker), install Docker Engine natively: add
-# Docker's official apt repo, install the engine + CLI + compose plugin, enable
-# the service, and add the user to the docker group. Idempotent: skipped once
-# `docker` resolves. Only scripted for apt/brew/pacman/dnf via the lists above;
-# the native path here is apt-only (Debian/Ubuntu, the WSL/Linux target).
-docker_in_packages="{{ range .packages }}{{ if eq .name "docker" }}yes{{ end }}{{ end }}"
-if [ -n "$docker_in_packages" ] && ! command -v docker >/dev/null 2>&1; then
-    is_wsl=0
-    grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null && is_wsl=1
-    win_docker="$(command -v docker.exe 2>/dev/null || true)"
-    if [ "$is_wsl" = 1 ] && [ -n "$win_docker" ]; then
-        log "docker: WSL + Windows Docker Desktop detected -> shim to $win_docker"
-        mkdir -p "$HOME/.local/bin"
-        ln -sf "$win_docker" "$HOME/.local/bin/docker"
-        win_compose="$(command -v docker-compose.exe 2>/dev/null || true)"
-        [ -n "$win_compose" ] && ln -sf "$win_compose" "$HOME/.local/bin/docker-compose"
-        log "  docker -> Windows Docker Desktop (windows)"
-    elif [ "$MGR" = apt ]; then
-        log "install Docker Engine natively (Docker official apt repo) (local)"
-        if sudo install -m 0755 -d /etc/apt/keyrings \
-            && curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-                | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg \
-            && sudo chmod a+r /etc/apt/keyrings/docker.gpg; then
-            arch="$(dpkg --print-architecture)"
-            codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-stable}")"
-            echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $codename stable" \
-                | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-            if sudo apt-get update -y >/dev/null 2>&1 \
-                && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null 2>&1; then
-                # systemd-managed where available (Ubuntu 24.04 WSL has systemd); else
-                # fall back to the SysV service wrapper. Neither failing is fatal.
-                sudo systemctl enable --now docker >/dev/null 2>&1 \
-                    || sudo service docker start >/dev/null 2>&1 || true
-                # rootless-friendly: run docker without sudo after the next login.
-                sudo usermod -aG docker "$USER" >/dev/null 2>&1 || true
-                log "  installed docker $("$(command -v docker || echo docker)" --version 2>/dev/null | sed -n '1p')"
-                warn "  log out/in (or 'newgrp docker') for the docker group to take effect"
-            else
-                warn "  could not install Docker Engine packages via apt"
-            fi
-        else
-            warn "  could not set up Docker's apt repo (keyring/gpg step failed)"
-        fi
-    else
-        warn "docker: native install only scripted for apt; install manually on $MGR"
-    fi
-fi
-
-# docker buildx — the modern (BuildKit) builder, shipped as a CLI plugin. The
-# native apt path above already pulls docker-buildx-plugin, but the WSL + Docker
-# Desktop case does NOT: Desktop only injects a Linux `docker` CLI, no Linux
-# buildx, so `docker build` silently falls back to the deprecated legacy builder
-# (which SIGBUS-crashes on memory-pressured WSL2). So whenever `docker` resolves
-# but `docker buildx` does not, drop the prebuilt Linux buildx binary into the
-# per-user CLI-plugins dir. Idempotent: skipped once `docker buildx` works.
-if [ -n "$docker_in_packages" ] && command -v docker >/dev/null 2>&1 \
-    && ! docker buildx version >/dev/null 2>&1; then
-    case "$(uname -m)" in
-        x86_64|amd64)  bx_arch=amd64 ;;
-        aarch64|arm64) bx_arch=arm64 ;;
-        *)             bx_arch="" ;;
-    esac
-    bx_tag="$(gh_latest_tag docker/buildx)"
-    if [ -z "$bx_arch" ]; then
-        warn "docker buildx: no prebuilt binary for $(uname -m); install manually"
-    elif [ -z "$bx_tag" ]; then
-        warn "docker buildx: could not resolve latest release tag; install manually"
-    else
-        log "install docker buildx $bx_tag ($bx_arch CLI plugin)"
-        mkdir -p "$HOME/.docker/cli-plugins"
-        if curl -fsSL -o "$HOME/.docker/cli-plugins/docker-buildx" \
-            "https://github.com/docker/buildx/releases/download/$bx_tag/buildx-$bx_tag.linux-$bx_arch"; then
-            chmod +x "$HOME/.docker/cli-plugins/docker-buildx"
-            log "  installed docker buildx"
-        else
-            warn "  could not download docker buildx $bx_tag"
+        log "install tree-sitter-cli (npm global)"
+        npm install -g --allow-scripts=tree-sitter-cli tree-sitter-cli >/dev/null 2>&1 \
+            && log "  installed tree-sitter-cli" || warn "  could not install tree-sitter-cli"
+        # Expose on PATH in every shell.
+        npm_bin="$(npm prefix -g 2>/dev/null)"
+        [ -n "$npm_bin" ] && npm_bin="$npm_bin/bin"
+        ts_real="$npm_bin/tree-sitter"
+        if [ -x "$ts_real" ] && [ "$ts_real" != "$HOME/.local/bin/tree-sitter" ] \
+            && [ ! -e "$HOME/.local/bin/tree-sitter" ]; then
+            mkdir -p "$HOME/.local/bin"
+            ln -sfn "$ts_real" "$HOME/.local/bin/tree-sitter"
         fi
     fi
 fi
 
-# cargo fallback for tools the native manager could not provide.
-bin_for() {
-    case "$1" in
-        ripgrep)    echo rg ;;
-        neovim)     echo nvim ;;
-        imagemagick) echo magick ;;
-        nushell)    echo nu ;;
-        television) echo tv ;;
-        bubblewrap) echo bwrap ;;
-        gnupg)      echo gpg ;;
-        worktrunk)  echo wt ;;
-        burrito)    echo brr ;;
-        *)          echo "$1" ;;
-    esac
-}
-crate_for() {
-    case "$1" in
-        rg) echo ripgrep ;;
-        fd) echo fd-find ;;
-        bat) echo bat ;;
-        zoxide) echo zoxide ;;
-        starship) echo starship ;;
-        delta) echo git-delta ;;
-        nu) echo nu ;;
-        tv) echo television ;;
-        tinty) echo tinty ;;
-        just) echo just ;;
-        wt) echo worktrunk-sync ;;
-        *) echo "" ;;
-    esac
-}
+# --- cargo fallback ---
 if command -v cargo >/dev/null 2>&1; then
     for n in $names; do
         [ "$n" = "nerd-font" ] && continue
@@ -614,39 +380,31 @@ if command -v cargo >/dev/null 2>&1; then
     done
 fi
 
-# cargo_git packages (keydr, ...) — no package on any manager and no
-# prebuilt release, so they are built from their GitHub repos with cargo. The
-# repo URLs are the single source of truth in packages.yaml (cargo_git).
-# Bootstrap rustup non-interactively if cargo is missing, then
-# `cargo install --git`. Idempotent: skipped once the binary is on PATH.
+# --- cargo_git packages (keydr, ...) ---
+# Build from their GitHub repos with cargo. Bootstrap rustup if cargo is missing.
 cargo_git_pkgs="{{ range .packages }}{{ if hasKey . "cargo_git" }}{{ .name }}={{ .cargo_git }} {{ end }}{{ end }}"
 for entry in $cargo_git_pkgs; do
     name="${entry%%=*}"
     repo="${entry#*=}"
     command -v "$name" >/dev/null 2>&1 && continue
     if ! command -v cargo >/dev/null 2>&1; then
-        log "install rustup (toolchain needed to build $name)"
+        log "install rustup (needed to build $name)"
         curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs \
             | sh -s -- -y --profile minimal >/dev/null 2>&1 \
-            || warn "  rustup bootstrap failed; install a Rust toolchain manually"
+            || warn "  rustup bootstrap failed"
         [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
     fi
     if command -v cargo >/dev/null 2>&1; then
         log "install $name (cargo install --git $repo)"
         cargo install --git "$repo" --locked "$name" >/dev/null 2>&1 \
-            && log "  installed $name" \
-            || warn "  could not build $name from $repo"
+            && log "  installed $name" || warn "  could not build $name from $repo"
     else
-        warn "$name: no cargo available; install a Rust toolchain and re-run"
+        warn "$name: no cargo available; install Rust and re-run"
     fi
 done
 
-# just_git packages (burrito -> brr) — repos that own their build via a
-# `just install` recipe. burrito is Go, not Rust: cargo cannot build it, and a
-# bare `cargo install burrito` silently pulls an unrelated crates.io crate that
-# shadows the real binary. The repo's justfile is the source of truth for the
-# toolchain and the install destination (~/.local/bin, under bin_for's name).
-# Idempotent: skipped once the binary is on PATH.
+# --- just_git packages (burrito) ---
+# Repos that own their build via `just install`.
 just_git_pkgs="{{ range .packages }}{{ if hasKey . "just_git" }}{{ .name }}={{ .just_git }} {{ end }}{{ end }}"
 for entry in $just_git_pkgs; do
     name="${entry%%=*}"
@@ -663,15 +421,12 @@ for entry in $just_git_pkgs; do
         && (cd "$tmp/$name" && just install) >/dev/null 2>&1; then
         log "  installed $b"
     else
-        warn "  could not build $name from $repo (check its justfile's toolchain, e.g. Go)"
+        warn "  could not build $name from $repo"
     fi
     rm -rf "$tmp"
 done
 
-# --- Nerd Font: guarantee the patched font is present (release fallback) ---
-# Font identity comes from packages.yaml (nerdfont_asset); fetch the nerd-fonts
-# release zip when the font is not already installed, so the terminal/prompt
-# glyphs always resolve regardless of package-manager coverage. Idempotent.
+# --- Nerd Font ---
 nerdfont_asset="{{ range .packages }}{{ if hasKey . "nerdfont_asset" }}{{ .nerdfont_asset }}{{ end }}{{ end }}"
 if [ -n "$nerdfont_asset" ]; then
     case "$(uname -s)" in
@@ -685,13 +440,11 @@ if [ -n "$nerdfont_asset" ]; then
         fc-list 2>/dev/null | grep -qi "$nerdfont_asset" && have_font=1
     fi
     if [ "$have_font" = 0 ]; then
-        log "install Nerd Font $nerdfont_asset (nerd-fonts release fallback)"
+        log "install Nerd Font $nerdfont_asset"
         mkdir -p "$font_dir"
         ft="$(mktemp -d)"
         if curl -fsSL -o "$ft/$nerdfont_asset.zip" \
             "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$nerdfont_asset.zip"; then
-            # Nerd Font zips ship .ttf, .otf, or both (DepartureMono is .otf-only),
-            # so extract every font file rather than just .ttf.
             mkdir -p "$ft/fonts"
             if command -v unzip >/dev/null 2>&1; then
                 unzip -oq "$ft/$nerdfont_asset.zip" '*.ttf' '*.otf' -d "$ft/fonts" 2>/dev/null
@@ -712,12 +465,13 @@ if [ -n "$nerdfont_asset" ]; then
                 warn "  downloaded but could not place $nerdfont_asset font files"
             fi
         else
-            warn "  could not download $nerdfont_asset from the nerd-fonts release"
+            warn "  could not download $nerdfont_asset"
         fi
         rm -rf "$ft"
     fi
 fi
 
+# --- missing check ---
 missing=""
 for n in $names; do
     [ "$n" = "nerd-font" ] && continue
@@ -726,7 +480,7 @@ for n in $names; do
 done
 if [ -n "$missing" ]; then
     warn "Still missing:$missing"
-    warn "Install these manually, or use Homebrew (covers all of them) and re-run: chezmoi apply"
+    warn "Install these manually, or use Homebrew and re-run: chezmoi apply"
 else
     log "All tools present."
 fi
