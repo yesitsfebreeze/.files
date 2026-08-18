@@ -77,9 +77,8 @@ if (is-terminal --stdout) {
 # Shell integrations are generated at apply time by the chezmoi run_after script,
 # not here, and merely sourced by config.nu — so shell launch does zero work.
 
-# Resolve the Ollama endpoint (on WSL the Windows-host gateway IP changes per
-# boot). ollama-host probes candidates; unset stays unset on miss. Guarded on
-# an interactive stdout so scripted `nu -c` callers skip the probe cost.
+# Resolve the Ollama endpoint. Probes localhost on all platforms.
+# Guarded on an interactive stdout so scripted `nu -c` callers skip the probe cost.
 if (is-terminal --stdout) {
     let _ollama = (do { ^ollama-host } | complete)
     if $_ollama.exit_code == 0 {
