@@ -86,7 +86,7 @@ fi
 log "Package manager: $MGR"
 
 # apt/pacman/dnf all shell out to sudo. In environments without root or
-# passwordless sudo (CI, restricted shells, some WSL setups) every per-package
+# passwordless sudo (CI, restricted shells) every per-package
 # install would fail identically, spamming a misleading "could not install X via
 # $MGR (will try fallback)" for each one — even for apt-only tools that have no
 # fallback. Detect that once here and skip the doomed loop; the Linux GitHub-
