@@ -125,7 +125,7 @@ export def _theme_commit [id: string] {
 
 # ── background override (`theme bg`) ──────────────────────────────────────────
 # The override lives as `background-override = "#hex"` in tinty's config.toml and
-# is honored by wezterm-colors.sh / zebar-colors.sh / bg-override.sh over the
+# is honored by wezterm-colors.sh / bg-override.sh over the
 # scheme's base00. `theme bg` opens the tv bg cable for picking; Enter persists
 # via _theme_bg_persist. `theme bg #hex` sets the override directly. `theme bg
 # clear` removes it.
