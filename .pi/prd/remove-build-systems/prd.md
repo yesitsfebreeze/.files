@@ -2,7 +2,7 @@
 state: claimed
 mode: afk
 priority: 2
-verify: test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html && test "$(git ls-files | grep -c '^\.splinter/')" = 0
+verify: test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html && test "$(git ls-files | grep -c '^\.splinter/')" = 0 && test -z "$(git grep -l 'docs/index\.html' -- . ':!.pi/prd/')"
 claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
@@ -44,7 +44,7 @@ triple the maintenance surface of the configs they generate.
   task definition, not a runtime reference to the codegen.
 
 ## Acceptance
-- [x] `test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html` passes and `git ls-files | grep -c '^\.splinter/'` is 0.
+- [ ] `test ! -d .splinter && test ! -f docs/build.py && test ! -f docs/index.html` passes, `git ls-files | grep -c '^\.splinter/'` is 0, and no tracked file outside `.pi/prd/` references `docs/index.html` (covers requirement 4 — strengthened by conductor after the first collect missed the stale pointer).
 
 ## Out of scope
 - The "splinter" pi extension referenced in mirror-config-to-windows.sh (a different tool, unrelated to the codegen)
