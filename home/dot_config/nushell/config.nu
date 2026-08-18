@@ -378,7 +378,7 @@ def cf [file: path] {
     } else if ($env.DISPLAY? | is-not-empty) and (which xclip | is-not-empty) {
         $data | xclip -selection clipboard
     } else {
-        error make { msg: "cf: no clipboard tool found (need wl-copy, xclip, clip.exe, or pbcopy)" }
+        error make { msg: "cf: no clipboard tool found (need wl-copy, xclip, or pbcopy)" }
     }
     print $"copied ($f) to clipboard"
 }
