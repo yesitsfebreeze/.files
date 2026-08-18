@@ -1,9 +1,8 @@
 ---
-state: claimed
+state: done
 mode: afk
 priority: 3
 verify: test "$(git ls-files home/ | grep -cE 'wp-stat-overlay|custom-topbar|layout-daemon')" = 0
-claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
 # Extract desktop apps from chezmoi management
@@ -21,8 +20,8 @@ chezmoi machinery.
 - [x] zebar custom-topbar removed from `home/` (moved to its own repo/location)
 - [x] layout-daemon.js removed from `home/` (moved to its own repo/location)
 - [x] The run scripts that install/manage these apps are removed or reduced to a pointer to the external repo
-- [x] README documents where the apps now live
-- [x] The apps still function from their new location (install/run instructions preserved)
+- [x] README documents where the apps now live — section written, but the "external repos" framing is SUPERSEDED by the user reversal (2026-08-18): apps are deleted, not relocated; de-windows node rewrites the README
+- [x] The apps still function from their new location — MOOT: user reversed the premise ("strip windows, git has everything") — the apps are deleted, not relocated; no new location exists
 
 ## Acceptance
 - [x] `chezmoi apply` no longer manages wp-stat-overlay, custom-topbar, or layout-daemon (no tracked files under those paths), and the apps' install/run instructions are documented in README.
@@ -32,16 +31,16 @@ chezmoi machinery.
 - The glazewm config.yaml.tmpl itself (trimmed in trim-configs)
 
 ## Assumptions
-- The user still uses these apps (they are the desktop setup); extraction preserves them.
-- Extraction target: one repo per app, named as documented in README.
+- REVERSED by user (2026-08-18): the apps are NOT still wanted — the user is moving to Linux-first and wants Windows stripped ("i want to strip windows we have everything in git so its fine"). The removal from `home/` is exactly what de-windows needs; the "external repos" framing is superseded. Git history preserves the apps.
+- Extraction target: one repo per app, named as documented in README. (Moot — no repos are built.)
 
 ## Decisions
-- Extraction target per app (separate repos): wp-stat-overlay, zebar-custom-topbar, glazewm-layout-daemon
-- `settings.json` kept under chezmoi (it's a config file pointing to the custom-topbar pack, not part of the extracted app)
-- `zebar-colors.sh` (tinty theme hook) kept unchanged — it writes to the runtime path `~/.glzr/zebar/custom-topbar/theme.css` which will still exist when custom-topbar is deployed from its new repo
-- `config.yaml.tmpl` not touched (out of scope per parent node)
-- `wezterm.lua` comment not touched (just a comment referencing the daemon)
-- Node.js install kept in `install-glazewm.sh.tmpl` (needed by externally-managed layout-daemon)
+- Extraction target per app (separate repos): wp-stat-overlay, zebar-custom-topbar, glazewm-layout-daemon — MOOT: user reversed to deletion; no repos are built
+- `settings.json` kept under chezmoi (it's a config file pointing to the custom-topbar pack, not part of the extracted app) — de-windows deletes it (zebar is Windows-only)
+- `zebar-colors.sh` (tinty theme hook) kept unchanged — de-windows deletes it (zebar is Windows-only)
+- `config.yaml.tmpl` not touched (out of scope per parent node) — de-windows deletes it (glazewm is Windows-only)
+- `wezterm.lua` comment not touched (just a comment referencing the daemon) — de-windows removes the reference
+- Node.js install kept in `install-glazewm.sh.tmpl` (needed by externally-managed layout-daemon) — de-windows deletes the script (glazewm is Windows-only)
 
 ## Changes made
 | File | Change |
