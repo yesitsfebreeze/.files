@@ -47,3 +47,7 @@ opt.list = true
 opt.listchars = { eol = "↵", tab = "→ ", multispace = "·", trail = "·", nbsp = "␣" }
 
 opt.laststatus = 3
+
+-- Servers like rust-analyzer can spam stderr in a tight loop; nvim mirrors
+-- every line into ~/.local/state/nvim/lsp.log with no rotation (once grew to 17GB).
+vim.lsp.log.set_level(vim.log.levels.OFF)

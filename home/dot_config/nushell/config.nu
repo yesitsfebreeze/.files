@@ -144,7 +144,7 @@ alias cat = bat --paging=never
 alias grep = rg
 alias g = git
 alias lg = lazygit
-alias v = nvim
+alias nv = nvim
 alias vi = nvim
 alias nn = nvim ~/notes.md
 alias cdi = zi
@@ -483,6 +483,15 @@ alias zi = _zi_nav
 def --env --wrapped zc [...rest: string] {
     __zoxide_z ...$rest
     cc
+}
+
+# zl — like `z`, but directories only, then list the jumped-to dir with `la`
+# (recursive folder sizes + icons). The jump lands in the Alt-O recency stack and
+# updates the new-shell start dir (via mkcd, same as any move), then lists right there.
+# No file-edit branch — unlike `z`, `zl` is dirs only by design.
+def --env --wrapped zl [...rest: string] {
+    __zoxide_z ...$rest
+    la
 }
 
 # `zz` — step back to the previous directory (the dir-history toggle). Pairs with the
