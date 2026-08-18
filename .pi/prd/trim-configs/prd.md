@@ -1,9 +1,8 @@
 ---
-state: claimed
+state: done
 mode: afk
 priority: 4
 verify: just gate
-claim: 01a01605-6d60-7e7e-adc5-36557224f3f4
 ---
 
 # Trim over-engineered configs
@@ -17,13 +16,14 @@ installer. Trim each to its essential behavior.
 ## Requirements
 - [x] finder.nu simplified from the chainable framework to plain pickers — its 353-line test updated to match (14 tests retained). 592→221 lines.
 - [x] theme.nu trimmed of bg-tune interactive stepper (rarely used color stepper removed). 382→320 lines. Recency/liked/apply/switch kept.
-- [ ] config.nu trimmed of dead/rarely-used aliases and commands (call sites updated for simplified finder)
+- [x] config.nu trimmed of dead/rarely-used aliases and commands (call sites updated for simplified finder) — audited: no dead aliases; user confirmed close-as-assessed
 - [x] wezterm.lua trimmed of unused features — removed launchpad proof-of-concept (CTRL-SHIFT-G). 738→717 lines.
-- [ ] tinty scripts consolidated (6 scripts → fewer; drop cmdpal-colors.sh if cmdpal is unused)
-- [ ] television exact_cable reduced from 30 to the channels actually used
-- [ ] run_onchange_install-packages.sh.tmpl simplified (732 lines → package-manager-driven or per-tool split)
+- [x] tinty scripts consolidated (6 scripts → fewer; drop cmdpal-colors.sh if cmdpal is unused) — cmdpal-colors.sh dropped (user doesn't use Command Palette); zebar removal folds into de-windows node
+- [x] television exact_cable reduced from 30 to the channels actually used — user: keep all 30
+- [x] run_onchange_install-packages.sh.tmpl simplified — split into new node, Unix-first (mac + linux)
 - [x] glazewm config.yaml.tmpl trimmed — removed wezterm-launchpad window rule
 - [x] All configs still load: `just gate` passes, nushell libs parse. Verified via worktree.
+- [x] cmdpal-colors.sh dropped from tinty hooks (config.toml, retint hook, theme.nu) + deleted; install-powertoys.sh simplified (version floor removed)
 
 ## Changes made
 
@@ -35,15 +35,17 @@ installer. Trim each to its essential behavior.
 5. **wezterm.lua** (738→717 lines): Removed launchpad proof-of-concept keybinding (CTRL-SHIFT-G).
 6. **glazewm config.yaml.tmpl**: Removed wezterm-launchpad window rule (+ its comment).
 
-### Not assessed (reasoning)
-- **config.nu**: Most aliases/commands are actively used. No clearly dead code found.
-- **tinty scripts**: cmdpal-colors.sh is referenced from theme.nu's `_theme_bg_persist` (called on `theme bg`), config.toml hooks, and config.nu comments. PowerToys is installed (run_onchange_install-powertoys.sh). If the user doesn't use Command Palette, this could be removed from the tinty hooks.
-- **television cables**: All 30 cables are functional tv channel definitions. Without usage data, cannot determine which are "actually used" vs. available but rarely picked.
-- **install-packages.sh.tmpl**: 732 lines of multi-platform package installation. Would need analysis of packages.yaml and understanding of the user's platforms.
-- **config.nu aliases**: Most are actively referenced. No clearly dead aliases identified.
+### User decisions (hitl)
+- **config.nu**: user confirmed close-as-assessed — no dead aliases to trim.
+- **tinty scripts**: user doesn't use the Command Palette → cmdpal-colors.sh dropped from hooks and deleted. Remaining consolidation (zebar removal) folds into the de-windows node.
+- **television cables**: user wants to keep all 30.
+- **install-packages.sh.tmpl**: split into a new node, Unix-first (mac + linux).
+- **Windows direction**: user wants to strip Windows support entirely ("we have everything in git so its fine") — new de-windows node.
 
 ## Acceptance
-- [ ] `just gate` passes after trimming, and each trimmed file is measurably smaller (line counts recorded in the node's close note).
+- [x] `just gate` passes after trimming, and each trimmed file is measurably smaller (line counts recorded in the node's close note).
+
+Line counts: finder.nu 592→221, theme.nu 382→320, wezterm.lua 738→717, finder-test.nu 353→115, cmdpal-colors.sh deleted (156), install-powertoys.sh 78→44. ~1,000 lines removed total.
 
 ## Out of scope
 - Rewriting the nvim config (already reasonable)
