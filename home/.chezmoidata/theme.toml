@@ -1,13 +1,10 @@
 # The ONLY tracked theme state — a single value, the active tinty scheme, synced
-# across machines. Everything else (WezTerm colors.lua, Zebar theme.css, GlazeWM's
-# focused-border green) is a derived artifact regenerated locally from this:
+# across machines. Everything else (WezTerm colors.lua etc.) is a derived artifact
+# regenerated locally from this:
 #
 #   - scheme : the last-picked tinty scheme id. run_after_generate-shell-init.sh.tmpl
 #              reads it on `chezmoi apply` and runs `tinty apply <scheme>`, which fires
 #              the color hooks to regenerate every deployed artifact on this machine.
-#              GlazeWM's focused-border accent (base0D) that config.yaml.tmpl needs
-#              inlined is derived from this same scheme at render time (scheme-accent.sh),
-#              so it's never a second value stored here that could drift or conflict.
 #
 # `scheme` is rewritten by wezterm-colors.sh when you switch themes (the live `theme`
 # picker), so a switch on one machine becomes a one-line commit the others adopt on
