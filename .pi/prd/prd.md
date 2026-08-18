@@ -14,7 +14,7 @@ configuration: no codegen, no apps, no tracked runtime state, trimmed configs â€
 while `chezmoi apply` keeps working on Linux/WSL/macOS.
 
 ## Requirements
-- [ ] All child nodes are done: remove-build-systems, untrack-runtime-state, extract-apps, trim-configs, de-windows
+- [ ] All child nodes are done: remove-build-systems, untrack-runtime-state, extract-apps, trim-configs, de-windows, installer
 - [ ] `chezmoi apply` succeeds on the target OSes (Linux/macOS)
 - [ ] `just gate` passes (nushell libs parse + test suites pass)
 - [ ] README reflects the simplified structure (no mention of removed systems; apps documented as external)
