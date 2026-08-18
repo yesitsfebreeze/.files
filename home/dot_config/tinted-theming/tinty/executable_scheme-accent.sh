@@ -2,14 +2,10 @@
 # Print base0D (the theme's primary accent) of a tinty scheme id, e.g.
 #   scheme-accent.sh base24-blink  ->  #5298c4
 #
-# This is what lets .chezmoidata/theme.toml carry ONLY the scheme name: chezmoi calls
-# this from config.yaml.tmpl to inline GlazeWM's focused-border color, so the accent is
-# always derived from the scheme, never stored as a second synced value that can drift
-# or conflict. Resolution mirrors wezterm-colors.sh (official repos clone first, then
-# our chezmoi-shipped custom-schemes). Always exits 0 so a template `output` call never
-# aborts apply: if the scheme yaml isn't cloned yet (first apply, before run_after runs
-# `tinty install`), it prints the fallback, and run_after's wezterm-colors.sh rewrites
-# the deployed border once the yaml exists.
+# Resolution mirrors wezterm-colors.sh (official repos clone first, then
+# our chezmoi-shipped custom-schemes). Always exits 0 so a template `output`
+# call never aborts apply: if the scheme yaml isn't cloned yet (first apply,
+# before run_after runs `tinty install`), it prints the fallback.
 set -uo pipefail
 
 # Neutral accent used only until the real scheme yaml is available.
