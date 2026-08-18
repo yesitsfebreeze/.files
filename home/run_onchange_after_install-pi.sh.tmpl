@@ -9,9 +9,7 @@
 #   5. register the extension sources in pi's settings
 #   6. deep-merge the synced preferences into pi's settings
 #
-# Runs on every OS chezmoi runs on: Linux, WSL (which is how the Windows machines
-# get it — pi is a terminal agent, and the Windows host is never chezmoi-managed;
-# see .chezmoiignore) and macOS. Everything is idempotent and non-fatal: a missing
+# Runs on Linux and macOS. Everything is idempotent and non-fatal: a missing
 # network or a dead clone warns and moves on, it never breaks `chezmoi apply`.
 #
 # Re-runs whenever the rendered list below changes.
