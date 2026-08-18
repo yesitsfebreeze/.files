@@ -172,10 +172,10 @@ packages:
       npm: "@earendil-works/pi-coding-agent"   # source of truth: global npm package name
 
     - name: docker        # container engine. Special-cased in the installer (see the "docker" block):
-      brew: ""            # WSL + Windows Docker Desktop reachable -> shim `docker` to it (windows ?? local);
-      apt: ""             # otherwise install Docker Engine natively from Docker's official apt repo, enable
+      brew: ""            # macOS brew does not ship docker as a formula; install manually or use Docker.dmg.
+      apt: ""             # Install Docker Engine natively from Docker's official apt repo, enable
       pacman: docker      # the service, and add the user to the docker group. apt is handled by the block;
-      dnf: docker         # pacman/dnf just get the plain package as a baseline (no WSL there anyway).
+      dnf: docker         # pacman/dnf just get the plain package as a baseline.
 
     # Chromium/Electron runtime libs (no binary, Linux-only): headless chromium and
     # Electron link against NSS/NSPR at runtime. The playwright install-deps block
