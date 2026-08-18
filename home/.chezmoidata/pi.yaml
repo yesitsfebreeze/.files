@@ -4,9 +4,7 @@
 # applied by run_onchange_after_install-pi.sh. Editing this file re-triggers that
 # installer on the next apply.
 #
-# Linux/WSL is the target; macOS works identically (git + nvm node + npm). Windows
-# is reached through WSL like every other tool here — pi is a terminal agent, so
-# there is nothing to install on the Windows host itself (see .chezmoiignore).
+# Linux is the target; macOS works identically (git + nvm node + npm).
 
 pi:
     # Workspace checkout, relative to $HOME. Each package below is its own git repo
