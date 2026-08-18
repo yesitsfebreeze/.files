@@ -1,6 +1,5 @@
 {{- /*
-    Linux/WSL is the target; macOS is supported via Homebrew. chezmoi never runs
-    on the Windows host itself (WezTerm boots into WSL, where the Linux path runs).
+    Linux is the target; macOS is supported via Homebrew.
     Gate the macOS-only Homebrew bootstrap out on every non-macOS system.
 */ -}}
 {{ if ne .chezmoi.os "darwin" }}
