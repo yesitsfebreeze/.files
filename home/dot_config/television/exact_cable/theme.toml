@@ -37,4 +37,4 @@ command = "bash -c '\"$HOME/.config/television/theme-preview.sh\" \"{}\"'"
 # No [keybindings]/[actions]: television's default Enter prints the focused entry
 # to stdout, which the `theme` Nushell command captures and applies (_theme_commit:
 # tinty apply + recency push). Applying in that live shell — rather than a tv
-# action subprocess — keeps tinty's wezterm/zebar hooks in the real environment.
+# action subprocess — keeps tinty's hooks in the real environment.

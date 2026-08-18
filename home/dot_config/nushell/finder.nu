@@ -80,7 +80,7 @@ def _finder_pick_channel [] {
 # ── shell quoting (used by tv_finder / _finder_pick_channel) ────────────────
 
 # _finder_shquote: POSIX single-quote one path (everything inside '' is literal).
-# NOTE: this is POSIX-shell quoting (sh/bash/zsh), NOT Windows cmd/PowerShell.
+# NOTE: this is POSIX-shell quoting (sh/bash/zsh).
 def _finder_shquote [p: string] {
     "'" + ($p | str replace -a "'" "'\\''") + "'"
 }

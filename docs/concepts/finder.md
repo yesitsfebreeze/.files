@@ -146,7 +146,7 @@ extending; `--fresh` skips the prefill for a clean slate.
   key list. The chain keys are `ctrl-p` (pipe) / `ctrl-b` (back) / `ctrl-n`
   (forward) / `ctrl-r` (reset).
 - Scoped paths are **POSIX single-quoted** before splicing into a source command
-  (tv runs it through a POSIX shell on Linux/WSL2/macOS).
+  (tv runs it through a POSIX shell on Linux/macOS).
 - finder is **interactive-only** — it drives a TUI and must not be called
   non-interactively.
 
