@@ -26,11 +26,11 @@ every config into place.
 
 Run from a normal (non-admin) shell in your home directory.
 
-## Desktop apps
+## Desktop apps (removed)
 
-Previously managed apps related to the GlazeWM/Zebar desktop stack and Wallpaper
-Engine have been removed entirely (Windows-only; git history preserves them).
-They are available at their original upstream repos if needed:
+GlazeWM, Zebar, and Wallpaper Engine apps — previously part of these dotfiles —
+have been removed entirely. They are Windows-only and are no longer managed here.
+Their source repos still exist under github.com/yesitsfebreeze for reference.
 
 ## Install
 
