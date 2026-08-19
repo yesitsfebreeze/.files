@@ -411,8 +411,9 @@ config.audible_bell = "Disabled"
 
 -- Slow tick: the status interval drives BOTH update-status (→ center_grid, to catch
 -- interactive font zoom, which fires no resize/reload event) AND update-right-status
--- (the workspace label). At 1s that repainted the tab bar every second forever — a
--- constant titlebar refresh for a label that almost never changes. 5s still recenters
+-- (the cwd label + HH:MM clock). At 1s that repainted the tab bar every second forever
+-- — a constant titlebar refresh for a label that almost never changes, and the clock
+-- only needs minute resolution (5s worst-case lag on the rollover). 5s still recenters
 -- a font zoom within a few seconds, and the padding guard keeps idle ticks near-free.
 config.status_update_interval = 5000
 
@@ -487,9 +488,13 @@ wezterm.on("update-right-status", function(window, pane)
             label = path
         end
     end
+    -- Clock at the far right, after the cwd. HH:MM only: seconds would be wrong
+    -- most of the time anyway, since the 5s status tick is what repaints this.
     window:set_right_status(wezterm.format({
         { Foreground = { AnsiColor = "Blue" } },
         { Text = "  " .. label .. "  " },
+        { Foreground = { AnsiColor = "Silver" } },
+        { Text = wezterm.strftime("%H:%M") .. "  " },
     }))
 end)
 

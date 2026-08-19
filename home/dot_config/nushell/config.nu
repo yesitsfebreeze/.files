@@ -628,6 +628,33 @@ $env.config = (
     )
 )
 
+# Live theme: re-apply the last tinty pick so it survives into every new shell.
+# WezTerm's `color_scheme` (wezterm.lua) is only the BASE palette -- tinty already
+# persists the pick itself in its own `current_scheme`, and tinted-shell delivers it
+# as OSC sequences the terminal applies at runtime. Nothing re-emitted those at shell
+# start, which is why every new terminal looked like plain gruvbox no matter what had
+# been applied.
+#
+# Source tinty's cached tinted-shell artifact directly instead of running `tinty init`:
+# it is the very file `tinty init` sources, but init also spawns the tinty binary AND
+# its whole hook chain (~65ms) for hooks that are no-ops on an unchanged scheme, where
+# sourcing the artifact is one bash spawn (~5ms) on every shell start. init is kept
+# only as the fresh-machine fallback, before any apply has generated the artifact.
+#
+# The artifact writes its escapes to $TTY itself and turns into no-ops when that is
+# not a writable terminal, so this is inert under `nu -c ...`; the is-terminal guard
+# just avoids the spawn entirely. No-op until you `tinty apply` something, so the
+# WezTerm base scheme stands on a machine that has never picked one.
+if (is-terminal --stdout) {
+    let data = ($env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share"))
+    let palette = ($data | path join "tinted-theming" "tinty" "artifacts" "tinted-shell-scripts-file.sh")
+    if ($palette | path exists) {
+        try { ^bash $palette e> /dev/null }
+    } else if (which tinty | is-not-empty) {
+        try { ^tinty init e> /dev/null }
+    }
+}
+
 # `opacity`: live WezTerm window-opacity override via OSC user-var + tv picker.
 source ~/.config/nushell/opacity.nu
 
