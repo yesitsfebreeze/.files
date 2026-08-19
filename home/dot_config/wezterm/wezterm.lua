@@ -33,15 +33,205 @@ if is_mac then
         .. (os.getenv("PATH") or "")
 end
 
--- Launch fullscreen. The grid is an integer number of cells that rarely divides
--- the screen exactly; the leftover sub-cell pixels are split into symmetric
--- padding by center_grid (below).
-wezterm.on("gui-startup", function(cmd)
-    local _, _, window = wezterm.mux.spawn_window(cmd or {})
-    if window then
-        window:gui_window():toggle_fullscreen()
+-- Nine terminals, always ready. F5 + a digit jumps straight to a slot (see the
+-- tabjump key table below), so the set is a fixed floor rather than something grown
+-- on demand: a digit always lands on the same slot, and there is no "tab 7 doesn't
+-- exist yet" case.
+local TAB_COUNT = 9
+
+-- Self-healing tab set. WezTerm emits no "a tab closed" event, so rather than trying
+-- to intercept every way a terminal can go away -- CloseCurrentTab, `exit` in a
+-- tab's last pane, a crashed shell, `wezterm cli kill-pane` -- we reconcile: compare
+-- the live tab list against the slot map we keep per window and rebuild what's
+-- missing. Closing a pane in a SPLIT tab needs nothing: the tab survives, and only
+-- when its last pane goes does the tab disappear and a slot open up here.
+--
+-- Position is restored, not just the count. When slot 3 dies WezTerm shifts tabs 4-9
+-- down one, so a plain spawn_tab (which appends) would land the replacement at the
+-- end and silently renumber everything after the hole -- F5+4 would then reach what
+-- used to be tab 5. So we spawn, then MoveTab the fresh tab into the dead slot's
+-- index, which puts every other tab back where it started.
+--
+-- Slots are tracked by tab_id, not by index, because indices are exactly what shifts
+-- when a tab dies.
+--
+-- The map lives in wezterm.GLOBAL, NOT in a plain module-local table: WezTerm
+-- evaluates this config into more than one Lua context and runs event callbacks in
+-- whichever one is free, so a module-local is empty as often as not. A local `slots`
+-- table read back as nil on every single event here, which made each pass re-adopt
+-- the current tab order as gospel -- exactly the state that has to survive to know
+-- WHICH slot died. GLOBAL is the documented cross-context store; values must stay
+-- JSON-shaped, so a slot list is a plain array of integer tab ids (holes are derived
+-- against the live list each pass, never stored).
+local function get_slots(wid)
+    local all = wezterm.GLOBAL.tab_slots or {}
+    return all[tostring(wid)]
+end
+
+local function set_slots(wid, ids)
+    local all = wezterm.GLOBAL.tab_slots or {}
+    all[tostring(wid)] = ids
+    wezterm.GLOBAL.tab_slots = all
+end
+
+-- Per-window re-entrancy guard. spawn_tab and perform_action pump the event loop,
+-- which re-fires pane-focus-changed and calls us again in the middle of a repair. A
+-- nested pass sees a half-built window -- two tabs, say -- concludes seven slots are
+-- missing, and fills them while the outer pass is still filling its own: startup
+-- produced 16 tabs instead of 9 before this guard. This one is deliberately a
+-- module-local, not GLOBAL: it only has to hold across a synchronous re-entry, which
+-- by definition happens in the same Lua context.
+local repairing = {}
+
+local function live_tab_ids(mux_win)
+    local ids = {}
+    for _, tab in ipairs(mux_win:tabs()) do
+        ids[#ids + 1] = tab:tab_id()
     end
+    return ids
+end
+
+local function index_of(list, want_id)
+    for i, id in ipairs(list) do
+        if id == want_id then
+            return i
+        end
+    end
+    return nil
+end
+
+local function reconcile_tabs(window)
+    local mux_win = window:mux_window()
+    if not mux_win then
+        return
+    end
+    local wid = mux_win:window_id()
+    if repairing[wid] then
+        return
+    end
+
+    local live = live_tab_ids(mux_win)
+    local alive = {}
+    for _, id in ipairs(live) do
+        alive[id] = true
+    end
+
+    -- Target order: every still-living slot in its original place, `false` marking
+    -- each one to refill, then any tabs opened by hand (ctrl+shift+t, `wezterm cli
+    -- spawn`) appended -- TAB_COUNT is a floor, so extra tabs are adopted, never
+    -- closed. A dead slot PAST the floor is simply dropped rather than refilled.
+    local map = get_slots(wid) or live
+    local known = {}
+    local want = {}
+    for _, id in ipairs(map) do
+        known[id] = true
+        if alive[id] then
+            want[#want + 1] = id
+        elseif #want < TAB_COUNT then
+            want[#want + 1] = false
+        end
+    end
+    for _, id in ipairs(live) do
+        if not known[id] then
+            want[#want + 1] = id
+        end
+    end
+    while #want < TAB_COUNT do
+        want[#want + 1] = false
+    end
+
+    -- Nothing to rebuild: record the (possibly re-ordered) map and leave focus alone.
+    -- This is the path every status tick takes, so it stays a tab-list walk.
+    local holes = false
+    for _, id in ipairs(want) do
+        if id == false then
+            holes = true
+            break
+        end
+    end
+    if not holes then
+        set_slots(wid, want)
+        return
+    end
+
+    -- Focus: WezTerm has already moved it to a neighbour by the time we run, and
+    -- that is the right place to leave it -- closing a tab should move you on, not
+    -- snap you back onto a blank replacement. So we re-assert that tab by id after
+    -- the rebuild (the spawns below steal focus as they go) and only fall back to the
+    -- fresh tab if the one we were on is dead too.
+    local active = mux_win:active_tab()
+    local active_alive = (active and alive[active:tab_id()]) and true or false
+
+    repairing[wid] = true
+    -- pcall so a spawn failure (out of ptys, bad default_prog) can't leave the guard
+    -- latched -- that would silently disable healing for the rest of the session. A
+    -- `false` left in the map is harmless: the next pass reads it as a dead slot and
+    -- retries the refill.
+    local done, err = pcall(function()
+        local first_new = nil
+        -- Left to right, one hole at a time. Slots before `pos` are settled and the
+        -- tabs after it keep their relative order, so pos-1 is exactly where the
+        -- fresh tab belongs -- no arithmetic across multiple insertions.
+        for pos, id in ipairs(want) do
+            if id == false then
+                local tab, pane = mux_win:spawn_tab({})
+                want[pos] = tab:tab_id()
+                first_new = first_new or tab
+                -- spawn_tab appends, so when the slot being filled IS the end of the
+                -- list the tab is already home and no move is needed. Skipping that
+                -- no-op is not just an optimization: MoveTab acts on whatever the GUI
+                -- currently believes is the active tab, and right after a spawn that
+                -- belief can still be the PREVIOUS tab -- so a "harmless" no-op move
+                -- actually shoved the old tab one slot along (startup came out
+                -- 1,0,2,3... instead of 0,1,2,3...). Activate explicitly before any
+                -- real move so the action can only ever apply to the new tab.
+                if index_of(live_tab_ids(mux_win), tab:tab_id()) ~= pos then
+                    tab:activate()
+                    window:perform_action(act.MoveTab(pos - 1), pane)
+                end
+            end
+        end
+        if active_alive then
+            active:activate()
+        elseif first_new then
+            first_new:activate()
+        end
+    end)
+    repairing[wid] = nil
+    set_slots(wid, want)
+    if not done then
+        wezterm.log_error("tab reconcile failed: " .. tostring(err))
+    end
+end
+
+-- Launch fullscreen with the full set of tabs. reconcile_tabs fills slots 2-9 (it
+-- pads any window up to the floor), so the startup path and the repair path are the
+-- same code. The grid is an integer number of cells that rarely divides the screen
+-- exactly; the leftover sub-cell pixels are split into symmetric padding by
+-- center_grid (below).
+wezterm.on("gui-startup", function(cmd)
+    -- cmd goes to the FIRST tab only (the CLI's `wezterm start -- prog`, if any);
+    -- the rest are plain default_prog shells, so `wezterm start -- nvim foo` doesn't
+    -- open nine editors.
+    local _, _, mux_win = wezterm.mux.spawn_window(cmd or {})
+    if not mux_win then
+        return
+    end
+    local window = mux_win:gui_window()
+    reconcile_tabs(window)
+    -- Start on slot 1 regardless of where the fill left focus.
+    mux_win:tabs()[1]:activate()
+    window:toggle_fullscreen()
 end)
+
+-- Repair triggers. There is no close event, so: pane-focus-changed fires the instant
+-- a closed tab hands focus to another one (the common case, so the slot is back
+-- before you see the gap), and the periodic update-status tick catches a BACKGROUND
+-- tab whose shell exited without any focus change -- within status_update_interval
+-- (5s below). The no-hole path is just a tab-list walk, so idle ticks stay cheap.
+wezterm.on("pane-focus-changed", reconcile_tabs)
+wezterm.on("window-focus-changed", reconcile_tabs)
+wezterm.on("update-status", reconcile_tabs)
 
 -- Keep the grid centered. The grid is an integer number of cells, so it almost
 -- never divides the window exactly; the sub-cell remainder would sit as an uneven
@@ -227,7 +417,16 @@ config.animation_fps = 60
 -- needs no line; kept explicit as a marker.
 config.enable_kitty_keyboard = false
 
+-- Number every tab and nothing else: the label IS the digit you press after F5, so
+-- the bar doubles as the keymap legend. Nine process titles would not fit legibly
+-- anyway, and the active pane's cwd already shows in the right status.
+wezterm.on("format-tab-title", function(tab)
+    return string.format("  %d  ", tab.tab_index + 1)
+end)
+
 config.use_fancy_tab_bar = false
+-- Kept for completeness -- with TAB_COUNT = 9 the bar is always shown, but a window
+-- opened by other means (e.g. `wezterm cli spawn --new-window`) has one tab.
 config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = false
 config.show_new_tab_button_in_tab_bar = false
@@ -399,9 +598,37 @@ table.insert(copy_mode, {
         end
     end),
 })
-config.key_tables = { copy_mode = copy_mode }
+-- F5 listen mode: F5 pushes a ONE-SHOT key table, so WezTerm swallows exactly the
+-- next keypress and resolves it here -- 1..9 activates that tab. one_shot pops the
+-- table after that single key; until_unknown pops it for any key we did NOT bind
+-- (which is then handled normally), so a mistyped key can never leave the terminal
+-- stuck swallowing input. No timeout: it waits as long as you take. Escape is bound
+-- explicitly to back out without doing anything.
+local tabjump = {}
+for i = 1, TAB_COUNT do
+    table.insert(tabjump, {
+        key = tostring(i),
+        mods = "NONE",
+        action = act.ActivateTab(i - 1),
+    })
+end
+table.insert(tabjump, { key = "Escape", mods = "NONE", action = act.PopKeyTable })
+
+config.key_tables = { copy_mode = copy_mode, tabjump = tabjump }
 
 config.keys = {
+    -- F5: enter tab-jump listen mode (see the tabjump table above). Binding it here
+    -- means F5 no longer reaches the shell or a running app -- nothing in this setup
+    -- uses it, but that is the trade.
+    {
+        key = "F5",
+        mods = "NONE",
+        action = act.ActivateKeyTable({
+            name = "tabjump",
+            one_shot = true,
+            until_unknown = true,
+        }),
+    },
     {
         key = "x",
         mods = "CTRL|SHIFT",
