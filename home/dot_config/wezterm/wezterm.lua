@@ -34,7 +34,7 @@ if is_mac then
 end
 
 -- Nine terminals, always ready. F5 + a digit jumps straight to a slot (see the
--- tabjump key table below), so the set is a fixed floor rather than something grown
+-- `jump` key table below), so the set is a fixed floor rather than something grown
 -- on demand: a digit always lands on the same slot, and there is no "tab 7 doesn't
 -- exist yet" case.
 local TAB_COUNT = 9
@@ -471,6 +471,12 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
 end)
 
 wezterm.on("update-right-status", function(window, pane)
+    -- While F5's jump table is armed, the legend owns this slot -- otherwise the next
+    -- 5s tick would overwrite it with the cwd while you are still choosing a key.
+    if window:active_key_table() == "jump" then
+        window:set_right_status(JUMP_LEGEND)
+        return
+    end
     -- Show the pane's current working directory instead of the workspace name
     -- ("default", which never changes here — burrito owns multiplexing). Needs the
     -- shell to emit OSC 7; get_current_working_directory() returns nil otherwise, so
@@ -621,35 +627,90 @@ table.insert(copy_mode, {
     end),
 })
 -- F5 listen mode: F5 pushes a ONE-SHOT key table, so WezTerm swallows exactly the
--- next keypress and resolves it here -- 1..9 activates that tab. one_shot pops the
--- table after that single key; until_unknown pops it for any key we did NOT bind
--- (which is then handled normally), so a mistyped key can never leave the terminal
--- stuck swallowing input. No timeout: it waits as long as you take. Escape is bound
--- explicitly to back out without doing anything.
-local tabjump = {}
+-- next keypress and resolves it here. ONE key picks either target: a digit is a tab,
+-- a home-row letter is a pane of the current tab. one_shot pops the table after that
+-- single key; until_unknown pops it for any key we did NOT bind (which is then handled
+-- normally), so a mistyped key can never leave the terminal stuck swallowing input.
+-- No timeout: it waits as long as you take. Escape backs out doing nothing.
+--
+-- Deliberately NOT WezTerm's PaneSelect, which paints a big label on each pane but
+-- grabs all input for itself -- a painted overlay cannot also accept "3" as "go to tab
+-- 3", so it would cost a second keypress for panes. The tab bar digits and the status
+-- legend (below) are the visual cue instead, and either target stays one keypress.
+local PANE_KEYS = { "a", "s", "d", "f", "g", "h" }
+
+-- Panes in READING order (top row left-to-right, then down). We sort on geometry
+-- rather than reach for ActivatePaneByIndex: the tab's own pane index does happen to
+-- track the layout for the splits tested here, but that is nowhere promised -- it is
+-- an index into a pane tree built by split history. panes_with_info() reports each
+-- pane's pixel origin, so sorting by (top, left) makes the letters track what you
+-- actually see, whatever order the splits were made in.
+local function activate_pane_at(n)
+    return wezterm.action_callback(function(window, _pane)
+        local mux_win = window:mux_window()
+        local tab = mux_win and mux_win:active_tab()
+        if not tab then
+            return
+        end
+        local infos = tab:panes_with_info()
+        table.sort(infos, function(a, b)
+            if a.top ~= b.top then
+                return a.top < b.top
+            end
+            return a.left < b.left
+        end)
+        -- Fewer panes than letters is the normal case: just do nothing.
+        local target = infos[n]
+        if target then
+            target.pane:activate()
+        end
+    end)
+end
+
+local jump = {}
 for i = 1, TAB_COUNT do
-    table.insert(tabjump, {
+    table.insert(jump, {
         key = tostring(i),
         mods = "NONE",
         action = act.ActivateTab(i - 1),
     })
 end
-table.insert(tabjump, { key = "Escape", mods = "NONE", action = act.PopKeyTable })
+for i, key in ipairs(PANE_KEYS) do
+    table.insert(jump, { key = key, mods = "NONE", action = activate_pane_at(i) })
+end
+table.insert(jump, { key = "Escape", mods = "NONE", action = act.PopKeyTable })
 
-config.key_tables = { copy_mode = copy_mode, tabjump = tabjump }
+config.key_tables = { copy_mode = copy_mode, jump = jump }
+
+-- The legend shown while the table is armed, so the mode is visible and the letters
+-- are discoverable rather than remembered.
+local JUMP_LEGEND = wezterm.format({
+    { Foreground = { AnsiColor = "Fuchsia" } },
+    { Text = "  SELECT  tabs 1-" .. TAB_COUNT .. " | panes " .. table.concat(PANE_KEYS, " ") .. "  " },
+})
 
 config.keys = {
-    -- F5: enter tab-jump listen mode (see the tabjump table above). Binding it here
-    -- means F5 no longer reaches the shell or a running app -- nothing in this setup
-    -- uses it, but that is the trade.
+    -- F5: enter jump-select mode (see the `jump` table above). Binding it here means
+    -- F5 no longer reaches the shell or a running app -- nothing in this setup uses
+    -- it, but that is the trade.
+    --
+    -- A callback rather than a bare ActivateKeyTable so the legend paints IMMEDIATELY.
+    -- update-right-status also renders it (below), but that only fires on the 5s tick,
+    -- which would show the mode long after the keypress that started it.
     {
         key = "F5",
         mods = "NONE",
-        action = act.ActivateKeyTable({
-            name = "tabjump",
-            one_shot = true,
-            until_unknown = true,
-        }),
+        action = wezterm.action_callback(function(window, pane)
+            window:set_right_status(JUMP_LEGEND)
+            window:perform_action(
+                act.ActivateKeyTable({
+                    name = "jump",
+                    one_shot = true,
+                    until_unknown = true,
+                }),
+                pane
+            )
+        end),
     },
     {
         key = "x",
