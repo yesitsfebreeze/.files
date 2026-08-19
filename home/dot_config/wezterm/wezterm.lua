@@ -55,23 +55,31 @@ local TAB_COUNT = 9
 -- Slots are tracked by tab_id, not by index, because indices are exactly what shifts
 -- when a tab dies.
 --
--- The map lives in wezterm.GLOBAL, NOT in a plain module-local table: WezTerm
--- evaluates this config into more than one Lua context and runs event callbacks in
--- whichever one is free, so a module-local is empty as often as not. A local `slots`
--- table read back as nil on every single event here, which made each pass re-adopt
--- the current tab order as gospel -- exactly the state that has to survive to know
--- WHICH slot died. GLOBAL is the documented cross-context store; values must stay
--- JSON-shaped, so a slot list is a plain array of integer tab ids (holes are derived
--- against the live list each pass, never stored).
-local function get_slots(wid)
-    local all = wezterm.GLOBAL.tab_slots or {}
-    return all[tostring(wid)]
+-- The floor applies to the STARTUP window ONLY, which is what `tab_primary_window`
+-- records. It must not apply to every window: closing the last tab is exactly how a
+-- window closes, so refilling made any second window (ctrl+shift+n, `wezterm cli
+-- spawn --new-window`) impossible to close -- and with window_decorations = "RESIZE"
+-- there is no titlebar close button to fall back on either. Other windows are
+-- therefore left as ordinary WezTerm windows.
+--
+-- Both this and the slot list live in wezterm.GLOBAL, NOT in plain module-local
+-- tables: WezTerm evaluates this config into more than one Lua context and runs event
+-- callbacks in whichever one is free, so a module-local is empty as often as not. A
+-- local `slots` table read back as nil on every single event here, which made each
+-- pass re-adopt the current tab order as gospel -- exactly the state that has to
+-- survive to know WHICH slot died. GLOBAL is the documented cross-context store;
+-- values must stay JSON-shaped, so the slot list is a plain array of integer tab ids
+-- (holes are derived against the live list each pass, never stored).
+local function primary_wid()
+    return wezterm.GLOBAL.tab_primary_window
 end
 
-local function set_slots(wid, ids)
-    local all = wezterm.GLOBAL.tab_slots or {}
-    all[tostring(wid)] = ids
-    wezterm.GLOBAL.tab_slots = all
+local function get_slots()
+    return wezterm.GLOBAL.tab_slots
+end
+
+local function set_slots(ids)
+    wezterm.GLOBAL.tab_slots = ids
 end
 
 -- Per-window re-entrancy guard. spawn_tab and perform_action pump the event loop,
@@ -80,8 +88,9 @@ end
 -- missing, and fills them while the outer pass is still filling its own: startup
 -- produced 16 tabs instead of 9 before this guard. This one is deliberately a
 -- module-local, not GLOBAL: it only has to hold across a synchronous re-entry, which
--- by definition happens in the same Lua context.
-local repairing = {}
+-- by definition happens in the same Lua context. A single flag, not a per-window
+-- table, since only the primary window is ever rebuilt.
+local repairing = false
 
 local function live_tab_ids(mux_win)
     local ids = {}
@@ -105,8 +114,12 @@ local function reconcile_tabs(window)
     if not mux_win then
         return
     end
-    local wid = mux_win:window_id()
-    if repairing[wid] then
+    -- Not the startup window (or a session whose primary was never recorded, e.g. a
+    -- config reload into an older run): leave it completely alone, tabs and all.
+    if primary_wid() == nil or mux_win:window_id() ~= primary_wid() then
+        return
+    end
+    if repairing then
         return
     end
 
@@ -120,7 +133,7 @@ local function reconcile_tabs(window)
     -- each one to refill, then any tabs opened by hand (ctrl+shift+t, `wezterm cli
     -- spawn`) appended -- TAB_COUNT is a floor, so extra tabs are adopted, never
     -- closed. A dead slot PAST the floor is simply dropped rather than refilled.
-    local map = get_slots(wid) or live
+    local map = get_slots() or live
     local known = {}
     local want = {}
     for _, id in ipairs(map) do
@@ -150,7 +163,7 @@ local function reconcile_tabs(window)
         end
     end
     if not holes then
-        set_slots(wid, want)
+        set_slots(want)
         return
     end
 
@@ -162,7 +175,7 @@ local function reconcile_tabs(window)
     local active = mux_win:active_tab()
     local active_alive = (active and alive[active:tab_id()]) and true or false
 
-    repairing[wid] = true
+    repairing = true
     -- pcall so a spawn failure (out of ptys, bad default_prog) can't leave the guard
     -- latched -- that would silently disable healing for the rest of the session. A
     -- `false` left in the map is harmless: the next pass reads it as a dead slot and
@@ -197,8 +210,8 @@ local function reconcile_tabs(window)
             first_new:activate()
         end
     end)
-    repairing[wid] = nil
-    set_slots(wid, want)
+    repairing = false
+    set_slots(want)
     if not done then
         wezterm.log_error("tab reconcile failed: " .. tostring(err))
     end
@@ -217,6 +230,10 @@ wezterm.on("gui-startup", function(cmd)
     if not mux_win then
         return
     end
+    -- Claim this window as the one the floor applies to, BEFORE reconciling -- the
+    -- reconciler refuses to touch any window that is not the recorded primary.
+    wezterm.GLOBAL.tab_primary_window = mux_win:window_id()
+    wezterm.GLOBAL.tab_slots = nil
     local window = mux_win:gui_window()
     reconcile_tabs(window)
     -- Start on slot 1 regardless of where the fill left focus.
