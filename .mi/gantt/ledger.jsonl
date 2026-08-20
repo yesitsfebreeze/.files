@@ -1,0 +1,5 @@
+{"entry":"task","id":"W0.1","state":"open","wave":1,"at":"2026-08-20T18:01:55Z","note":"8 open/0 stub/0 closed boxes across .mi/prd/00-delivery/prd.md, state: open"}
+{"entry":"task","id":"W0.3","state":"open","wave":1,"at":"2026-08-20T18:01:55Z","note":"4 open/0 stub/0 closed boxes across .mi/prd/05-platform/prd.md, state: open"}
+{"entry":"task","id":"W0.6","state":"open","wave":1,"at":"2026-08-20T18:01:55Z","note":"8 open/0 stub/0 closed boxes across .mi/prd/00-delivery/prd.md, state: open"}
+{"entry":"task","id":"H.1","state":"open","wave":1,"at":"2026-08-20T18:01:55Z","note":"7 open/0 stub/0 closed boxes across .mi/prd/06-help/prd.md, state: open"}
+{"entry":"gate","id":"","state":"red","wave":1,"at":"2026-08-20T18:01:55Z","note":"no wave gate: no recipe runner exists (no justfile, Makefile, GitHub Actions); 'help --check' is not implemented; gate could not be run"}
