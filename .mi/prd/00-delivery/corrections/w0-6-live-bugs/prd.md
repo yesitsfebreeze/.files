@@ -247,6 +247,20 @@ Sequencing: `w0-2-terminal-respec` lists this node in its `deps`, so this
 escalation blocks the terminal re-spec. That is the correct outcome, not a
 side effect — (c) is an input the re-spec needs.
 
+### Resolved 2026-08-21 — decision 4 answered by the user
+
+**The deployed `~/.config` tree is canonical.** The chezmoi source is
+abandoned; the inventories rate the deployed artifact; `w0-2-terminal-respec`
+specs from the deployed 1149-line `wezterm.lua`; the 345-line source
+`finder.nu` is not ported. Recorded in full as entry 4 of the parent
+backlog's "S1 — open decisions for the human", which is where the escalation
+asked for it.
+
+This clears the blocking question. It does **not** close R2 or R3 — those
+remain open on their own merits, and their fixes are owned by
+`w0-4-s2-corrections/*`, which this node may not edit. The escalation text
+above is kept as the record of what was found and why it was escalated.
+
 ## Notes
 
 R1 is the one box in this conversion that opened `[x]`: the check is

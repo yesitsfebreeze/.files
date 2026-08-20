@@ -78,6 +78,35 @@ These are scope forks an agent must not resolve alone:
    **fzf** — violating the shell epic's own invariant that "tv owns every
    picker screen". Either accept fzf as a documented exception or replace `zi`
    with a tv-backed picker.
+4. **Deployed or source — which artifact do the inventories rate?**
+   **Decided 2026-08-21 (user): the deployed `~/.config` tree is canonical.**
+   Raised by `w0-6-live-bugs`: checking L-12 surfaced that the chezmoi source
+   and the deployed tree are different programs, not copies. Measured
+   2026-08-20, `~/.local/share/chezmoi/home/dot_config/` vs `~/.config/`, in
+   lines: `wezterm/wezterm.lua` 339 vs 1149 (deployed ~810 ahead),
+   `nushell/config.nu` 380 vs 715 (deployed ahead), `nushell/finder.nu` 345 vs
+   221 (**source** ahead, and a different stack-and-resume design rather than
+   an older copy). CLAUDE.md's "verify against the live config, always"
+   assumed the two were one thing, so "the live config" resolved to whichever
+   tree the reading agent opened — the same failure class that invalidated
+   `02-terminal`.
+
+   What the decision settles:
+   - (a) The chezmoi source is **abandoned**, not a port target. `05-platform`
+     is a from-scratch deploy mechanism, not a port of a working one.
+   - (b) The 345-line source `finder.nu` is **not ported**. `04-shell/04` is
+     correctly specced from the 221-line deployed file. This also explains
+     L-5: `leadermode.nu` is a leftover of the source design, which is why it
+     calls `finder --resume`/`--fresh`, flags the deployed finder never had.
+   - (c) `w0-2-terminal-respec` takes the **deployed** 1149-line
+     `wezterm.lua` as its input. The ~810-line delta is not pushed back.
+   - L-12 stands as written: the deployed config has zero references to
+     `solo-window.*`. The source's `solo_window()` definition and its two
+     call sites are part of the abandoned tree.
+
+   Every inventory in `.mi/docs/` rates the deployed artifact. Where one was
+   written against the source, that is a correction, not a difference of
+   opinion.
 
 
 ## S2 — bugs in the live config (do not reproduce these)
