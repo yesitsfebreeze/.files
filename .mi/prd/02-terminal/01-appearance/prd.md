@@ -1,5 +1,5 @@
 ---
-state: open
+state: claimed
 mode: afk
 deps:
   - .mi/prd/00-delivery/corrections/w0-2-terminal-respec
@@ -7,6 +7,7 @@ deps:
   - .mi/prd/00-delivery/decisions/wallpaper-opacity
   - .mi/prd/06-help/01-content-model
 verify: ""
+claim: cc-1787264229
 ---
 
 # Terminal Appearance
