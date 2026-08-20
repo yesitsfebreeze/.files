@@ -1,7 +1,6 @@
 ---
-state: claimed
+state: open
 mode: afk
-claim: cc-1787260422
 deps: []
 verify: "nu tests/help-content-model.nu"
 ---
@@ -99,7 +98,67 @@ assuming it drifted:
 
 ## Evidence
 
-### 2026-08-20 · `cc-1787256992` — latest; shadows the block below where they disagree
+### 2026-08-20 · `cc-1787260422` — latest; shadows the blocks below where they disagree
+
+Landed `3b19ed0`, merged as `8a3d396` (`tests/help-content-model.nu`,
+`home/dot_config/nushell/help/README.md`, `terminal.nuon`, `shell.nuon`).
+
+**Gate.** No wave-gate runner exists in this tree —
+[`verification-gates`](../../00-delivery/verification-gates/prd.md) is fully
+open (13 boxes, none met) and no script anywhere in the repo runs the set — so
+the close fell back to the ecosystem's plain equivalent: this node's own
+`verify:`, `nu tests/help-content-model.nu` → `help content model: 84 entries
+across 4 files, 9 topics, 10 prose-only … ok`, exit 0; plus `bash
+tests/live-bugs.sh` → `OK — every live-bug record still matches the config it
+describes`, exit 0, as the lane regression check. Both green after the merge.
+Said plainly because it matters: this is not the gate the board asks for, and
+it cannot speak for any surface that is not deployed.
+
+- **R1, R3, R4** — stay `[x]`, and were **re-proved by mutation this run**
+  rather than inherited from the sessions that first claimed them. R1: moving
+  `nvim.nuon` out of the help dir exits 1 with ``nvim.nuon: missing — R1 names
+  one file per surface`` — the file list is the `COVERAGE` const transcribed
+  from the spec, not a directory read, so a missing surface cannot pass as an
+  empty one. R3: renaming `id: "git"` → `"vcs"` exits 1 naming the drift, and
+  so does *reversing* `topics.nuon`, so the list-not-set comparison is real;
+  an empty topic list exits 1 with "refusing to pass a check with nothing to
+  check". R4: filtering out the `mkcd` record exits 1 with ``concept entry
+  `mkcd` is missing — R4`` plus the two dangling `also` violations it
+  predicts, and flipping its verify to `{kind: "command"}` exits 1.
+- **R2** — restored to `[x]`. Seven of the eight sub-boxes were mutation-run
+  again this session against the real `.nuon` files (unknown field, both `key`
+  and `cmd`, missing required field, bad `mode`, bad `verify` kind,
+  `wezterm-key` target missing `mods`, dangling `also`) — each exits 1 with a
+  named message. The `verify` sub-box no longer carries the drift-check stub
+  that demoted it in `cc-1787256992`: the resolution half moved to
+  [`coverage`](coverage/prd.md) R5 by the split in `26fc669`, so what remains
+  here is well-typedness, and that is gated.
+- **R5** — stays `[~]`, and the demotion survived a second adversary. What
+  landed is real: `non-imperative` (`tests/help-content-model.nu:145`) is new,
+  it exits 1 on three mutations of a live title (`Jumping…` gerund, `Jumps…`
+  third-person, `The number keys…` noun phrase) and on three mutations of the
+  predicate itself (empty `IMPERATIVE_S_VERBS`, forced-empty return, empty
+  `NOUN_PHRASE_OPENERS`), so it has controls and is not a check that cannot
+  fail. Two real `why`-restates-`use` defects were found by reading and fixed
+  (`terminal.nuon [Ctrl+V]`, `shell.nuon [Ctrl-T]`), the second with its
+  replacement read off the live route rather than asserted. **Two named
+  stubs keep the box open**, both established by the refuting reader and
+  recorded in `## Findings` below: a first-word opener heuristic standing in
+  for the imperative *mood*, and the author's own hand review standing in for
+  a gate on the `why` clause.
+- **Acceptance (readable as plain text)** — stays `[x]`, held by review
+  against the real artifact and by nothing else, which is stated rather than
+  dressed up: `open` returning a table would pass a minified blob too.
+  `terminal.nuon` carries a 51-line commented header then one record per
+  entry, one field per line, human strings throughout; `shell.nuon` around
+  both edited entries is the same shape. If these files are ever generated
+  programmatically, this box has nothing standing behind it.
+
+**Not done: owes 1 stubbed (R5).** The rest of `06-help/01` is its
+[`coverage`](coverage/prd.md) child, blocked on the terminal respec, the
+capsule CLI and [`04-drift-check`](../04-drift-check/prd.md).
+
+### 2026-08-20 · `cc-1787256992` — superseded by the block above; shadows the block below
 
 Landed `05fb17d` (`home/dot_config/nushell/help/terminal.nuon`,
 `home/dot_config/nushell/help/README.md`, `tests/help-content-model.nu`).
@@ -291,6 +350,66 @@ than passing quietly.
 
 **Not done: owes 1 open + 4 stubbed.** *(Superseded: R2 and R9 were demoted
 to `[~]` on refutation, so the count is now 1 open + 7 stubbed.)*
+
+## Findings
+
+### 2026-08-20 · why R5 is `[~]`, and the measurement that keeps it there
+
+**The `why`-restates-`use` clause cannot be gated by word containment, and
+that is a measured result, not an excuse.** Containment of `why`'s content
+words in `use`, over all 51 `why`-carrying entries: mean 0.11–0.12
+(independently reproduced twice, 0.11 and 0.118). The known defect
+`terminal.nuon [Ctrl+V]` scores **0.097 — rank 28 of 51, below the mean**, so
+any threshold catching it fires on more than half the manual, and the
+top-ranked entry at 0.571 is not a defect at all. A check built on this proxy
+would read as enforcement and enforce nothing, which is the failure this node
+has already been burned by twice. The measurement is written into
+`home/dot_config/nushell/help/README.md` so the next worker does not rebuild
+the same failed proxy.
+
+**But hand review is not a sufficient substitute either, and that is also
+measured.** The reviewing session swept all 51 pairs and fixed two; a second
+reader sweeping the same 51 immediately found a residual by the reviewer's own
+standard — `terminal.nuon [Ctrl+C]`, the `also` partner of the `Ctrl+V` entry
+that *was* fixed, in the same file: its `use` already says "With text selected
+… copies it. With nothing selected the same key is the ordinary interrupt",
+and its `why` restates that conditional. It scores 0.167, **rank 8 of 51,
+above the mean** — the discarded proxy would have flagged it and the human
+pass did not. Weaker same-shape residuals: `capsule.nuon [capsule --rebuild]`
+and `terminal.nuon [Ctrl+Shift+B]`. Two independent methods, each catching
+what the other missed, neither sufficient alone: that is the state of this
+clause, and it is why the box is a stub rather than a close.
+
+**The imperative check is gated against three openers, not against the mood.**
+`non-imperative` decides from the first word only, and catches a noun phrase
+only when that word is one of 33 hardcoded determiners/pronouns/prepositions.
+Confirmed escapes, all the same failure class, all exit 0: `Tab jumping by
+number`, `Fast tab access by number`, `Jumped to a tab by its number`. Also
+established, and worth keeping: the check finds **0 violations in the 84 live
+titles**, and all 84 were read by hand and are in fact imperative — so this is
+a passing check with real subjects, not law 3's empty check. The distinction
+is carried entirely by the `selftest` controls, and both the gate comment and
+`README.md` say so, so that a future reader does not "clean up" a check that
+never fires.
+
+**One defect outside this node's boxes, recorded where it will be found.**
+`shell.nuon [Ctrl-T]`'s `use` reads "Mid-command, press `Ctrl-T`, pick a file
+or directory: it is inserted at the cursor", but the live route
+(`~/.config/nushell/config.nu:635-639` `finder_pick` → `tv_finder`
+(`config.nu:686`) → `finder` with no `--start` → `finder.nu:33`
+`_finder_pick_channel`) opens the **channel remote first**, exactly as
+`Ctrl-Space`'s own entry says. The entry skips a step of the gesture. This
+lands on R5's "`use` describes the real gesture" clause and, read literally,
+on R2's `use` sub-box too — R2's gate checks presence and non-emptiness, not
+truth against the live surface, which is
+[`coverage`](coverage/prd.md) R5's contract.
+
+**Protocol gap, recorded not hidden.** worker.md §5 asks for a verifier
+prompted to refute each `[x]`. The working session had no subagent-spawn tool
+and ran its own refutation; the independent refutation that produced the
+findings above ran afterwards, in the landing session, by a reader who did not
+write the claims. Both objections that survive are in this section rather than
+in a private transcript.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.
