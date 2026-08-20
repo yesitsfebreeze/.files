@@ -1,8 +1,9 @@
 ---
-state: open
+state: claimed
 mode: afk
 deps: []
 verify: ""
+claim: cc-1787255407
 ---
 
 # Record the live-config bugs so the rebuild fixes them
