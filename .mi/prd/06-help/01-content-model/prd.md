@@ -47,6 +47,18 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
       [07](../../04-shell/07-quicklist/prd.md)), `Esc`; navigation `z` / `zi` / `zz`
       / `zl` / `zc` / `cdi` / bare-word fallback / `cd` auto-create
       ([03](../../04-shell/03-zoxide/prd.md), [01](../../04-shell/01-core-config/prd.md));
+      (note, R5: [14-shift-select](../../03-editor/14-shift-select/prd.md)
+      has an unresolved fork — port-with-tests vs. downgrade to plain
+      Shift+arrow — gated on `deps:
+      .mi/prd/00-delivery/decisions/shift-select-scope` and still `state:
+      open`. Confirmed by reading that node in full: its "Simplification
+      option" section says "Record the decision here if taken," meaning no
+      decision is recorded yet. Content-model's shift-select entry can only
+      be written accurately once that fork resolves; sequence R5's
+      shift-select coverage after 14 closes, or write it provisionally and
+      expect rework. Had the fork already been resolved, 14 would show
+      `state: done` with the choice recorded and this note would not
+      apply.)
       aliases and utilities ([02](../../04-shell/02-aliases-utilities/prd.md)); `cc`
       / `cr` ([08](../../04-shell/08-claude-launchers/prd.md)); `ls` variants and
       `-D` ([06](../../04-shell/06-listing/prd.md)).
@@ -65,6 +77,18 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
       ([02-terminal/03](../../02-terminal/03-f5-jump-mode/prd.md)), tab/window/quit
       keys ([02](../../02-terminal/02-startup-layout/prd.md)), and the capsule
       bindings ([01-capsule](../../01-capsule/prd.md)).
+      (note: CLAUDE.md's Known gaps flags `02-terminal` as "invalid as
+      written" — wrong font/palette, non-existent `Cmd+N` and
+      `gui-attached`, wrong F5 letter set, pending a from-scratch respec at
+      tasks W0.1/W0.2. Confirmed directly: `grep -n 'Cmd+N\|gui-attached'
+      .mi/prd/02-terminal/02-startup-layout/prd.md` still matches both
+      terms today. R6's links resolve and the schema/format work in this
+      node is unaffected, but the terminal coverage *content* R6 asks for
+      will need rewriting once the respec lands — don't treat
+      `02-terminal`'s current PRDs as stable ground truth for entry text in
+      the meantime. Had the respec already landed, those terms would be
+      absent from `02-startup-layout/prd.md` and this note would not
+      apply.)
 - [ ] **R7** — **Coverage — capsule.** The CLI surface: mount, `--rebuild`,
       list, clean, and the recents picker.
 - [ ] **R8** — **Concept entries.** A small number of prose entries (`verify:
