@@ -64,9 +64,9 @@ Live sources to read when specifying (never edit them as part of PRD work):
 | [`03-editor`](.mi/prd/03-editor/prd.md) | Neovim (lazy.nvim stack) | 15 |
 | [`04-shell`](.mi/prd/04-shell/prd.md) | Nushell daily driver | 8 |
 | [`05-platform`](.mi/prd/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
-| [`06-help`](.mi/prd/06-help/prd.md) | `help` — the environment manual (net-new) | 5 |
+| [`06-help`](.mi/prd/06-help/prd.md) | `help` — the environment manual (net-new) | 5 (+1) |
 
-76 nodes in all. Counts are direct children, with grandchildren in
+77 nodes in all. Counts are direct children, with grandchildren in
 parentheses; `find .mi/prd -name prd.md` is the index, because node membership
 is by existence and a maintained list beside it goes stale.
 

@@ -99,6 +99,7 @@ Ratings carried over from the sources: `C` = complexity, `U` = usefulness,
 │   └── 03-shell-init-generation/       C3 U9 V6 · Shell-init generation
 └── 06-help/                            `help` — the environment manual
     ├── 01-content-model/               C4 U9 V5 · Content model
+    │   └── coverage/                   every surface covered; verify targets resolve
     ├── 02-help-command/                C5 U9 V4 · The `help` command
     ├── 03-browser/                     C3 U7 V4 · Fuzzy browser
     ├── 04-drift-check/                 C5 U8 V3 · Drift check

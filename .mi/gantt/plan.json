@@ -814,6 +814,29 @@
    "notes": "Builds schema + initial files only; every other task fills its own rows per epic invariant 4 (M-13/M-15 naming nuances apply to what those later tasks write)."
   },
   {
+   "id": "H.1c",
+   "title": "Content-model coverage: every surface, and verify targets that resolve",
+   "node": "06-help/01-content-model/coverage",
+   "spec": ".mi/prd/06-help/01-content-model/coverage/prd.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "home/dot_config/nushell/help/shell.nuon",
+    "home/dot_config/nushell/help/nvim.nuon",
+    "home/dot_config/nushell/help/terminal.nuon",
+    "home/dot_config/nushell/help/capsule.nuon"
+   ],
+   "deps": [
+    "H.1",
+    "W0.2",
+    "H.4",
+    "D.3"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Split out of H.1 on 2026-08-20: 06-help/01-content-model held two contracts (schema, and coverage of surfaces that do not exist yet) so it could never close and was re-claimed three times. Blocked by construction until the surfaces land."
+  },
+  {
    "id": "H.2",
    "title": "help command + delegation",
    "node": "06-help/02-help-command",
