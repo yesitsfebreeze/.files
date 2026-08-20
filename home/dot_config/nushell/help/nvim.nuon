@@ -1,0 +1,359 @@
+# Surface: Neovim — the lazy.nvim stack.
+# Schema, verify kinds and writing rules: see README.md in this directory.
+#
+# On `desc` inside an nvim-map target: it is the string the live map's own
+# `desc` must equal. Absent means compare against this entry's `title`.
+# Explicit `null` means the map carries no `desc` deliberately, so the drift
+# check may only assert that it exists.
+[
+    # -------------------------------------------------------------------- edit
+    {
+        key: "<leader>"
+        title: "Show what the leader key can do"
+        use: "Press space and pause: which-key lists the groups — `f` find, `b` buffer, `c` code, `r` rename/refactor, `t` table — and then the maps inside whichever one you press."
+        topic: "edit"
+        mode: "nvim:normal"
+        why: "Leader is space, and it is set before any plugin spec is evaluated: a spec that declares `keys = { \"<leader>x\" }` resolves leader at declaration time, so setting it later silently binds the wrong key."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/03-editor/12-small-plugins/prd.md"
+    }
+    {
+        key: "<Esc>"
+        title: "Clear highlight"
+        use: "Press `Esc` in normal mode to drop the search highlight. The search itself is untouched — `n` still works."
+        topic: "edit"
+        mode: "nvim:normal"
+        why: "This does nothing while `hlsearch` is off, and in the config it was ported from, it was off — the map and the option have to be decided together or the key is dead."
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<Esc>"}]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<C-h> <C-j> <C-k> <C-l>"
+        title: "Move between windows"
+        use: "Control plus a vim direction letter moves the cursor to the window that way — no `<C-w>` prefix."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<C-Up> <C-Down> <C-Left> <C-Right>", "<leader>| and <leader>-"]
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<C-h>", desc: "Go to left window"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-j>", desc: "Go to lower window"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-k>", desc: "Go to upper window"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-l>", desc: "Go to right window"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<C-Up> <C-Down> <C-Left> <C-Right>"
+        title: "Resize the current window"
+        use: "Control plus an arrow resizes by two: up and down change height, left and right change width. Hold it to keep going."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<C-h> <C-j> <C-k> <C-l>"]
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<C-Up>", desc: "Increase height"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-Down>", desc: "Decrease height"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-Left>", desc: "Decrease width"}
+            {kind: "nvim-map", mode: "n", lhs: "<C-Right>", desc: "Increase width"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<leader>| and <leader>-"
+        title: "Split the window"
+        use: "`<leader>|` splits vertically (the new window is to the right), `<leader>-` splits horizontally (the new window is below). The bar and the dash look like the split they make."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<C-h> <C-j> <C-k> <C-l>"]
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<leader>|", desc: "Split right"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>-", desc: "Split below"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<S-h> <S-l> <leader>bd"
+        title: "Walk and close buffers"
+        use: "`H` and `L` step to the previous and next buffer; `<leader>bd` deletes the one you are in and leaves the window where it was."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<leader>fb"]
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<S-h>", desc: "Previous buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "<S-l>", desc: "Next buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>bd", desc: "Delete buffer"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<A-j> <A-k>"
+        title: "Move a line or a selection up and down"
+        use: "Alt with `j` or `k` drags the current line. In visual mode it drags the whole selection, and the selection stays selected and re-indented for the next press, so you can walk a block through a file."
+        topic: "edit"
+        mode: "nvim:normal"
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<A-j>", desc: "Move line down"}
+            {kind: "nvim-map", mode: "n", lhs: "<A-k>", desc: "Move line up"}
+            {kind: "nvim-map", mode: "v", lhs: "<A-j>", desc: "Move selection down"}
+            {kind: "nvim-map", mode: "v", lhs: "<A-k>", desc: "Move selection up"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<C-d> <C-u> n N"
+        title: "Keep the cursor centred while jumping"
+        use: "Half-page scrolls and search steps re-centre the line you land on, and `n`/`N` also open a fold you land inside. Nothing to press differently — the keys are the stock ones."
+        topic: "edit"
+        mode: "nvim:normal"
+        why: "These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, and the drift check treats a missing `desc` here as intended rather than as a mismatch."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<C-d>", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "<C-u>", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "n", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "N", desc: null}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "< and > (visual)"
+        title: "Indent a selection without losing it"
+        use: "`<` and `>` shift the selection and leave it selected, so you can press `>` four times instead of `4>` and reselecting."
+        topic: "edit"
+        mode: "nvim:visual"
+        verify: [
+            {kind: "nvim-map", mode: "v", lhs: "<", desc: null}
+            {kind: "nvim-map", mode: "v", lhs: ">", desc: null}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<leader>w and <leader>q"
+        title: "Save and quit"
+        use: "`<leader>w` writes the buffer, `<leader>q` quits the window."
+        topic: "edit"
+        mode: "nvim:normal"
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<leader>w", desc: "Save"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>q", desc: "Quit"}
+        ]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<leader>p (visual)"
+        title: "Paste (keep register)"
+        use: "Select, then `<leader>p`: the selection is replaced and the register still holds what you copied, so you can paste the same thing over several places in a row."
+        topic: "edit"
+        mode: "nvim:visual"
+        also: ["<C-v> (visual)"]
+        why: "A plain `p` over a selection puts the deleted text into the unnamed register, which is why the second paste always pastes the wrong thing. This deletes into the black hole register first."
+        verify: [{kind: "nvim-map", mode: "x", lhs: "<leader>p", desc: "Paste (keep register)"}]
+        source: ".mi/prd/03-editor/02-keymaps/prd.md"
+    }
+    {
+        key: "<S-Up> <S-Down> <S-Left> <S-Right>"
+        title: "Select text with shift and the arrows"
+        use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — `<S-Left>` catches the last two characters, not one, because leaving insert moves the cursor onto the character behind it. It behaves like every non-modal editor."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["h j k l (visual)", "<C-c> (visual)"]
+        why: "`<S-Right>` from insert mode has to move right once before entering visual, because the insert cursor sits between characters and the character under it would otherwise be left out of the selection."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<S-Up>", desc: "Select up"}
+            {kind: "nvim-map", mode: "n", lhs: "<S-Down>", desc: "Select down"}
+            {kind: "nvim-map", mode: "n", lhs: "<S-Left>", desc: "Select left"}
+            {kind: "nvim-map", mode: "n", lhs: "<S-Right>", desc: "Select right"}
+            {kind: "nvim-map", mode: "v", lhs: "<S-Up>", desc: "Extend selection up"}
+            {kind: "nvim-map", mode: "v", lhs: "<S-Down>", desc: "Extend selection down"}
+            {kind: "nvim-map", mode: "v", lhs: "<S-Left>", desc: "Extend selection left"}
+            {kind: "nvim-map", mode: "v", lhs: "<S-Right>", desc: "Extend selection right"}
+            {kind: "nvim-map", mode: "i", lhs: "<S-Up>", desc: "Select up"}
+            {kind: "nvim-map", mode: "i", lhs: "<S-Down>", desc: "Select down"}
+            {kind: "nvim-map", mode: "i", lhs: "<S-Left>", desc: "Select left"}
+            {kind: "nvim-map", mode: "i", lhs: "<S-Right>", desc: "Select right"}
+        ]
+        source: ".mi/prd/03-editor/14-shift-select/prd.md"
+    }
+    {
+        key: "h j k l (visual)"
+        title: "Move (collapse selection)"
+        use: "In a selection that shift started, a plain motion — `h`/`j`/`k`/`l` or an unshifted arrow — drops the selection and moves, the way it would in a normal editor. A count still applies: `3j` collapses and goes down three lines. In a selection you started with `v`, the same keys extend it, exactly as stock vim does."
+        topic: "edit"
+        mode: "nvim:visual"
+        also: ["<S-Up> <S-Down> <S-Left> <S-Right>"]
+        why: "This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim."
+        verify: [
+            {kind: "nvim-map", mode: "v", lhs: "h", desc: "Move (collapse selection)"}
+            {kind: "nvim-map", mode: "v", lhs: "j", desc: "Move (collapse selection)"}
+            {kind: "nvim-map", mode: "v", lhs: "k", desc: "Move (collapse selection)"}
+            {kind: "nvim-map", mode: "v", lhs: "l", desc: "Move (collapse selection)"}
+        ]
+        source: ".mi/prd/03-editor/14-shift-select/prd.md"
+    }
+    {
+        key: "<C-c> (visual)"
+        title: "Copy to clipboard"
+        use: "`<C-c>` on a selection yanks it and leaves visual mode. The clipboard is shared with the system, so it pastes into the terminal and into any other application."
+        topic: "edit"
+        mode: "nvim:visual"
+        also: ["<C-v> (visual)", "<leader>p (visual)"]
+        why: "`clipboard=unnamedplus` is what makes this work in both directions — there is no separate editor clipboard to copy out of."
+        verify: [{kind: "nvim-map", mode: "v", lhs: "<C-c>", desc: "Copy to clipboard"}]
+        source: ".mi/prd/03-editor/14-shift-select/prd.md"
+    }
+    {
+        key: "<C-v> (visual)"
+        title: "Paste over selection"
+        use: "`<C-v>` on a selection replaces it with the clipboard, and the clipboard still holds what it held, so you can do it again somewhere else."
+        topic: "edit"
+        mode: "nvim:visual"
+        also: ["<C-c> (visual)", "<leader>p (visual)"]
+        why: "Note what this costs: `<C-v>` no longer starts visual-block from within a selection. Blockwise select is still `<C-v>` from normal mode."
+        verify: [{kind: "nvim-map", mode: "v", lhs: "<C-v>", desc: "Paste over selection"}]
+        source: ".mi/prd/03-editor/14-shift-select/prd.md"
+    }
+    {
+        key: "<Tab> <S-Tab> <C-n> <C-p> <C-Space> <C-e>"
+        title: "Drive the completion menu"
+        use: "`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call."
+        topic: "edit"
+        mode: "nvim:insert"
+        why: "`<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/03-editor/05-completion/prd.md"
+    }
+    {
+        key: "<leader>e"
+        title: "Open the current directory as a buffer"
+        use: "`<leader>e` opens oil on the directory of the current file, dotfiles included. It is a normal buffer: rename a line, delete a line, add a line, then `:w` and the filesystem matches."
+        topic: "edit"
+        mode: "nvim:normal"
+        why: "Open it with the key, not with `:e some/dir`. The plugin is lazy on that key, so its file-explorer hijack is not installed until the first time you press it — and netrw is disabled, so before that press `:e` on a directory reaches neither one."
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>e", desc: "Open file explorer"}]
+        source: ".mi/prd/03-editor/06-explorer/prd.md"
+    }
+    {
+        key: "<leader>cf"
+        title: "Format the buffer now"
+        use: "`<leader>cf` formats asynchronously. You rarely need it: saving formats already — stylua for lua, rustfmt for rust, black for python, prettier for markdown — and a filetype with no formatter of its own is formatted by its language server instead."
+        topic: "edit"
+        mode: "nvim:normal"
+        why: "Prettier is the markdown formatter because it aligns table pipes, but prose must stay exactly as wrapped: these files are hand-wrapped at ~78 columns and reflowing them would churn every diff. On-save formatting gives up after 500 ms rather than blocking the write."
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>cf", desc: "Format buffer"}]
+        source: ".mi/prd/03-editor/07-formatting/prd.md"
+    }
+    {
+        key: "<leader>t"
+        title: "Work with markdown tables"
+        use: "In a markdown buffer, table mode is already on: type a row and the pipes realign as you type, with GitHub-style `|` corners. `<leader>t` is the prefix for the rest — tableize a selection, toggle the mode, move between cells."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<leader>cf"]
+        why: "The plugin is also enabled once directly at load, not only from its FileType autocmd: the event that lazy-loaded it has already fired for the buffer that triggered it, so the first markdown file you open would otherwise be the one file without alignment."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/03-editor/15-markdown-tables/prd.md"
+    }
+
+    # -------------------------------------------------------------------- find
+    {
+        key: "<leader>ff and <leader><space>"
+        title: "Find files in the project"
+        use: "Either one opens telescope over the project's files; type any part of the path. `<leader><space>` exists because it is the fastest thing your thumb can do."
+        topic: "find"
+        mode: "nvim:normal"
+        also: ["<Tab> <S-Tab> <CR> (telescope)", "<leader>fg"]
+        why: "This is the editor's finder, and it is deliberately not the shell's. television owns the shell's pickers, telescope owns the editor's; unifying them was considered and rejected."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<leader>ff", desc: "Find files"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader><space>", desc: "Find files"}
+        ]
+        source: ".mi/prd/03-editor/08-telescope/prd.md"
+    }
+    {
+        key: "<leader>fg"
+        title: "Grep the project live"
+        use: "`<leader>fg` searches file contents as you type; enter opens the file on the matching line."
+        topic: "find"
+        mode: "nvim:normal"
+        also: ["<leader>ff and <leader><space>", "<Tab> <S-Tab> <CR> (telescope)"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fg", desc: "Live grep"}]
+        source: ".mi/prd/03-editor/08-telescope/prd.md"
+    }
+    {
+        key: "<leader>fb"
+        title: "Switch to an open buffer"
+        use: "`<leader>fb` lists the open buffers as a picker — the alternative to walking them with `H` and `L` when there are many."
+        topic: "find"
+        mode: "nvim:normal"
+        also: ["<S-h> <S-l> <leader>bd"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fb", desc: "Buffers"}]
+        source: ".mi/prd/03-editor/08-telescope/prd.md"
+    }
+    {
+        key: "<leader>fh"
+        title: "Search Neovim's own help"
+        use: "`<leader>fh` fuzzy-searches the help tags — vim's documentation, not this manual. `help` in the shell is this configuration; `:help` in the editor is Neovim."
+        topic: "find"
+        mode: "nvim:normal"
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fh", desc: "Help tags"}]
+        source: ".mi/prd/03-editor/08-telescope/prd.md"
+    }
+    {
+        key: "<Tab> <S-Tab> <CR> (telescope)"
+        title: "Send several picks to the quickfix list"
+        use: "Inside any telescope picker, `<Tab>` marks the row and moves down, `<S-Tab>` marks and moves up. Then `<CR>`: with anything marked it sends every mark to the quickfix list and opens it; with nothing marked it just opens the highlighted row. The same keys work whether you are typing or in normal mode inside the picker."
+        topic: "find"
+        mode: "nvim:normal"
+        also: ["<leader>fg"]
+        why: "`prose` because these live inside telescope's own mapping table rather than in Neovim's keymap list — there is no `lhs` to introspect, even though the keys are real."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/03-editor/08-telescope/prd.md"
+    }
+
+    # ------------------------------------------------------------------- edit / lsp
+    {
+        key: "gd and gI"
+        title: "Jump to a definition or an implementation"
+        use: "`gd` on a symbol goes to where it is defined, `gI` to where it is implemented. `<C-o>` comes back."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["Neovim's own LSP keys", "<leader>rn and <leader>ca"]
+        why: "These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "gd", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "gI", scope: "buffer"}
+        ]
+        source: ".mi/prd/03-editor/09-lsp/prd.md"
+    }
+    {
+        key: "<leader>rn and <leader>ca"
+        title: "Rename a symbol or take a code action"
+        use: "`<leader>rn` renames across the project — type the new name, enter. `<leader>ca` offers the actions the server has for the thing under the cursor. Both are buffer-local, so they appear once a server attaches."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["Neovim's own LSP keys", "gd and gI"]
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<leader>rn", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>ca", scope: "buffer"}
+        ]
+        source: ".mi/prd/03-editor/09-lsp/prd.md"
+    }
+    {
+        key: "Neovim's own LSP keys"
+        title: "Use the LSP keys Neovim already ships"
+        use: "`K` hovers. `grn` renames, `gra` acts, `grr` lists references, `gri` implementations, `gO` the symbols in the file. `]d` and `[d` walk diagnostics, which show inline with a `●` and in a bordered float naming the server they came from."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["gd and gI", "<leader>rn and <leader>ca"]
+        why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that plugin- and core-provided maps are allowlisted out of the drift check rather than documented."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "K", desc: null, scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "grn", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "gra", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "grr", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "gri", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "gO", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "]d", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "[d", desc: null}
+        ]
+        source: ".mi/prd/03-editor/09-lsp/prd.md"
+    }
+]

@@ -1,0 +1,61 @@
+# Surface: capsule — one directory, one dev container, one CLI.
+# Schema, verify kinds and writing rules: see README.md in this directory.
+#
+# `mode: "container"` marks an entry that applies inside a capsule;
+# `mode: "shell"` marks one you run on the host to get there. The terminal
+# keys that call this tool live in terminal.nuon.
+[
+    {
+        cmd: "capsule [dir]"
+        title: "Drop a directory into a dev container"
+        use: "Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in a shell at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and you are back in the same container in well under a second; if it was stopped it starts, if the image definition changed it rebuilds first."
+        topic: "containers"
+        mode: "shell"
+        also: ["capsule --rebuild", "capsule list", "credentials in a capsule", "Ctrl+Shift+D"]
+        why: "One container per directory, named after it, with a short path hash appended so two directories called `api` in different parents do not collide. This one command replaced five loosely coupled pieces — a terminal binding, a shell function, a task-runner recipe, a second Dockerfile and a credential script — that overlapped and drifted."
+        verify: [{kind: "command", name: "capsule"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        cmd: "capsule --rebuild"
+        title: "Rebuild the image and recreate the container"
+        use: "`capsule --rebuild` builds the image again and throws away the existing container for this directory before making a new one. Anything you left in the container's own filesystem, outside `/workspace`, is gone."
+        topic: "containers"
+        mode: "shell"
+        also: ["capsule [dir]", "Ctrl+Shift+B"]
+        why: "The only way to force a rebuild. A changed image definition is picked up automatically on the next mount; nothing else rebuilds implicitly, because an implicit rebuild in the middle of a working day is the thing that makes people stop using the tool."
+        verify: [{kind: "command", name: "capsule"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        cmd: "capsule list"
+        title: "See which capsules exist"
+        use: "`capsule list` shows the containers this tool owns and whether each is running or stopped, so you can tell what is still holding resources."
+        topic: "containers"
+        mode: "shell"
+        also: ["capsule clean"]
+        verify: [{kind: "command", name: "capsule"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        cmd: "capsule clean"
+        title: "Remove capsules you are finished with"
+        use: "`capsule clean` removes the stopped capsules; it can take everything, running ones included, when you ask it to. Only containers this tool created are touched."
+        topic: "containers"
+        mode: "shell"
+        also: ["capsule list"]
+        verify: [{kind: "command", name: "capsule"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        cmd: "credentials in a capsule"
+        title: "Understand how a container gets your credentials"
+        use: "Nothing to run: inside a capsule, `git pull`, `git push` over either protocol, `ssh -T git@github.com`, `claude` and `opencode` all just work, with no login and no prompt."
+        topic: "containers"
+        mode: "container"
+        also: ["capsule [dir]", "cc [...args]"]
+        why: "Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `~/.ssh` is mounted read-only and the keys are copied to a container-local directory with 600/700 permissions on first run, with GitHub's host keys pre-added so nothing asks you to trust them. `.gitconfig` is mounted read-only so authorship matches the host. HTTPS credentials are refreshed out of the host keychain on every mount into a cache file the container uses as its credential store, which is what makes a rotated token heal by reconnecting instead of by rebuilding."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/01-capsule/03-credential-propagation/prd.md"
+    }
+]

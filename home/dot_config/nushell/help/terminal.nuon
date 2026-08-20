@@ -1,0 +1,148 @@
+# Surface: WezTerm — the terminal itself, and the keys that reach a capsule.
+# Schema, verify kinds and writing rules: see README.md in this directory.
+#
+# Every entry here is host-only: a shell inside a container cannot press these.
+# `mode: "terminal"` is what marks that.
+#
+# CAVEAT, and it is not a small one. `.mi/prd/02-terminal` is recorded as
+# invalid as written (CLAUDE.md, Known gaps): wrong font, wrong palette,
+# inverted palette ownership, a wrong F5 letter set, and keys the audit could
+# not find in the live config. These entries are written from the requirements
+# that survived that audit, and the file is expected to be rewritten once the
+# terminal inventory and re-spec land (tasks W0.1 / W0.2). Consequences:
+#   - the window-spawn key `02-terminal/02` calls `Cmd+N` is deliberately NOT
+#     documented here. The audit found no such binding, and a manual that
+#     sends a reader to a key that does nothing is worse than a manual with a
+#     gap in it.
+#   - the F5 key table is taken from `wezterm show-keys --lua` against the
+#     live config rather than from the PRD, which the audit found wrong on
+#     exactly this point: the table is named `jump_mode`, and while it binds
+#     the whole alphabet only the home row `asdfghjkl` indexes panes. The
+#     PRD asks for geometric left-to-right ordering and the config it was
+#     read from uses split-creation order; that fork is not settled here.
+#   - `mods` is spelled the way `wezterm show-keys` prints it; see README.md.
+#   - measured against the live config, `Ctrl+Shift+D`, `Ctrl+Shift+B`,
+#     `Ctrl+Shift+S` and `Ctrl+Shift+Q` do not exist yet, and `Ctrl+Shift+T`
+#     currently means WezTerm's own SpawnTab. The capsule entries below
+#     therefore document intent, not something you can press today — and two
+#     of those four keys are recorded as *contested* rather than merely
+#     unbuilt: control+shift+B is the wallpaper prompt and control+shift+T is
+#     the reconciler's manual new-tab path. Both need re-picking, which is a
+#     correction on the delivery backlog, not a call this file may make.
+#   - the "Recent:" indicator the recents picker claims has no host in the
+#     live config either: that status bar is clock-only and nothing ever sets
+#     its left side. Documented as intended, not as observed.
+[
+    # ---------------------------------------------------------------- terminal
+    {
+        key: "F5 <digit>"
+        title: "Jump to a tab by its number"
+        use: "Press `F5`, let go, then a digit 1-9: you are on that tab. The mode is over the moment you press the second key — the next thing you type goes into the pane. `Esc` after `F5` cancels."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["F5 <letter>", "nine tabs"]
+        why: "A one-shot key table, not a mode you have to leave: any key pops it, mapped or not. Discoverability is a letter painted in reverse video into each pane while the mode is up, not a status-bar word — the word was tried and removed as noise."
+        verify: [
+            {kind: "wezterm-key", key: "F5", mods: "NONE"}
+            {kind: "wezterm-key", key: "Escape", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "1", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "2", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "3", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "4", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "5", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "6", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "7", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "8", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "9", mods: "NONE", table: "jump_mode"}
+        ]
+        source: ".mi/prd/02-terminal/03-f5-jump-mode/prd.md"
+    }
+    {
+        key: "F5 <letter>"
+        title: "Jump to a pane by its position"
+        use: "Press `F5`, then a letter: `a`, `s`, `d`, `f` and on across the home row address the panes of the tab you are in. Read the letter off the pane rather than counting — a letter with no pane behind it pops the mode and gives you nothing at all, because the bell it rings is disabled."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["F5 <digit>"]
+        why: "Not `PaneSelect`: a Lua-opened modal cannot be dismissed across a tab switch, which is why the old pane jump could leave a stuck overlay. The letters therefore have to be assigned by the config itself, and in the config this was read from they follow the order the panes were split in, not their position on screen — which is the part the terminal re-spec still has to settle."
+        verify: [
+            {kind: "wezterm-key", key: "a", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "s", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "d", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "f", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "g", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "h", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "j", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "k", mods: "NONE", table: "jump_mode"}
+            {kind: "wezterm-key", key: "l", mods: "NONE", table: "jump_mode"}
+        ]
+        source: ".mi/prd/02-terminal/03-f5-jump-mode/prd.md"
+    }
+    {
+        key: "Ctrl+Shift+Q"
+        title: "Close every tab in this window"
+        use: "`Ctrl+Shift+Q` closes the whole window at once, without asking — there is no are-you-sure, so a build running in tab 6 goes with it."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["nine tabs", "q / :q / /exit"]
+        verify: [{kind: "wezterm-key", key: "q", mods: "SHIFT|CTRL"}]
+        source: ".mi/prd/02-terminal/02-startup-layout/prd.md"
+    }
+    {
+        cmd: "nine tabs"
+        title: "Expect nine tabs in every window"
+        use: "Nothing to press. A window opens full-screen with nine tabs already there, focus on the first, so `F5 4` means something from the first second — there is never a tab to create before you can jump to it."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["F5 <digit>", "Ctrl+Shift+Q"]
+        why: "Nine because that is what one row of digits addresses. The count is a floor the terminal keeps repairing, not a one-off at startup: a reconciler refills and re-positions tabs, which is also how a new window gets its nine. Closing a tab is allowed; dropping below the addressable set is not. Quitting has to tell that reconciler it is closing, or the floor refills the tabs being closed."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/02-terminal/02-startup-layout/prd.md"
+    }
+
+    # -------------------------------------------------------------- containers
+    {
+        key: "Ctrl+Shift+D"
+        title: "Drop this directory into a capsule"
+        use: "`Ctrl+Shift+D` runs `capsule` on the current pane's directory: you end up at a shell in `/workspace` inside the container, with the directory's contents there and your credentials working. Press it again later and you are back in the same running container, immediately."
+        topic: "containers"
+        mode: "terminal"
+        also: ["capsule [dir]", "Ctrl+Shift+B"]
+        why: "The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided."
+        verify: [{kind: "wezterm-key", key: "d", mods: "SHIFT|CTRL"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        key: "Ctrl+Shift+B"
+        title: "Rebuild the capsule image and start over"
+        use: "`Ctrl+Shift+B` is `capsule --rebuild`: it rebuilds the image and recreates the container for this directory. Reach for it when you changed the image on purpose, or when a container has gone strange."
+        topic: "containers"
+        mode: "terminal"
+        also: ["capsule --rebuild", "Ctrl+Shift+D"]
+        why: "You rarely need it: a changed image definition is detected and rebuilt on the next mount by itself, and nothing else ever rebuilds implicitly. The key itself is contested — in the config this was read from, control+shift+B prompts for a desktop wallpaper — so it is an open correction, not a settled binding."
+        verify: [{kind: "wezterm-key", key: "b", mods: "SHIFT|CTRL"}]
+        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+    }
+    {
+        key: "Ctrl+Shift+S"
+        title: "Reopen a recent workspace here"
+        use: "`Ctrl+Shift+S` lists the directories you have most recently mounted, newest first, and mounts the one you pick in this pane. Directories that no longer exist are dropped as the list is read. The status area says `Recent:` while it is open, so a stray key is not mistaken for the prompt."
+        topic: "containers"
+        mode: "terminal"
+        also: ["Ctrl+Shift+T", "Ctrl+Shift+D"]
+        why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting WezTerm."
+        verify: [{kind: "wezterm-key", key: "s", mods: "SHIFT|CTRL"}]
+        source: ".mi/prd/01-capsule/04-recent-workspaces/prd.md"
+    }
+    {
+        key: "Ctrl+Shift+T"
+        title: "Reopen a recent workspace in a new tab"
+        use: "Same picker as `Ctrl+Shift+S`, but the capsule opens in a new tab and leaves the pane you were in alone."
+        topic: "containers"
+        mode: "terminal"
+        also: ["Ctrl+Shift+S", "nine tabs"]
+        why: "Taken, not free: this is WezTerm's own new-tab key, and the tab reconciler treats that default as the manual new-tab path. Claiming it here collides with both, which is an open correction rather than a settled trade — the binding needs picking, not defending."
+        verify: [{kind: "wezterm-key", key: "t", mods: "SHIFT|CTRL"}]
+        source: ".mi/prd/01-capsule/04-recent-workspaces/prd.md"
+    }
+]
