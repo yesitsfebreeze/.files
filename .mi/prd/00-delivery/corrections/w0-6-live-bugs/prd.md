@@ -13,7 +13,11 @@ the job; the other half is making sure each one reaches the node that must not
 reproduce it.
 
 ## Requirements
-- [ ] **R1** — The `L-1`..`L-12` table exists in the backlog and is populated.
+- [x] **R1** — The `L-1`..`L-12` table exists in the backlog and is populated.
+      Checked via `grep -cE '^\| *L-[0-9]+' .mi/prd/00-delivery/corrections/prd.md`,
+      which returns 12 (all rows L-1 through L-12 present with non-empty
+      Finding text); had the table been incomplete this would have returned
+      fewer than 12.
 - [ ] **R2** — Each bug is either fixed in the PRD that owns it, or recorded
       as accepted-with-reason. L-3 (`rcwd` is really `recent-dirs`, wrong in
       three PRDs and an inventory), L-4 (finder picks are never logged, so
