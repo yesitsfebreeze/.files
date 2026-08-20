@@ -15,7 +15,14 @@ is actually installed, so the re-spec has a source of truth.
 ## Requirements
 - [ ] **R1** — Read `~/.config/wezterm/` and rate every capability: complexity
       1-10, usefulness 1-10, and a verdict marker, per the rating system in
-      `../../../SYSTEM.md`.
+      `../../../../SYSTEM.md`.
+      (Corrected 2026-08-20: was `../../../SYSTEM.md`, which resolves to
+      `.mi/prd/SYSTEM.md` and does not exist — this node sits four levels
+      below `.mi/`, one deeper than the broken link accounted for. Verified
+      by `ls` from the node's own directory: the three-`../` form 404s, the
+      four-`../` form reaches `.mi/SYSTEM.md`. Sibling node
+      `w0-3-platform-rewrite/prd.md` already uses the correct repo-root-relative
+      form `.mi/SYSTEM.md` for the same reference.)
 - [ ] **R2** — Cover the machinery the current PRDs miss entirely (T-10, ~230
       lines): the self-healing nine-tab floor, dynamic grid centering, copy
       mode via `Ctrl+Shift+X` plus the single-key toggle and OSC user-var,
