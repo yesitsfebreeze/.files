@@ -19,6 +19,15 @@ const OPTIONAL = ["key" "cmd" "also" "why"]
 
 const MODES = ["shell" "nvim:normal" "nvim:visual" "nvim:insert" "terminal" "container"]
 
+# R3 — the manual's spine, transcribed from the node's R3 in the order R3 gives
+# it. Deliberately NOT read out of `topics.nuon`: the topic list used to be read
+# out of the data being checked, which meant the check only asserted referential
+# integrity and could not notice the data drifting from the requirement.
+# Measured, not assumed: with the old code, renaming `git` to `vcs` and deleting
+# `history` both still exited 0. The order is part of the requirement ("ordered
+# by how often it's needed"), so it is compared as a list, not as a set.
+const TOPICS = ["navigate" "find" "history" "edit" "git" "containers" "terminal" "agents" "config"]
+
 # kind -> required fields, optional fields. `kind` itself is always required.
 const VERIFY_KINDS = {
     "keybinding": {req: ["name"], opt: []}
@@ -92,9 +101,45 @@ def id [e: record] {
     if ("key" in ($e | columns)) { $e.key } else if ("cmd" in ($e | columns)) { $e.cmd } else { "<unidentified>" }
 }
 
+# R9 — "`use` describes the real gesture, never restates the key". The gateable
+# clause is the opening: a key entry whose `use` starts with its own key has
+# written the title again instead of the gesture.
+#
+# Backticks count, and that is the whole repair. The first version compared the
+# bare id only. Measured across all 84 entries: bare-prefix hits 0,
+# backtick-prefix hits 24 — the check fired on nothing at all, defeated by one
+# character, while reading like the thing that held R9 up. `selftest` below
+# proves it can still fire, on every run.
+#
+# Scoped to `key` entries on purpose, and this is a reading of R9 rather than a
+# narrowing of it: R9 says "never restates the *key*". A `cmd` entry has no key
+# to restate — for `g` or `capsule list` the invocation *is* the gesture,
+# because typing it is what you do. Naming the key mid-sentence is likewise
+# fine; R9's own example ("press `F5`, then a digit 1-9") does exactly that.
+def restates-key [use: string, eid: string] {
+    ($use | str starts-with $eid) or ($use | str starts-with $"`($eid)`")
+}
+
+# Law 3, rung 2: a gate that cannot fire is a wish, and this one silently could
+# not for a whole cycle. Positive and negative controls run every time, so the
+# next person to touch `restates-key` finds out here rather than in review.
+def selftest [] {
+    mut bad = []
+    if not (restates-key "`Ctrl-X` closes the pane" "Ctrl-X") {
+        $bad = ($bad | append "selftest: restates-key misses the backticked form — the corpus writes every id in backticks, so this is the form that matters")
+    }
+    if not (restates-key "Ctrl-X closes the pane" "Ctrl-X") {
+        $bad = ($bad | append "selftest: restates-key misses the bare form")
+    }
+    if (restates-key "Press `Ctrl-X`, then a digit 1-9" "Ctrl-X") {
+        $bad = ($bad | append "selftest: restates-key fires on a gesture that merely names its key, which R9 asks for")
+    }
+    $bad
+}
+
 def main [dir?: path] {
     let dir = ($dir | default ($env.FILE_PWD | path dirname | path join "home" "dot_config" "nushell" "help"))
-    mut errors = []
+    mut errors = (selftest)
 
     if not ($dir | path exists) {
         print -e $"content dir not found: ($dir)"
@@ -106,6 +151,9 @@ def main [dir?: path] {
     if ($topic_ids | is-empty) {
         print -e "topics.nuon defines no topics — refusing to pass a check with nothing to check"
         exit 1
+    }
+    if $topic_ids != $TOPICS {
+        $errors = ($errors | append $"topics.nuon: the spine is `($topic_ids | str join ', ')` but R3 names `($TOPICS | str join ', ')` — same nine ids, same order")
     }
     for t in $topics {
         let cols = ($t | columns)
@@ -162,7 +210,9 @@ def main [dir?: path] {
             }
             if ("use" in $cols) {
                 if ($e.use | str trim | is-empty) { $errors = ($errors | append $"($at): empty use") }
-                if ($e.use | str starts-with $eid) { $errors = ($errors | append $"($at): use opens by restating the key — R9 wants the gesture") }
+                if $has_key and (restates-key $e.use $eid) {
+                    $errors = ($errors | append $"($at): use opens by restating the key — R9 wants the gesture, as in 'press ($eid), then …', not the title again")
+                }
             }
 
             # R2 — verify is a non-empty list of typed targets

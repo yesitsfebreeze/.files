@@ -29,11 +29,11 @@ so a diff reads top to bottom.
 |---|---|---|
 | `key` *or* `cmd` | one of the two | the binding (`Ctrl-R`, `F5 <digit>`) or the invocation (`z <query>`) |
 | `title` | yes | one line, imperative, no trailing period |
-| `use` | yes | the real gesture in order: what to press next, and what comes back. Never a restatement of the key |
+| `use` | yes | the real gesture in order: what to press next, and what comes back. A `key` entry never *opens* by restating its key, backticks included |
 | `topic` | yes | one of the nine in `topics.nuon` |
 | `mode` | yes | `shell` · `nvim:normal` · `nvim:visual` · `nvim:insert` · `terminal` · `container` |
 | `also` | optional | related entries, by `key`/`cmd` |
-| `why` | optional | the non-obvious reason it works this way. Most entries have none; the ones that do are carrying a constraint that cost somebody a day |
+| `why` | optional | the non-obvious reason it works this way — a constraint that cost somebody a day, and nothing the `use` already said |
 | `verify` | yes | how the drift check confirms it exists — a list, see below |
 | `source` | yes | the PRD this entry was written from, so `help <entry>` and the browser's `ctrl-o` can open it |
 
@@ -135,8 +135,21 @@ table silently documents nothing.
   with no explicit `desc`, the title *is* the string compared against the live
   map, so it must match the `desc` in the config.
 - `use` is the gesture, not the key again: "press `F5`, then a digit 1–9",
-  never "presses F5 to jump".
-- `why` only where the reason is non-obvious.
+  never "presses F5 to jump". Naming the key mid-sentence is fine — R9's own
+  example does it. What is not fine is *opening* with it, which is the title
+  written twice: "`<leader>fg` searches file contents" says nothing about the
+  gesture, while "press `<leader>fg`, then type" does. **Backticks do not
+  exempt you**, and this is not a hypothetical: the check compared the bare id
+  only, every id in this corpus is written in backticks, and so it fired on
+  none of the 84 entries while 24 of them opened with their own id. Nine were
+  real violations.
+- `why` only where the reason is non-obvious, and never restating what `use`
+  already said — if `use` explains a mechanism, the mechanism belongs here and
+  the gesture stays there. Measured on 2026-08-20: 51 of 84 entries carry a
+  `why`, which is more than the spec's R9 predicts ("most entries won't have
+  one"). Each one reviewed carries a real constraint, so the entries are not
+  the thing to change; the wording of R9 is an open question against this
+  corpus, not a licence to add whys.
 - Add the entry in the **same change** as the binding. `help --check` exits
   non-zero on an undocumented one, which is the only reason this file stays true.
 
@@ -156,6 +169,20 @@ nu tests/help-content-model.nu
 Strict schema, topics, the writing rules, `also` resolution and the coverage
 the PRD's R4-R8 name. It exits non-zero on any violation, and it fails rather
 than passes when it finds nothing to check.
+
+Two of its constants are transcribed from the spec rather than read out of the
+data, and that is deliberate — a check fed by the thing it is checking can only
+assert that the data agrees with itself:
+
+- `COVERAGE` — the surfaces R4-R8 name. If a requirement names a key and no
+  entry documents it, this is what notices.
+- `TOPICS` — R3's nine ids **in R3's order**. Before it existed the topic list
+  was read out of `topics.nuon`, so renaming `git` to `vcs` or deleting
+  `history` both exited 0.
+
+`selftest` runs the `use`-restatement predicate against a known-bad and a
+known-good string on every run, so a repeat of the backtick miss above fails
+here instead of passing quietly for a cycle.
 
 What it cannot do is confirm a `verify` target resolves against a live shell,
 editor or terminal: that is `help --check`
