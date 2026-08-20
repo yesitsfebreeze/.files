@@ -1,7 +1,6 @@
 ---
-state: claimed
+state: open
 mode: afk
-claim: cc-1787262300
 deps: []
 verify: "bash tests/live-bugs.sh"
 ---
