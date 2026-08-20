@@ -38,11 +38,26 @@ be ported.
 - 7
 ----
 ## Core keymaps
-- `keymaps.lua` general set: `<Esc>` clears highlight, `<C-hjkl>` window nav,
+- `keymaps.lua` general set: `<C-hjkl>` window nav,
   `<C-arrows>` resize, `<leader>|`/`-` splits, `S-h`/`S-l` buffer cycle,
   `<leader>bd` delete buffer, `A-j`/`A-k` move line/selection, centered jumps
   (`<C-d>zz`, `n`→`nzzzv`), visual indent keeps selection, `<leader>w`/`q`,
   `<leader>p` paste-keep-register.
+- **Live bug L-6, resolved — port `hlsearch = false`, drop the map.** The
+  live set also binds `<Esc>` to `<cmd>nohlsearch<CR>`, which is inert:
+  `options.lua` sets `hlsearch = false`, so there is never a highlight to
+  clear. Two settings, one behaviour, and the backlog says port one or the
+  other. `hlsearch = false` with `incsearch = true` is the behaviour actually
+  in use — the match shows while you type and nothing persists after — and
+  the repo's rule is that the live config wins, so the option stays and the
+  map goes. *Alternative rejected:* turn `hlsearch` on and keep the `<Esc>`
+  map, the LazyVim/kickstart pairing the dead map was copied from. It loses
+  because it changes what every search looks like in order to give a vestigial
+  map something to do, and because a map that does nothing would still have to
+  be documented — `06-help`'s drift check reads the map table, so an inert
+  binding becomes a manual entry describing a behaviour that never happens.
+  *Recorded by W0.6 in the principal's absence; a taste reversal is the
+  human's to make.*
 - 2
 - 9
 ----
@@ -116,6 +131,13 @@ be ported.
 ----
 ## File explorer (oil.nvim)
 - Directory-as-buffer editing, hidden files shown, devicons, `<leader>e`.
+- **Live bug L-7, do not reproduce:** oil does *not* replace netrw for
+  `:e some/dir`. The spec is lazy on `keys`, so oil's
+  `default_file_explorer` hijack is not installed until `<leader>e` is
+  pressed — and netrw is disabled in the plugin-manager config, so before
+  that first press `:e some/dir` opens neither explorer. The port must load
+  oil early enough for the hijack to be in place at the first `:e` on a
+  directory (its own docs' `lazy = false`), or stop claiming the hijack.
 - 2
 - 8
 ----
@@ -160,6 +182,20 @@ be ported.
   selection, `<C-v>` pastes over it without clobbering the register.
   Genuinely useful but the most intricate hand-rolled logic in the config —
   port it deliberately, with tests, or accept plain Shift+arrow selection.
+- **L-9, resolved — the `<C-v>` shadow is intentional; port it as it is.**
+  `<C-v>` in visual mode is half of the CUA pair `<C-c>` copy / `<C-v>` paste
+  that makes shift-select feel like a conventional editor, and porting only
+  one half would be worse than porting neither. The shadow it casts is
+  narrower than it looks: the map is visual-mode only, so `<C-v>` from normal
+  mode still enters blockwise-visual and `virtualedit = "block"` is still
+  set. What is lost is only promoting an existing charwise/linewise selection
+  to blockwise — and the built-in `<C-q>`, the documented synonym for
+  `<C-v>`, is unbound in this config and still does exactly that. Requirement
+  for the port: leave `<C-q>` unbound, and say in the manual that it is the
+  blockwise key inside a selection. *Alternative rejected:* move paste to
+  another key to keep `<C-v>` blockwise everywhere — it breaks the pair that
+  is the whole point of the capability, for a mode that keeps a working key.
+  *Recorded by W0.6 in the principal's absence.*
 - 7
 - 7
 ----

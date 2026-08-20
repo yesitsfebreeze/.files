@@ -392,6 +392,13 @@ knowledge, and every entry below that depends on one names it.
   order
   the splits were made in) — nine letters, home row, not the letter set or
   the ordering the existing PRD describes.
+- **Live bug L-11, do not reproduce:** the miss path's BEL is silent.
+  `audible_bell = "Disabled"` and no `visual_bell` is configured, so a
+  mistyped jump letter produces no feedback at all — the keystroke is eaten
+  and nothing happens, which is indistinguishable from the key table having
+  failed to open. The re-spec owes the miss path a feedback channel that
+  exists (a `visual_bell` fade, or reusing the pane-label overlay), or an
+  explicit decision that silence is acceptable.
 - `SIMPLIFY`: the digit half is a handful of lines and carries most of the
   value; the self-painted pane overlay is the bulk of the complexity and is
   worth its own decision in the re-spec.

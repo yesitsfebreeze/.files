@@ -41,9 +41,15 @@ Source of truth: the live config in `~/.config/nushell/` (chezmoi-managed) —
 ----
 ## Dirstack — directory recency
 - `dirs.txt`: recency-ordered stack of every visited dir (pushed by the PWD
-  hook, any navigation means), deduped, capped at 100, feeds the `rcwd`
-  television channel; `startdir.txt` single-line last-dir marker read at
-  shell start.
+  hook, any navigation means), deduped, capped at 100, feeds the
+  `recent-dirs` television channel; `startdir.txt` single-line last-dir
+  marker read at shell start.
+- **Live bug L-3, do not reproduce:** the channel is `recent-dirs`
+  (`~/.config/television/cable/recent-dirs.toml`), but `finder.nu`'s
+  `_finder_type` types `"files" | "dirs" | "rcwd"`. No cable file is named
+  `rcwd`, so recent-dir picks fall through to `Any` and come back as raw
+  strings instead of expanded paths. `recent-files` is untyped for the same
+  reason. The rebuild types the real channel names.
 - 3
 - 7
 ----
@@ -70,6 +76,12 @@ Source of truth: the live config in `~/.config/nushell/` (chezmoi-managed) —
   (file→editor, dir→cd, grep hit→editor@line, commit→git show). ~30 cable
   channels (files, dirs, text, git-*, zoxide, env, recent-dirs, …).
   Ctrl+Space/F1 = act-on-pick remote, Ctrl-T = insert-at-cursor (shell-quoted).
+- **Live bug L-2, do not reproduce:** commit→`git show` has never run.
+  `git-log.toml` already splits the commit out (`output =
+  "{strip_ansi|split: :1}"`, index 1 of the `--graph` line), so tv emits a
+  bare hash — but `_finder_decode`'s `Commits` arm splits that hash again
+  and reads index 1, which is empty, and the `^[0-9a-f]{7,}$` guard then
+  drops every row. The decoder must read the field the channel actually emits.
 - 8
 - 9
 ----
@@ -82,10 +94,18 @@ Source of truth: the live config in `~/.config/nushell/` (chezmoi-managed) —
 - 8
 ----
 ## Quicklist — cross-channel recents
-- Every pick/jump (finder, zoxide, fallback) is logged (kind, value, channel,
-  cwd, ts; deduped, capped 200). Ctrl-Q opens the recents as a tv channel:
-  enter re-opens by type, ctrl-r replays the originating channel in the cwd
-  the pick was made in.
+- Jumps are logged (kind, value, channel, cwd, ts; deduped, capped 200).
+  Ctrl-Q opens the recents as a tv channel: enter re-opens by type, ctrl-r
+  replays the originating channel in the cwd the pick was made in.
+- **Live bug L-4, do not reproduce:** despite `_recents_add` living in
+  `finder.nu`, `finder` never calls it. The only call sites are the three
+  zoxide wrappers and the bare-word navigation fallback in `config.nu`, all
+  tagged channel `zoxide`. The log therefore holds directory jumps only — a
+  file opened through the finder never reaches the quicklist, and no entry
+  ever carries a channel other than `zoxide`, which leaves the ctrl-r
+  "replay the originating channel" path unreachable for every channel but
+  that one. The rebuild logs the pick inside `finder`, where the channel
+  name is already in hand.
 - 6
 - 6
 ----
@@ -114,9 +134,23 @@ Source of truth: the live config in `~/.config/nushell/` (chezmoi-managed) —
 - 3
 ----
 ## Leader mode  DO NOT PORT
-- which-key style leader overlay over `input listen` (reedline has no chord
-  trees). Superseded in practice by the tv remote on Ctrl+Space; menu keys
-  are unreliable under `input listen` (nu #13891).
+- **Dead code, not live behaviour (L-5).** `leadermode.nu` describes a
+  which-key style leader overlay over `input listen` (reedline has no chord
+  trees), but `config.nu` never sources it and its menu entries call
+  `finder --resume` / `finder --fresh`, flags the deployed
+  `~/.config/nushell/finder.nu` does not define (its only flag is `--start`).
+  Nothing in it has ever run. Superseded in practice by the tv remote on
+  Ctrl+Space; menu keys are in any case unreliable under `input listen`
+  (nu #13891). The `DO NOT PORT` verdict stands, now for the stronger reason
+  that there is nothing to port.
+- The audit read L-5 as "calls flags that do not exist". The sharper reading:
+  those flags exist in the *other* finder — the 345-line
+  `~/.local/share/chezmoi/home/dot_config/nushell/finder.nu`, which is a
+  different, stack-and-resume design from the 221-line deployed one, and
+  which does not ship `leadermode.nu` at all. `leadermode.nu` is an
+  unmanaged local leftover from that design. See the escalation on W0.6: the
+  chezmoi source and `~/.config` have diverged in both directions, so
+  "the live config" needs to name one of them.
 - 7
 - 3
 ----
