@@ -1,8 +1,14 @@
 #!/usr/bin/env nu
 
 # Gate for the `help` content model — home/dot_config/nushell/help/*.nuon.
-# Spec: .mi/prd/06-help/01-content-model/prd.md (R1-R3, R9 and the coverage
-# requirements R4-R8).
+# Spec: .mi/prd/06-help/01-content-model/prd.md — R1 format, R2 entry schema,
+# R3 topics, R4 concept entries, R5 writing rules — plus the surface lists of
+# its `coverage/` child, R1 shell · R2 nvim · R3 terminal · R4 capsule.
+#
+# The numbers moved on 2026-08-20 when the node split: the four coverage
+# requirements left for the child, so the old R8 is R4 and the old R9 is R5.
+# The node's own renumbering table is the map. Comments below cite the numbers
+# as they are now, not as the commit that wrote them found them.
 #
 #   nu tests/help-content-model.nu
 #
@@ -45,7 +51,7 @@ const NVIM_MAP_SCOPES = ["global" "buffer"]
 # data files — that is the whole point. If a requirement names a surface and no
 # entry documents it, this list is what notices.
 const COVERAGE = {
-    # R4 — shell
+    # coverage R1 — shell
     "shell.nuon": [
         "Ctrl-R" "Alt-R" "Up / Down" "Shift+Up / Shift+Down"
         "Ctrl-Space / F1" "Ctrl-T" "Ctrl-Q" "Esc"
@@ -55,7 +61,7 @@ const COVERAGE = {
         "bb / ba" "cf <file>" "pass <tab>"
         "cc [...args]" "cr [...args]"
     ]
-    # R5 — Neovim
+    # coverage R2 — Neovim
     "nvim.nuon": [
         "<leader>"
         "<C-h> <C-j> <C-k> <C-l>" "<C-Up> <C-Down> <C-Left> <C-Right>"
@@ -71,53 +77,93 @@ const COVERAGE = {
         "<C-c> (visual)" "<C-v> (visual)"
         "<leader>t"
     ]
-    # R6 — terminal. `Cmd+N` is knowingly absent; see terminal.nuon's header.
+    # coverage R3 — terminal. `Cmd+N` is knowingly absent; see terminal.nuon's
+    # header.
     #
-    # The last three are ahead of R6's wording, deliberately. R6 names "F5 jump
-    # mode, tab/window/quit keys, and the capsule bindings"; `Ctrl+Shift+X`,
-    # `Ctrl+V` and `Ctrl+C` are none of those, but they ARE keybindings the
-    # live terminal config defines and `capabilities-terminal.md` rates
-    # take-over-as-is (C 4/U 9, C 1/U 8, C 3/U 9), so acceptance A1 — "every
-    # keybinding defined in the terminal config has an entry" — cannot be met
-    # without them. An R6 amendment naming them is requested; until it lands
-    # this list asserts slightly more than R6 says, which is the safe
-    # direction. `F6` (DEFER) and the `Ctrl+Shift+B` wallpaper pipeline
+    # The last three are ahead of that requirement's wording, deliberately. It
+    # names "F5 jump mode, tab/window/quit keys, and the capsule bindings";
+    # `Ctrl+Shift+X`, `Ctrl+V` and `Ctrl+C` are none of those, but they ARE
+    # keybindings the live terminal config defines and
+    # `capabilities-terminal.md` rates take-over-as-is (C 4/U 9, C 1/U 8,
+    # C 3/U 9), so the coverage child's acceptance — "every keybinding defined
+    # in the terminal config has an entry" — cannot be met without them. An
+    # amendment naming them is requested against that child; until it lands
+    # this list asserts slightly more than the requirement says, which is the
+    # safe direction. `F6` (DEFER) and the `Ctrl+Shift+B` wallpaper pipeline
     # (DO NOT PORT) are the two live keys deliberately NOT listed.
     "terminal.nuon": [
         "F5 <digit>" "F5 <letter>" "Ctrl+Shift+Q" "nine tabs"
         "Ctrl+Shift+D" "Ctrl+Shift+B" "Ctrl+Shift+S" "Ctrl+Shift+T"
         "Ctrl+Shift+X" "Ctrl+V" "Ctrl+C"
     ]
-    # R7 — capsule
+    # coverage R4 — capsule
     "capsule.nuon": [
         "capsule [dir]" "capsule --rebuild" "capsule list" "capsule clean"
     ]
 }
 
-# R8 — the concept entries, which must exist AND must be prose.
+# R4 — the concept entries, which must exist AND must be prose.
 const CONCEPTS = ["mkcd" "<word>" "tv channel" "credentials in a capsule"]
 
 def id [e: record] {
     if ("key" in ($e | columns)) { $e.key } else if ("cmd" in ($e | columns)) { $e.cmd } else { "<unidentified>" }
 }
 
-# R9 — "`use` describes the real gesture, never restates the key". The gateable
+# R5 — "`use` describes the real gesture, never restates the key". The gateable
 # clause is the opening: a key entry whose `use` starts with its own key has
 # written the title again instead of the gesture.
 #
 # Backticks count, and that is the whole repair. The first version compared the
 # bare id only. Measured across all 84 entries: bare-prefix hits 0,
 # backtick-prefix hits 24 — the check fired on nothing at all, defeated by one
-# character, while reading like the thing that held R9 up. `selftest` below
+# character, while reading like the thing that held R5 up. `selftest` below
 # proves it can still fire, on every run.
 #
-# Scoped to `key` entries on purpose, and this is a reading of R9 rather than a
-# narrowing of it: R9 says "never restates the *key*". A `cmd` entry has no key
+# Scoped to `key` entries on purpose, and this is a reading of R5 rather than a
+# narrowing of it: R5 says "never restates the *key*". A `cmd` entry has no key
 # to restate — for `g` or `capsule list` the invocation *is* the gesture,
 # because typing it is what you do. Naming the key mid-sentence is likewise
-# fine; R9's own example ("press `F5`, then a digit 1-9") does exactly that.
+# fine; R5's own example ("press `F5`, then a digit 1-9") does exactly that.
 def restates-key [use: string, eid: string] {
     ($use | str starts-with $eid) or ($use | str starts-with $"`($eid)`")
+}
+
+# R5 — "`title` is one line, imperative, no trailing period". One-line and the
+# trailing period are checked in `main`; "imperative" had no test at all, so a
+# clause R5 calls gated was two thirds gated and the remaining third read as
+# covered.
+#
+# Imperative is decided from its failure modes rather than by tagging parts of
+# speech, and all three are visible in the first word: a gerund ("Jumping to a
+# tab"), a third-person verb ("Jumps to a tab"), or a noun phrase ("The tab
+# jumper", "A faster route to ..."). Bare-verb openers are left alone, which is
+# what an imperative is.
+#
+# The -s allowlist is not a curiosity: several perfectly imperative verbs end in
+# s, and `Press` opens titles in a manual about keys more than any other word.
+#
+# Measured before this was written, over all 84 titles: 0 end in `-ing`, 0 end
+# in `-s`, 0 open with a determiner — so it finds no violation today. That is a
+# passing check with 84 subjects, not the empty check law 3 refuses: `selftest`
+# below is what tells the two apart, and this corpus has already shipped one
+# check that could not fire (see `restates-key`).
+const NOUN_PHRASE_OPENERS = ["the" "a" "an" "this" "that" "these" "those" "your" "my" "our" "you" "it" "there" "here" "when" "how" "what" "why" "where" "which" "whether" "if" "to" "for" "with" "about" "into" "from" "some" "every" "each" "any" "no"]
+const IMPERATIVE_S_VERBS = ["press" "pass" "focus" "cross" "process" "dismiss" "discuss" "toss" "miss" "address" "express" "compress" "access" "guess"]
+
+def non-imperative [title: string] {
+    let first = ($title | str trim | split row " " | first
+        | str replace --all --regex '[^A-Za-z-]' '' | str lowercase)
+    if ($first | is-empty) { return "" }
+    if ($first in $NOUN_PHRASE_OPENERS) {
+        return $"opens with `($first)`, which starts a noun phrase rather than telling the reader to do something"
+    }
+    if ($first | str ends-with "ing") {
+        return $"opens with the gerund `($first)`"
+    }
+    if ($first | str ends-with "s") and (not ($first in $IMPERATIVE_S_VERBS)) {
+        return $"opens with the third-person `($first)` — a title describes the reader's action, in the form they would be told to take it"
+    }
+    ""
 }
 
 # Law 3, rung 2: a gate that cannot fire is a wish, and this one silently could
@@ -125,6 +171,24 @@ def restates-key [use: string, eid: string] {
 # next person to touch `restates-key` finds out here rather than in review.
 def selftest [] {
     mut bad = []
+    if (non-imperative "Jump to a tab by its number") != "" {
+        $bad = ($bad | append "selftest: non-imperative rejects a bare-verb title, which is the form R5 asks for")
+    }
+    if (non-imperative "Press Ctrl-X twice to copy") != "" {
+        $bad = ($bad | append "selftest: non-imperative rejects `Press`, an imperative verb that ends in s — the allowlist is what keeps the -s rule usable")
+    }
+    if (non-imperative "Fuzzy-search the shell history") != "" {
+        $bad = ($bad | append "selftest: non-imperative rejects a hyphenated verb")
+    }
+    if (non-imperative "Jumping to a tab by its number") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses a gerund title")
+    }
+    if (non-imperative "Jumps to a tab by its number") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses a third-person title")
+    }
+    if (non-imperative "The fastest way to a tab") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses a noun-phrase title")
+    }
     if not (restates-key "`Ctrl-X` closes the pane" "Ctrl-X") {
         $bad = ($bad | append "selftest: restates-key misses the backticked form — the corpus writes every id in backticks, so this is the form that matters")
     }
@@ -132,7 +196,7 @@ def selftest [] {
         $bad = ($bad | append "selftest: restates-key misses the bare form")
     }
     if (restates-key "Press `Ctrl-X`, then a digit 1-9" "Ctrl-X") {
-        $bad = ($bad | append "selftest: restates-key fires on a gesture that merely names its key, which R9 asks for")
+        $bad = ($bad | append "selftest: restates-key fires on a gesture that merely names its key, which R5 asks for")
     }
     $bad
 }
@@ -202,16 +266,18 @@ def main [dir?: path] {
                 $errors = ($errors | append $"($at): mode `($e.mode)` is not one of ($MODES | str join ', ')")
             }
 
-            # R9 — writing rules
+            # R5 — writing rules
             if ("title" in $cols) {
                 if ($e.title | str trim | is-empty) { $errors = ($errors | append $"($at): empty title") }
                 if ($e.title | str contains "\n") { $errors = ($errors | append $"($at): title spans more than one line") }
                 if ($e.title | str ends-with ".") { $errors = ($errors | append $"($at): title ends with a period") }
+                let mood = (non-imperative $e.title)
+                if $mood != "" { $errors = ($errors | append $"($at): title is not imperative — it ($mood)") }
             }
             if ("use" in $cols) {
                 if ($e.use | str trim | is-empty) { $errors = ($errors | append $"($at): empty use") }
                 if $has_key and (restates-key $e.use $eid) {
-                    $errors = ($errors | append $"($at): use opens by restating the key — R9 wants the gesture, as in 'press ($eid), then …', not the title again")
+                    $errors = ($errors | append $"($at): use opens by restating the key — R5 wants the gesture, as in 'press ($eid), then …', not the title again")
                 }
             }
 
@@ -298,7 +364,8 @@ def main [dir?: path] {
         }
     }
 
-    # R4-R8 — coverage
+    # the coverage child's R1-R4 (the surface lists), then this node's R4
+    # (the concept entries)
     for file in $files {
         let want = ($COVERAGE | get $file)
         let have = ($all | where file == $file | get id)
@@ -309,11 +376,11 @@ def main [dir?: path] {
     for c in $CONCEPTS {
         let hit = ($all | where id == $c)
         if ($hit | is-empty) {
-            $errors = ($errors | append $"concept entry `($c)` is missing — R8")
+            $errors = ($errors | append $"concept entry `($c)` is missing — R4")
         } else {
             let kinds = ($hit | first | get entry.verify | get kind)
             if $kinds != ["prose"] {
-                $errors = ($errors | append $"concept entry `($c)` is not verify: prose — R8")
+                $errors = ($errors | append $"concept entry `($c)` is not verify: prose — R4")
             }
         }
     }
