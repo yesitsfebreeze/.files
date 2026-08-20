@@ -5,11 +5,12 @@
 # `mode: "terminal"` is what marks that.
 #
 # CAVEAT, and it is not a small one. `.mi/prd/02-terminal` is recorded as
-# invalid as written (CLAUDE.md, Known gaps): wrong font, wrong palette,
-# inverted palette ownership, a wrong F5 letter set, and keys the audit could
-# not find in the live config. These entries are written from the requirements
-# that survived that audit, and the file is expected to be rewritten once the
-# terminal inventory and re-spec land (tasks W0.1 / W0.2). Consequences:
+# invalid as written (CLAUDE.md, Known gaps) and is pending a from-scratch
+# re-spec (task W0.2). Its inventory has since landed
+# (`.mi/docs/capabilities-terminal.md`, task W0.1) and IS ground truth for what
+# the live config does; the 02-terminal PRDs are not. Every entry below was
+# re-checked against `wezterm show-keys --lua` and that inventory on
+# 2026-08-20. Consequences:
 #   - the window-spawn key `02-terminal/02` calls `Cmd+N` is deliberately NOT
 #     documented here. The audit found no such binding, and a manual that
 #     sends a reader to a key that does nothing is worse than a manual with a
@@ -20,15 +21,30 @@
 #     the whole alphabet only the home row `asdfghjkl` indexes panes. The
 #     PRD asks for geometric left-to-right ordering and the config it was
 #     read from uses split-creation order; that fork is not settled here.
-#   - `mods` is spelled the way `wezterm show-keys` prints it; see README.md.
-#   - measured against the live config, `Ctrl+Shift+D`, `Ctrl+Shift+B`,
-#     `Ctrl+Shift+S` and `Ctrl+Shift+Q` do not exist yet, and `Ctrl+Shift+T`
-#     currently means WezTerm's own SpawnTab. The capsule entries below
-#     therefore document intent, not something you can press today — and two
-#     of those four keys are recorded as *contested* rather than merely
-#     unbuilt: control+shift+B is the wallpaper prompt and control+shift+T is
-#     the reconciler's manual new-tab path. Both need re-picking, which is a
-#     correction on the delivery backlog, not a call this file may make.
+#   - `mods` is spelled the way `wezterm show-keys` prints it, which is NOT
+#     the way the binding is written in Lua. A control+shift binding on a
+#     *letter* is printed as the UPPERCASE letter with `mods = 'CTRL'` —
+#     `Ctrl+Shift+Q` is `{key: "Q", mods: "CTRL"}`, and a documented
+#     `{key: "q", mods: "SHIFT|CTRL"}` matches nothing at all while looking
+#     perfectly reasonable. `SHIFT|CTRL` survives only where shift cannot
+#     fold into the key (`Tab`, digits, symbols). Measured, not assumed; see
+#     README.md.
+#   - what the live config actually binds today, in full: `F5`, `F6`,
+#     `Ctrl+Shift+X`, `Ctrl+Shift+Q`, `Ctrl+V`, `Ctrl+C`, `Ctrl+Shift+B`,
+#     plus the `jump_mode` and `copy_mode` tables. `F6` (theme toggle) is
+#     rated DEFER and `Ctrl+Shift+B` (the wallpaper pipeline) DO NOT PORT, so
+#     neither is documented as itself — the rest are.
+#   - the four capsule keys below are UNBUILT, like everything else in this
+#     repo, and that is all they are for three of them: `Ctrl+Shift+D`,
+#     `Ctrl+Shift+S` and `Ctrl+Shift+B` are bound to nothing in the rebuilt
+#     environment. `Ctrl+Shift+B`'s wallpaper prompt was the one live
+#     collision and the inventory rates that pipeline DO NOT PORT, so the key
+#     comes free. `Ctrl+Shift+T` is the one real collision left: it is
+#     WezTerm's own `SpawnTab` default and the tab reconciler's manual
+#     new-tab path. Picking it is `01-capsule/04`'s call via the terminal
+#     re-spec, not this file's — and note its verify target passes today off
+#     the WezTerm default alone, so the drift check cannot catch a capsule
+#     binding that never lands.
 #   - the "Recent:" indicator the recents picker claims has no host in the
 #     live config either: that status bar is clock-only and nothing ever sets
 #     its left side. Documented as intended, not as observed.
@@ -85,7 +101,7 @@
         topic: "terminal"
         mode: "terminal"
         also: ["nine tabs", "q / :q / /exit"]
-        verify: [{kind: "wezterm-key", key: "q", mods: "SHIFT|CTRL"}]
+        verify: [{kind: "wezterm-key", key: "Q", mods: "CTRL"}]
         source: ".mi/prd/02-terminal/02-startup-layout/prd.md"
     }
     {
@@ -100,6 +116,43 @@
         source: ".mi/prd/02-terminal/02-startup-layout/prd.md"
     }
 
+    {
+        key: "Ctrl+Shift+X"
+        title: "Freeze the screen and select text with the keyboard"
+        use: "Press `Ctrl+Shift+X` and the pane stops scrolling: you get a cursor that moves on WezTerm's own copy-mode keys — `hjkl`, `w`, `b`, `G`, `/` to search, all 55 of them. Press `c` once where the selection should start, move to the far end, press `c` again: the text is on the clipboard and the mode is gone. `q`, `Esc` or `y` leave without the second `c`."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["Ctrl+C", "Ctrl+V"]
+        why: "Entry resets the selection and the per-pane toggle flag first, so an exit through `q`, `Esc` or `y` cannot leave the two-press `c` cycle half-armed for the next time. The flag is tracked by pane id rather than by reading the selection text back, because a selection that starts on blank cells reads as empty and would desync the toggle. The default `copy_mode` table is extended, never replaced, which is why every builtin motion still works."
+        verify: [
+            {kind: "wezterm-key", key: "X", mods: "CTRL"}
+            {kind: "wezterm-key", key: "c", mods: "NONE", table: "copy_mode"}
+        ]
+        source: ".mi/prd/02-terminal/04-copy-mode/prd.md"
+    }
+    {
+        key: "Ctrl+V"
+        title: "Paste the clipboard into whatever is running"
+        use: "Press `Ctrl+V` in any pane. The clipboard arrives as a bracketed paste, so a shell prompt, nvim and Claude all receive it as pasted text rather than as a burst of typed keys — nothing to confirm, and no reindenting in the editor."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["Ctrl+C"]
+        why: "Bracketed paste is the whole point: it is what makes the key work inside a running program and not only at a prompt, and it is what lets clipboard-based dictation land in the terminal at all. No subprocess is involved, so a large paste is instant."
+        verify: [{kind: "wezterm-key", key: "v", mods: "CTRL"}]
+        source: ".mi/prd/02-terminal/prd.md"
+    }
+    {
+        key: "Ctrl+C"
+        title: "Copy the selection, or interrupt when there is none"
+        use: "With text selected, `Ctrl+C` copies it and drops the selection. With nothing selected the same key is the ordinary interrupt and reaches the program as SIGINT, so you never spend a stop on a copy that was not there."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["Ctrl+V", "Ctrl+Shift+X"]
+        why: "One key for both because the terminal can tell them apart: the binding reads the pane's selection first and only falls through to sending the key when it is empty. That buys the platform-native copy shortcut without giving up the interrupt, which is the trade a plain `CopyTo` binding loses."
+        verify: [{kind: "wezterm-key", key: "c", mods: "CTRL"}]
+        source: ".mi/prd/02-terminal/prd.md"
+    }
+
     # -------------------------------------------------------------- containers
     {
         key: "Ctrl+Shift+D"
@@ -109,7 +162,7 @@
         mode: "terminal"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
         why: "The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided."
-        verify: [{kind: "wezterm-key", key: "d", mods: "SHIFT|CTRL"}]
+        verify: [{kind: "wezterm-key", key: "D", mods: "CTRL"}]
         source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
     }
     {
@@ -119,8 +172,8 @@
         topic: "containers"
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
-        why: "You rarely need it: a changed image definition is detected and rebuilt on the next mount by itself, and nothing else ever rebuilds implicitly. The key itself is contested — in the config this was read from, control+shift+B prompts for a desktop wallpaper — so it is an open correction, not a settled binding."
-        verify: [{kind: "wezterm-key", key: "b", mods: "SHIFT|CTRL"}]
+        why: "You rarely need it: a changed image definition is detected and rebuilt on the next mount by itself, and nothing else ever rebuilds implicitly. The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but `capabilities-terminal.md` rates that whole pipeline DO NOT PORT, so the key comes free with the port and there is nothing left to settle."
+        verify: [{kind: "wezterm-key", key: "B", mods: "CTRL"}]
         source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
     }
     {
@@ -131,7 +184,7 @@
         mode: "terminal"
         also: ["Ctrl+Shift+T", "Ctrl+Shift+D"]
         why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting WezTerm."
-        verify: [{kind: "wezterm-key", key: "s", mods: "SHIFT|CTRL"}]
+        verify: [{kind: "wezterm-key", key: "S", mods: "CTRL"}]
         source: ".mi/prd/01-capsule/04-recent-workspaces/prd.md"
     }
     {
@@ -141,8 +194,8 @@
         topic: "containers"
         mode: "terminal"
         also: ["Ctrl+Shift+S", "nine tabs"]
-        why: "Taken, not free: this is WezTerm's own new-tab key, and the tab reconciler treats that default as the manual new-tab path. Claiming it here collides with both, which is an open correction rather than a settled trade — the binding needs picking, not defending."
-        verify: [{kind: "wezterm-key", key: "t", mods: "SHIFT|CTRL"}]
+        why: "Taken, not free: this is WezTerm's own new-tab key, and the tab reconciler treats that default as the manual new-tab path. Claiming it here collides with both, which is an open correction rather than a settled trade — the binding needs picking, not defending. Worse for the manual than for the terminal: `wezterm show-keys` already reports `T`+`CTRL` from the WezTerm default, so this entry's drift check passes whether or not a capsule binding is ever written."
+        verify: [{kind: "wezterm-key", key: "T", mods: "CTRL"}]
         source: ".mi/prd/01-capsule/04-recent-workspaces/prd.md"
     }
 ]

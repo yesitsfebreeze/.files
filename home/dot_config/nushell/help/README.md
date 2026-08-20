@@ -14,7 +14,7 @@ schema; read this before editing an entry.
 | `topics.nuon` | the spine: the nine topics in reading order, with summaries |
 | `shell.nuon` | nushell — keybindings, aliases, custom commands, idioms |
 | `nvim.nuon` | Neovim — keymaps, plugin keys, and the core keys we keep |
-| `terminal.nuon` | WezTerm — jump mode, window/tab keys, capsule bindings |
+| `terminal.nuon` | WezTerm — jump mode, window/tab keys, copy mode, clipboard, capsule bindings |
 | `capsule.nuon` | the capsule CLI and what a container gets from the host |
 
 NUON, not YAML: `open shell.nuon` in nushell returns a table with no parser and
@@ -94,9 +94,36 @@ global. So `K` carries `scope: "buffer"` and the others do not.
 
 ### `wezterm-key` is spelled the way `show-keys` prints it
 
-`mods` is `NONE` for an unmodified key and `SHIFT|CTRL` — in that order — for
-control+shift. WezTerm prints its own ordering and does not normalize yours, so
-a documented `CTRL|SHIFT` matches nothing while looking perfectly reasonable.
+`mods` is `NONE` for an unmodified key. For anything modified, `show-keys`
+prints WezTerm's own spelling, not the one written in the Lua config, and the
+two differ in two independent ways:
+
+| written in `wezterm.lua` | printed by `show-keys --lua` |
+|---|---|
+| `key = "q", mods = "CTRL\|SHIFT"` | `key = 'Q', mods = 'CTRL'` |
+| `key = "x", mods = "CTRL\|SHIFT"` | `key = 'X', mods = 'CTRL'` |
+| `key = "v", mods = "CTRL"` | `key = 'v', mods = 'CTRL'` |
+| `key = "Tab", mods = "CTRL\|SHIFT"` | `key = 'Tab', mods = 'SHIFT\|CTRL'` |
+
+1. **Ordering.** Where both survive, it is `SHIFT|CTRL` — in that order. A
+   documented `CTRL|SHIFT` matches nothing while looking perfectly reasonable.
+2. **Shift folds into a letter.** Control+shift on a *letter* is reported as
+   the **uppercase letter with `mods = 'CTRL'`** and no `SHIFT` at all — the
+   same fold `nvim_get_keymap` does to `<S-h>`. `SHIFT|CTRL` survives only
+   where shift cannot fold: `Tab`, digits, symbols, named keys.
+
+Measured against a live WezTerm on 2026-08-20, not assumed. This is not a
+cosmetic detail: `{key: "q", mods: "SHIFT|CTRL"}` was written for
+`Ctrl+Shift+Q` and resolves to nothing, and a `SHIFT|CTRL` letter row does
+exist in the output for many keys — WezTerm's *defaults* carry both spellings —
+so the wrong form fails silently on our bindings while looking correct next to
+the defaults.
+
+One consequence the drift check inherits: a documented key that WezTerm also
+binds by default (`T`, `N`, `W`, `Z`, …) resolves off the default alone. Such
+an entry can pass while the binding it documents was never written. Where that
+matters the entry says so in its `why`.
+
 `table` is the key table's real name: the F5 jump table is `jump_mode`, and the
 other two a live config reports are `copy_mode` and `search_mode`. A `table`
 that does not exist must be an error rather than an empty match, or a renamed
