@@ -63,9 +63,21 @@ const COVERAGE = {
         "<leader>t"
     ]
     # R6 — terminal. `Cmd+N` is knowingly absent; see terminal.nuon's header.
+    #
+    # The last three are ahead of R6's wording, deliberately. R6 names "F5 jump
+    # mode, tab/window/quit keys, and the capsule bindings"; `Ctrl+Shift+X`,
+    # `Ctrl+V` and `Ctrl+C` are none of those, but they ARE keybindings the
+    # live terminal config defines and `capabilities-terminal.md` rates
+    # take-over-as-is (C 4/U 9, C 1/U 8, C 3/U 9), so acceptance A1 — "every
+    # keybinding defined in the terminal config has an entry" — cannot be met
+    # without them. An R6 amendment naming them is requested; until it lands
+    # this list asserts slightly more than R6 says, which is the safe
+    # direction. `F6` (DEFER) and the `Ctrl+Shift+B` wallpaper pipeline
+    # (DO NOT PORT) are the two live keys deliberately NOT listed.
     "terminal.nuon": [
         "F5 <digit>" "F5 <letter>" "Ctrl+Shift+Q" "nine tabs"
         "Ctrl+Shift+D" "Ctrl+Shift+B" "Ctrl+Shift+S" "Ctrl+Shift+T"
+        "Ctrl+Shift+X" "Ctrl+V" "Ctrl+C"
     ]
     # R7 — capsule
     "capsule.nuon": [
