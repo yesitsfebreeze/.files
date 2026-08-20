@@ -137,7 +137,7 @@
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+C"]
-        why: "Bracketed paste is the whole point: the text is wrapped in the escape sequence that tells the receiving program this arrived as a paste and not as a burst of typed keys, which is what makes the key work inside a running program and not only at a prompt, and what lets clipboard-based dictation land in the terminal at all. No subprocess is involved, so a large paste is instant."
+        why: "Bracketed paste is the mechanism: the text arrives wrapped in the escape sequence that marks it as pasted rather than typed, so a program that would reindent or autocomplete every keystroke can tell the two apart. That marker is also the only route clipboard-based dictation has into a terminal. No subprocess is involved, so size costs nothing."
         verify: [{kind: "wezterm-key", key: "v", mods: "CTRL"}]
         source: ".mi/prd/02-terminal/prd.md"
     }

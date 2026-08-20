@@ -133,9 +133,15 @@ table silently documents nothing.
 
 - `title` is one line, imperative, no trailing period. For an `nvim-map` target
   with no explicit `desc`, the title *is* the string compared against the live
-  map, so it must match the `desc` in the config.
+  map, so it must match the `desc` in the config. All three clauses are gated:
+  "imperative" is decided from the first word, which is where its three failure
+  modes show — a gerund ("Jumping to a tab"), a third-person verb ("Jumps to a
+  tab") or a noun phrase ("The fastest way to a tab"). Verbs that genuinely end
+  in `s` (`Press`, `Pass`, `Focus`) are allowlisted, and the allowlist is
+  itself a `selftest` control, because a rule that rejects `Press` in a manual
+  about keys would be turned off within the week.
 - `use` is the gesture, not the key again: "press `F5`, then a digit 1–9",
-  never "presses F5 to jump". Naming the key mid-sentence is fine — R9's own
+  never "presses F5 to jump". Naming the key mid-sentence is fine — R5's own
   example does it. What is not fine is *opening* with it, which is the title
   written twice: "`<leader>fg` searches file contents" says nothing about the
   gesture, while "press `<leader>fg`, then type" does. **Backticks do not
@@ -146,10 +152,25 @@ table silently documents nothing.
 - `why` only where the reason is non-obvious, and never restating what `use`
   already said — if `use` explains a mechanism, the mechanism belongs here and
   the gesture stays there. Measured on 2026-08-20: 51 of 84 entries carry a
-  `why`, which is more than the spec's R9 predicts ("most entries won't have
+  `why`, which is more than the spec's R5 predicts ("most entries won't have
   one"). Each one reviewed carries a real constraint, so the entries are not
-  the thing to change; the wording of R9 is an open question against this
+  the thing to change; the wording of R5 is an open question against this
   corpus, not a licence to add whys.
+
+  **This one clause is held by review, not by the gate, and that is a measured
+  decision rather than an omission.** The obvious mechanical proxy is word
+  overlap between `use` and `why`, and it was computed over all 51 pairs
+  (content words, stopped and deduplicated, containment of `why` in `use`).
+  It does not separate the defects from the good entries: the corpus mean is
+  0.11, and the one entry known to state the same fact twice — `Ctrl+V`, whose
+  `why` said the paste "works inside a running program and not only at a
+  prompt" while its `use` already said "in any pane — a shell prompt, nvim, a
+  running agent alike" — scores **0.097, ranking 28th of 51, below the mean**.
+  A threshold that caught it would fire on more than half the manual. The
+  restatement is semantic, in different words, so it takes a reader. Both
+  defects the 2026-08-20 review found (`Ctrl+V` and `Ctrl-T`) were rewritten
+  in that pass; re-run the review when entries are added rather than trusting
+  the gate to notice.
 - Add the entry in the **same change** as the binding. `help --check` exits
   non-zero on an undocumented one, which is the only reason this file stays true.
 
@@ -167,22 +188,30 @@ nu tests/help-content-model.nu
 ```
 
 Strict schema, topics, the writing rules, `also` resolution and the coverage
-the PRD's R4-R8 name. It exits non-zero on any violation, and it fails rather
-than passes when it finds nothing to check.
+the PRD's `coverage/` child names, R1–R4. It exits non-zero on any violation,
+and it fails rather than passes when it finds nothing to check.
+
+Requirement numbers moved when the node split on 2026-08-20: the four coverage
+requirements became the child's R1–R4, the old R8 (concepts) is now R4 and the
+old R9 (writing rules) is now R5. The gate's comments and messages cite the
+current numbers.
 
 Two of its constants are transcribed from the spec rather than read out of the
 data, and that is deliberate — a check fed by the thing it is checking can only
 assert that the data agrees with itself:
 
-- `COVERAGE` — the surfaces R4-R8 name. If a requirement names a key and no
-  entry documents it, this is what notices.
+- `COVERAGE` — the surfaces the `coverage/` child's R1–R4 name. If a
+  requirement names a key and no entry documents it, this is what notices.
 - `TOPICS` — R3's nine ids **in R3's order**. Before it existed the topic list
   was read out of `topics.nuon`, so renaming `git` to `vcs` or deleting
   `history` both exited 0.
 
-`selftest` runs the `use`-restatement predicate against a known-bad and a
-known-good string on every run, so a repeat of the backtick miss above fails
-here instead of passing quietly for a cycle.
+`selftest` runs both prose predicates against known-bad and known-good strings
+on every run, so a repeat of the backtick miss above fails here instead of
+passing quietly for a cycle. The imperative check finds no violation in the
+current 84 entries, which is why its controls matter more than its output: a
+check with subjects and no violations and a check that cannot fire read
+identically from the outside.
 
 What it cannot do is confirm a `verify` target resolves against a live shell,
 editor or terminal: that is `help --check`

@@ -159,7 +159,7 @@
         topic: "find"
         mode: "shell"
         also: ["Ctrl-Space / F1"]
-        why: "Same picker as `Ctrl-Space`, opposite intent: this one hands the selection to the command line instead of acting on it."
+        why: "It reaches the channel remote by the same route `Ctrl-Space` does — both end up in `_finder_pick_channel` over `tv list-channels` — so a cable file you add for one key is on the other key too, with nothing to register twice."
         verify: [{kind: "keybinding", name: "finder_pick"}]
         source: ".mi/prd/04-shell/04-television/prd.md"
     }
