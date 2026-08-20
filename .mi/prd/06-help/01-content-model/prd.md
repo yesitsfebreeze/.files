@@ -46,9 +46,31 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
       a bare word jumps; what a tv channel is and how to add one; how
       credentials reach a capsule.
 - [~] **R5** — **Writing rules.** `title` is one line, imperative, no trailing
-      period. `use` describes the real gesture ("press `F5`, then a digit
-      1–9"), never restates the key. `why` only where the reason is
-      non-obvious — most entries won't have one.
+      period (gated: `nu tests/help-content-model.nu`, `selftest` asserts it
+      can fail). `use` describes the real gesture, never restates the key on
+      `key`-typed entries — bare or backticked (gated, same test,
+      `restates-key` + `selftest`). `why` only where the reason is
+      non-obvious, and never restates what `use` already said (reviewed by
+      hand, not gated). Drop the "most entries won't have one" prediction:
+      measured 51/84 (61%) carry a `why`, each reviewed as a real constraint,
+      and `home/dot_config/nushell/help/README.md:146-152` records the
+      mismatch as an open question against R5's own wording rather than a
+      defect to fix by removing whys — a worker should not treat this box as
+      asking them to cut `why` fields down.
+  - Amended 2026-08-20 (`cc-1787260422`), sharpen. Ran `nu
+    tests/help-content-model.nu` on HEAD (26fc669): exit 0, `84 entries
+    across 4 files, 9 topics, 10 prose-only … ok`. Commit 9c4141b
+    (`06-help/01: make R3 and R9 checks able to fail, and fix the nine
+    entries they catch`) landed the mechanical gate: `restates-key`
+    (backtick-aware, scoped to `key` entries) plus a `selftest` that runs
+    positive/negative controls every invocation — proven per that commit by
+    reverting the predicate to bare-only (exits 1 on the positive control)
+    and widening it to `str contains` (exits 1 on the negative control).
+    Recomputed the `why` count independently against the live `.nuon`
+    files: `total=84 with_why=51` (61%), matching README.md's own recorded
+    measurement at lines 146–152, which already states the prediction, not
+    the entries, is the open question. Still open and ungated: `why`
+    restating `use` is caught only by hand review.
 
 ## Acceptance
 - [x] Opening a content file directly is readable as plain text — the data is
