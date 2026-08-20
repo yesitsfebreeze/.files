@@ -77,6 +77,30 @@ ported; see [`05-platform`](../prd/05-platform/prd.md).
   television, burrito, starship.toml, bat, gh, lazygit, tinted-theming,
   wp-stat-overlay. Templated where it must differ per machine
   (`dot_gitconfig.tmpl`).
+- **Live bug L-12, corrected and do not reproduce:** the source tree ships
+  `solo-window.{applescript,sh,ps1,vbs}`. The audit called them unreferenced;
+  measured, that is only half right — the *deployed*
+  `~/.config/wezterm/wezterm.lua` never mentions solo-window, but the
+  *source* `home/dot_config/wezterm/wezterm.lua` defines `solo_window()` and
+  calls it from two places. They are dead relative to what runs, live
+  relative to what would be applied, which is the divergence below. The other
+  two files the audit listed, `wsl-clip-prime.sh` and a wezterm
+  `background.png`, are not in the source tree at all — that half of L-12 is
+  stale. None is ported: three of the four are Windows-only and the rebuild
+  is macOS-host-only.
+- **New finding (L-13), the ground the corrections epic stands on:** the
+  chezmoi source and `~/.config` have diverged, in both directions, and
+  `chezmoi apply` from the current source would destroy the config every
+  inventory in this repo was written from. Measured 2026-08-20, source vs
+  deployed line counts: `wezterm/wezterm.lua` 339 vs 1149 · `nushell/config.nu`
+  380 vs 715 · `nushell/finder.nu` 345 vs 221 (the source one is a different,
+  stack-and-resume design) · `television/config.toml` 16 vs 15 ·
+  `nvim/lua/config/keymaps.lua` identical. `leadermode.nu`, `dirstack.nu`,
+  `quicklist.nu`, `overlay.nu` and `opacity.nu` exist only under `~/.config`
+  and are not in the source at all. So "chezmoi-managed", written at the head
+  of these inventories, is not true of the files they rate. Which artifact is
+  canonical is a human decision — see the escalation on
+  `00-delivery/corrections/w0-6-live-bugs`.
 - 3
 - 9
 ----
