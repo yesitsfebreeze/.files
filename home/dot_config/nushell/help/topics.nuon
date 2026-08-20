@@ -1,0 +1,50 @@
+# The manual's spine: the nine topics, in reading order — most often needed
+# first. Every entry in every surface file carries one of these ids.
+# Schema and rules: see README.md in this directory.
+[
+    {
+        id: "navigate"
+        title: "Move between directories and see where you landed"
+        summary: "Zoxide jumps, the bare-word fallback, and the listing that follows every move."
+    }
+    {
+        id: "find"
+        title: "Fuzzy-pick a file, a line, a directory or a command"
+        summary: "television in the shell, telescope in the editor — deliberately two tools."
+    }
+    {
+        id: "history"
+        title: "Recall something you already ran"
+        summary: "This directory's history by default; the whole history one modifier away."
+    }
+    {
+        id: "edit"
+        title: "Edit text, on the command line and in Neovim"
+        summary: "The command-line keys, the Neovim keymaps, and the editor-style selection."
+    }
+    {
+        id: "git"
+        title: "Work with a repository"
+        summary: "The short aliases, lazygit, and the signs in the editor's gutter."
+    }
+    {
+        id: "containers"
+        title: "Drop a directory into a container and work inside it"
+        summary: "One capsule per directory, your credentials, no re-authentication."
+    }
+    {
+        id: "terminal"
+        title: "Move around windows, tabs, panes and sessions"
+        summary: "WezTerm's jump mode and the session commands."
+    }
+    {
+        id: "agents"
+        title: "Run coding agents, and tell them how this environment works"
+        summary: "The launchers, what a capsule hands an agent, and this manual as data."
+    }
+    {
+        id: "config"
+        title: "Change this environment and check it still matches its manual"
+        summary: "Deploying the dotfiles, reading the manual, and the drift check."
+    }
+]

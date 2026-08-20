@@ -1,0 +1,455 @@
+# Surface: nushell — the daily driver.
+# Schema, verify kinds and writing rules: see README.md in this directory.
+# Entries are grouped by topic in the order topics.nuon declares.
+#
+# These entries describe the configuration being BUILT, and the keybinding
+# names in `verify` were read off the live nushell config so they are real
+# names rather than invented ones. Four behaviours are documented as they are
+# specified rather than as the live implementation currently does them, all
+# four recorded on the delivery corrections backlog: `ls -D` (the live version
+# uses a `du` flag macOS does not have), the git-log commit decode (dead in
+# the live finder), the recent-dirs channel name, and whether finder picks
+# reach the recents log (they do not yet). If one of them is still wrong when
+# the shell lands, the entry is wrong too — fix both in the same change.
+[
+    # ---------------------------------------------------------------- navigate
+    {
+        cmd: "z <query>"
+        title: "Jump to a directory by a fragment of its path"
+        use: "Type `z` and any part of the path — `z dot` reaches ~/dev/dotfiles. Zoxide picks the best frecency match and you land there; the listing prints itself. A single argument that resolves to an existing *file* opens it in nvim instead of jumping, so `z notes.md` edits."
+        topic: "navigate"
+        mode: "shell"
+        also: ["zi", "zz", "<word>"]
+        why: "Every jump goes through the `cd` funnel, so the start dir, the dirstack and the recents log update no matter which route you took. A jump that does not move PWD logs nothing — a failed `z` leaves no trace."
+        verify: [{kind: "command", name: "z"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "zi"
+        title: "Pick a directory from zoxide interactively"
+        use: "Run `zi` with no argument: the zoxide database opens as a picker, ordered by frecency. Choose a row and you land there."
+        topic: "navigate"
+        mode: "shell"
+        also: ["cdi", "z <query>"]
+        verify: [{kind: "command", name: "zi"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "cdi"
+        title: "Pick a directory from zoxide interactively"
+        use: "Alias for `zi` — the same picker under the name muscle memory reaches for."
+        topic: "navigate"
+        mode: "shell"
+        also: ["zi"]
+        verify: [{kind: "alias", name: "cdi"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "zz"
+        title: "Toggle back to the directory you came from"
+        use: "Run `zz` — it is `cd -`. Run it again to come back. It pairs with the bare-word jump: word, look, `zz`."
+        topic: "navigate"
+        mode: "shell"
+        also: ["<word>"]
+        verify: [{kind: "command", name: "zz"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "zl <query>"
+        title: "Jump to a directory and list it"
+        use: "Same query as `z`, then `la` on arrival — for when you want the hidden files too."
+        topic: "navigate"
+        mode: "shell"
+        also: ["z <query>", "l / ll / la"]
+        verify: [{kind: "command", name: "zl"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "zc <query>"
+        title: "Jump to a directory and start Claude there"
+        use: "Same query as `z`, then `cc` in the directory you land in."
+        topic: "navigate"
+        mode: "shell"
+        also: ["z <query>", "cc [...args]"]
+        verify: [{kind: "command", name: "zc"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "<word>"
+        title: "Jump by typing a directory name on its own"
+        use: "Type a bare word that is not a command — `dotfiles` — and press enter. If zoxide knows a directory matching it you land there with a cleared screen; the fresh prompt in the new directory is the confirmation. If it knows nothing, you get the ordinary command-not-found."
+        topic: "navigate"
+        mode: "shell"
+        also: ["z <query>", "zz"]
+        why: "The jump happens in `pre_execution` because that is the only hook where a cd persists, and the screen is cleared in `pre_prompt` to bury the command-not-found error that is already on its way. The trigger is deliberately narrow — first token unknown, no shell metacharacters, not path-shaped — so `./x` and `ls | nope` never jump. It queries `zoxide query --exclude $PWD` directly and only jumps on a real hit, because the funnel reads an empty argument as no argument at all and would otherwise take you HOME on every miss."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/04-shell/03-zoxide/prd.md"
+    }
+    {
+        cmd: "cd <path>"
+        title: "Enter a directory, creating it if it does not exist"
+        use: "`cd` on a path that is not there offers to make it: one key to confirm, then you are in it. `cd` alone goes home, `cd -` toggles back. Everything else about it is the builtin."
+        topic: "navigate"
+        mode: "shell"
+        also: ["mkcd", "z <query>"]
+        why: "`cd` is aliased to the `mkcd` wrapper, which is the single funnel every kind of navigation reaches the shell through."
+        verify: [{kind: "alias", name: "cd"}]
+        source: ".mi/prd/04-shell/01-core-config/prd.md"
+    }
+    {
+        cmd: "mkcd"
+        title: "Understand the one funnel every move goes through"
+        use: "Nothing to run — this is the shape of the shell. Real `cd`, zoxide jumps, picker jumps and the bare-word fallback all arrive at `mkcd`, and the PWD hook is the single place that reacts to a move."
+        topic: "navigate"
+        mode: "shell"
+        also: ["cd <path>", "<word>", "Ctrl-Q"]
+        why: "Because there is exactly one funnel and exactly one reaction point, four things stay true however you moved: the directory is recorded to `startdir.txt` so a new pane opens where you left off, it is pushed onto the dirstack that feeds the recent-dirs picker, the pick is logged to the recents list, and the listing prints. Scatter that per navigation command and one route always ends up forgetting one of the four."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/04-shell/prd.md"
+    }
+    {
+        cmd: "ls"
+        title: "List a directory as structured, decorated data"
+        use: "Plain `ls`. Rows are sorted by type then modified time, so directories group together and the freshest thing sits nearest the prompt, and each row carries an icon. It is still a nushell table: `ls | where size > 1mb | sort-by modified` works."
+        topic: "navigate"
+        mode: "shell"
+        also: ["l / ll / la", "ls -D"]
+        why: "The builtin is captured as `core-ls` before being shadowed, because an alias target binds at parse time — without the capture the wrapper would call itself."
+        verify: [{kind: "command", name: "ls"}]
+        source: ".mi/prd/04-shell/06-listing/prd.md"
+    }
+    {
+        cmd: "ls -D"
+        title: "List with real recursive directory sizes"
+        use: "Add `-D` to swap each directory's inode size for what it actually occupies on disk. One `du` spawn does the whole listing."
+        topic: "navigate"
+        mode: "shell"
+        also: ["ls"]
+        why: "Opt-in only, and it stays that way: a single `node_modules` would stall every listing in the tree if this were the default. It also cannot be spelled `du -sb` — macOS `du` has no `-b`, and the old implementation discarded the error, so every directory silently kept its inode size."
+        verify: [{kind: "command", name: "ls"}]
+        source: ".mi/prd/04-shell/06-listing/prd.md"
+    }
+    {
+        cmd: "l / ll / la"
+        title: "List short, long, or including dotfiles"
+        use: "`l` is the quick one, `ll` the long form, `la` includes hidden files. `la` is also what runs by itself after every directory change."
+        topic: "navigate"
+        mode: "shell"
+        also: ["ls"]
+        verify: [{kind: "command", name: "l"}, {kind: "command", name: "ll"}, {kind: "command", name: "la"}]
+        source: ".mi/prd/04-shell/06-listing/prd.md"
+    }
+
+    # -------------------------------------------------------------------- find
+    {
+        key: "Ctrl-Space / F1"
+        title: "Open the finder and act on what you pick"
+        use: "Press `Ctrl-Space` (or `F1`). The channel list opens first — type a few letters of the channel you want (`fil`, `dir`, `text`, `git-log`), enter, then pick a row. What happens next follows the type: a file opens in nvim, a directory cds the shell and lists it, a grep hit opens the editor on that line, a commit opens in `git show`. `Tab` multi-selects."
+        topic: "find"
+        mode: "shell"
+        also: ["Ctrl-T", "Ctrl-Q", "finder"]
+        why: "Enter has to be un-hijacked per run (`--keybindings 'enter=\"confirm_selection\"'`) because three channels bind it to an action of their own instead of confirming: `text` edits in place, `zoxide` cds in a nested shell, `recent-files` edits. Note that the `text` override is local to this config, not stock tv. tv panics outright without a TTY, so this and every other picker entry point is interactive-only by construction."
+        verify: [{kind: "keybinding", name: "tv_remote"}, {kind: "keybinding", name: "tv_remote_f1"}]
+        source: ".mi/prd/04-shell/04-television/prd.md"
+    }
+    {
+        key: "Ctrl-T"
+        title: "Insert a path into the line you are typing"
+        use: "Mid-command, press `Ctrl-T`, pick a file or directory: it is inserted at the cursor, shell-quoted, and you carry on typing. Esc leaves the line exactly as it was. This is the fzf reflex, on television."
+        topic: "find"
+        mode: "shell"
+        also: ["Ctrl-Space / F1"]
+        why: "Same picker as `Ctrl-Space`, opposite intent: this one hands the selection to the command line instead of acting on it."
+        verify: [{kind: "keybinding", name: "finder_pick"}]
+        source: ".mi/prd/04-shell/04-television/prd.md"
+    }
+    {
+        key: "Ctrl-Q"
+        title: "Reopen something you picked or jumped to recently"
+        use: "Press `Ctrl-Q` for one list of everything recent across every channel — jumps, files opened via `z`, finder picks — newest first. `enter` opens it by type. `ctrl-r` replays instead: it cds to the directory the pick was made in and re-runs the channel it came from, so a grep result reopens the same search where you ran it. An empty log prints a hint rather than an empty picker."
+        topic: "find"
+        mode: "shell"
+        also: ["Ctrl-Space / F1", "mkcd"]
+        verify: [{kind: "keybinding", name: "quicklist"}]
+        source: ".mi/prd/04-shell/07-quicklist/prd.md"
+    }
+    {
+        cmd: "finder"
+        title: "Run a picker and get typed nushell data back"
+        use: "`finder` opens the channel remote; `finder --start files` opens one channel directly. The return value is data, not a string: a list of paths, `{file, line, text}` rows from a grep, `{hash, subject}` records from `git-log`. Pipe it like anything else."
+        topic: "find"
+        mode: "shell"
+        also: ["Ctrl-Space / F1", "tv channel"]
+        why: "Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI."
+        verify: [{kind: "command", name: "finder"}]
+        source: ".mi/prd/04-shell/04-television/prd.md"
+    }
+    {
+        cmd: "tv channel"
+        title: "Understand what a channel is, and add one"
+        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file, and it appears in the `Ctrl-Space` remote alongside the built-ins; teach `finder` how to decode its rows and every opener works on it too."
+        topic: "find"
+        mode: "shell"
+        also: ["finder", "Ctrl-Space / F1"]
+        why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, recent dirs (`recent-dirs`, fed by the dirstack), git-log, git-files, git-branch, env and quicklist — anything else migrates on demand. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/04-shell/04-television/prd.md"
+    }
+    {
+        cmd: "grep"
+        title: "Search file contents with ripgrep"
+        use: "`grep <pattern>` is `rg <pattern>` — recursive by default, respecting ignore files. Reach for `rg` and `fd`, not `grep` and `find`."
+        topic: "find"
+        mode: "shell"
+        also: ["Ctrl-Space / F1", "idioms"]
+        why: "`rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both."
+        verify: [{kind: "alias", name: "grep"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "help --fuzzy"
+        title: "Fuzzy-search the manual itself"
+        use: "`help --fuzzy` opens every entry in this manual as a picker; type what you half-remember (`select`, `jump`, `capsule`) and the preview shows the full entry — title, use, why, related. `enter` prints that entry into the scrollback; `ctrl-o` opens the PRD it came from in `$EDITOR`. Without a TTY it degrades to `help <query>`."
+        topic: "find"
+        mode: "shell"
+        also: ["help", "Ctrl-Space / F1"]
+        verify: [{kind: "command", name: "help"}]
+        source: ".mi/prd/06-help/03-browser/prd.md"
+    }
+
+    # ----------------------------------------------------------------- history
+    {
+        key: "Ctrl-R"
+        title: "Search this directory's history"
+        use: "Press `Ctrl-R`: a picker opens over the commands you have run *in this directory*, newest first and deduplicated, prefilled with whatever you had typed up to the cursor. Enter replaces the command line with the pick; Esc leaves the line alone."
+        topic: "history"
+        mode: "shell"
+        also: ["Alt-R", "Up / Down"]
+        why: "Directory-scoped is the default because a command worth repeating is nearly always one you ran here; the global list is one modifier away. The sqlite store runs with `isolation: false` so every pane contributes to one merged history."
+        verify: [{kind: "keybinding", name: "hist_picker_local"}]
+        source: ".mi/prd/04-shell/05-history/prd.md"
+    }
+    {
+        key: "Alt-R"
+        title: "Search the whole history, from anywhere"
+        use: "Press `Alt-R` for television's own shell-history picker over every command from every directory. Enter puts the pick on the command line."
+        topic: "history"
+        mode: "shell"
+        also: ["Ctrl-R", "Shift+Up / Shift+Down"]
+        why: "`Alt`, not `Ctrl-Shift`. The kitty keyboard protocol stays off — it leaks `^[[?0u` through the WezTerm pty — and without it shift is indistinguishable on a control+letter chord, so `Ctrl-Shift-R` would arrive as plain `Ctrl-R` and shadow the local picker."
+        verify: [{kind: "keybinding", name: "hist_picker_global"}]
+        source: ".mi/prd/04-shell/05-history/prd.md"
+    }
+    {
+        key: "Up / Down"
+        title: "Step through this directory's history on the line"
+        use: "With the cursor on the command line, `Up` walks back through this directory's commands and `Down` forward; typing anything resets you to the newest. No picker, no screen change."
+        topic: "history"
+        mode: "shell"
+        also: ["Shift+Up / Shift+Down", "Ctrl-R"]
+        why: "Both keys try `menuup`/`menudown` first in an `until` chain, so with a completion menu open the arrows still navigate the menu. And these bindings are appended *after* television's generated init, because reedline resolves last-entry-wins and tv's own Ctrl-R would otherwise take the key."
+        verify: [{kind: "keybinding", name: "hist_up_local"}, {kind: "keybinding", name: "hist_down_local"}]
+        source: ".mi/prd/04-shell/05-history/prd.md"
+    }
+    {
+        key: "Shift+Up / Shift+Down"
+        title: "Step through the whole history on the line"
+        use: "Hold shift with the arrows for reedline's own global traversal — the same inline stepping, ignoring which directory you are in. Use it when the command you want was run somewhere else."
+        topic: "history"
+        mode: "shell"
+        also: ["Up / Down", "Alt-R"]
+        verify: [{kind: "keybinding", name: "hist_up_global"}, {kind: "keybinding", name: "hist_down_global"}]
+        source: ".mi/prd/04-shell/05-history/prd.md"
+    }
+
+    # -------------------------------------------------------------------- edit
+    {
+        key: "Esc"
+        title: "Close the menu, or clear the line"
+        use: "Press `Esc` once: if a completion or history menu is open it closes and the line survives. With no menu open it clears the line, the way `Ctrl-C` would."
+        topic: "edit"
+        mode: "shell"
+        verify: [{kind: "keybinding", name: "esc_clear"}]
+        source: ".mi/prd/04-shell/01-core-config/prd.md"
+    }
+    {
+        cmd: "cat <file>"
+        title: "Dump a file with syntax highlighting and no pager"
+        use: "`cat <file>` is `bat --paging=never`: highlighted, line-numbered, and it still pipes like `cat` because nothing waits for a key."
+        topic: "edit"
+        mode: "shell"
+        verify: [{kind: "alias", name: "cat"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "nv / vi"
+        title: "Open Neovim"
+        use: "Either name starts nvim. `$EDITOR` and `$VISUAL` are nvim too, so anything that opens an editor for you — the finder, `z` on a file, a commit message — lands in the same place."
+        topic: "edit"
+        mode: "shell"
+        also: ["nn"]
+        verify: [{kind: "alias", name: "nv"}, {kind: "alias", name: "vi"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "nn"
+        title: "Open the notes file"
+        use: "`nn` opens `~/notes.md` in nvim, from wherever you are."
+        topic: "edit"
+        mode: "shell"
+        also: ["nv / vi"]
+        verify: [{kind: "alias", name: "nn"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "cf <file>"
+        title: "Copy a file's contents to the system clipboard"
+        use: "`cf <file>` puts the whole file on the clipboard. The argument is `path`-typed, so Tab completes it. A missing file errors instead of copying nothing."
+        topic: "edit"
+        mode: "shell"
+        why: "It picks `pbcopy`, `wl-copy` or `xclip` by session type and checks the display variables first, so on a headless box it fails fast rather than hanging on a clipboard nobody is listening to."
+        verify: [{kind: "command", name: "cf"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+
+    # --------------------------------------------------------------------- git
+    {
+        cmd: "g"
+        title: "Run git"
+        use: "`g` is `git`: `g status`, `g push`, everything as usual, three characters shorter."
+        topic: "git"
+        mode: "shell"
+        also: ["lg"]
+        verify: [{kind: "alias", name: "g"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "lg"
+        title: "Open lazygit on this repository"
+        use: "`lg` in any repo: staging, hunk-level commits, rebases and the log in one terminal UI. Quit with `q`."
+        topic: "git"
+        mode: "shell"
+        also: ["g"]
+        verify: [{kind: "alias", name: "lg"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+
+    # ---------------------------------------------------------------- terminal
+    {
+        cmd: "q / :q / /exit"
+        title: "Leave the shell"
+        use: "Any of the three exits. They exist because muscle memory arrives from vim, from a REPL, and from a chat box, and none of them should print an error."
+        topic: "terminal"
+        mode: "shell"
+        verify: [{kind: "alias", name: "q"}, {kind: "alias", name: ":q"}, {kind: "alias", name: "/exit"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "bb / ba"
+        title: "Spawn or attach a terminal session"
+        use: "`bb` spawns a session for this directory or attaches to it if one is already running; `ba` only attaches. Detached sessions survive closing the terminal."
+        topic: "terminal"
+        mode: "shell"
+        why: "Both aliases run `brr`, not `burrito` — two different binaries exist and the shorter one is the session manager, so the name matters when you go looking for its config."
+        verify: [{kind: "alias", name: "bb"}, {kind: "alias", name: "ba"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+
+    # ------------------------------------------------------------------ agents
+    {
+        cmd: "cc [...args]"
+        title: "Start Claude in this directory"
+        use: "`cc` launches Claude Code with permission prompts skipped, in the directory you are in. Arguments pass straight through."
+        topic: "agents"
+        mode: "shell"
+        also: ["cr [...args]", "zc <query>"]
+        why: "With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it."
+        verify: [{kind: "command", name: "cc"}]
+        source: ".mi/prd/04-shell/08-claude-launchers/prd.md"
+    }
+    {
+        cmd: "cr [...args]"
+        title: "Resume a Claude session in this directory"
+        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick."
+        topic: "agents"
+        mode: "shell"
+        also: ["cc [...args]"]
+        verify: [{kind: "command", name: "cr"}]
+        source: ".mi/prd/04-shell/08-claude-launchers/prd.md"
+    }
+    {
+        cmd: "help --json"
+        title: "Read this manual as structured data"
+        use: "`help --json` emits the whole manual — topics and every entry field — as one JSON document, for an agent that would rather parse than read. Plain `help` under capture is already unstyled text, so this is the optimisation, not the requirement."
+        topic: "agents"
+        mode: "shell"
+        also: ["help", "help --md"]
+        why: "The field names are an interface: renaming one is a breaking change and has to be recorded in the agent-interface PRD."
+        verify: [{kind: "command", name: "help"}]
+        source: ".mi/prd/06-help/05-agent-interface/prd.md"
+    }
+    {
+        cmd: "help --md"
+        title: "Write this manual out as markdown"
+        use: "`help --md` prints the whole manual grouped by topic, top-to-bottom readable — for pasting into an issue or writing to a file."
+        topic: "agents"
+        mode: "shell"
+        also: ["help --json"]
+        verify: [{kind: "command", name: "help"}]
+        source: ".mi/prd/06-help/05-agent-interface/prd.md"
+    }
+    {
+        cmd: "idioms"
+        title: "Use the tools this environment actually has"
+        use: "Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`), not fzf. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given."
+        topic: "agents"
+        mode: "shell"
+        also: ["grep", "tv channel", "cd <path>"]
+        why: "Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing."
+        verify: [{kind: "prose"}]
+        source: ".mi/prd/06-help/05-agent-interface/prd.md"
+    }
+
+    # ------------------------------------------------------------------ config
+    {
+        cmd: "help"
+        title: "Read the manual for this environment"
+        use: "`help` alone prints the topics and the handful of keys worth knowing first. `help <topic>` gives that topic as a nushell table, so `help find | where key =~ ctrl` composes. `help <entry>` gives one entry in full, with its why and its source PRD. Anything else is treated as a search, and `help --all` prints everything."
+        topic: "config"
+        mode: "shell"
+        also: ["help --fuzzy", "help --check", "help --json"]
+        why: "Nushell sanctions overriding `help`, which means this command also receives every `<anything> --help` in the shell — so a name it does not document is forwarded to nushell's own help untouched, and `--help` keeps working everywhere. Where a name is BOTH a nushell command and an entry here — `ls` is the live example — which one wins is not settled; the delegation PRD and this file currently disagree, and it is recorded as a correction rather than decided in the data."
+        verify: [{kind: "command", name: "help"}]
+        source: ".mi/prd/06-help/02-help-command/prd.md"
+    }
+    {
+        cmd: "help --check"
+        title: "Check the manual against the live configuration"
+        use: "`help --check` introspects the configured shell, Neovim and WezTerm and reports three things: bindings that exist with no entry, entries whose binding is gone, and entries whose text no longer matches the live description. Non-zero exit on any of them, so it can gate a commit. It spawns editors and terminals, so it is slow on purpose and never on the path of plain `help`."
+        topic: "config"
+        mode: "shell"
+        also: ["help"]
+        why: "This is the only reason the manual can be trusted rather than hoped over. Add a binding without an entry and the check fails; a documented key that stopped existing is the dangerous case, because it sends a reader somewhere that does nothing."
+        verify: [{kind: "command", name: "help"}]
+        source: ".mi/prd/06-help/04-drift-check/prd.md"
+    }
+    {
+        cmd: "rr"
+        title: "Pull and apply the latest dotfiles"
+        use: "`rr` is `chezmoi update --force`: fetch the dotfiles repo and apply it over `~`. Applying twice changes nothing the second time."
+        topic: "config"
+        mode: "shell"
+        verify: [{kind: "alias", name: "rr"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+    {
+        cmd: "pass <tab>"
+        title: "Complete pass subcommands and entry names"
+        use: "Type `pass ` and press Tab: the verbs come up, and so do the live entry names from `$PASSWORD_STORE_DIR`, without their `.gpg` suffix. Flags that are not declared still reach the real binary."
+        topic: "config"
+        mode: "shell"
+        why: "Nushell ships no completion for pass, so this is an extern signature written by hand — which is also why an undeclared flag has to pass through rather than error."
+        verify: [{kind: "command", name: "pass"}]
+        source: ".mi/prd/04-shell/02-aliases-utilities/prd.md"
+    }
+]
