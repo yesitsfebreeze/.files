@@ -223,7 +223,7 @@
     {
         key: "<leader>e"
         title: "Open the current directory as a buffer"
-        use: "`<leader>e` opens oil on the directory of the current file, dotfiles included. It is a normal buffer: rename a line, delete a line, add a line, then `:w` and the filesystem matches."
+        use: "Press `<leader>e` in any buffer: oil opens on the directory of the current file, dotfiles included. It is a normal buffer — rename a line, delete a line, add a line, then `:w` and the filesystem matches."
         topic: "edit"
         mode: "nvim:normal"
         why: "Open it with the key, not with `:e some/dir`. The plugin is lazy on that key, so its file-explorer hijack is not installed until the first time you press it — and netrw is disabled, so before that press `:e` on a directory reaches neither one."
@@ -233,7 +233,7 @@
     {
         key: "<leader>cf"
         title: "Format the buffer now"
-        use: "`<leader>cf` formats asynchronously. You rarely need it: saving formats already — stylua for lua, rustfmt for rust, black for python, prettier for markdown — and a filetype with no formatter of its own is formatted by its language server instead."
+        use: "Press `<leader>cf` and the buffer formats asynchronously. You rarely need it: saving formats already — stylua for lua, rustfmt for rust, black for python, prettier for markdown — and a filetype with no formatter of its own is formatted by its language server instead."
         topic: "edit"
         mode: "nvim:normal"
         why: "Prettier is the markdown formatter because it aligns table pipes, but prose must stay exactly as wrapped: these files are hand-wrapped at ~78 columns and reflowing them would churn every diff. On-save formatting gives up after 500 ms rather than blocking the write."
@@ -270,7 +270,7 @@
     {
         key: "<leader>fg"
         title: "Grep the project live"
-        use: "`<leader>fg` searches file contents as you type; enter opens the file on the matching line."
+        use: "Press `<leader>fg`, then type: the search runs over file contents as you type, and enter opens the file on the matching line."
         topic: "find"
         mode: "nvim:normal"
         also: ["<leader>ff and <leader><space>", "<Tab> <S-Tab> <CR> (telescope)"]
@@ -280,7 +280,7 @@
     {
         key: "<leader>fb"
         title: "Switch to an open buffer"
-        use: "`<leader>fb` lists the open buffers as a picker — the alternative to walking them with `H` and `L` when there are many."
+        use: "Press `<leader>fb` to get the open buffers as a picker, then type part of a name and press enter — the alternative to walking them with `H` and `L` when there are many."
         topic: "find"
         mode: "nvim:normal"
         also: ["<S-h> <S-l> <leader>bd"]
@@ -290,7 +290,7 @@
     {
         key: "<leader>fh"
         title: "Search Neovim's own help"
-        use: "`<leader>fh` fuzzy-searches the help tags — vim's documentation, not this manual. `help` in the shell is this configuration; `:help` in the editor is Neovim."
+        use: "Press `<leader>fh`, then type a topic: it fuzzy-searches the help tags — vim's documentation, not this manual. `help` in the shell is this configuration; `:help` in the editor is Neovim."
         topic: "find"
         mode: "nvim:normal"
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fh", desc: "Help tags"}]

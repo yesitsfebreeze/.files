@@ -97,7 +97,7 @@
     {
         key: "Ctrl+Shift+Q"
         title: "Close every tab in this window"
-        use: "`Ctrl+Shift+Q` closes the whole window at once, without asking — there is no are-you-sure, so a build running in tab 6 goes with it."
+        use: "Press `Ctrl+Shift+Q` and the whole window closes at once, without asking — there is no are-you-sure, so a build running in tab 6 goes with it."
         topic: "terminal"
         mode: "terminal"
         also: ["nine tabs", "q / :q / /exit"]
@@ -133,11 +133,11 @@
     {
         key: "Ctrl+V"
         title: "Paste the clipboard into whatever is running"
-        use: "Press `Ctrl+V` in any pane. The clipboard arrives as a bracketed paste, so a shell prompt, nvim and Claude all receive it as pasted text rather than as a burst of typed keys — nothing to confirm, and no reindenting in the editor."
+        use: "Press `Ctrl+V` in any pane — a shell prompt, nvim, a running agent alike. The clipboard lands in one piece: nothing to confirm, and no reindenting in the editor."
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+C"]
-        why: "Bracketed paste is the whole point: it is what makes the key work inside a running program and not only at a prompt, and it is what lets clipboard-based dictation land in the terminal at all. No subprocess is involved, so a large paste is instant."
+        why: "Bracketed paste is the whole point: the text is wrapped in the escape sequence that tells the receiving program this arrived as a paste and not as a burst of typed keys, which is what makes the key work inside a running program and not only at a prompt, and what lets clipboard-based dictation land in the terminal at all. No subprocess is involved, so a large paste is instant."
         verify: [{kind: "wezterm-key", key: "v", mods: "CTRL"}]
         source: ".mi/prd/02-terminal/prd.md"
     }
@@ -157,7 +157,7 @@
     {
         key: "Ctrl+Shift+D"
         title: "Drop this directory into a capsule"
-        use: "`Ctrl+Shift+D` runs `capsule` on the current pane's directory: you end up at a shell in `/workspace` inside the container, with the directory's contents there and your credentials working. Press it again later and you are back in the same running container, immediately."
+        use: "Press `Ctrl+Shift+D` in any pane: `capsule` runs on that pane's directory and you end up at a shell in `/workspace` inside the container, with the directory's contents there and your credentials working. Press it again later and you are back in the same running container, immediately."
         topic: "containers"
         mode: "terminal"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
@@ -168,7 +168,7 @@
     {
         key: "Ctrl+Shift+B"
         title: "Rebuild the capsule image and start over"
-        use: "`Ctrl+Shift+B` is `capsule --rebuild`: it rebuilds the image and recreates the container for this directory. Reach for it when you changed the image on purpose, or when a container has gone strange."
+        use: "Press `Ctrl+Shift+B` to run `capsule --rebuild` for this directory: the image is built again and the container recreated. Reach for it when you changed the image on purpose, or when a container has gone strange."
         topic: "containers"
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
@@ -179,7 +179,7 @@
     {
         key: "Ctrl+Shift+S"
         title: "Reopen a recent workspace here"
-        use: "`Ctrl+Shift+S` lists the directories you have most recently mounted, newest first, and mounts the one you pick in this pane. Directories that no longer exist are dropped as the list is read. The status area says `Recent:` while it is open, so a stray key is not mistaken for the prompt."
+        use: "Press `Ctrl+Shift+S` and pick from the directories you have most recently mounted, newest first; the one you pick is mounted in this pane. Directories that no longer exist are dropped as the list is read. The status area says `Recent:` while it is open, so a stray key is not mistaken for the prompt."
         topic: "containers"
         mode: "terminal"
         also: ["Ctrl+Shift+T", "Ctrl+Shift+D"]
