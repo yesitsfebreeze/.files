@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# kern knowledge graph — local database, regenerable
+.pi/kern/
+
+# Obsidian workspace (machine-local state)
+.obsidian/workspace.json
+
+# claude local state
+.claude/settings.local.json
+.claude/CLAUDE.local.md

@@ -1,0 +1,14 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "attachments",
+  "showLineNumber": true,
+  "promptDelete": false,
+  "userIgnoreFilters": [
+    "vicky/sources/.absorbed/",
+    "vicky/pending/",
+    "vicky/graphs/",
+    "vicky/.graphify/"
+  ]
+}

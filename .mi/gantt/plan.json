@@ -1,0 +1,908 @@
+{
+ "maxWorkers": 3,
+ "sizeHours": {
+  "S": 1,
+  "M": 2.5,
+  "L": 5,
+  "XL": 8
+ },
+ "tasks": [
+  {
+   "id": "D.1",
+   "title": "Human decisions: burrito vs nine-tab floor, tinty palette ownership, fzf exception",
+   "node": "00-delivery",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "S",
+   "mode": "hitl",
+   "files": [
+    ".mi/prd/00-delivery/04-corrections-backlog.md"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "Human must choose: (1) does burrito or the nine-tab floor own panes/tabs, (2) does tinty stay as palette owner, (3) is fzf an accepted exception to tv-owns-every-picker or replaced. Answers recorded in 04-corrections-backlog.md with a date.",
+   "notes": "Blocks W0.2, W0.5, T.2, T.5 downstream. Never dispatch to an agent."
+  },
+  {
+   "id": "W0.1",
+   "title": "Inventory live ~/.config/wezterm + burrito -> docs/capabilities-terminal.md",
+   "node": "00-delivery",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    ".mi/docs/capabilities-terminal.md"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "",
+   "notes": "Deliverable is a new docs file, not a PRD node; see unplaced."
+  },
+  {
+   "id": "W0.2",
+   "title": "Re-spec 02-terminal/* from scratch against W0.1",
+   "node": "02-terminal",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    ".mi/prd/02-terminal/00-epic.md",
+    ".mi/prd/02-terminal/01-appearance.md",
+    ".mi/prd/02-terminal/02-startup-layout.md",
+    ".mi/prd/02-terminal/03-f5-jump-mode.md",
+    ".mi/prd/02-terminal/04-copy-mode.md",
+    ".mi/prd/02-terminal/05-tab-content-state.md"
+   ],
+   "deps": [
+    "W0.1",
+    "D.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Current terminal PRD files are confirmed wrong on read (font 'agave' vs live CaskaydiaCove, Flakes references, F3 copy-mode key vs live Ctrl+Shift+X) — audit-corroborated, must be rewritten not adjusted."
+  },
+  {
+   "id": "W0.3",
+   "title": "Rewrite 05-platform as the provisioning epic",
+   "node": "05-platform",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    ".mi/prd/05-platform/00-epic.md",
+    ".mi/prd/05-platform/01-deploy-mechanism.md",
+    ".mi/prd/05-platform/02-package-provisioning.md",
+    ".mi/prd/05-platform/03-shell-init-generation.md"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "",
+   "notes": "Marked [x] fixed in corrections backlog's coverage-gaps section; current 05-platform files already reflect the rewrite, per README."
+  },
+  {
+   "id": "W0.4",
+   "title": "Apply S2 corrections across the tree",
+   "node": "00-delivery",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    ".mi/docs/capabilities.md",
+    ".mi/docs/capabilities-nushell.md",
+    ".mi/docs/capabilities-nvim.md",
+    ".mi/prd/04-shell/01-core-config.md",
+    ".mi/prd/04-shell/03-zoxide.md",
+    ".mi/prd/04-shell/06-listing.md",
+    ".mi/prd/04-shell/07-quicklist.md",
+    ".mi/prd/03-editor/03-autocmds.md",
+    ".mi/prd/03-editor/11-colorscheme.md",
+    ".mi/prd/03-editor/12-small-plugins.md",
+    ".mi/prd/06-help/02-help-command.md",
+    ".mi/prd/06-help/03-browser.md",
+    ".mi/prd/01-capsule/01-container-lifecycle.md",
+    ".mi/prd/00-delivery/01-work-breakdown.md"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "",
+   "notes": "Touches many files across the whole tree, prose only; the S2/S3 items under 04-corrections-backlog.md are the checklist. capabilities.md is user-authored — confirm before editing per that file's own note."
+  },
+  {
+   "id": "W0.5",
+   "title": "Re-base 01-capsule on 'build once', fix binding collisions",
+   "node": "01-capsule",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    ".mi/prd/01-capsule/00-epic.md",
+    ".mi/prd/01-capsule/01-container-lifecycle.md",
+    ".mi/prd/01-capsule/02-dev-image.md",
+    ".mi/prd/01-capsule/04-recent-workspaces.md"
+   ],
+   "deps": [
+    "D.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Needs D.1's answer on which layer owns tabs/panes plus free keybindings (Ctrl+Shift+B / Ctrl+Shift+T collisions, C-1)."
+  },
+  {
+   "id": "W0.6",
+   "title": "Record live-config bugs so the rebuild fixes rather than copies them",
+   "node": "00-delivery",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    ".mi/prd/00-delivery/04-corrections-backlog.md"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "",
+   "notes": "The S2 'bugs in the live config' table (L-1..L-12) is this task's output; already populated in the current file."
+  },
+  {
+   "id": "P.1",
+   "title": "Repo skeleton: chezmoi source layout, home/, justfile",
+   "node": "05-platform",
+   "spec": ".mi/prd/05-platform/01-deploy-mechanism.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "justfile",
+    "home/",
+    ".chezmoiroot"
+   ],
+   "deps": [
+    "W0.3"
+   ],
+   "verify": "chezmoi apply on a scratch target is idempotent (second apply is a no-op); just push round-trips a local edit",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "P.2",
+   "title": "packages.yaml + run_onchange installer",
+   "node": "05-platform",
+   "spec": ".mi/prd/05-platform/02-package-provisioning.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    ".chezmoidata/packages.yaml",
+    "run_onchange_*"
+   ],
+   "deps": [
+    "P.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "P.3",
+   "title": "run_once homebrew bootstrap",
+   "node": "05-platform",
+   "spec": ".mi/prd/05-platform/02-package-provisioning.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "run_once_before_*"
+   ],
+   "deps": [
+    "P.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "P.4",
+   "title": "run_after shell-init generator (starship/zoxide/tv)",
+   "node": "05-platform",
+   "spec": ".mi/prd/05-platform/03-shell-init-generation.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "run_after_*"
+   ],
+   "deps": [
+    "P.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "P.5",
+   "title": "Managed config surface + dot_gitconfig.tmpl",
+   "node": "05-platform",
+   "spec": ".mi/prd/05-platform/01-deploy-mechanism.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "home/dot_config/"
+   ],
+   "deps": [
+    "P.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "S.1",
+   "title": "Core config, mkcd funnel, start dir",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/01-core-config.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "env.nu",
+    "config.nu",
+    "dirstack.nu"
+   ],
+   "deps": [
+    "P.4"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "S.2",
+   "title": "Aliases + cf + pass completion",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/02-aliases-utilities.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "config.nu",
+    "pass.nu"
+   ],
+   "deps": [
+    "S.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "S.3",
+   "title": "Decorated ls + auto-list",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/06-listing.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "config.nu"
+   ],
+   "deps": [
+    "S.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "macOS du -sb bug (L-1): fix with -sk or gdu, do not reproduce."
+  },
+  {
+   "id": "S.4",
+   "title": "zoxide wrappers + bare-word fallback",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/03-zoxide.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "config.nu"
+   ],
+   "deps": [
+    "S.1",
+    "P.4"
+   ],
+   "verify": "",
+   "manual": "Adversarial verify required (02-parallelization.md): confirm the bare-word fallback never hijacks a real command (`ls | something-unknown`, `./x` must not trigger it).",
+   "notes": ""
+  },
+  {
+   "id": "S.5",
+   "title": "Finder + cable channels (television)",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/04-television.md",
+   "size": "XL",
+   "mode": "afk",
+   "files": [
+    "finder.nu",
+    "home/dot_config/television/"
+   ],
+   "deps": [
+    "S.1",
+    "P.4"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Largest single task, on the critical path; splittable into cable channels (data) vs typed decoder + open-by-type (logic) per 02-parallelization.md. rcwd/recent-dirs naming bug (L-3) must not be reproduced."
+  },
+  {
+   "id": "S.6",
+   "title": "Directory-scoped history",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/05-history.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "config.nu"
+   ],
+   "deps": [
+    "S.5"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "S.7",
+   "title": "Quicklist recents",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/07-quicklist.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "quicklist.nu",
+    "finder.nu"
+   ],
+   "deps": [
+    "S.4",
+    "S.5"
+   ],
+   "verify": "quicklist round-trips a pick (wave-5 gate)",
+   "manual": "",
+   "notes": "L-4: finder picks are never logged live, only zoxide jumps/bare-word fallback — 04-shell/07's premise needs this fixed, not reproduced."
+  },
+  {
+   "id": "S.8",
+   "title": "cc/cr Claude launchers",
+   "node": "04-shell",
+   "spec": ".mi/prd/04-shell/08-claude-launchers.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "config.nu"
+   ],
+   "deps": [
+    "S.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "SIMPLIFY verdict; V-1 value ratio, lowest-value task in the build."
+  },
+  {
+   "id": "E.1",
+   "title": "Options + init.lua",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/01-options.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "init.lua",
+    "lua/config/options.lua"
+   ],
+   "deps": [],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "E.2",
+   "title": "lazy.nvim bootstrap",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/04-plugin-manager.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "lua/config/lazy.lua"
+   ],
+   "deps": [
+    "E.1"
+   ],
+   "verify": "nvim --headless '+Lazy! sync' +qa exits 0",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "E.3",
+   "title": "Core keymaps",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/02-keymaps.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "lua/config/keymaps.lua"
+   ],
+   "deps": [
+    "E.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "M-15 exemption: centered-jump maps and visual-indent maps carry no desc, unlike the epic's blanket claim that all maps do."
+  },
+  {
+   "id": "E.4",
+   "title": "Autocmds",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/03-autocmds.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "lua/config/autocmds.lua"
+   ],
+   "deps": [
+    "E.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "L-8: FileType/ModeChanged autocmds must be grouped to avoid duplicate-stacking on reload — the epic's own invariant, currently violated live."
+  },
+  {
+   "id": "E.5",
+   "title": "Colorscheme + cursor",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/11-colorscheme.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "plugins/colorscheme.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "Visual check that all six defined highlights (M-12: acceptance said five, spec defines six) render correctly under the base16 theme.",
+   "notes": ""
+  },
+  {
+   "id": "E.6",
+   "title": "blink.cmp completion",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/05-completion.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "plugins/completion.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "M-4: blink.cmp is a dependency of nvim-lspconfig (BufReadPre), not lazy on InsertEnter as previously specced."
+  },
+  {
+   "id": "E.7",
+   "title": "mason + native LSP",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/09-lsp.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "plugins/lsp.lua"
+   ],
+   "deps": [
+    "E.6"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Unrotated LSP log once hit 17GB live — carry the rotation constraint into the requirement (AGENTS.md hard-won-why list)."
+  },
+  {
+   "id": "E.8",
+   "title": "Treesitter",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/10-treesitter.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "plugins/treesitter.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Shares the L-8 ungrouped-FileType-autocmd bug with E.4; fix in this task too."
+  },
+  {
+   "id": "E.9",
+   "title": "Telescope",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/08-telescope.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "plugins/telescope.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "E.10",
+   "title": "oil.nvim explorer",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/06-explorer.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "plugins/explorer.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "L-7: oil is lazy on keys so :e some/dir opens neither oil nor netrw once netrw is disabled — must fix (e.g. also lazy on cmd/ft), not port as-is."
+  },
+  {
+   "id": "E.11",
+   "title": "conform.nvim formatting",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/07-formatting.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "plugins/editor.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "File collision with E.12/E.15 on plugins/editor.lua — recommendation is to split into one file per plugin rather than serialize."
+  },
+  {
+   "id": "E.12",
+   "title": "gitsigns/which-key/pairs",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/12-small-plugins.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "plugins/editor.lua"
+   ],
+   "deps": [
+    "E.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "L-10: gitsigns delete/topdelete glyphs are empty strings live — restore the nerd-font glyphs rather than porting the loss. Same file-collision note as E.11."
+  },
+  {
+   "id": "E.13",
+   "title": "lualine statusline",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/13-statusline.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "plugins/statusline.lua"
+   ],
+   "deps": [
+    "E.5"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "lualine's auto theme breaks on base16 (AGENTS.md hard-won-why) — build the theme from the palette explicitly."
+  },
+  {
+   "id": "E.14",
+   "title": "Shift-to-select + tests",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/14-shift-select.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "lua/config/keymaps.lua",
+    "tests/"
+   ],
+   "deps": [
+    "E.3"
+   ],
+   "verify": "",
+   "manual": "Adversarial verify required (02-parallelization.md): a second agent must try to break the collapse semantics against the PRD's acceptance criteria before the wave gate. M-2: off-by-one corrections needed (S-Right already selects two chars via v<Right>; S-Left from insert selects two via yz).",
+   "notes": "SIMPLIFY verdict with a real fork per AGENTS.md Known gaps: port with tests, or consciously downgrade — record the choice in the PRD."
+  },
+  {
+   "id": "E.15",
+   "title": "Markdown table mode",
+   "node": "03-editor",
+   "spec": ".mi/prd/03-editor/15-markdown-tables.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "plugins/editor.lua"
+   ],
+   "deps": [
+    "E.2",
+    "E.11"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Third writer of plugins/editor.lua; same split-recommendation as E.11/E.12."
+  },
+  {
+   "id": "T.1",
+   "title": "Appearance + palette (per re-spec)",
+   "node": "02-terminal",
+   "spec": ".mi/prd/02-terminal/01-appearance.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "wezterm.lua"
+   ],
+   "deps": [
+    "W0.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Current file content (font 'agave', Flakes) is pre-re-spec and known wrong (T-1); real requirements come from W0.2's rewrite, not this file as it stands today."
+  },
+  {
+   "id": "T.2",
+   "title": "Tab/window model - nine-tab floor or burrito, per D.1",
+   "node": "02-terminal",
+   "spec": ".mi/prd/02-terminal/02-startup-layout.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "wezterm.lua"
+   ],
+   "deps": [
+    "W0.2",
+    "D.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Current file assumes non-existent gui-attached/Cmd+N (T-5, T-7) and a plain 9-tab model that competes with the live self-healing floor and burrito (open decision #1) — W0.2 + D.1 must settle this before implementation."
+  },
+  {
+   "id": "T.3",
+   "title": "F5 jump mode (letters asdfghjkl, split-creation order)",
+   "node": "02-terminal",
+   "spec": ".mi/prd/02-terminal/03-f5-jump-mode.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "wezterm.lua"
+   ],
+   "deps": [
+    "W0.2"
+   ],
+   "verify": "",
+   "manual": "F5 jump landing on the intended pane needs a human at a terminal (03-verification-gates.md req 3); also confirm the miss-path feedback fix for L-11 (BEL rings but audible_bell is Disabled and no visual bell is set — currently a silent failure).",
+   "notes": "Current file's letter set/geometry-based ordering is confirmed wrong by the audit (T-8: order is split-creation order via tab:panes(), not geometry); must not use PaneSelect (documented failure: a Lua modal can't be dismissed across a tab switch)."
+  },
+  {
+   "id": "T.4",
+   "title": "Grid centering, copy mode, mouse + paste bindings",
+   "node": "02-terminal",
+   "spec": ".mi/prd/02-terminal/04-copy-mode.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "wezterm.lua"
+   ],
+   "deps": [
+    "W0.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "~230 uncovered lines per T-10 (dynamic grid centering, copy mode via Ctrl+Shift+X + single-key toggle + OSC user-var, Ctrl+V bracketed paste, Ctrl+C copy-or-SIGINT, StartWindowDrag). Current 04-copy-mode.md file (F3 key, bright-cyan cursor) does not match any of this and is pre-re-spec."
+  },
+  {
+   "id": "T.5",
+   "title": "burrito integration (scope set by D.1)",
+   "node": "",
+   "spec": ".mi/prd/00-delivery/04-corrections-backlog.md",
+   "size": "",
+   "mode": "afk",
+   "files": [],
+   "deps": [
+    "D.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "No PRD file exists for this task (work-breakdown lists 'Files: TBD'); scope is entirely gated on D.1's answer to open decision #1. See unplaced."
+  },
+  {
+   "id": "C.1",
+   "title": "Dev image",
+   "node": "01-capsule",
+   "spec": ".mi/prd/01-capsule/02-dev-image.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "Dockerfile"
+   ],
+   "deps": [
+    "P.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "C-2: no live capsule implementation exists to consolidate from; C-4: devzsh has no zsh baked in (CMD [\"bash\"]) — zsh/oh-my-zsh and Claude Code come only from this image, correcting 01-capsule/02's mis-attribution."
+  },
+  {
+   "id": "C.2",
+   "title": "Container lifecycle CLI",
+   "node": "01-capsule",
+   "spec": ".mi/prd/01-capsule/01-container-lifecycle.md",
+   "size": "XL",
+   "mode": "afk",
+   "files": [
+    "capsule-tool/"
+   ],
+   "deps": [
+    "C.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "C-3: legacy mount never worked (cd's to nonexistent ~/docker, wrong just recipe args, mounts ./workspace not PWD) — design lifecycle semantics fresh, do not preserve legacy behavior. Splittable into lifecycle-core / CLI+cleanup per delivery-gantt.md's C.2a/C.2b annotation, but the work-breakdown gives it one row/one id."
+  },
+  {
+   "id": "C.3",
+   "title": "Credential propagation",
+   "node": "01-capsule",
+   "spec": ".mi/prd/01-capsule/03-credential-propagation.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "capsule-tool/",
+    "setup-script"
+   ],
+   "deps": [
+    "C.2"
+   ],
+   "verify": "git push works inside a capsule (wave-4 gate)",
+   "manual": "",
+   "notes": ""
+  },
+  {
+   "id": "C.4",
+   "title": "Recent-workspace picker",
+   "node": "01-capsule",
+   "spec": ".mi/prd/01-capsule/04-recent-workspaces.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "home/dot_config/",
+    "capsule-tool/",
+    "wezterm.lua"
+   ],
+   "deps": [
+    "C.2",
+    "T.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "C-5: the 'Recent:' status indicator this PRD requires has no host — live status bar is clock-only and set_left_status is never called; must add the call, not assume it exists. Appends to wezterm.lua only after T.1 lands (file-contention rule)."
+  },
+  {
+   "id": "H.1",
+   "title": "Content model + schema",
+   "node": "06-help",
+   "spec": ".mi/prd/06-help/01-content-model.md",
+   "size": "M",
+   "mode": "afk",
+   "files": [
+    "help/*.nuon"
+   ],
+   "deps": [
+    "S.1"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "Builds schema + initial files only; every other task fills its own rows per epic invariant 4 (M-13/M-15 naming nuances apply to what those later tasks write)."
+  },
+  {
+   "id": "H.2",
+   "title": "help command + delegation",
+   "node": "06-help",
+   "spec": ".mi/prd/06-help/02-help-command.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "help.nu"
+   ],
+   "deps": [
+    "H.1"
+   ],
+   "verify": "",
+   "manual": "Adversarial verify required (02-parallelization.md): a delegation regression breaks --help shell-wide, so a second agent must try to break it against the PRD's acceptance criteria before the wave gate.",
+   "notes": "M-13: acceptance claiming 'help ls reaches the builtin' needs reconciling with the documented resolution order and 06-help/01's ls-variant entries."
+  },
+  {
+   "id": "H.3",
+   "title": "tv browser",
+   "node": "06-help",
+   "spec": ".mi/prd/06-help/03-browser.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "home/dot_config/television/"
+   ],
+   "deps": [
+    "H.2",
+    "S.5"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": "M-16: claims TAB-delimited rows 'mirroring' 04-shell/07, but that PRD specifies nuon and says nothing about channel row format — reconcile."
+  },
+  {
+   "id": "H.4",
+   "title": "Drift check",
+   "node": "06-help",
+   "spec": ".mi/prd/06-help/04-drift-check.md",
+   "size": "L",
+   "mode": "afk",
+   "files": [
+    "help.nu"
+   ],
+   "deps": [
+    "H.2",
+    "S.5",
+    "S.6",
+    "S.7",
+    "S.8",
+    "E.1",
+    "E.2",
+    "E.3",
+    "E.4",
+    "E.5",
+    "E.6",
+    "E.7",
+    "E.8",
+    "E.9",
+    "E.10",
+    "E.11",
+    "E.12",
+    "E.13",
+    "E.14",
+    "E.15",
+    "T.1",
+    "T.2",
+    "T.3",
+    "T.4",
+    "C.1",
+    "C.2",
+    "C.3",
+    "C.4",
+    "P.1",
+    "P.2",
+    "P.3",
+    "P.4",
+    "P.5"
+   ],
+   "verify": "help --check exits 0",
+   "manual": "Fresh-machine run: clone -> apply -> working daily driver, on a machine that has never seen this config (03-verification-gates.md req 7). Also confirm ls --help still behaves.",
+   "notes": "Build's final gate; must inspect every track, hence the long dep list — 01-work-breakdown.md's own note: 'H.4 therefore runs last and is the build's final gate.' M-15 exemption class (maps without desc) must be encoded so the drift check doesn't false-positive on E.3's centered-jump/visual-indent maps."
+  },
+  {
+   "id": "H.5",
+   "title": "json/md + AGENTS.md wiring",
+   "node": "06-help",
+   "spec": ".mi/prd/06-help/05-agent-interface.md",
+   "size": "S",
+   "mode": "afk",
+   "files": [
+    "help.nu",
+    "AGENTS.md"
+   ],
+   "deps": [
+    "H.2"
+   ],
+   "verify": "",
+   "manual": "",
+   "notes": ""
+  }
+ ]
+}
