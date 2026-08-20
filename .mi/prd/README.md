@@ -12,7 +12,7 @@ their place are taken over. See [`AGENTS.md`](../../AGENTS.md) for the rating
 system and PRD conventions.
 
 **Execution:** the ordered, parallelized plan for building this lives in
-[`00-delivery/`](00-delivery/00-epic.md), with the schedule in
+[`00-delivery/`](00-delivery/prd.md), with the schedule in
 [`../docs/delivery-gantt.md`](../docs/delivery-gantt.md). The build order
 below is the human-readable summary; the wave layout is the operational one.
 
@@ -26,92 +26,112 @@ Ratings carried over from the sources: `C` = complexity, `U` = usefulness,
 
 ```
 .mi/prd/
-├── README.md                          ← this index
-├── 00-delivery/                       Meta: how the work gets executed
-│   ├── 00-epic.md                     the workload plan
-│   ├── 01-work-breakdown.md           49 tasks, sizes, dependencies
-│   ├── 02-parallelization.md          waves, agent fan-out, conflict rules
-│   ├── 03-verification-gates.md       what must run before a wave is done
-│   └── 04-corrections-backlog.md      audit findings as Wave 0
-├── 01-capsule/                        Epic: one consolidated dev-container tool
-│   ├── 00-epic.md
-│   ├── 01-container-lifecycle.md      C9 U9 V0   (capsule + mount + just, merged)
-│   ├── 02-dev-image.md                C7 U8 V1
-│   ├── 03-credential-propagation.md   C8 U8 V0
-│   └── 04-recent-workspaces.md        C5 U7 V2
-├── 02-terminal/                       Epic: WezTerm — INVALID, awaiting re-spec (W0.2)
-│   ├── 00-epic.md
-│   ├── 01-appearance.md               C4 U9 V5
-│   ├── 02-startup-layout.md           C3 U7 V4
-│   └── 03-f5-jump-mode.md             C6 U8 V2
-├── 03-editor/                         Epic: Neovim (lazy.nvim, live config)
-│   ├── 00-epic.md                     (architecture invariants live here)
-│   ├── 01-options.md                  C2 U9 V7   opts, whitespace, lsp-log
-│   ├── 02-keymaps.md                  C2 U9 V7
-│   ├── 03-autocmds.md                 C3 U8 V5
-│   ├── 04-plugin-manager.md           C4 U9 V5   lazy.nvim bootstrap
-│   ├── 05-completion.md               C4 U9 V5   blink.cmp
-│   ├── 06-explorer.md                 C2 U8 V6   oil.nvim
-│   ├── 07-formatting.md               C3 U8 V5   conform.nvim
-│   ├── 08-telescope.md                C5 U9 V4   + qflist multiselect
-│   ├── 09-lsp.md                      C6 U9 V3   mason + native 0.11
-│   ├── 10-treesitter.md               C5 U8 V3
-│   ├── 11-colorscheme.md              C5 U8 V3   tinted-nvim + mode cursor
-│   ├── 12-small-plugins.md            C2 U7 V5   gitsigns/which-key/pairs
-│   ├── 13-statusline.md               C6 U7 V1   lualine, palette-built
-│   ├── 14-shift-select.md             C7 U7 V0   (SIMPLIFY)
-│   └── 15-markdown-tables.md          C3 U5 V2
-├── 04-shell/                          Epic: nushell daily driver
-│   ├── 00-epic.md                     (architecture invariants live here)
-│   ├── 01-core-config.md              C3 U9 V6   env, mkcd funnel, start dir
-│   ├── 02-aliases-utilities.md        C2 U8 V6
-│   ├── 03-zoxide.md                   C4 U9 V5   wrappers + bare-word fallback
-│   ├── 04-television.md               C8 U9 V1   typed finder + channels
-│   ├── 05-history.md                  C5 U8 V3   directory-scoped history
-│   ├── 06-listing.md                  C5 U8 V3   decorated ls + auto-list
-│   ├── 07-quicklist.md                C6 U6 V0   cross-channel recents
-│   └── 08-claude-launchers.md         C7 U6 V-1  (SIMPLIFY)
-├── 05-platform/                       Epic: provisioning (chezmoi deploy)
-│   ├── 00-epic.md
-│   ├── 01-deploy-mechanism.md         C3 U9 V6   source layout, apply/push
-│   ├── 02-package-provisioning.md     C8 U9 V1   packages.yaml + installer
-│   └── 03-shell-init-generation.md    C3 U9 V6   starship/zoxide/tv init
-└── 06-help/                           Epic: `help` — the manual (NET-NEW)
-    ├── 00-epic.md
-    ├── 01-content-model.md            C4 U9 V5   the manual's data source
-    ├── 02-help-command.md             C5 U9 V4   dispatch + delegation
-    ├── 03-browser.md                  C3 U7 V4   tv fuzzy search
-    ├── 04-drift-check.md              C5 U8 V3   documented vs live config
-    └── 05-agent-interface.md          C3 U8 V5   --json / --md, discovery
+├── prd.md                              the root node · max-workers
+├── README.md                           this index
+├── 00-delivery/                        Delivery — the workload plan
+│   ├── corrections/                    Corrections backlog
+│   │   ├── w0-1-terminal-inventory/    Inventory the live WezTerm config
+│   │   ├── w0-2-terminal-respec/       Re-spec the terminal epic from the…
+│   │   ├── w0-3-platform-rewrite/      Finish the 05-platform provisioning…
+│   │   ├── w0-4-s2-corrections/        Apply the S2/S3 corrections across…
+│   │   │   ├── capsule/                01-capsule corrections
+│   │   │   ├── delivery/               Delivery + readme corrections
+│   │   │   ├── docs-inventories/       Docs inventories
+│   │   │   ├── editor/                 03-editor corrections
+│   │   │   ├── help/                   06-help corrections
+│   │   │   ├── platform/               05-platform corrections + burrito…
+│   │   │   └── shell/                  04-shell corrections
+│   │   ├── w0-5-capsule-rebase/        Re-base 01-capsule on build-once and…
+│   │   └── w0-6-live-bugs/             Record the live-config bugs so the…
+│   ├── decisions/                      Open decisions
+│   │   ├── fzf/                        HITL · Decision: fzf accepted…
+│   │   ├── odin-toolchain/             HITL · Decision: does the Odin-from-…
+│   │   ├── shift-select-scope/         HITL · Decision: shift-to-select full…
+│   │   ├── tinty/                      HITL · Decision: does tinty stay as…
+│   │   └── wallpaper-opacity/          HITL · Decision: wallpaper cycling +…
+│   ├── parallelization/                Parallelization
+│   ├── verification-gates/             Verification gates
+│   └── work-breakdown/                 Work breakdown
+├── 01-capsule/                         Capsule — one consolidated dev-…
+│   ├── 01-container-lifecycle/         C9 U9 V0 · Container lifecycle…
+│   ├── 02-dev-image/                   C7 U8 V1 · Dev image
+│   ├── 03-credential-propagation/      C8 U8 V0 · Credential propagation…
+│   └── 04-recent-workspaces/           C5 U7 V2 · Recent-workspace picker
+├── 02-terminal/                        Terminal (WezTerm)
+│   ├── 01-appearance/                  Terminal Appearance
+│   ├── 02-startup-layout/              C3 U7 V4 · Startup layout — nine-tab…
+│   ├── 03-f5-jump-mode/                C6 U8 V2 · F5 one-shot jump mode
+│   ├── 04-copy-mode/                   Copy Mode
+│   ├── 05-tab-content-state/           C4 U7 V3 · Tab content-state coloring
+│   └── 06-launchd-path/                launchd PATH seeding
+├── 03-editor/                          Neovim
+│   ├── 01-options/                     C2 U9 V7 · Options baseline
+│   ├── 02-keymaps/                     C2 U9 V7 · Core keymaps
+│   ├── 03-autocmds/                    C3 U8 V5 · Autocmds
+│   ├── 04-plugin-manager/              C4 U9 V5 · Plugin manager (lazy.nvim)
+│   ├── 05-completion/                  C4 U9 V5 · Completion (blink.cmp)
+│   ├── 06-explorer/                    C2 U8 V6 · File explorer (oil.nvim)
+│   ├── 07-formatting/                  C3 U8 V5 · Format on save…
+│   ├── 08-telescope/                   C5 U9 V4 · Fuzzy finder (telescope)
+│   ├── 09-lsp/                         C6 U9 V3 · LSP (mason + native 0.11)
+│   ├── 10-treesitter/                  C5 U8 V3 · Treesitter
+│   ├── 11-colorscheme/                 C5 U8 V3 · Colorscheme + mode-aware…
+│   ├── 12-small-plugins/               C2 U7 V5 · Git signs, discovery,…
+│   ├── 13-statusline/                  C6 U7 V1 · Statusline (lualine)
+│   ├── 14-shift-select/                C7 U7 V0 · Shift-to-select (SIMPLIFY)
+│   └── 15-markdown-tables/             C3 U5 V2 · Markdown table mode
+├── 04-shell/                           Nushell daily driver
+│   ├── 01-core-config/                 C3 U9 V6 · Core config
+│   ├── 02-aliases-utilities/           C2 U8 V6 · Aliases and small utilities
+│   ├── 03-zoxide/                      C4 U9 V5 · Zoxide navigation
+│   ├── 04-television/                  C8 U9 V1 · Television finder
+│   ├── 05-history/                     C5 U8 V3 · Directory-scoped history
+│   ├── 06-listing/                     C5 U8 V3 · Decorated ls + auto-list
+│   ├── 07-quicklist/                   C6 U6 V0 · Quicklist — cross-channel…
+│   └── 08-claude-launchers/            C7 U6 V-1 · Claude launchers…
+├── 05-platform/                        Provisioning — how the config reaches…
+│   ├── 01-deploy-mechanism/            C3 U9 V6 · Deploy mechanism
+│   │   ├── managed-config/             Managed config surface +…
+│   │   └── repo-skeleton/              Repo skeleton: chezmoi source layout,…
+│   ├── 02-package-provisioning/        C8 U9 V1 · Package provisioning
+│   │   ├── homebrew-bootstrap/         run_once homebrew bootstrap
+│   │   └── packages-installer/         packages.yaml + run_onchange installer
+│   └── 03-shell-init-generation/       C3 U9 V6 · Shell-init generation
+└── 06-help/                            `help` — the environment manual
+    ├── 01-content-model/               C4 U9 V5 · Content model
+    ├── 02-help-command/                C5 U9 V4 · The `help` command
+    ├── 03-browser/                     C3 U7 V4 · Fuzzy browser
+    ├── 04-drift-check/                 C5 U8 V3 · Drift check
+    └── 05-agent-interface/             C3 U8 V5 · Agent interface
 ```
 
 Windows/PowerShell support was dropped from scope entirely; see the exclusion
 list at the end for the full set.
 
-## Suggested build order
+## Build order
 
-0. **Wave 0 corrections** — the terminal epic needs a from-scratch re-spec and
-   three decisions need answering. See
-   [`00-delivery/04`](00-delivery/04-corrections-backlog.md).
-1. **05-platform** — provisioning; nothing reaches a machine without it, and
-   `04-shell/01` depends on its generated init files.
-2. **04-shell/01 + 02** — the foundation everything else assumes, plus the
-   highest-value-ratio ergonomics.
-3. **02-terminal** — only after W0.2 re-specs it.
-4. **04-shell/03 + 05 + 06** — navigation, history, listing: the daily loop.
-5. **04-shell/04** — television finder; biggest shell surface, do it once the
-   loop above is solid.
-6. **01-capsule** — the flagship consolidation; biggest scope, do it as one
-   coherent tool rather than porting the five old pieces separately.
-7. **03-editor/01–07** — the editor base: options, keymaps, autocmds, plugin
-   manager, then completion / explorer / formatting.
-8. **03-editor/08–13** — finder, LSP, treesitter, colors, statusline.
-9. **02-terminal/03**, **04-shell/07 + 08**, **03-editor/14 + 15** — polish
-   tier.
-10. **06-help** — the manual. Deliberately last as a full epic (it documents
-    what the earlier steps built), but start its content file alongside each
-    feature as you go: writing the entry while the decision is fresh is
-    cheaper than reconstructing it, and `help --check` will demand it anyway.
+Generated from [`../gantt/plan.json`](../gantt/plan.json) — the wave layout is
+the operational order and this is its summary. A node is claimable when its
+`deps` are resolved and its children are covered, so the waves below are what
+the dependency graph permits, not a preference.
+
+1. **D.2** · **D.3** · H.1 · W0.1 · W0.3 · W0.6
+2. **D.1b** · **D.1c** · **D.1d** · E.1 · P.1 · W0.4 · W0.4a · W0.4b · W0.4c · W0.4d · W0.4e · W0.4f · W0.4g
+3. E.2 · E.3 · E.4 · G.1 · H.2 · P.2 · P.3 · P.5 · W0.2 · W0.5
+4. C.1 · E.10 · E.11 · E.12 · E.14 · E.15 · E.5 · E.6 · E.8 · E.9 · P.4 · T.1
+5. C.2 · E.13 · E.7 · S.1 · T.2
+6. C.3 · S.2 · T.3
+7. S.3 · T.4
+8. S.8 · T.6
+9. S.4 · T.7
+10. C.4 · S.6
+11. S.5
+12. S.7
+13. H.3
+14. H.5
+15. H.4
+
+Bold is `hitl` — a person answers it; an agent must not.
 
 ## Excluded
 
@@ -126,7 +146,17 @@ Lua/shell/PowerShell parity (Windows out of scope).
 
 **`DO NOT PORT` — nushell:** leader mode (superseded by the tv remote on
 Ctrl+Space; `input listen` can't do reliable modifiers) · `overlay.nu`
-(explicit WIP, never sourced).
+(explicit WIP, never sourced) · the `bb`/`ba` session aliases (burrito — see
+below; they actually invoked `brr`, per M-7).
+
+**`DO NOT PORT` — burrito**, decided 2026-08-20: it is no longer used. This
+also settles what was open decision 1, "which layer owns panes/tabs": WezTerm's
+self-healing nine-tab floor owns them, with no competing multiplexer. What
+comes out with it: the `bb`/`ba` aliases, the `burrito-sessions` tv channel
+(which also dissolves the `cht.sh=f5` shortcut collision), `burrito/brr` from
+the required package set, burrito from the managed-config surface, and the
+whole `T.5 burrito integration` task. The removal is scheduled as
+[`w0-4-s2-corrections`](00-delivery/corrections/w0-4-s2-corrections/prd.md).
 
 **`DO NOT PORT` — Neovim:** the mini.nvim plugin set and `mini.deps`
 bootstrap (superseded by the live lazy.nvim config).

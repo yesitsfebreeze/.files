@@ -120,10 +120,10 @@ not expire.
 ## Provenance and units (why there are no dates)
 
 The schedule covers the workload defined in
-[`../prd/00-delivery/`](../prd/00-delivery/00-epic.md). Task IDs, sizes, and
+[`../prd/00-delivery/`](../prd/00-delivery/prd.md). Task IDs, sizes, and
 dependencies come from
-[`01-work-breakdown`](../prd/00-delivery/01-work-breakdown.md); the wave layout
-from [`02-parallelization`](../prd/00-delivery/02-parallelization.md).
+[`01-work-breakdown`](../prd/00-delivery/work-breakdown/prd.md); the wave layout
+from [`02-parallelization`](../prd/00-delivery/parallelization/prd.md).
 
 **Units are agent-hours, not calendar time.** The horizontal axis is
 cumulative parallel wall-clock: how long the build takes if each wave's
@@ -135,7 +135,7 @@ throughput depends on how many agents run and how fast review happens.
 **Wave 0 grew after the 2026-08-20 audit.** The terminal epic is being
 re-specced from scratch rather than adjusted, and three decisions gate parts of
 it: see
-[`04-corrections-backlog`](../prd/00-delivery/04-corrections-backlog.md). The
+[`04-corrections-backlog`](../prd/00-delivery/corrections/prd.md). The
 Tracks P/S/E/H schedule below is unaffected — only Tracks T and C wait.
 
 ## Why S.5 and C.2 are the tasks worth splitting
@@ -155,11 +155,11 @@ delaying **S.1** or **S.5** by an hour delays delivery by an hour.
 
 ## Running it
 
-Gate detail: [`03-verification-gates`](../prd/00-delivery/03-verification-gates.md).
+Gate detail: [`03-verification-gates`](../prd/00-delivery/verification-gates/prd.md).
 
 Per wave, one fan-out of agents, then one gate. The pattern that fits each
 wave is in
-[`02-parallelization`](../prd/00-delivery/02-parallelization.md#fan-out-patterns-worth-using);
+[`02-parallelization`](../prd/00-delivery/parallelization/prd.md#fan-out-patterns-worth-using);
 the mechanics:
 
 1. **One agent per task**, given exactly its PRD path plus the epic file for

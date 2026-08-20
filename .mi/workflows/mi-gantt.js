@@ -263,8 +263,14 @@ You are the RECORD READER. Mechanical: parse and report. Judge nothing, edit not
 	at('scan', { label: 'load', phase: 'Load', schema: LOAD_SCHEMA }),
 )
 
-if (loaded && loaded.malformed && loaded.malformed.trim()) {
-	return { error: `the plan record does not parse: ${loaded.malformed}`, fix: 'repair it by hand, or re-derive with { replan: true } — this run refuses to guess at a corrupt record' }
+// `malformed` is a required schema field, which invites the reader to fill it
+// even when nothing is wrong: a first run has no ledger.jsonl at all and the
+// field has come back as `""` — the two-character string — aborting a record
+// that parsed fine. Strip quoting and no-op sentinels before believing it.
+const malformedReport = (loaded?.malformed ?? '').trim().replace(/^["'`]+|["'`]+$/g, '').trim()
+
+if (malformedReport && !/^(none|n\/?a|null|nil|nothing|empty|no|ok)$/i.test(malformedReport)) {
+	return { error: `the plan record does not parse: ${malformedReport}`, fix: 'repair it by hand, or re-derive with { replan: true } — this run refuses to guess at a corrupt record' }
 }
 
 // The fold. Last entry per task id wins, because corrections are appended and

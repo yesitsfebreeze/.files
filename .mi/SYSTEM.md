@@ -10,21 +10,24 @@ still works as a good daily-driver basis.
 
 Nothing is ported because it exists. Everything is ported because a rating
 says it earns its place. A few things are net-new because the rebuild needs
-them: [`06-help`](.mi/prd/06-help/00-epic.md) and the
-[`00-delivery`](.mi/prd/00-delivery/00-epic.md) meta-epic.
+them: [`06-help`](.mi/prd/06-help/prd.md) and the
+[`00-delivery`](.mi/prd/00-delivery/prd.md) meta-epic.
 
 **Verify against the live config, always.** A four-agent audit on 2026-08-20
 found that the terminal epic had been specced entirely from the legacy
 inventory and was wrong in almost every requirement, and that several
 behaviors the PRDs described as working are in fact broken upstream
 (macOS `du -sb`, the git-log commit decoder, the `rcwd` channel name). Read
-[`04-corrections-backlog`](.mi/prd/00-delivery/04-corrections-backlog.md)
+[`04-corrections-backlog`](.mi/prd/00-delivery/corrections/prd.md)
 before trusting any PRD you did not just check yourself.
 
-**Current state: planning only.** The repo holds the rated inventories and the
-PRD tree. No configuration has been implemented yet, and it is not yet a git
-repo — so "gate a commit" style requirements in the PRDs describe the intended
-end state, not something running today.
+**Current state: planning only, on a board.** The repo holds the rated
+inventories and the PRD tree, and no configuration has been implemented yet —
+so "gate a commit" style requirements in the PRDs describe the intended end
+state, not something running today. Two things that used to be true are not:
+this **is** a git repo, and the PRD tree is no longer prose. It was converted
+to board node form on 2026-08-20 so work can actually be claimed; see the next
+section.
 
 ## Where things live
 
@@ -33,7 +36,10 @@ markdown document goes in `.mi/docs/`.**
 
 | Path | What it is |
 |---|---|
-| `.mi/prd/` | The PRD tree — epics (`NN-<area>/00-epic.md`) + feature PRDs |
+| `.mi/prd/` | The board — a tree of `<node>/prd.md` files. The path is the id and the parent link |
+| `.mi/gantt/plan.json` | The schedule: every task with size, deps, footprint. The board says *what*; this says *in what order* |
+| `.mi/gantt/ledger.jsonl` | Append-only record of what actually closed. `plan.md` is a fold of it, never edited by hand |
+| `.mi/workflows/refs/worker.md` | The node protocol — frontmatter fields, the boxes, the readiness rule, the four moves |
 | `.mi/prd/README.md` | Index, build order, and the canonical exclusion list |
 | `.mi/docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
 | `.mi/docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
@@ -52,21 +58,25 @@ Live sources to read when specifying (never edit them as part of PRD work):
 
 | Epic | Covers | Children |
 |---|---|---|
-| [`00-delivery`](.mi/prd/00-delivery/00-epic.md) | Meta: work breakdown, waves, agent fan-out, gates | 4 |
-| [`01-capsule`](.mi/prd/01-capsule/00-epic.md) | One consolidated dev-container tool | 4 |
-| [`02-terminal`](.mi/prd/02-terminal/00-epic.md) | WezTerm appearance, startup, jump mode | 3 |
-| [`03-editor`](.mi/prd/03-editor/00-epic.md) | Neovim (lazy.nvim stack) | 15 |
-| [`04-shell`](.mi/prd/04-shell/00-epic.md) | Nushell daily driver | 8 |
-| [`05-platform`](.mi/prd/05-platform/00-epic.md) | macOS dependency bootstrap | 1 |
-| [`06-help`](.mi/prd/06-help/00-epic.md) | `help` — the environment manual (net-new) | 5 |
+| [`00-delivery`](.mi/prd/00-delivery/prd.md) | Meta: work breakdown, waves, gates, and the open decisions | 5 (+18) |
+| [`01-capsule`](.mi/prd/01-capsule/prd.md) | One consolidated dev-container tool | 4 |
+| [`02-terminal`](.mi/prd/02-terminal/prd.md) | WezTerm appearance, tabs, jump mode, copy mode | 6 |
+| [`03-editor`](.mi/prd/03-editor/prd.md) | Neovim (lazy.nvim stack) | 15 |
+| [`04-shell`](.mi/prd/04-shell/prd.md) | Nushell daily driver | 8 |
+| [`05-platform`](.mi/prd/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
+| [`06-help`](.mi/prd/06-help/prd.md) | `help` — the environment manual (net-new) | 5 |
 
-**Working on the build?** [`00-delivery`](.mi/prd/00-delivery/00-epic.md) is
+76 nodes in all. Counts are direct children, with grandchildren in
+parentheses; `find .mi/prd -name prd.md` is the index, because node membership
+is by existence and a maintained list beside it goes stale.
+
+**Working on the build?** [`00-delivery`](.mi/prd/00-delivery/prd.md) is
 the operational plan: every task with its size, files, and dependencies; the
 wave layout that says what runs in parallel; and the gates that must pass. Its
 rules bind you — one writer per file, one PRD per agent, and a task is done
 only when its acceptance criteria have been *executed*. If you find a PRD
 wrong, stop and file it in
-[`04-corrections-backlog`](.mi/prd/00-delivery/04-corrections-backlog.md)
+[`04-corrections-backlog`](.mi/prd/00-delivery/corrections/prd.md)
 rather than implementing the wrong thing.
 
 The README's build order is the human summary; the wave layout is the
@@ -74,7 +84,7 @@ operational one. Start here for "how do I work in this repo".
 
 ## `help` — read the environment before acting on it
 
-Once [`06-help`](.mi/prd/06-help/00-epic.md) is built, **`help` is the manual
+Once [`06-help`](.mi/prd/06-help/prd.md) is built, **`help` is the manual
 for this environment** — every custom keybinding, command, alias, and idiom,
 with what it does and how to use it. `help --json` gives the same content as
 structured data.
@@ -116,10 +126,10 @@ Four rules for keeping ratings honest across the tree:
   never a range.
 - **A PRD that merges several entries** carries the dominant entry's rating
   and lists every source with its own numbers (see
-  [`01-capsule/01`](.mi/prd/01-capsule/01-container-lifecycle.md)).
+  [`01-capsule/01`](.mi/prd/01-capsule/01-container-lifecycle/prd.md)).
 - **Net-new capabilities** have no inventory entry. Rate them in the PRD
   header and write `net-new` where other PRDs name their source.
-- **Meta-epics are exempt.** [`00-delivery`](.mi/prd/00-delivery/00-epic.md)
+- **Meta-epics are exempt.** [`00-delivery`](.mi/prd/00-delivery/prd.md)
   plans the work rather than describing a capability, so its PRDs carry no
   C/U. It lives in `prd/` because it has requirements and acceptance criteria;
   the Gantt lives in `docs/` because it is a schedule with neither.
@@ -139,8 +149,8 @@ Four rules for keeping ratings honest across the tree:
   is the one being ported. Expect the same trap elsewhere — verify against
   `~/.config` before trusting a legacy entry.
 - **Two finders, deliberately.** television in the shell
-  ([`04-shell/04`](.mi/prd/04-shell/04-television.md)), telescope in the
-  editor ([`03-editor/08`](.mi/prd/03-editor/08-telescope.md)). They are not
+  ([`04-shell/04`](.mi/prd/04-shell/04-television/prd.md)), telescope in the
+  editor ([`03-editor/08`](.mi/prd/03-editor/08-telescope/prd.md)). They are not
   to be unified.
 - **The terminal owns the palette.** WezTerm's scheme is the base; Neovim
   (base16 + transparent) and television (`default` ANSI theme) inherit it.
@@ -175,15 +185,36 @@ Real, recorded so nobody mistakes them for finished work:
 Feature PRDs are short and testable. Structure:
 
 ```markdown
-# Feature: <name>
+---
+state: open          # open | claimed | done | out-of-scope
+mode: afk            # afk | hitl (needs the human: naming, taste, money)
+deps: []             # node paths that gate readiness
+verify: ""           # command proving this node; "" means unproven, never omit
+---
 
-Parent: [<epic>](00-epic.md) · C <n> · U <n> · source: <capability entry>
-                                              (or: · net-new)
+# <name>
 
-## Summary          one paragraph, what it is and why it earns its place
-## Requirements     numbered, specific, each one implementable
-## Acceptance criteria   observable checks, not restated requirements
+Parent: [<epic>](../prd.md) · C <n> · U <n> · source: <capability entry>
+                                             (or: · net-new)
+
+Purpose: one paragraph, what it is and why it earns its place
+
+## Requirements
+- [ ] **R1** — one verifiable behavior per line; the number is kept because
+      other documents cite requirements by number
+
+## Acceptance
+- [ ] observable checks, not restated requirements
+
+## Out of scope
+- explicit; this is the line that stops drift
 ```
+
+**Everything testable is a box.** Prose acceptance is invisible to the
+scheduler and closes unmet, which is the whole reason the tree was converted.
+`- [ ]` is open, `- [~]` is met against a stub, `- [x]` is met against the
+real thing *with the check you ran*. A `[x]` you did not prove is not
+optimism, it is a false record that outlives you.
 
 Rules that keep this tree useful:
 

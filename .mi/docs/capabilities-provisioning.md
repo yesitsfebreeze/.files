@@ -18,7 +18,7 @@ is how this machine actually gets configured.
 **Correction it forces.** `capabilities.md`'s "Cross-platform dependency
 bootstrap" (the WezTerm-Lua checker that installs zoxide/docker and stamps
 `.cache/.bootstrap`) is **superseded** by the entries below. It should not be
-ported; see [`05-platform`](../prd/05-platform/00-epic.md).
+ported; see [`05-platform`](../prd/05-platform/prd.md).
 
 ## Shell-init generation (`run_after_generate-shell-init.sh`)
 - Regenerates the integration files Nushell only *sources*: starship →
@@ -112,7 +112,7 @@ ported; see [`05-platform`](../prd/05-platform/00-epic.md).
 ## Published docs site (`docs/`)  DEFER
 - `docs/build.py` + `index.html` generate a static page from the repo's docs.
   Real, but orthogonal to the daily driver — and overlapping in purpose with
-  [`06-help`](../prd/06-help/00-epic.md), which should be built first and then
+  [`06-help`](../prd/06-help/prd.md), which should be built first and then
   reconsidered as the source for any published page.
 - 4
 - 4
