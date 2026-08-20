@@ -1,6 +1,7 @@
 ---
-state: open
+state: claimed
 mode: afk
+claim: cc-1787264224
 deps: []
 verify: ""
 ---
