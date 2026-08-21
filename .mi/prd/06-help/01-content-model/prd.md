@@ -1,9 +1,8 @@
 ---
-state: claimed
+state: open
 mode: afk
 deps: []
 verify: "nu tests/help-content-model.nu"
-claim: cc-1787432671
 ---
 
 # Content model
@@ -20,29 +19,50 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
       — nushell opens it natively with no parser). One file per surface:
       `shell.nuon`, `nvim.nuon`, `terminal.nuon`, `capsule.nuon`.
 - [~] **R2** — **Entry schema.** Every entry carries:
-  - Demoted `[x]` → `[~]` 2026-08-21 (`cc-1787301962`) by refutation. **Stub:**
-    the `use` sub-box below is `[~]`, and a parent cannot be more met than its
-    children. Recorded with it, because it is the same shape: "well-typed" is
-    gated as field-presence plus closed-set membership, never value *shape* —
-    `verify: [{kind: "command", name: ""}]` exits 0, so an empty required
-    value is accepted. Seven of the eight sub-boxes were re-broken
-    individually and each failed with its own named message; the refutation
-    is in the Evidence block for that session.
+  - Demoted `[x]` → `[~]` 2026-08-21 (`cc-1787301962`) by refutation. **Stub,
+    and now the only one on this box:** the `use` sub-box below is `[~]`, and a
+    parent cannot be more met than its children.
+  - Corrected 2026-08-21 (`cc-1787432671`), stub list narrowed. The demotion
+    note used to carry a second stub — "well-typed" gated as field-presence
+    plus closed-set membership and never value *shape*, with
+    `verify: [{kind: "command", name: ""}]` exiting 0. **That is closed and
+    mutation-proved:** `tests/help-content-model.nu` grew a shape layer
+    (`bad-string`, `bad-string-list`, `bad-field`) applied at all four
+    boundaries it reads — entry fields, verify targets, `topics.nuon` rows,
+    `why-review.nuon` rows. `{kind: "command", name: ""}` now exits 1 with
+    ``command target's `name` is empty``; `name: null` exits 1 with ``is a
+    nothing, not a string``. Forcing `bad-string` to return `""`
+    unconditionally trips 6 selftest controls, so the layer is not a check
+    that cannot fail.
   - [x] `key` or `cmd` — the binding (`ctrl-r`, `F5 <digit>`) or invocation
         (`z <query>`)
   - [x] `title` — one line: what it does
   - [~] `use` — how to use it: the actual gesture, in order, including what to
         press next and what comes back
     - Demoted `[x]` → `[~]` 2026-08-21 (`cc-1787301962`). **Stub:**
-      field-presence-and-non-emptiness, plus the `restates-key` opener check,
-      standing in for the *gesture* clause — with hand review, demonstrably
-      fallible on exactly this clause, as the only support. Replacing
-      `capsule list`'s `use` with the single character `"x"` exits **0**. No
-      exemption covers this: R2 carves the resolution half out of the
-      `verify` sub-box only, and [`coverage`](coverage/prd.md) R5 is about
-      verify targets resolving, not about `use` prose. The gap has already
-      bitten once — `shell.nuon [Ctrl-T]`'s `use` skipped a step of the live
-      gesture, sat `[x]` for a cycle and was fixed by hand, not by the gate.
+      everything the gate holds `use` to is a floor under vacuity, never the
+      *gesture* clause — with hand review, demonstrably fallible on exactly
+      this clause, as the only support. No exemption covers this: R2 carves
+      the resolution half out of the `verify` sub-box only, and
+      [`coverage`](coverage/prd.md) R5 is about verify targets resolving, not
+      about `use` prose. The gap has already bitten once — `shell.nuon
+      [Ctrl-T]`'s `use` skipped a step of the live gesture, sat `[x]` for a
+      cycle and was fixed by hand, not by the gate.
+    - Corrected 2026-08-21 (`cc-1787432671`), stub restated. The note used to
+      cite "replacing `capsule list`'s `use` with the single character `"x"`
+      exits **0**" — it now exits **1**:
+      ``capsule.nuon [capsule list]: use is 1 word-long, under the 5-word
+      floor``. The floor is set from the corpus, not from taste: over all 84
+      live entries the shortest `use` is 8 words (`nvim.nuon [<leader>w and
+      <leader>q]`, 60 chars), next 9, mean 34 — three words of headroom, so it
+      cannot fire on anything anyone has written. Two selftest controls guard
+      it, and setting `USE_MIN_WORDS` to 0 trips the first. **What the gate
+      now holds `use` to is presence, non-emptiness, that five-word vacuity
+      floor and the `restates-key` opener — none of which is the gesture
+      clause.** Whether a `use` describes the gesture the configuration
+      actually performs is truth against a live surface; 80 of 84 entries have
+      no deployed surface to be checked against, and the four that do belong
+      to [`coverage`](coverage/prd.md) R5.
   - [x] `topic` — the section it belongs to (see below)
   - [x] `mode` — where it applies: `shell`, `nvim:normal`, `nvim:visual`,
         `nvim:insert`, `terminal`, `container`
@@ -105,7 +125,8 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
     by a reader who wrote none of them, and the gate refuses a `why` with no
     current row, a stale row, a deleted file, or an empty record). **The two
     stubs that replace them:**
-    1. Four of the 51 `why-review.nuon` rows carry a self-declared
+    1. **RETIRED 2026-08-21 (`cc-1787432671`) — see the amendment below.**
+       Four of the 51 `why-review.nuon` rows carry a self-declared
        `reviewer is also the author` note, so [`laws.md`](../../../workflows/refs/laws.md)
        rung 3 is unsatisfied for those four — the record vouches for its own
        writing. They are marked in the data and are the first rows a later
@@ -114,6 +135,32 @@ produce. Every renderer ([02](../02-help-command/prd.md), [03](../03-browser/prd
        and 80 of 84 entries have no deployed surface to be checked against.
        The one live-checkable defect (`shell.nuon [Ctrl-T]`) was found and
        fixed; the clause cannot close here.
+  - Amended 2026-08-21 (`cc-1787432671`), **stub 1 retired, stub 2 stands
+    verbatim.** Two moves, and both were needed.
+    (a) All four self-vouched pairs — `shell.nuon [Ctrl-T]`, `nvim.nuon
+    [<S-Up> <S-Down> <S-Left> <S-Right>]`, `terminal.nuon [Ctrl+C]`,
+    `terminal.nuon [Ctrl+Shift+B]` — were re-read by a session that wrote none
+    of them, and all four stand against the restatement rule. Each row now
+    carries `reviewer: cc-1787432671`, `author: cc-1787301962`, and a note
+    giving the actual reading so the judgement can be checked rather than
+    trusted (on `Ctrl-T`: the `why`'s second sentence does re-say "inserted at
+    the cursor", but its payload is the *contrast* with `Ctrl-Space`, where the
+    `use` gave the *similarity*). No `use` or `why` text was touched, so all 51
+    digests are unchanged — the reviewers moved, the corpus did not. `grep -c
+    "reviewer is also the author"` over the file returns 0.
+    (b) The prose note the gate ignored is now a gated field: `why-review.nuon`
+    rows may carry `author`, and the gate fails any row where it equals
+    `reviewer`. Mutation: adding `author: "cc-1787301962"` to a row already
+    reviewed by that session exits 1 with ``reviewer and author are both
+    cc-1787301962 — a `why` reviewed by the session that wrote it is the record
+    vouching for itself``. An empty `reviewer` also now exits 1.
+    **The smaller residual that replaces stub 1**, written into the file rather
+    than dressed up: `author` is **optional**, because inventing one for the 47
+    rows that predate the field would be the same false record pointing the
+    other way — so an omission is invisible in the data. This hardens an honest
+    record; it does not defeat a careless one.
+    **Stub 2 is unchanged and unchangeable here.** The five-word `use` floor
+    added this session is a floor under vacuity, not this clause.
 
 ## Acceptance
 - [x] Opening a content file directly is readable as plain text — the data is
@@ -142,7 +189,132 @@ assuming it drifted:
 
 ## Evidence
 
-### 2026-08-21 · `cc-1787301962` — latest; shadows every block below where they disagree
+### 2026-08-21 · `cc-1787432671` — latest; shadows every block below where they disagree
+
+Landed `ded5a01`, merged as `546777b` (`tests/help-content-model.nu`,
+`home/dot_config/nushell/help/README.md`,
+`home/dot_config/nushell/help/why-review.nuon`). Nothing under `.mi/prd` from
+the lane worktree; no shared build file.
+
+**Branch-name collision, recorded because the name in the dispatch is not the
+name on disk.** `lane/1-01-content-model` already existed in this checkout at
+`dca40ba` (the previous session's lane, merged as `2b04399`), so `git switch
+-c` refused it. Following the `-r2`/`-r3` precedent of earlier re-runs on this
+node, the work is on **`lane/1-01-content-model-r4`**, commit `ded5a01`,
+branched from the claim commit `b0c23db`.
+
+**Gate.** Still no wave-gate runner in this tree —
+[`verification-gates`](../../00-delivery/verification-gates/prd.md) is fully
+open and no script in this repo runs the R1–R7 set — so this is again the
+ecosystem's plain equivalent, said plainly rather than dressed up as the gate
+the board asks for: `bash tests/live-bugs.sh` → `OK — every live-bug record
+still matches the config it describes`, exit 0; this node's `verify:`, `nu
+tests/help-content-model.nu` → `help content model: 84 entries across 4 files,
+9 topics, 10 prose-only … ok`, exit 0. Both re-run by the landing session on
+the merge commit. Neither can speak for a surface that is not deployed.
+
+**Owes 3 stubbed (R2, its `use` sub-box, R5) — the same count the previous
+session left, but two of the three stubs are materially smaller and one of
+R5's two named stubs is retired outright.** No box moved to `[x]` that was not
+already there. Both remaining stubs bottom out in the same fact: the
+configuration is not deployed, so "the `use` describes the real gesture" and
+"the `verify` target resolves" have nothing to be checked against for 80 of 84
+entries. That is [`coverage`](coverage/prd.md)'s R5 and
+[`04-drift-check`](../04-drift-check/prd.md)'s interface, not this node's, and
+building a live-resolution checker here would poach another node's contract
+while making the boxes look closable.
+
+Every `[x]` on this node was re-established by mutation this session rather
+than inherited, and then handed to a reader who did not write the claims and
+was asked to refute each one. **No box was demoted; every `[x]` survived.**
+
+- **R1** — stays `[x]`. Removing `nvim.nuon` from a scratch copy of the help
+  dir and running the gate against it: exit 1, ``nvim.nuon: missing — R1 names
+  one file per surface``; restored, exit 0. The file list is the `COVERAGE`
+  const transcribed from the spec, not a directory read, so a missing surface
+  cannot pass as an empty one — and the empty case is caught separately
+  (`[]` into `nvim.nuon` → `nvim.nuon: no entries`, exit 1). `git ls-files
+  home/dot_config/nushell/help/` lists all four `.nuon` surface files plus
+  `topics.nuon`, `why-review.nuon` and `README.md`.
+- **R2** — stays `[~]`, with its stub list narrowed to one (the `use` sub-box).
+  The value-shape hole is closed at all four boundaries the gate reads.
+  Mutations against the live data, each exiting 1 with its own message:
+  `{kind: "command", name: ""}` → ``command target's `name` is empty``;
+  `name: null` → ``is a nothing, not a string``; `key: ""` → `` `key` is
+  empty`` (7 violations — the empty id also cascades into `Alt-R`'s dangling
+  `also`, and the `shell.nuon []` in the message is exactly the id-less-entry
+  bug the check exists for); `cmd: ""` → `` `cmd` is empty``; `cmd: 5` → ``is
+  a int, not a string``; `source: ""`; `also: ["", …]` → two violations
+  (`` `also` has an element that is empty`` and ``also references ``, which is
+  not an entry``); `also: "zi"` (bare string where a list is required) →
+  `` `also` is a string, not a list``, which produced nothing at all before;
+  `also: []` → `` `also` is an empty list``; `title: ""`; `use: ""`.
+  `mode: "tmux"` → ``mode `tmux` is not one of shell, nvim:normal, nvim:visual,
+  nvim:insert, terminal, container``. `topic: ""` fires twice, from the shape
+  pass and from membership. `title` keeps its one-line contract independently:
+  an embedded `\n` → `title spans more than one line`; a trailing period →
+  `title ends with a period`. `why`: blanking it → `` `why` is empty`` plus a
+  digest-drift violation; renaming `cmd: "mkcd"` → ``carries a `why` with no
+  row in why-review.nuon`` **and** ``why-review.nuon: row `shell.nuon|mkcd`
+  reviews a `why` that no entry carries any more``, so the record cannot drift
+  in either direction. Optionality preserved: 33 of 84 entries carry no `why`
+  and the control exits 0. Forcing `bad-string` to return `""` unconditionally
+  trips 6 selftest controls.
+- **R2 · `verify`** — stays `[x]`, and this is where the shape hole lived.
+  Beyond the empty/null mutations above: unknown kind → ``unknown verify kind
+  `incantation```; dropping `name` → ``command target is missing `name```; a
+  bare record instead of a list → two violations. `VERIFY_KINDS` holds exactly
+  six kinds. **The `desc` exception is real and load-bearing, and was measured
+  before it was encoded** (see `## Findings`): removing `desc` from `nullable`
+  fails exactly 14 live targets, and `desc: ""` (empty rather than null) still
+  exits 1, so the exception admits only an explicit null.
+  **One residual, not fatal:** `verify: ["foo"]` (non-record elements) dies at
+  `tests/help-content-model.nu:568` with an uncaught
+  `only_supports_this_input_type` instead of a named violation. It still exits
+  1, so it fails closed and the box stands, but `bad-field`'s `record-list` arm
+  checks list-ness and never element-ness.
+- **R3** — stays `[x]`, attacked at the ordering clause specifically:
+  **swapping** the `git` and `containers` ids in `topics.nuon` — all nine still
+  present, all still resolvable by every entry, no membership violation
+  anywhere — exits 1 with a single message printing both spines, so the
+  comparison is list equality and not set equality. `TOPICS` is a const
+  transcribed from R3's own wording, not read out of `topics.nuon`, so a rename
+  or reorder of the data cannot make the check agree with itself. An empty
+  topic list still aborts with "refusing to pass a check with nothing to
+  check". New this session: an empty `summary` on a topic row exits 1
+  (``topics.nuon [navigate]: `summary` is empty``).
+- **R4** — stays `[x]`, one mutation per arm. Existence: `cmd: "mkcd"` →
+  `"mkcd2"` exits 1 with ``concept entry `mkcd` is missing — R4`` plus the two
+  dangling `also` pointers and the stale review row it predicts (5 violations).
+  Kind: flipping that entry's `verify: [{kind: "prose"}]` to `[{kind:
+  "command", name: "mkcd"}]` exits 1 with ``concept entry `mkcd` is not
+  verify: prose — R4``. `CONCEPTS` transcribes R4's prose rather than reading
+  the data back.
+- **R5** — stays `[~]`, stub 1 retired and stub 2 standing verbatim; the
+  amendment on the box carries the proofs.
+- **Acceptance (readable as plain text)** — stays `[x]`, still held by reading
+  the real artifact and by nothing else, stated rather than dressed up because
+  `open` returning a table would pass a minified blob too. All four surface
+  files opened raw: `capsule.nuon` 61 lines, a 6-line commented header then one
+  record per entry, one field per line; `nvim.nuon` a 7-line header documenting
+  the three-state `desc` convention in prose before the opening `[`;
+  `terminal.nuon` a long header carrying the `02-terminal` invalidity caveat,
+  the `Cmd+N` omission and the mods-spelling rule; `shell.nuon` a header then
+  `# ---- topic` section rules mirroring `topics.nuon`'s order. Nothing
+  generated, escaped or minified. **It reverts to `[ ]` the day these files
+  start being produced programmatically.** Noted, not scored against the box:
+  `why-review.nuon`'s rows are 16-hex digests and are not readable-as-manual —
+  it is a review record, not one of the four surface files R1 names.
+
+**Readiness observation, not a wall.** worker.md §2 makes "every child covered"
+part of ready, and this node's [`coverage`](coverage/prd.md) child is `open`
+with roughly thirty unmet deps. The scheduler dispatched the parent anyway.
+The child is deliberately unclaimed (above), so the dispatch was treated as
+intentional and only the parent's boxes were worked — but **the parent cannot
+resolve while that child sits open**, and every remaining stub on it is waiting
+on exactly that child's contract.
+
+### 2026-08-21 · `cc-1787301962` — superseded by the block above
 
 Landed `dca40ba`, merged as `2b04399`
 (`tests/help-content-model.nu`; `home/dot_config/nushell/help/README.md`,
@@ -467,6 +639,60 @@ than passing quietly.
 to `[~]` on refutation, so the count is now 1 open + 7 stubbed.)*
 
 ## Findings
+
+### 2026-08-21 · `desc` is a three-state field, and it nearly became a false record
+
+Turning on value-shape checking failed **14 live targets** on `desc: null` —
+and the right answer was not to loosen the check but to discover that
+`nvim-map`'s `desc` is a *three-state* field: **absent** means "compare the
+live description against this entry's title", **`null`** means "the live map
+has no description on purpose, assert existence only", and **a string** means
+"it must equal this". That was written in
+`home/dot_config/nushell/help/README.md` and in `nvim.nuon`'s header as prose
+and had never been encoded, so the schema could not tell an intentional null
+from a missing value. It is now `VERIFY_KINDS`'s `nullable` field, transcribed
+from the README the same way `TOPICS` and `CONCEPTS` transcribe theirs.
+
+It also depended on something that had to be **measured rather than assumed**:
+nushell's `open` keeps a heterogeneous `.nuon` list heterogeneous rather than
+null-filling it into a table, so absence and explicit null survive the round
+trip and stay distinguishable (checked directly with `nu -c`: a target omitting
+`scope` reads back with no `scope` column, while `desc: null` reads back as a
+null-valued column). Had that been false, the distinction would have been
+unrecoverable after load and [`04-drift-check`](../04-drift-check/prd.md) would
+have inherited a silent conflation. Recorded in the gate comment beside the
+const.
+
+### 2026-08-21 · one gap deliberately NOT closed: `title` has no word floor
+
+A one-word title (`"Jump"`) passes the imperative allowlist and every other
+title clause. `use` got a five-word vacuity floor this session; `title` did
+not, and that is a decision rather than an oversight. R2 and R5 name only the
+`use` escape, and adding a second floor with no measurement behind it is the
+failure mode this corpus has already been burned by twice — a check that reads
+as enforcement and enforces nothing (see the two failed containment proxies
+below). **If [the epic](../prd.md) wants it, it should be measured against the
+84 live titles first.**
+
+### 2026-08-21 · three stale addresses in the dispatch, corrected for the record
+
+None of them blocking; recorded so the next session does not chase them.
+
+1. The dispatch says "this repo has a design-record layer at `.mi/docs/memos`.
+   Where a node names a record, that record is the SPEC." **`.mi/docs/memos`
+   does not exist in this repo**, and this node names no memo.
+   [`worker.md`](../../../workflows/refs/worker.md)'s shelf table does
+   reference memos, but for `p6-rust-core` nodes in a different tree. The spec
+   here is the node itself, and that is what was worked to.
+2. The dispatch says "every other task fills its own rows per **epic invariant
+   4**". [The epic](../prd.md) carries I1–I4 and **none of them is about
+   filling rows** — I4 is "Non-TTY output is plain". The obligation actually
+   lives in `why-review.nuon`'s header and in the 2026-08-21 finding below,
+   which says explicitly that the epic does *not* yet state it and that writing
+   it there would be a law-2 edit to another node's contract. **That flag is
+   still open**; it remains the epic's amendment to make.
+3. **No `M-13` or `M-15` exists anywhere under `.mi`** (grep finds nothing), so
+   the "naming nuances" the dispatch attributes to them could not be worked to.
 
 ### 2026-08-21 · the second failed proxy, so a third is not built
 
