@@ -1,5 +1,6 @@
 ---
 state: open
+priority: 100
 mode: afk
 deps:
   - .mi/prd/00-delivery/corrections/w0-3-platform-rewrite
@@ -10,6 +11,15 @@ verify: "chezmoi apply on a scratch target is idempotent (second apply is a no-o
 
 Parent: [`01-deploy-mechanism`](../prd.md) · source:
 [`01-deploy-mechanism`](../prd.md) requirements R1, R3, R5
+**Scheduled first (priority 100, set 2026-08-21).** Not for its own sake: it
+is what `00-delivery/verification-gates` waits on, and until that node closes
+this repository has no gate runner at all — no `justfile`, no `Makefile`, no
+`package.json`, and a `tests/` holding two single-purpose scripts. Every
+acceptance box in the tree phrased "the wave gate passes" is therefore
+uncloseable by construction, and nothing on the board can be closed with
+proof. This node and the gates node are the two that end that, so they sort
+ahead of the work that will need them.
+
 
 ## Requirements
 - [ ] **R1** — **Source layout.** `home/` holds the managed tree

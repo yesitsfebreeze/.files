@@ -1,5 +1,6 @@
 ---
 state: open
+priority: 90
 mode: afk
 deps:
   - .mi/prd/05-platform/01-deploy-mechanism/repo-skeleton
@@ -13,6 +14,22 @@ Parent: [Delivery epic](../prd.md) · net-new
 Purpose: What must actually *run* before a wave counts as done. The tree's
 acceptance criteria are already written as observable checks; this turns them
 into gates that an agent can execute without a human watching.
+**Scheduled first (priority 90, set 2026-08-21),** behind only the repo
+skeleton it depends on. The drift sweep of 2026-08-21 found no gate runner
+anywhere in this tree, which makes every "the wave gate passes" acceptance
+box in the tree uncloseable until this node closes — the boxes are not wrong,
+they simply name a thing that does not exist yet. Two nodes already record a
+`[~]` stub standing in for a gate that was never built
+(`00-delivery/corrections/w0-3-platform-rewrite`'s link-check box is one).
+Building this converts those stubs into checks that can actually be run.
+
+One scoping question this node must answer deliberately, raised by W0.3 and
+recorded here so it is not rediscovered: does "tree link check" mean the board
+only, or the whole `.mi/` directory? `.mi/workflows/refs/worker.md` and
+`memo.md` carry 11 broken relative links into the mi framework's own source
+repo, so the answer flips the gate red on day one. Also exclude
+`.mi/gantt/scratch/`, which planning runs write into and which is git-ignored.
+
 
 ## Requirements
 - [ ] **R1** — **Definition of done, per task.** A task is done when: its
