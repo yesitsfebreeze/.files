@@ -38,6 +38,28 @@ so a diff reads top to bottom.
 | `verify` | yes | how the drift check confirms it exists — a list, see below |
 | `source` | yes | the PRD this entry was written from, so `help <entry>` and the browser's `ctrl-o` can open it |
 
+**Present is not enough — every value has a shape.** A field that is spelled
+correctly and holds nothing is the failure this schema shipped with for three
+cycles: `verify: [{kind: "command", name: ""}]`, `key: ""` and `source: ""` all
+passed the gate, and an entry with an empty `key` then had no id, so every
+message about it read `shell.nuon []`. Since 2026-08-21 `key`, `cmd`, `title`,
+`use`, `topic`, `mode`, `why` and `source` must each be a string that is
+non-empty after trimming; `also` must be a non-empty list of such strings;
+`verify` must be a non-empty list of records, and every field of every target
+must be a non-empty string — the one exception being a `nullable` target field
+written as an explicit `null`, which today is `nvim-map`'s `desc` and nothing
+else. The same rule covers `topics.nuon`'s rows and `why-review.nuon`'s.
+
+**`use` has a word floor, and it is not the gesture rule.** Five words, which
+`tests/help-content-model.nu` checks. It exists because replacing an entry's
+whole `use` with the single character `x` used to exit 0, and one word is not
+an under-described gesture but an absent one. It is set from the corpus, not
+from taste: measured over all 84 entries the shortest real `use` is 8 words and
+the mean is 34, so the floor has three words of headroom and cannot fire on
+anything anyone has written. Whether a `use` describes the *real* gesture is a
+different question, decided against a live surface and not here — see
+"Checking it" below.
+
 ### `verify` — a list of typed targets
 
 One entry can document a pair (`Up`/`Down`), a group (`<C-h/j/k/l>`), or a
@@ -183,8 +205,18 @@ table silently documents nothing.
   being a wish. Every `why`-carrying entry needs a row there whose `digest`
   matches its current `use`/`why` pair; add a `why` or edit either field and
   the gate fails until someone reads the new pair and records it. The file
-  itself carries the three-step ritual. Reviewing your own writing is the part
-  no gate can enforce, so rows say when the reviewer was also the author.
+  itself carries the three-step ritual.
+
+  Reviewing your own writing used to be "the part no gate can enforce", stated
+  in a prose note the gate ignored — and four rows duly said in plain words
+  that they vouched for their own writing while passing. A row now carries an
+  optional `author` field naming the session that wrote or last revised the
+  pair, and the gate **fails** any row where `author` equals `reviewer`. On
+  2026-08-21 those four were re-read by a session that had written none of
+  them; all four stand, and each note now gives the reading rather than the
+  fact of it. What is still unenforceable is omission: leaving `author` out is
+  invisible in the data, so this hardens an honest record rather than
+  defeating a careless one.
 - Add the entry in the **same change** as the binding. `help --check` exits
   non-zero on an undocumented one, which is the only reason this file stays true.
 
@@ -211,25 +243,41 @@ requirements became the child's R1–R4, the old R8 (concepts) is now R4 and the
 old R9 (writing rules) is now R5. The gate's comments and messages cite the
 current numbers.
 
-Two of its constants are transcribed from the spec rather than read out of the
-data, and that is deliberate — a check fed by the thing it is checking can only
-assert that the data agrees with itself:
+Three of its constants are transcribed from the spec rather than read out of
+the data, and that is deliberate — a check fed by the thing it is checking can
+only assert that the data agrees with itself:
 
 - `COVERAGE` — the surfaces the `coverage/` child's R1–R4 name. If a
   requirement names a key and no entry documents it, this is what notices.
 - `TOPICS` — R3's nine ids **in R3's order**. Before it existed the topic list
   was read out of `topics.nuon`, so renaming `git` to `vcs` or deleting
   `history` both exited 0.
+- `VERIFY_KINDS`'s `nullable` — the "Entry schema" section's three-state `desc`
+  rule above, transcribed. Take `desc` out of it and the 14 live targets that
+  write `desc: null` all fail, which is how you know the exception is carrying
+  weight rather than decorating the record.
 
-`selftest` runs all three predicates — `restates-key`, `non-imperative` and
-`why-digest` — against known-bad and known-good inputs on every run, so a
-repeat of the backtick miss above fails here instead of passing quietly for a
-cycle. The imperative check finds no violation in the current 84 entries, which
-is why its controls matter more than its output: a check with subjects and no
-violations and a check that cannot fire read identically from the outside.
+`selftest` runs every predicate — `restates-key`, `non-imperative`,
+`why-digest`, `bad-string`, `bad-string-list`, `bad-field` and `too-thin` —
+against known-bad and known-good inputs on every run, so a repeat of the
+backtick miss above fails here instead of passing quietly for a cycle. The
+imperative check and the shape checks find no violation in the current 84
+entries, which is why their controls matter more than their output: a check
+with subjects and no violations and a check that cannot fire read identically
+from the outside.
 
-What it cannot do is confirm a `verify` target resolves against a live shell,
-editor or terminal: that is `help --check`
+**What it cannot do, and no amount of tightening here will change**: confirm
+that a `use` describes the gesture the configuration actually performs. The
+gate holds `use` to presence, a non-empty string, a five-word floor and the
+no-restating-the-key opener — every one of those is a floor under vacuity, not
+the clause. The gap is not theoretical: `shell.nuon [Ctrl-T]`'s `use` skipped a
+whole step of the live route, sat marked as met for a cycle, and was found by a
+person reading `config.nu`, not by this file. 80 of the 84 entries describe a
+surface that is not deployed yet, so for those there is nothing to be checked
+against at all.
+
+The rest of that sentence: it cannot confirm a `verify` target resolves against
+a live shell, editor or terminal either — that is `help --check`
 (`.mi/prd/06-help/04-drift-check`), and it needs a deployed configuration —
 which does not exist yet. Until then the target names are the contract the
 shell, editor and terminal work must meet, and the shell ones were read off
