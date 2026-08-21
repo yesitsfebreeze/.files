@@ -25,7 +25,7 @@ const REFS = A.refs || '.mi/workflows/refs'
 // Plan artifacts live OUTSIDE the repository. They are transient evidence, not
 // repo content, and `.mi/` is walked by tree-wide gates — a scratch file there
 // makes every gate run depend on whatever a planner last wrote.
-const PLAN_DIR = A.planDir || '/tmp/mi-plan'
+const PLAN_DIR = A.planDir || '.mi/gantt/scratch'
 const SEEDS = A.seeds || []
 const RETIRED = A.retired || []
 
@@ -401,7 +401,7 @@ You are the SYNTHESIZER. ${DIMENSIONS.length} auditors swept this repository for
 
 Your output is EVIDENCE for a later replanning step, not a worklist. Do not place findings on the board, do not propose node structure, and do not partition anything into lanes — other steps own those, and a second opinion here becomes a second home for the decision. Report what is true.
 
-**Write your report to \`${PLAN_DIR}/plan.reconcile.md\`** — the only file you write. It sits OUTSIDE the repository on purpose: a sweep is evidence, not yet a fact worth a commit, and a scratch file inside \`.mi/\` is walked by the tree-wide gates, so every gate run would start depending on whatever a planner last wrote. Return the same text as your answer.
+**Write your report to \`${PLAN_DIR}/plan.reconcile.md\`** — the only file you write. It is git-ignored on purpose: a sweep is evidence, not yet a fact worth a commit. It used to live in a shared \`/tmp\` directory and that was worse — on 2026-08-21 a concurrent run in another repository overwrote a report mid-session — so it is now per-repository by construction, and the tree-wide gates must exclude it. Return the same text as your answer.
 
 FINDINGS THAT SURVIVED:
 ${JSON.stringify(surviving, null, 1)}

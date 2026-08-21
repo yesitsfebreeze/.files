@@ -1,15 +1,16 @@
 export const meta = {
 	name: 'mi-gantt',
-	description: 'Run the whole schedule: derive a plan from the board if there is not one yet, store it under .mi/gantt as the record, then drive it wave by wave — one mi-run session per wave, the board re-read after each to record what actually closed.',
+	description: 'Run the whole schedule: derive a plan from the board if there is not one yet, store it under .mi/gantt as the record, then drive it as a dependency FRONTIER — multiple concurrent mi-run sessions, each dispatched the moment its tasks\' real deps close, the board re-read after each to record what actually closed.',
 	whenToUse: 'When you want the schedule executed rather than one node. Creates the plan record on first run. Use mi-run for a single step, mi-repair when the board is too tangled to schedule, and mi-drill when the plan has holes in it.',
 	phases: [
-		{ model: 'haiku', title: 'Profile', detail: 'discover the repo, the board, and whether a plan already exists' },
+		{ model: 'haiku', title: 'Profile', detail: 'discover the repo and the board — run beside the record load, not before it' },
 		{ model: 'haiku', title: 'Load', detail: 'read the plan record and fold the append-only ledger into a status' },
 		{ model: 'sonnet', title: 'Survey', detail: 'derive the tasks from the board and the schedule document — only when there is no plan' },
 		{ model: 'opus', title: 'Audit', detail: 'an adversary hunts for work the derived plan lost' },
 		{ model: 'opus', title: 'Record', detail: 'write the plan record and regenerate its human view' },
-		{ model: 'opus', title: 'Wave', detail: 'one mi-run session per wave, scoped to that wave\'s nodes' },
-		{ model: 'sonnet', title: 'Ledger', detail: 'observe the board, append what actually closed, run the wave gate' },
+		{ model: 'opus', title: 'Dispatch', detail: 'concurrent mi-run sessions off the ready frontier, up to the global lane cap' },
+		{ model: 'sonnet', title: 'Observe', detail: 'as each session lands, read its nodes off the board and append the ledger' },
+		{ model: 'sonnet', title: 'Gate', detail: 'one full-gate run after the frontier drains, appended as the schedule verdict' },
 	],
 }
 
@@ -21,12 +22,39 @@ export const meta = {
 //   mi-gantt  decides WHAT RUNS NEXT and records what happened.
 //   mi-run    takes nodes, claims them, works them, refutes them, lands them.
 //
-// So every wave here is one `workflow('mi-run', { nodes: [...] })` call. mi-run
-// already has everything a wave needs — the claim commit as the cross-session
-// lock, footprint partitioning, the per-node reconcile, the adversary, the one
-// gate run — and re-implementing any of it here would be a second copy that
-// can disagree with the first. `rounds` is handed in so mi-run loops until the
-// wave is drained, picking up whatever its own partition dropped.
+// So every dispatch here is one `workflow('mi-run', { tickets: [...] })` call.
+// mi-run already has everything a session needs — the claim commit as the
+// cross-session lock, footprint-disjoint lanes, the lane-level
+// reconcile-as-you-work, the adversary, the gate run — and re-implementing
+// any of it here would be a second copy that can disagree with the first.
+//
+// THE FRONTIER, not waves. The wave layout is still computed (it is the human
+// view, and the wall-clock estimate), but execution does not run wave-by-wave:
+// a wave is a barrier, and a barrier makes every task wait for the slowest
+// stranger in its layer. Instead the scheduler keeps a READY FRONTIER — every
+// task whose real deps have been OBSERVED closed — and keeps as many mi-run
+// sessions in flight as the global lane cap allows:
+//
+//   - a ready task that other tasks depend on is dispatched as its OWN
+//     session, so it lands (merge + gate + board write) the moment it is done
+//     and frees its dependents immediately, instead of waiting for a layer;
+//   - ready leaf tasks (nothing waits on them) are BATCHED into one shared
+//     session, amortising the land and the gate across them;
+//   - two tasks whose file footprints collide are never in flight at once —
+//     the collider stays on the frontier until the other session lands;
+//   - the moment any session's closure is observed, newly-unblocked tasks
+//     dispatch, while other sessions are still running.
+//
+// mi-run is built for exactly this — N concurrent sessions, the claim commit
+// as the lock — so concurrent dispatch is the designed-for case, not a trick.
+//
+// NO DOUBLE DISCOVERY: the plan record already holds each task's node, spec,
+// verify command and file footprint, and the profile below holds the repo
+// facts. Both are handed to every session, so a dispatched mi-run spawns zero
+// scan agents — no re-profile, no board census, no footprint survey. What is
+// NOT skipped is the claim itself: the claim commit is the lock (other
+// sessions may be running outside this schedule), and its per-node re-read
+// from disk is the freshness check on this plan's picture of the board.
 //
 // THE RECORD, and why it is shaped like this (law 1):
 //
@@ -39,10 +67,14 @@ export const meta = {
 // deletion is not expressible. The plan is regenerated only on `replan: true`;
 // its previous version stays in git history, which is the actual record.
 //
-// AND WHAT CLOSED IS OBSERVED, NOT REPORTED (law 2). The Ledger phase re-reads
-// the board nodes after mi-run returns and writes down what it SEES — state and
-// box counts — rather than parsing mi-run's own account of its success. A
-// scheduler that believes its workers cannot notice when they are wrong.
+// AND WHAT CLOSED IS OBSERVED, NOT REPORTED (law 2). The Observe step re-reads
+// the board nodes after each mi-run session returns and writes down what it
+// SEES — state and box counts — rather than parsing mi-run's own account of its
+// success. A scheduler that believes its workers cannot notice when they are
+// wrong. Observation runs BESIDE the sessions still in flight (ledger appends
+// are serialised through one chain so the commits do not race each other), and
+// it is what advances the frontier: a dependent dispatches only on an observed
+// closure, never on a worker's report.
 //
 // Two kinds of task are never dispatched, and both are surfaced loudly rather
 // than skipped quietly:
@@ -113,10 +145,15 @@ const TASK_ITEM = {
 
 const PROFILE_SCHEMA = {
 	type: 'object', additionalProperties: false,
-	required: ['isGit', 'head', 'branch', 'dirty', 'ecosystem', 'gate', 'fullGate', 'gateEvidence', 'boardNodes', 'maxWorkers', 'havePlan', 'scheduleDoc', 'contextFile', 'sharedFiles', 'notes'],
+	required: ['isGit', 'head', 'branch', 'upstream', 'dirty', 'ecosystem', 'packages', 'sourceRoots', 'gate', 'fullGate', 'gateEvidence', 'boardNodes', 'maxWorkers', 'havePlan', 'scheduleDoc', 'contextFile', 'sharedFiles', 'memoDir', 'testLayout', 'notes'],
 	properties: {
 		isGit: { type: 'boolean', description: 'does `git rev-parse --is-inside-work-tree` succeed? If false, say so — worktree isolation and the claim lock both need git.' },
 		head: { type: 'string' }, branch: { type: 'string' },
+		upstream: { type: 'string', description: 'the upstream ref if the branch has one, else "" — this decides whether a push arbitrates the claim race' },
+		packages: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name', 'dir'], properties: { name: { type: 'string' }, dir: { type: 'string' } } }, description: 'from the build system\'s own metadata command where one exists, not from directory names' },
+		sourceRoots: { type: 'array', items: { type: 'string' }, description: 'directories implementations live in, relative to the repo root' },
+		memoDir: { type: 'string', description: 'the design-record directory if this repo has one, else ""' },
+		testLayout: { type: 'string', description: 'where this repo puts tests and what it forbids, quoted from its own context file — or "no stated convention"' },
 		dirty: { type: 'string', description: 'one-line summary of `git status --porcelain`, or "clean", or "not a git repo"' },
 		ecosystem: { type: 'string', description: 'the build system actually on disk — read the manifests, do not guess from the language' },
 		gate: { type: 'string', description: 'the SCOPED check one lane runs on its own change. Must exist today.' },
@@ -134,25 +171,11 @@ const PROFILE_SCHEMA = {
 
 const LOAD_SCHEMA = {
 	type: 'object', additionalProperties: false,
-	required: ['tasks', 'entries', 'malformed'],
+	required: ['planJson', 'ledgerJsonl', 'malformed'],
 	properties: {
-		tasks: { type: 'array', items: TASK_ITEM, description: 'the tasks array out of the plan record, verbatim. Empty if there is no plan.' },
-		malformed: { type: 'string', description: 'empty, or what failed to parse and at which line. Do NOT repair it — an unparseable record stops the run rather than being guessed at.' },
-		entries: {
-			type: 'array',
-			description: 'every line of the ledger, IN FILE ORDER. File order is the record order; do not sort it.',
-			items: {
-				type: 'object', additionalProperties: false,
-				required: ['entry', 'id', 'state', 'wave', 'at', 'note'],
-				properties: {
-					entry: { type: 'string', description: 'task | gate | wave | lock | note' },
-					id: { type: 'string', description: 'the task id, or "" for entries that are not about one task' },
-					state: { type: 'string', description: 'for a task entry: done | open | stub | escalated | blocked. For a gate entry: green | red.' },
-					wave: { type: 'integer', description: '-1 if absent' },
-					at: { type: 'string' }, note: { type: 'string' },
-				},
-			},
-		},
+		planJson: { type: 'string', description: 'the EXACT stdout of `cat <plan>`. Pasted, never retyped, never abridged. "" if the file does not exist.' },
+		ledgerJsonl: { type: 'string', description: 'the EXACT stdout of `cat <ledger>`. Pasted, never retyped, never reordered. "" if the file does not exist.' },
+		malformed: { type: 'string', description: 'empty, or which file could not be read and why. Do NOT repair it — an unparseable record stops the run rather than being guessed at.' },
 	},
 }
 
@@ -184,7 +207,7 @@ const OBSERVE_SCHEMA = {
 	type: 'object', additionalProperties: false,
 	required: ['observations', 'gateRun', 'notes'],
 	properties: {
-		gateRun: { type: 'string', description: 'the exact wave-gate invocation and its verdict, or "" if this wave named no gate of its own' },
+		gateRun: { type: 'string', description: 'the exact gate invocation and its verdict — "" when the observer is told not to run one (per-session observations leave gating to the schedule-level run)' },
 		notes: { type: 'string' },
 		observations: {
 			type: 'array',
@@ -205,20 +228,36 @@ const OBSERVE_SCHEMA = {
 
 phase('Profile')
 
-const profile = await agent(
+// The profile reads the repo; the record loader parses two files whose paths
+// are fixed before either runs. They share no input, so they overlap instead
+// of queuing — the loader deliberately gets no repo grounding, because its job
+// is mechanical parsing and grounding would only be a reason to wait.
+const [profile, loaded] = await parallel([
+	() => agent(
 	`Repository: ${REPO}. READ ONLY — never edit, never commit, and do NOT run the test suite or a full build. Reading files, \`git\`, \`grep\`, \`find\`, \`ls\` and metadata commands are fine.
 
 Profile this repository for the scheduler that comes after you. Every field is established by running something, not guessed.
 
-1. \`git rev-parse --is-inside-work-tree\` — if that fails this is NOT a git repo, set \`isGit: false\` and say so in \`notes\`. Then \`git rev-parse HEAD\`, \`git branch --show-current\`, \`git status --porcelain | head -20\`.
-2. **The build system**, from the manifests actually on disk.
+1. \`git rev-parse --is-inside-work-tree\` — if that fails this is NOT a git repo, set \`isGit: false\` and say so in \`notes\`. Then \`git rev-parse HEAD\`, \`git branch --show-current\`, \`git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null\` (empty if none), \`git status --porcelain | head -20\`.
+2. **The build system**, from the manifests actually on disk — and its **packages** from the build system's own metadata command where one exists, not from directory names, plus the \`sourceRoots\` implementations live under.
 3. **The two gates.** \`gate\` — the fastest scoped check one worker runs on its own change. \`fullGate\` — the whole-tree check. List the runner's real recipes first (\`just --list\`, \`make -qp\`, the \`scripts\` block, the CI files) and quote what you read into \`gateEvidence\`. **Never invent a recipe.** If there is no runner, say so — a worker handed a command that does not exist will invent one.
 4. **The board.** \`find ${BOARD} -name prd.md | wc -l\` → \`boardNodes\`. Then read the ROOT node (\`${BOARD}/prd.md\`) and report its \`max-workers\` field, or \`-1\` if there is no root node or no such field. **If \`boardNodes\` is 0, say so plainly in \`notes\`** — it means the board is not in node form and there is nothing for a worker to claim, however much prose the tree holds.
 5. **The plan.** Does \`${PLAN}\` exist and parse as JSON?
 6. **The schedule document.** Is there a human-authored schedule anywhere — a gantt chart, a wave layout, a delivery plan, a work breakdown? Name the file. This is what the survey will read.
-7. \`sharedFiles\` — the files belonging to no task, and the context file if there is one.`,
-	at('scan', { label: 'profile', phase: 'Profile', schema: PROFILE_SCHEMA }),
-)
+7. \`sharedFiles\` — the files belonging to no task, and the context file if there is one.
+8. **The conventions**, for the workers this profile is handed to: \`testLayout\` — where this repo puts tests and what it forbids, quoted from its own context file (or "no stated convention") — and \`memoDir\`, the design-record directory if there is one.`,
+		at('scan', { label: 'profile', phase: 'Profile', schema: PROFILE_SCHEMA }),
+	),
+
+	() => agent(
+	`Repository: ${REPO}. READ ONLY — never edit, never commit, never run anything but \`cat\` and \`ls\`.
+
+You are the RECORD READER, and you are a pair of hands, not a mind. \`cat ${PLAN}\` and \`cat ${LEDGER}\`, and paste each one's exact stdout into \`planJson\` and \`ledgerJsonl\`.
+
+Paste. Do not parse, reformat, sort, dedupe, abridge, or re-type. Do not drop a line that looks superseded or a task that looks retired — the parsing happens downstream, in code, and anything you tidy here is a silent edit to the record the whole schedule is driven from. A file that does not exist is \`""\`, and that is not an error.`,
+		at('scan', { label: 'load', phase: 'Load', schema: LOAD_SCHEMA }),
+	),
+])
 
 if (!profile) return { error: 'profile failed — the run stops here rather than scheduling against guesses' }
 
@@ -249,40 +288,38 @@ ${profile.isGit ? '' : '- **THIS IS NOT A GIT REPO.** There is no claim lock, no
 ${profile.notes ? `- ${profile.notes}` : ''}
 ${SEEDS.length ? `\nTHE CALLER'S NOTES for this run:\n${SEEDS.map(s => `- ${s}`).join('\n')}` : ''}`
 
-// ── Load ─────────────────────────────────────────────────────────────────
-phase('Load')
-
-const loaded = await agent(
-	`${GROUND}
-
-You are the RECORD READER. Mechanical: parse and report. Judge nothing, edit nothing, create nothing.
-
-1. If \`${PLAN}\` exists, parse it and return its \`tasks\` array **verbatim** — every field as written. If it does not exist, return an empty array; that is not an error.
-2. If \`${LEDGER}\` exists, return every line as an entry **in file order**. File order is the record order — do not sort, do not dedupe, do not drop a line that looks superseded. Shadowing is computed downstream, and a line you drop is a correction that silently vanishes.
-3. If either file exists but does not parse, put what failed and its line number into \`malformed\` and **do not repair it**. An unparseable record stops the run; a guessed one corrupts it.`,
-	at('scan', { label: 'load', phase: 'Load', schema: LOAD_SCHEMA }),
-)
-
-// `malformed` is a required schema field, which invites the reader to fill it
-// even when nothing is wrong: a first run has no ledger.jsonl at all and the
-// field has come back as `""` — the two-character string — aborting a record
-// that parsed fine. Strip quoting and no-op sentinels before believing it.
-const malformedReport = (loaded?.malformed ?? '').trim().replace(/^["'`]+|["'`]+$/g, '').trim()
-
-if (malformedReport && !/^(none|n\/?a|null|nil|nothing|empty|no|ok)$/i.test(malformedReport)) {
-	return { error: `the plan record does not parse: ${malformedReport}`, fix: 'repair it by hand, or re-derive with { replan: true } — this run refuses to guess at a corrupt record' }
+// ── The record, loaded beside the profile above ──────────────────────────
+if (loaded && loaded.malformed && loaded.malformed.trim()) {
+	return { error: `the plan record does not parse: ${loaded.malformed}`, fix: 'repair it by hand, or re-derive with { replan: true } — this run refuses to guess at a corrupt record' }
 }
 
 // The fold. Last entry per task id wins, because corrections are appended and
 // shadow. Computed here rather than asked of a model: it is the thing every
 // later decision reads, and it must not be a coin-flip.
-const ledger = (loaded && loaded.entries) || []
+// Parsed here rather than by the reader. A model asked to transcribe a long
+// array drops entries and invents plausible ones: this run was once scheduled
+// off 44 of the plan's 63 tasks, with an id present in no record and two ids
+// swapped, and nothing caught it until a lane was dispatched at a node whose
+// deps were unmet. The reader now pastes bytes and the parsing is code, so the
+// failure mode is a parse error rather than a plausible wrong plan.
+const parseFail = (what, e) => ({ error: `${what} did not parse — the run stops rather than scheduling against a guess`, detail: String(e && e.message || e), fix: 'if the file is fine on disk, the paste was truncated — re-run' })
+
+let plan = { tasks: [] }
+if (loaded && loaded.planJson && loaded.planJson.trim()) {
+	try { plan = JSON.parse(loaded.planJson) } catch (e) { return parseFail(PLAN, e) }
+}
+const ledger = []
+for (const line of ((loaded && loaded.ledgerJsonl) || '').split('\n')) {
+	if (!line.trim()) continue
+	try { ledger.push(JSON.parse(line)) } catch (e) { return parseFail(`${LEDGER} (line ${ledger.length + 1})`, e) }
+}
+
 const folded = new Map()
 for (const e of ledger) if (e.entry === 'task' && e.id) folded.set(e.id, e)
 const doneIds = new Set([...folded.entries()].filter(([, e]) => e.state === 'done').map(([id]) => id))
 const escalatedIds = new Set([...folded.entries()].filter(([, e]) => e.state === 'escalated').map(([id]) => id))
 
-let tasks = (loaded && loaded.tasks) || []
+let tasks = plan.tasks || []
 const derived = !tasks.length || REPLAN
 
 // ── Survey ───────────────────────────────────────────────────────────────
@@ -304,7 +341,7 @@ For each task:
 - **\`id\`** — use the label the source document already gives it. Inventing a new id for work that is already called something is how a plan stops matching the conversation about it.
 - **\`node\`** — the board node directory the work lands in. **Verify the path exists on disk** (\`ls ${BOARD}/<path>/prd.md\`). If the work is specified but placed on no node, set \`node: ""\` and record it in \`unplaced\`. **Do not invent a plausible path** — an id pointing at a node that does not exist is a task that can never be claimed, and it will look scheduled the whole time it is impossible.
 - **\`spec\`** — the file a worker must read to do it.
-- **\`deps\`** — only what the task cannot be **written and verified** without. "Would read better afterwards" is ordering, not a dependency; the schedule computes ordering itself. Every edge must point at an id that is also in your task list.
+- **\`deps\`** — only what the task cannot be **written and verified** without. "Would read better afterwards" is ordering, not a dependency; the schedule computes ordering itself. Every edge must point at an id that is also in your task list. The scheduler dispatches every ready task concurrently, so an edge is parallelism spent — spend it only where the dependency is literally true, and keep chains shallow: a deep chain is wall-clock nothing can parallelise away.
 - **\`files\`** — what it writes. This decides who runs beside whom, so grep for the paths its spec names and err toward including a file you are unsure about: a missed file is a merge conflict, a spurious one only costs parallelism.
 - **\`mode\`** — \`hitl\` when only the human can settle it: naming, taste, money, a reversal, or a fork between two designs where both are defensible. Read \`${REFS}/how.md\` on which decisions are the human's. A \`hitl\` task is never dispatched and blocks everything downstream, so marking one \`afk\` to keep the schedule moving is the most expensive mistake available here.
 - **\`verify\`** — the command its spec names, if any. Never invent one.
@@ -504,50 +541,81 @@ if (!waves.length) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Run the waves. Each is one mi-run session scoped to that wave's nodes, then
-// one observation of what actually changed on the board.
+// Run the FRONTIER. The wave layout above is the estimate and the human view;
+// execution dispatches off the ready frontier instead, because a wave is a
+// barrier and a barrier makes every task wait for the slowest stranger in its
+// layer. Invariants the dispatcher holds:
+//
+//   - total lanes in flight ≤ CAP (the same global cap mi-run re-checks at
+//     claim time — this sizing just avoids claiming past it and releasing);
+//   - no two tasks whose file footprints collide are ever in flight at once;
+//   - a task with dependents gets its OWN session, so it lands the moment it
+//     is done and frees them; leaf tasks batch into one session to amortise
+//     the land; a task with an empty footprint also runs solo, because an
+//     unknown footprint cannot be proven disjoint from anything;
+//   - a dependent dispatches only on an OBSERVED closure (law 2), never on a
+//     worker's report — the Observe step is on the critical path on purpose,
+//     but it runs beside the sessions still in flight, and ledger appends are
+//     serialised through one promise chain so their commits do not race.
+//
+// The full gate is NOT run per session here: every mi-run Lander already runs
+// it once before closing its nodes, so an un-gated closure cannot be observed.
+// The scheduler runs it once more after the frontier drains, as the verdict
+// line the ledger carries for the whole run.
 // ─────────────────────────────────────────────────────────────────────────
-const ran = []
-for (let w = FROM_WAVE - 1; w < waves.length && w < FROM_WAVE - 1 + MAX_WAVES; w++) {
-	let wave = waves[w]
-	if (A.only) wave = wave.filter(t => A.only.indexOf(t.id) !== -1)
-	if (!wave.length) continue
 
-	const nodes = wave.map(t => t.node)
-	const lanes = Math.min(CAP, wave.length)
-	// Enough rounds for mi-run to drain the wave even when its own footprint
-	// partition has to serialise some of it — plus one to mop up.
-	const rounds = Math.ceil(wave.length / lanes) + 1
+// Downstream weight: the hours of the longest chain waiting on a task. This is
+// the dispatch priority — freeing the heaviest chain first is what keeps the
+// frontier wide.
+const after = new Map(tasks.map(t => [t.id, []]))
+for (const t of tasks) for (const d of t.deps) if (after.has(d)) after.get(d).push(t.id)
+const downMemo = new Map(); const downWalk = new Set()
+const downCost = id => {
+	if (downMemo.has(id)) return downMemo.get(id)
+	if (downWalk.has(id)) return 0
+	downWalk.add(id)
+	let best = 0
+	for (const k of after.get(id) || []) { const c = downCost(k); if (c > best) best = c }
+	downWalk.delete(id)
+	const v = hoursOf(byId.get(id)) + best
+	downMemo.set(id, v)
+	return v
+}
+for (const t of tasks) downCost(t.id)
 
-	phase('Wave')
-	log(`wave ${w + 1}/${waves.length}: ${wave.map(t => t.id).join(', ')} → mi-run, ${lanes} lane(s), up to ${rounds} round(s)`)
+const filesCollide = (a, b) => (a.files || []).some(f => (b.files || []).some(o => collides(f, o)))
 
-	let runResult = null
-	try {
-		runResult = await workflow('mi-run', {
-			repo: A.repo, board: BOARD, refs: A.refs,
-			nodes, take: lanes, lanes, rounds,
-			gate: LANE_GATE, fullGate: FULL_GATE,
-			models: A.models, effort: A.effort,
-			seeds: (SEEDS || []).concat([
-				`You are being run as wave ${w + 1} of ${waves.length} of a recorded schedule (\`${PLAN}\`). Work only the nodes handed to you in \`nodes\`.`,
-				`The scheduler observes the board itself afterwards and writes the ledger from what it sees, not from your report — so an honest \`[ ]\` costs you nothing and a hopeful \`[x]\` will be contradicted by the record.`,
-			]),
-		})
-	} catch (e) {
-		log(`wave ${w + 1}: mi-run failed — ${String(e && e.message || e)}`)
-		ran.push({ wave: w + 1, tasks: wave.map(t => t.id), error: String(e && e.message || e) })
-		break
-	}
+// fromWave / waves compat: earlier layers are treated as closed for readiness
+// (that is what starting at a later wave always meant) and never dispatched;
+// layers past the window are simply not eligible.
+const eligible = new Set(waves.slice(FROM_WAVE - 1, FROM_WAVE - 1 + MAX_WAVES).flat()
+	.filter(t => !A.only || A.only.indexOf(t.id) !== -1).map(t => t.id))
+const assumed = new Set(waves.slice(0, FROM_WAVE - 1).flat().map(t => t.id))
+const heldIds = new Set(held.map(h => h.id))
+const landedIds = new Set(doneIds)
 
-	// ── Ledger ───────────────────────────────────────────────────────────
-	// Progress is computed from observed change, never from the actor's report
-	// (law 2). This reads the board and writes down what is there.
-	phase('Ledger')
-	const observed = await agent(
+phase('Dispatch')
+log(`frontier: ${eligible.size} eligible task(s) · up to ${CAP} lane(s) in flight across concurrent sessions`)
+
+const inflight = []      // { kind: 'run'|'observe', seq, tasks, lanes, fp, run, promise }
+const sessions = []      // the report, one entry per landed-and-observed session
+const attempts = new Map()
+const dispatchedIds = new Set()
+const stalled = []       // gave up: failed session, or still open after the retry
+const escalatedIds2 = []
+const closedRun = []
+const busyFiles = []     // footprints of sessions in flight
+let lanesBusy = 0
+let seq = 0
+// Ledger appends from concurrent observers serialise through this chain; the
+// observing itself still overlaps everything else.
+let ledgerChain = Promise.resolve()
+
+const observeSession = s => {
+	const run = () => agent(
 		`${GROUND}
 
-You are the LEDGER KEEPER for wave ${w + 1}. Two jobs, in order: **observe**, then **append**. You do not work nodes, you do not fix them, and you do not decide whether the wave succeeded.
+You are the LEDGER KEEPER for schedule session ${s.seq}. Two jobs, in order: **observe**, then **append**. You do not work nodes, you do not fix them, and you do not decide whether the session succeeded.
 
 **1. Observe.** For each task below, read its node file and report what is ACTUALLY THERE:
 - the \`state\` field verbatim — an illegal value is reported as written, not repaired
@@ -557,54 +625,182 @@ You are the LEDGER KEEPER for wave ${w + 1}. Two jobs, in order: **observe**, th
 
 A worker just reported on these nodes. **Do not read that report and do not look for it.** You are here because the actor's account of its own success is not evidence; the file is.
 
-TASKS IN THIS WAVE:
-${wave.map(t => `- \`${t.id}\` → \`${BOARD}/${t.node}/prd.md\` — ${t.title}`).join('\n')}
+TASKS IN THIS SESSION:
+${s.tasks.map(t => `- \`${t.id}\` → \`${BOARD}/${t.node}/prd.md\` — ${t.title}`).join('\n')}
 
-**2. The wave gate.** ${A.waveGate || FULL_GATE ? `Run \`${A.waveGate || FULL_GATE}\` once and record the exact invocation and verdict in \`gateRun\`. Confirm the command exists first — the profile established it from ${profile.gateEvidence || 'this repo\'s own runner'}. If it is missing, say so in \`gateRun\`; **never invent a recipe**, and never edit a shared build file to make a gate pass.` : 'This wave names no gate of its own. Leave `gateRun` empty.'}
-   If it fails, that is a finding, not something for you to fix. Record it and stop.
+**2. Run no gate and leave \`gateRun\` empty.** Every session's Lander already ran the full gate before closing its nodes, and the schedule runs one more observed gate after the whole frontier drains. Other sessions of this schedule are mid-merge right now, so a tree-wide check here would measure their half-landed state, not this session's.
 
 **3. Append to \`${LEDGER}\`** — one JSON object per line, created if absent. **Append only.** Never rewrite or delete a line: corrections are appended and shadow the old value, which is what makes this file a record instead of a cache.
 
 One line per task, with the state you OBSERVED — \`done\` only when the node says \`state: done\` and has zero open and zero stubbed boxes and no escalation; \`escalated\` when there is an \`## Escalation\`; \`stub\` when boxes are \`[~]\`; \`open\` otherwise:
-    {"entry":"task","id":"<id>","state":"<observed>","wave":${w + 1},"at":"<date -u +%FT%TZ>","note":"<open>/<stub>/<closed> boxes, state: <verbatim>"}
-Then one line for the wave:
-    {"entry":"gate","id":"","state":"<green|red>","wave":${w + 1},"at":"<...>","note":"<the exact command and verdict, or 'no wave gate'>"}
+    {"entry":"task","id":"<id>","state":"<observed>","wave":${s.seq},"at":"<date -u +%FT%TZ>","note":"session ${s.seq}: <open>/<stub>/<closed> boxes, state: <verbatim>"}
 
 Take the timestamp by running \`date -u +%FT%TZ\` — do not compose one from memory.
 
-**4.** Commit the ledger alone: \`git add ${LEDGER} && git commit -m "ledger: wave ${w + 1}"\`. Commit nothing else; the work itself was already committed by the workers.`,
-		at('probe', { label: `ledger-w${w + 1}`, phase: 'Ledger', schema: OBSERVE_SCHEMA }),
+**4.** Commit the ledger alone: \`git add ${LEDGER} && git commit -m "ledger: session ${s.seq}" -- ${LEDGER}\`. Commit nothing else. Other sessions are committing to this checkout right now — if the commit fails on an index lock or a non-fast-forward, wait a moment and retry it; that contention is expected and is not an error.`,
+		at('probe', { label: `observe-s${s.seq}`, phase: 'Observe', schema: OBSERVE_SCHEMA }),
 	)
+	const p = ledgerChain.then(run, run)
+	ledgerChain = p.then(() => null, () => null)
+	return p
+}
 
-	const obs = (observed && observed.observations) || []
+const launch = bundle => {
+	seq++
+	const lanes = bundle.length
+	lanesBusy += lanes
+	const fp = { seq, files: bundle.flatMap(t => t.files || []) }
+	busyFiles.push(fp)
+	for (const t of bundle) { dispatchedIds.add(t.id); attempts.set(t.id, (attempts.get(t.id) || 0) + 1) }
+	log(`session ${seq}: ${bundle.map(t => t.id).join(', ')} → mi-run, ${lanes} lane(s) · ${lanesBusy}/${CAP} lanes in flight`)
+	// The profile and the tickets are what this run already knows — with both
+	// handed in, mi-run spawns no scan agents at all: no re-profile, no board
+	// census, no footprint survey. It still CLAIMS each node (the commit is the
+	// lock, and its re-read from disk is the freshness check).
+	const promise = workflow('mi-run', {
+		repo: A.repo, board: BOARD, refs: A.refs,
+		profile,
+		tickets: bundle.map(t => ({
+			path: t.node, title: t.title, memo: t.spec, verify: t.verify,
+			dirs: t.files, first: t.notes, summary: t.title,
+		})),
+		nodes: bundle.map(t => t.node), take: lanes, lanes, rounds: 1,
+		gate: LANE_GATE, fullGate: FULL_GATE,
+		models: A.models, effort: A.effort,
+		seeds: (SEEDS || []).concat([
+			`You are session ${seq} of a recorded schedule (\`${PLAN}\`), dispatched off its ready frontier. Work only the nodes handed to you in \`nodes\`.`,
+			`Other sessions of the SAME schedule are running concurrently in this checkout, on footprint-disjoint nodes. Expect their commits to interleave with yours: if a git command fails on an index lock or a non-fast-forward, wait a moment and retry rather than treating it as fatal.`,
+			`The scheduler observes the board itself afterwards and writes the ledger from what it sees, not from your report — so an honest \`[ ]\` costs you nothing and a hopeful \`[x]\` will be contradicted by the record.`,
+		]),
+	})
+	inflight.push({ kind: 'run', seq, tasks: bundle, lanes, fp, promise })
+}
+
+const dispatch = () => {
+	let ready = tasks.filter(t =>
+		eligible.has(t.id) && !dispatchedIds.has(t.id) && !landedIds.has(t.id) && !heldIds.has(t.id) &&
+		!stalled.some(x => x.id === t.id) &&
+		t.deps.every(d => landedIds.has(d) || assumed.has(d)))
+	// A collider with anything in flight stays on the frontier for a later cycle.
+	ready = ready.filter(t => !busyFiles.some(b => filesCollide(t, { files: b.files })))
+	ready.sort((a, b) => downCost(b.id) - downCost(a.id))
+	const picked = []
+	let free = CAP - lanesBusy
+	for (const t of ready) {
+		if (free <= 0) break
+		if (picked.some(p => filesCollide(p, t))) continue
+		picked.push(t); free--
+	}
+	// Blockers land alone; leaves share a session. An empty footprint runs solo
+	// too — it cannot be proven disjoint from anything, so it shares with nothing.
+	const solo = picked.filter(t => (after.get(t.id) || []).length > 0 || !(t.files || []).length)
+	const leaves = picked.filter(t => solo.indexOf(t) === -1)
+	for (const t of solo) launch([t])
+	if (leaves.length) launch(leaves)
+}
+
+while (true) {
+	dispatch()
+	if (!inflight.length) break
+
+	const ev = await Promise.race(inflight.map(x => x.promise.then(r => ({ x, r }), e => ({ x, err: String(e && e.message || e) }))))
+	inflight.splice(inflight.indexOf(ev.x), 1)
+
+	if (ev.x.kind === 'run') {
+		// Free the lanes and the footprint NOW, before observing — an unrelated
+		// ready task can use the slot while the observation runs.
+		lanesBusy -= ev.x.lanes
+		const bi = busyFiles.indexOf(ev.x.fp); if (bi !== -1) busyFiles.splice(bi, 1)
+		if (ev.err) {
+			log(`session ${ev.x.seq}: mi-run failed — ${ev.err}`)
+			sessions.push({ session: ev.x.seq, dispatched: ev.x.tasks.map(t => t.id), error: ev.err })
+			for (const t of ev.x.tasks) stalled.push({ id: t.id, why: `mi-run failed: ${ev.err}` })
+			continue
+		}
+		inflight.push({ kind: 'observe', seq: ev.x.seq, tasks: ev.x.tasks, run: ev.r, promise: observeSession(ev.x) })
+		continue
+	}
+
+	// An observation landed — this is what advances the frontier.
+	const s = ev.x
+	if (ev.err) {
+		log(`session ${s.seq}: observation failed — ${ev.err}. Its tasks stay unrecorded, so their dependents stay blocked.`)
+		sessions.push({ session: s.seq, dispatched: s.tasks.map(t => t.id), error: `observation failed: ${ev.err}` })
+		for (const t of s.tasks) stalled.push({ id: t.id, why: `observation failed: ${ev.err}` })
+		continue
+	}
+	const obs = (ev.r && ev.r.observations) || []
 	const closedNow = obs.filter(o => o.state === 'done' && o.open === 0 && o.stub === 0 && !o.escalation)
 	const strays = obs.filter(o => o.claim)
 	const esc = obs.filter(o => o.escalation)
 
-	log(`wave ${w + 1}: ${closedNow.length}/${wave.length} closed · ${esc.length} escalated · ${strays.length} stray claim(s)${observed && observed.gateRun ? ` · gate: ${observed.gateRun}` : ''}`)
-	for (const s of strays) log(`  STRAY CLAIM on ${s.node} by ${s.claim} — that node is blocked for every session until it is cleared`)
+	for (const o of closedNow) { landedIds.add(o.id); doneIds.add(o.id); closedRun.push(o.id) }
+	for (const o of esc) escalatedIds2.push(o.id)
 
-	for (const o of closedNow) doneIds.add(o.id)
-	ran.push({
-		wave: w + 1, dispatched: wave.map(t => t.id),
+	log(`session ${s.seq}: ${closedNow.length}/${s.tasks.length} closed · ${esc.length} escalated${strays.length ? ` · ${strays.length} stray claim(s)` : ''}`)
+	for (const st of strays) log(`  STRAY CLAIM on ${st.node} by ${st.claim} — that node is blocked for every session until it is cleared`)
+	if (esc.length) log(`  escalations are the human's to clear — their dependents stay blocked; unrelated work continues`)
+
+	// A task that came back open with no escalation gets exactly one more
+	// dispatch, then stalls — bounded, so a task that cannot close cannot spin.
+	for (const t of s.tasks) {
+		const o = obs.find(x => x.id === t.id)
+		const isClosed = o && closedNow.indexOf(o) !== -1
+		const isEsc = o && o.escalation
+		if (isClosed || isEsc) continue
+		if ((attempts.get(t.id) || 0) < 2) {
+			dispatchedIds.delete(t.id)
+			log(`  ${t.id} still open — requeued for one more attempt`)
+		} else {
+			stalled.push({ id: t.id, why: `still open after ${attempts.get(t.id)} attempt(s)` })
+		}
+	}
+
+	sessions.push({
+		session: s.seq, dispatched: s.tasks.map(t => t.id),
 		closed: closedNow.map(o => o.id),
-		stillOpen: obs.filter(o => closedNow.indexOf(o) === -1).map(o => ({ id: o.id, state: o.state, open: o.open, stub: o.stub })),
-		escalated: esc.map(o => o.id), strayClaims: strays.map(o => ({ node: o.node, claim: o.claim })),
-		gateRun: (observed && observed.gateRun) || '', miRun: runResult && runResult.detail ? runResult.detail.map(d => ({ round: d.round, nodes: d.nodes, tookNothing: d.tookNothing, demoted: d.demoted })) : runResult,
+		stillOpen: obs.filter(o => closedNow.indexOf(o) === -1 && !o.escalation).map(o => ({ id: o.id, state: o.state, open: o.open, stub: o.stub })),
+		escalated: esc.map(o => o.id),
+		strayClaims: strays.map(o => ({ node: o.node, claim: o.claim })),
+		miRun: s.run && s.run.detail ? s.run.detail.map(d => ({ round: d.round, nodes: d.nodes, tookNothing: d.tookNothing, demoted: d.demoted })) : s.run,
 	})
+}
 
-	// A red gate stops the schedule. Advancing a wave over a failed gate is how
-	// a build reports success on top of a broken tree.
-	if (observed && /\bred\b|\bfail/i.test(observed.gateRun || '')) { log(`wave ${w + 1} gate is red — stopping rather than advancing`); break }
-	if (esc.length) { log(`wave ${w + 1} left ${esc.length} escalation(s) — stopping; an escalation is the human's to clear`); break }
-	if (!closedNow.length) { log(`wave ${w + 1} closed nothing — stopping rather than looping on a wave that does not move`); break }
+// ── Gate ─────────────────────────────────────────────────────────────────
+// One observed full-gate run for the whole schedule, after every session has
+// landed and been recorded. Red here is a finding on the merged tree.
+let gateRun = ''
+if (closedRun.length) {
+	phase('Gate')
+	gateRun = await agent(
+		`${GROUND}
+
+You are the GATE OBSERVER. Every session of this schedule has landed and the frontier is drained. Two jobs:
+
+**1.** Run \`${A.waveGate || FULL_GATE}\` once and record the exact invocation and verdict. Confirm the command exists first — the profile established it from ${profile.gateEvidence || 'this repo\'s own runner'}. If it is missing, say so; **never invent a recipe**, and never edit a shared build file to make a gate pass. If it fails, that is a finding, not something for you to fix.
+
+**2.** Append ONE line to \`${LEDGER}\` (append only, never rewrite):
+    {"entry":"gate","id":"","state":"<green|red>","wave":-1,"at":"<date -u +%FT%TZ>","note":"<the exact command and verdict>"}
+Take the timestamp from \`date -u +%FT%TZ\`. Then commit the ledger alone: \`git add ${LEDGER} && git commit -m "ledger: schedule gate" -- ${LEDGER}\`.
+
+Return one line: the command, the verdict, and the commit hash.`,
+		at('probe', { label: 'gate', phase: 'Gate' }),
+	)
+	log(`schedule gate: ${String(gateRun || '').split('\n')[0]}`)
 }
 
 return Object.assign({
-	ran,
-	closedThisRun: ran.flatMap(r => r.closed || []),
+	sessions,
+	closedThisRun: closedRun,
+	escalated: escalatedIds2,
+	stalled,
+	gateRun: gateRun || '(nothing closed — no gate run)',
 	remaining: tasks.filter(t => !doneIds.has(t.id)).map(t => t.id),
-	next: ran.length && ran[ran.length - 1].closed && ran[ran.length - 1].closed.length === (ran[ran.length - 1].dispatched || []).length
-		? 'run /mi-gantt again for the next wave'
-		: 'a wave did not fully close — read `ran` for what is still open, then /mi-drill the specs or /mi-repair the board',
+	next: /\bred\b|\bfail/i.test(String(gateRun || ''))
+		? 'the schedule gate is RED on the merged tree — read `gateRun` and the last sessions before dispatching anything else'
+		: escalatedIds2.length || stalled.length
+			? 'some tasks escalated or stalled — read `stalled` and `escalated`, then /mi-drill the specs or /mi-repair the board; the rest of the frontier was worked around them'
+			: closedRun.length === tasks.filter(t => eligible.has(t.id)).length || !tasks.some(t => !doneIds.has(t.id))
+				? 'the eligible frontier is drained — run /mi-gantt again if held tasks have since been settled'
+				: 'run /mi-gantt again for the next frontier',
 }, stopReport)

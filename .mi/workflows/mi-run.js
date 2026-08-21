@@ -1,14 +1,12 @@
 export const meta = {
 	name: 'mi-run',
-	description: 'One session on the board: take whatever is free within the global worker cap, reconcile each node you took against its spec and the code, then work them in parallel worktree lanes and land behind one gate run. Safe to launch as many times as you like, concurrently.',
-	whenToUse: 'The entry point for a working session. Start as many as you want: each grabs different free nodes, because the claim commit is the lock. Use mi-replan separately for a whole-board restructure, which is exclusive.',
+	description: 'One session on the board: claim whatever is free within the global worker cap IMMEDIATELY, then work each node in a parallel worktree lane — the lane reconciles its own node as it works — and land behind one gate run. Safe to launch as many times as you like, concurrently.',
+	whenToUse: 'The entry point for a working session. Start as many as you want: each grabs different free nodes, because the claim commit is the lock. Use mi-replan separately for a whole-board restructure, which is exclusive, and mi-repair only when work is actually blocked.',
 	phases: [
-		{ model: 'haiku', title: 'Profile', detail: 'discover the repo and census the board — cheap, and every later prompt reads it' },
-		{ model: 'sonnet', title: 'Capacity', detail: 'the footprint of what is free and of what other sessions hold' },
-		{ model: 'sonnet', title: 'Grab', detail: 'claim node by node — the commit is the lock, the push decides the race' },
-		{ model: 'sonnet', title: 'Reconcile', detail: 'each node you hold, against its spec and the code' },
-		{ model: 'sonnet', title: 'Amend', detail: 'write the corrections into the nodes you hold' },
-		{ model: 'opus', title: 'Work', detail: 'one agent per lane, each in its own git worktree' },
+		{ model: 'haiku', title: 'Scout', detail: 'profile the repo and census the board — two scans, run in parallel; each is skipped when the caller hands its answer in (mi-gantt passes both)' },
+		{ model: 'sonnet', title: 'Grab', detail: 'claim node by node, immediately — the commit is the lock, and nothing slower runs before it' },
+		{ model: 'sonnet', title: 'Survey', detail: 'footprint the same candidates while the grab commits, to lay the lanes out disjoint — skipped when tickets carry their footprints' },
+		{ model: 'opus', title: 'Work', detail: 'one agent per lane, each in its own git worktree — each reconciles its own node as it works it' },
 		{ model: 'opus', title: 'Refute', detail: 'an adversary tries to kill every [x] before it is written' },
 		{ model: 'opus', title: 'Land', detail: 'merge, one gate run, close or release honestly' },
 	],
@@ -21,21 +19,40 @@ export const meta = {
 // per-node claim commit.** `<board>/<path>/prd.md` gets `claim: <session>`,
 // committed alone, and with a remote the push decides the race.
 //
-// So everything a session does must be SCOPED TO WHAT IT HOLDS:
+// So the ordering rule is: **nothing slower than the claim runs before the
+// claim.** A claim commit is milliseconds; every sweep, survey and reconcile
+// is minutes; a session that sweeps first is reaching for a board that has
+// moved. Concretely:
 //
-//   - **Grabbing** is safe: one commit per node, losing a race is normal.
-//   - **Reconciling a node you hold** is safe, and not a special dispensation
-//     — worker.md move 2 says amending your own node is free. That is exactly
-//     why the reconcile here is per-node and not board-wide.
-//   - **Working** is safe: one git worktree per lane, footprint-disjoint.
+//   - **Scout** is two cheap scans (repo profile, board census) run in
+//     PARALLEL — and each is skipped when the caller already has its answer:
+//     `args.profile` replaces the profile scan, `args.tickets` replaces the
+//     census AND the survey. mi-gantt passes both, so a dispatched session
+//     spawns ZERO scan agents and goes straight to the grab — the plan record
+//     already holds every task's node, spec, verify and footprint, and
+//     re-deriving them per session would be the same work twice.
+//   - **Grab** fires the moment the ready set is known. It is never skipped,
+//     ticket or not: the claim is the LOCK, not a search — other sessions may
+//     be running outside any schedule — and its per-node re-read from disk is
+//     also the freshness check (a node that closed, escalated or got claimed
+//     since the caller looked is skipped there, at the last possible moment,
+//     instead of being pre-verified minutes earlier).
+//   - The footprint **Survey runs CONCURRENTLY with the grab**, not before
+//     it, and only when tickets did not already carry the footprints.
+//   - **Reconciling is not a phase.** A lane worker reads its node and its
+//     spec anyway; it reconciles as it works — an already-met box is claimed
+//     [x] with the check (and the adversary still tries to kill it), a stale
+//     address is corrected in the report, a contradiction with the spec is a
+//     wall. The old standalone Reconcile+Amend pass was two extra serial
+//     agents in front of every round for findings the worker re-derives in
+//     its first ten minutes.
+//   - **Checking is deferred to where it is needed.** Other sessions' held
+//     directories are not pre-surveyed; if a merge actually conflicts, the
+//     Lander refuses to paper over it, attributes it, and leaves that lane
+//     unmerged — repair when blocked, not insurance up front.
 //   - **A whole-board replan is NOT safe** at any number of sessions above
-//     one, because it rewrites the addresses every other session's claims are
-//     committed against. It lives in `mi-replan`. A session never replans.
-//
-// Grab BEFORE reconciling, which is the opposite of the single-session order.
-// With one session the sweep tells you what to take; with N sessions the race
-// window is what matters, and a claim commit is milliseconds while a sweep is
-// minutes. What a worker needs is its OWN node reconciled, not the board.
+//     one. It lives in `mi-replan`, called via `/mi-repair`. A session never
+//     replans.
 //
 // The global cap (`max-workers` on the root node) is shared across sessions,
 // so it is re-read before every claim and re-verified after. It is eventually
@@ -47,8 +64,18 @@ export const meta = {
 // See `_lib.md`.
 //
 // args (all optional):
-//   { repo, board, lanes, nodes, take, rounds, reconcile, dryRun,
+//   { repo, board, profile, tickets, lanes, nodes, take, rounds, dryRun,
 //     gate, fullGate, seeds, models, effort }
+//   `profile` — a pre-computed repo profile (the PROFILE_SCHEMA shape);
+//     handing one in skips the Profile scan.
+//   `tickets` — the work, already known: [{ path, title, memo, verify, dirs,
+//     exclusive, first, summary, priority }] (only `path` required; `spec`
+//     and `files` are accepted as aliases for `memo` and `dirs`). Handing
+//     them in skips the census and the survey — the grab still runs, because
+//     the claim is the lock, and its re-read from disk is the staleness check.
+//   mi-gantt passes profile AND tickets, one per task it dispatches — and it
+//   dispatches several of these sessions CONCURRENTLY off its ready frontier,
+//   which is exactly the concurrent-sessions case this script is built for.
 // ─────────────────────────────────────────────────────────────────────────
 
 const A = (typeof args === 'object' && args) || {}
@@ -62,6 +89,19 @@ const REFS = A.refs || '.mi/workflows/refs'
 const DRY = A.dryRun === true
 const ROUNDS = A.rounds || 1
 const SEEDS = A.seeds || []
+
+// Tickets: the caller already knows the work. Normalise once; missing fields
+// degrade to the same "unknown" the census path uses.
+const TICKETS = Array.isArray(A.tickets) && A.tickets.length
+	? A.tickets.filter(t => t && t.path).map(t => ({
+		path: t.path, title: t.title || t.path,
+		memo: t.memo || t.spec || '', verify: t.verify || '',
+		dirs: t.dirs || t.files || [], exclusive: t.exclusive === true,
+		first: t.first || t.notes || '', summary: t.summary || t.title || '',
+		priority: t.priority != null ? t.priority : -1,
+		open: t.open != null ? t.open : -1, stub: t.stub != null ? t.stub : 0,
+	}))
+	: null
 
 // ── model policy ─────────────────────────────────────────────────────────
 // Tiered by the KIND of thinking, not by how important the step feels.
@@ -80,10 +120,12 @@ const EFFORTS = Object.assign({ scan: 'low', probe: 'medium', judge: 'high', bui
 const at = (tier, o) => Object.assign({ model: MODELS[tier], effort: EFFORTS[tier] }, o || {})
 
 // ─────────────────────────────────────────────────────────────────────────
-// Profile — once, before the rounds. The gate commands are the field this
-// exists for: a lane told to run a recipe that does not exist in THIS repo
-// will invent one, and a lane that invents a build recipe collides with every
-// other lane in the tree.
+// Scout — the two scans, in parallel, each skippable. The gate commands are
+// the field the profile exists for: a lane told to run a recipe that does not
+// exist in THIS repo will invent one, and a lane that invents a build recipe
+// collides with every other lane in the tree. The census is pure board
+// arithmetic and needs none of the profile, which is why the two can overlap —
+// and tickets replace the census outright.
 // ─────────────────────────────────────────────────────────────────────────
 const PROFILE_SCHEMA = {
 	type: 'object', additionalProperties: false,
@@ -164,10 +206,36 @@ const FOOTPRINT_SCHEMA = {
 	},
 }
 
-phase('Profile')
+// The census is deliberately independent of the profile so the two scans can
+// run in parallel — it is board arithmetic, and the board's shape is fixed by
+// the protocol, not by the repo.
+const CENSUS_PROMPT = `Repository: ${REPO}. The board is \`${BOARD}\` — every \`<dir>/prd.md\` under it is a node. Other sessions may be committing to this tree right now; read what is on disk and report it VERBATIM.
 
-const profile = await agent(
-	`Repository: ${REPO}. READ ONLY — never edit, never commit, and do NOT run the test suite or a full build (slow, and other sessions are building this tree right now). Reading files, \`git\`, \`grep\`, \`find\`, \`ls\` and metadata-printing commands are fine.
+You are the CENSUS TAKER. Mechanical work: parse and count, judge nothing, claim nothing, edit nothing. READ ONLY.
+
+1. \`git rev-parse HEAD\` and \`git status --porcelain -- ${BOARD} | head -20\` into \`notes\`.
+2. \`find ${BOARD} -name prd.md | sort\`. Every one is a node; its \`path\` is its DIRECTORY relative to \`${BOARD}\`, and the root node's path is \`.\`.
+3. Parse each node's \`---\` frontmatter and report every field **verbatim**. An illegal \`state\` value is reported as written, not repaired. Missing \`priority\` is \`-1\`; every other missing field is \`""\`.
+4. \`maxWorkers\` — the \`max-workers\` field on the ROOT node. If there is no such field, report \`0\`; the default is applied by the caller, not by you.
+5. Count boxes across the WHOLE file under any heading: \`- [ ]\` → \`open\`, \`- [~]\` → \`stub\`, \`- [x]\` → \`closed\`. Counting only under \`## Requirements\` is exactly what lets an unmet acceptance clause hide.
+6. \`escalation\` is true iff the file contains an \`## Escalation\` heading.
+7. \`children\` — the node directories one level below that themselves contain a \`prd.md\`.
+8. For every node carrying a \`claim:\`, find its claim commit — \`git log -1 --format=%ct --grep="claim <path>"\` — and give the age in hours as \`claimAgeHours\`. Unclaimed, or no such commit: \`-1\`.
+9. \`summary\` — one line quoted from the node's own purpose paragraph. Do not invent one.
+
+Completeness is the whole job: a node you skip is a slot this session miscounts.`
+
+phase('Scout')
+
+// A caller that already profiled hands the profile in; a caller that already
+// planned hands the tickets in. mi-gantt does both, so a wave's Scout spawns
+// zero agents. Otherwise the two scans run at once — neither needs the other.
+const havePassedProfile = A.profile && A.profile.gate && A.profile.fullGate
+const [profileRaw, census1] = await parallel([
+	() => havePassedProfile
+		? Promise.resolve(A.profile)
+		: agent(
+			`Repository: ${REPO}. READ ONLY — never edit, never commit, and do NOT run the test suite or a full build (slow, and other sessions are building this tree right now). Reading files, \`git\`, \`grep\`, \`find\`, \`ls\` and metadata-printing commands are fine.
 
 Profile this repository for the workers that come after you. Every field is established by running something, not guessed from the language.
 
@@ -180,12 +248,22 @@ Profile this repository for the workers that come after you. Every field is esta
    List the runner's actual recipes first — \`just --list\`, \`make -qp | grep '^[a-z]'\`, the \`scripts\` block of \`package.json\`, the CI workflow files — and quote what you read into \`gateEvidence\`. **Never invent a recipe.** If this repo has no task runner, fall back to the ecosystem's plain command and say so in \`gateEvidence\`. A lane handed a command that does not exist will invent one and commit it, which collides with every other lane.
 5. **\`sharedFiles\`** — the files that belong to no lane: the workspace manifest, the lockfile, the task runner file, formatter and linter configs, CI definitions. Any lane editing one of these collides with all the others.
 6. **The conventions.** Is there a \`CLAUDE.md\` / \`AGENTS.md\`? Quote what it says about where tests go and what it forbids. Is there a design-record directory?`,
-	at('scan', { label: 'profile', phase: 'Profile', schema: PROFILE_SCHEMA }),
+			at('scan', { label: 'profile', phase: 'Scout', schema: PROFILE_SCHEMA }),
+		),
+	() => TICKETS
+		? Promise.resolve(null)
+		: agent(CENSUS_PROMPT, at('scan', { label: 'census-r1', phase: 'Scout', schema: CENSUS_SCHEMA })),
+])
+
+if (!profileRaw) return { error: 'profile failed — a lane without a real gate command invents one, so this run stops here' }
+
+// A passed-in profile may be missing optional fields; fill what GROUND reads.
+const profile = Object.assign(
+	{ upstream: '', packages: [], sourceRoots: [], sharedFiles: [], memoDir: '', contextFile: '', testLayout: 'no stated convention', notes: '', branch: '(unknown)', head: '(unknown)' },
+	profileRaw,
 )
 
-if (!profile) return { error: 'profile failed — a lane without a real gate command invents one, so this run stops here' }
-
-log(`${profile.ecosystem} · ${profile.packages.length} package(s) · lane gate: ${profile.gate} · full gate: ${profile.fullGate}${profile.upstream ? ` · upstream ${profile.upstream}` : ' · NO upstream (the claim race is local-only)'}`)
+log(`${profile.ecosystem} · ${profile.packages.length} package(s) · lane gate: ${profile.gate} · full gate: ${profile.fullGate}${profile.upstream ? ` · upstream ${profile.upstream}` : ' · NO upstream (the claim race is local-only)'}${havePassedProfile ? ' · profile handed in' : ''}${TICKETS ? ` · ${TICKETS.length} ticket(s) handed in — no census, no survey` : ''}`)
 
 const LANE_GATE = A.gate || profile.gate
 const FULL_GATE = A.fullGate || profile.fullGate
@@ -216,29 +294,6 @@ ${SEEDS.length ? `\nTHE CALLER'S NOTES for this run:\n${SEEDS.map(s => `- ${s}`)
 - Never edit a board node this session does not hold. A needed change to someone else's node is an escalation, not an edit (law 2).
 - \`max-workers\` on the root node is a **global** cap across all sessions, not this session's allowance.`
 
-const RECON_SCHEMA = {
-	type: 'object', additionalProperties: false,
-	required: ['node', 'wall', 'amendments', 'assessment'],
-	properties: {
-		node: { type: 'string' },
-		assessment: { type: 'string', description: 'two or three sentences: is this node an accurate description of the work that remains?' },
-		wall: { type: 'string', description: 'empty, or: the requirement contradicts its spec / the node\'s contract with the system must change. What you hit, what change is needed, why.' },
-		amendments: {
-			type: 'array',
-			items: {
-				type: 'object', additionalProperties: false,
-				required: ['box', 'kind', 'newText', 'evidence'],
-				properties: {
-					box: { type: 'string', description: 'the box line verbatim, enough to locate it uniquely' },
-					kind: { type: 'string', enum: ['already-met', 'sharpen', 'stale-address', 'note-only'], description: 'already-met = the code already does it, propose [x] with the check; sharpen = too soft to verify, propose tighter text; stale-address = names a path/symbol that moved; note-only = add evidence, leave the box' },
-					newText: { type: 'string', description: 'the replacement box line, or the note to add beneath it' },
-					evidence: { type: 'string', description: 'the symbol, path, test or command that establishes this, and for already-met what the check would have done had the requirement been unmet' },
-				},
-			},
-		},
-	},
-}
-
 const WORK_SCHEMA = {
 	type: 'object', additionalProperties: false,
 	required: ['node', 'branch', 'boxes', 'gateRun', 'wall', 'narrative'],
@@ -247,7 +302,7 @@ const WORK_SCHEMA = {
 		branch: { type: 'string', description: 'the branch your worktree left the work on, or "" if nothing landed' },
 		gateRun: { type: 'string', description: 'the exact gate invocation you ran and its verdict — name the command, not the recipe you wished existed' },
 		wall: { type: 'string', description: 'empty, or the escalation text. A wall is escalated, never redefined away.' },
-		narrative: { type: 'string' },
+		narrative: { type: 'string', description: 'what you did — and every board amendment you want applied to your node: a sharpened box text, a corrected stale address, a note worth recording. The Lander transcribes these; you cannot write the board yourself.' },
 		boxes: {
 			type: 'array',
 			items: {
@@ -256,7 +311,7 @@ const WORK_SCHEMA = {
 				properties: {
 					text: { type: 'string' },
 					intended: { type: 'string', enum: ['x', '~', ' '] },
-					evidence: { type: 'string', description: 'for [x] the exact command and result; for [~] the load-bearing stub and where it lives; for [ ] why it is still open' },
+					evidence: { type: 'string', description: 'for [x] the exact command and result; for [~] the load-bearing stub and where it lives; for [ ] why it is still open. A box the code ALREADY satisfied before you started is still claimed [x] here, with the check you ran to establish that.' },
 					wouldHaveDone: { type: 'string', description: 'what would your check have done if the requirement were UNMET? No answer, no [x].' },
 				},
 			},
@@ -287,286 +342,216 @@ const REFUTE_SCHEMA = {
 // `engine/graph_ops`, which a bare startsWith would join by accident.
 const norm = p => String(p).replace(/^\.?\/*/, '').replace(/\/+$/, '')
 const collides = (a, b) => { a = norm(a); b = norm(b); return a === b || a.startsWith(b + '/') || b.startsWith(a + '/') }
+const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const allRounds = []
 
+// With tickets, the pool drains across rounds: a worked ticket leaves it, a
+// ticket dropped for a footprint collision stays and gets a later round —
+// which is exactly what the caller's `rounds` exists for.
+let pool = TICKETS
+
 for (let round = 1; round <= ROUNDS; round++) {
-	// ── Capacity ───────────────────────────────────────────────────────────
-	// Two steps, and the split is the point. The census is arithmetic: parse
-	// frontmatter, count boxes. The ready set is a six-clause predicate, so it
+	// ── Ready set (deterministic, no agent) ────────────────────────────────
+	// The census is arithmetic; the ready set is a six-clause predicate, so it
 	// is computed HERE in JavaScript rather than asked of a model — it is the
-	// thing every session acts on and it must not be a coin-flip. Only the
-	// footprint, which needs real reading of the code, costs a probe.
-	phase('Capacity')
+	// thing every session acts on and it must not be a coin-flip. With
+	// tickets, the caller already computed it: the grab's per-node re-read
+	// from disk is the only freshness check left, and it is the right one.
+	let readyNodes, maxWorkers = null, liveClaims = [], remaining = null
 
-	const census = await agent(
-		`${GROUND}
+	if (pool) {
+		if (!pool.length) { log(`round ${round}: ticket pool drained`); break }
+		readyNodes = A.nodes ? pool.filter(n => A.nodes.indexOf(n.path) !== -1) : pool
+		if (!readyNodes.length) { log('no ticket matches the `nodes` filter'); break }
+		log(`round ${round}: ${readyNodes.length} ticket(s) in the pool — cap checked at claim time`)
+	} else {
+		const census = round === 1
+			? census1
+			: await agent(CENSUS_PROMPT, at('scan', { label: `census-r${round}`, phase: 'Scout', schema: CENSUS_SCHEMA }))
 
-You are the CENSUS TAKER. Mechanical work: parse and count, judge nothing, claim nothing, edit nothing.
+		if (!census || !census.nodes || !census.nodes.length) { log(`no board found at ${BOARD}`); break }
 
-1. \`git rev-parse HEAD\` and \`git status --porcelain -- ${BOARD} | head -20\` into \`notes\`.
-2. \`find ${BOARD} -name prd.md | sort\`. Every one is a node; its \`path\` is its DIRECTORY relative to \`${BOARD}\`, and the root node's path is \`.\`.
-3. Parse each node's \`---\` frontmatter and report every field **verbatim**. An illegal \`state\` value is reported as written, not repaired. Missing \`priority\` is \`-1\`; every other missing field is \`""\`.
-4. \`maxWorkers\` — the \`max-workers\` field on the ROOT node. If there is no such field, report \`0\`; the default is applied by the caller, not by you.
-5. Count boxes across the WHOLE file under any heading: \`- [ ]\` → \`open\`, \`- [~]\` → \`stub\`, \`- [x]\` → \`closed\`. Counting only under \`## Requirements\` is exactly what lets an unmet acceptance clause hide.
-6. \`escalation\` is true iff the file contains an \`## Escalation\` heading.
-7. \`children\` — the node directories one level below that themselves contain a \`prd.md\`.
-8. For every node carrying a \`claim:\`, find its claim commit — \`git log -1 --format=%ct --grep="claim <path>"\` — and give the age in hours as \`claimAgeHours\`. Unclaimed, or no such commit: \`-1\`.
-9. \`summary\` — one line quoted from the node's own purpose paragraph. Do not invent one.
+		// The ready predicate, from worker.md §2, in code.
+		const byPath = new Map(census.nodes.map(n => [n.path, n]))
+		const owes = n => n.open + n.stub + (n.escalation ? 1 : 0)
+		const resolvedN = n => n.state === 'out-of-scope' || (n.state === 'done' && owes(n) === 0)
+		const reopened = n => n.state === 'done' && n.open + n.stub > 0 && !n.escalation
+		const covered = n => resolvedN(n) && (n.children || []).every(c => { const k = byPath.get(c); return !k || covered(k) })
 
-Completeness is the whole job: a node you skip is a slot this session miscounts.`,
-		at('scan', { label: `census-r${round}`, phase: 'Capacity', schema: CENSUS_SCHEMA }),
-	)
+		liveClaims = census.nodes.filter(n => n.claim)
+		maxWorkers = census.maxWorkers > 0 ? census.maxWorkers : DEFAULT_MAX_WORKERS
+		remaining = Math.max(0, maxWorkers - liveClaims.length)
 
-	if (!census || !census.nodes || !census.nodes.length) { log(`no board found at ${BOARD}`); break }
+		// Stale claims are SURFACED, never taken — law 1's rung. Clearing one is
+		// the user's call, not a workflow's.
+		const stale = liveClaims.filter(n => n.claimAgeHours > 12)
 
-	// The ready predicate, from worker.md §2, in code.
-	const byPath = new Map(census.nodes.map(n => [n.path, n]))
-	const owes = n => n.open + n.stub + (n.escalation ? 1 : 0)
-	const resolvedN = n => n.state === 'out-of-scope' || (n.state === 'done' && owes(n) === 0)
-	const reopened = n => n.state === 'done' && n.open + n.stub > 0 && !n.escalation
-	const covered = n => resolvedN(n) && (n.children || []).every(c => { const k = byPath.get(c); return !k || covered(k) })
+		readyNodes = census.nodes.filter(n =>
+			(n.state === 'open' || reopened(n)) && !n.claim && n.mode !== 'hitl' && !n.escalation &&
+			(n.children || []).every(c => { const k = byPath.get(c); return !k || covered(k) }))
 
-	const liveClaims = census.nodes.filter(n => n.claim)
-	const maxWorkers = census.maxWorkers > 0 ? census.maxWorkers : DEFAULT_MAX_WORKERS
-	const remaining = Math.max(0, maxWorkers - liveClaims.length)
+		if (A.nodes) readyNodes = readyNodes.filter(n => A.nodes.indexOf(n.path) !== -1)
 
-	// Stale claims are SURFACED, never taken — law 1's rung. Clearing one is
-	// the user's call, not a workflow's.
-	const stale = liveClaims.filter(n => n.claimAgeHours > 12)
+		readyNodes.sort((a, b) => (b.priority - a.priority) || (b.path.split('/').length - a.path.split('/').length) || a.path.localeCompare(b.path))
 
-	let readyNodes = census.nodes.filter(n =>
-		(n.state === 'open' || reopened(n)) && !n.claim && n.mode !== 'hitl' && !n.escalation &&
-		(n.children || []).every(c => { const k = byPath.get(c); return !k || covered(k) }))
+		log(`round ${round}: max-workers ${maxWorkers}, ${liveClaims.length} live claim(s), ${remaining} slot(s) free, ${readyNodes.length} ready`)
+		for (const c of liveClaims) log(`  held: ${c.path} by ${c.claim}${c.claimAgeHours >= 0 ? ` (${Math.round(c.claimAgeHours)}h)` : ''}`)
+		for (const s of stale) log(`  STALE, surfaced not taken: ${s.path} by ${s.claim} — claimed ${Math.round(s.claimAgeHours)}h ago`)
 
-	if (A.nodes) readyNodes = readyNodes.filter(n => A.nodes.indexOf(n.path) !== -1)
-
-	readyNodes.sort((a, b) => (b.priority - a.priority) || (b.path.split('/').length - a.path.split('/').length) || a.path.localeCompare(b.path))
-
-	log(`round ${round}: max-workers ${maxWorkers}, ${liveClaims.length} live claim(s), ${remaining} slot(s) free, ${readyNodes.length} ready`)
-	for (const c of liveClaims) log(`  held: ${c.path} by ${c.claim}${c.claimAgeHours >= 0 ? ` (${Math.round(c.claimAgeHours)}h)` : ''}`)
-	for (const s of stale) log(`  STALE, surfaced not taken: ${s.path} by ${s.claim} — claimed ${Math.round(s.claimAgeHours)}h ago`)
-
-	if (remaining <= 0) {
-		log(`no free slot — ${liveClaims.length} of ${maxWorkers} taken. Nothing to do.`)
-		allRounds.push({ round, tookNothing: 'cap full', maxWorkers, liveClaims: liveClaims.map(c => c.path) })
-		break
-	}
-	if (!readyNodes.length) {
-		log('nothing ready — every open node is claimed, hitl, escalated, or waiting on children')
-		allRounds.push({ round, tookNothing: 'nothing ready', maxWorkers, liveClaims: liveClaims.map(c => c.path) })
-		break
+		if (remaining <= 0) {
+			log(`no free slot — ${liveClaims.length} of ${maxWorkers} taken. Nothing to do.`)
+			allRounds.push({ round, tookNothing: 'cap full', maxWorkers, liveClaims: liveClaims.map(c => c.path) })
+			break
+		}
+		if (!readyNodes.length) {
+			log('nothing ready — every open node is claimed, hitl, escalated, or waiting on children')
+			allRounds.push({ round, tookNothing: 'nothing ready', maxWorkers, liveClaims: liveClaims.map(c => c.path) })
+			break
+		}
 	}
 
-	// Footprints, for the ready nodes AND for what other sessions hold. The
-	// held nodes matter as much as the free ones: another session is writing
-	// those directories right now, and a lane that overlaps them collides at
-	// merge — or worse, agrees textually and disagrees semantically.
-	const needFootprint = readyNodes.concat(liveClaims)
-	const fp = await agent(
-		`${GROUND}
-
-You are the SURVEYOR. READ ONLY — claim nothing, edit nothing, run no tests.
-
-For each node below, work out the **footprint** of its REMAINING work: which source directories a worker would have to write. Read the node's open \`- [ ]\` and \`- [~]\` boxes, read its spec, and grep for every symbol, path, file and command they name. Ground each directory in something you found — put the greps in \`evidence\`.
-
-This decides which nodes can be worked concurrently, so err toward including a directory you are unsure about: a missed directory is a merge conflict, a spurious one only costs parallelism.
-
-Mark \`exclusive: true\` where the work is tree-wide and cannot share a tree with anything — a rename sweep, a gate that reads every file, a change to the workspace member list, or any edit to a shared file (${SHARED}).
-
-THE NODES:
-${needFootprint.map(n => `- \`${n.path}\` — ${n.title} · ${n.open} open, ${n.stub} stubbed${n.memo ? ` · spec: ${n.memo}` : ''}${n.claim ? ` · HELD by ${n.claim}, another session is writing this now` : ''}\n  ${n.summary}`).join('\n')}`,
-		at('probe', { label: `footprint-r${round}`, phase: 'Capacity', schema: FOOTPRINT_SCHEMA }),
-	)
-
-	const fpBy = new Map(((fp && fp.footprints) || []).map(f => [f.path, f]))
-	const dirsOf = n => (fpBy.get(n.path) || {}).dirs || []
-	const isExclusive = n => ((fpBy.get(n.path) || {}).exclusive === true)
-
-	// ── Partition (deterministic, no agent) ────────────────────────────────
-	// Spread, do not pack: a fresh lane cannot collide with anything, so while
-	// under the cap the answer is always "open one". Bounded by BOTH this
-	// session's own limit and the global remaining slots.
-	const limit = Math.max(1, Math.min(A.take || 99, A.lanes || 99, remaining))
-	const exclusive = readyNodes.filter(isExclusive)
-	const shareable = readyNodes.filter(n => !isExclusive(n))
-
-	const occupied = liveClaims.flatMap(c => dirsOf(c).map(norm))
-	const heldBy = new Map()
-	for (const c of liveClaims) for (const d of dirsOf(c)) heldBy.set(norm(d), c.claim)
-
-	const lanes = []
-	const blocked = []
-	for (const n of shareable) {
-		if (lanes.length >= limit) break
-		const set = new Set(dirsOf(n).map(norm))
-		const clash = [...set].find(s => occupied.some(o => collides(o, s)))
-		if (clash) { blocked.push({ node: n.path, dir: clash, session: heldBy.get(norm(clash)) || 'another session' }); continue }
-		if ([...set].some(s => lanes.some(l => [...l.dirs].some(d => collides(d, s))))) continue
-		lanes.push({ node: n, dirs: set, first: (fpBy.get(n.path) || {}).first || n.summary })
-	}
-	const skipped = shareable.filter(n => !lanes.some(l => l.node === n) && !blocked.some(b => b.node === n.path))
-
-	for (const b of blocked) log(`  NOT taken — ${b.dir} is being written by ${b.session} (${b.node})`)
-	log(`taking ${lanes.length} lane(s) (limit ${limit}): ${lanes.map(l => l.node.path).join(', ') || 'none'}`)
-	if (exclusive.length) log(`  NOT taken — tree-wide, needs a session of its own: ${exclusive.map(n => n.path).join(', ')}`)
-	if (skipped.length) log(`  NOT taken — collides with a lane this session took, or over the cap: ${skipped.map(n => n.path).join(', ')}`)
+	const limit = Math.max(1, Math.min(A.take || 99, A.lanes || 99, remaining == null ? 99 : remaining))
+	// Two spares beyond the limit: a race lost on a top candidate falls through
+	// to the next instead of ending the round short.
+	const candidates = readyNodes.slice(0, limit + 2)
 
 	if (DRY) {
-		allRounds.push({ round, dryRun: true, maxWorkers, remaining, would: lanes.map(l => ({ node: l.node.path, dirs: [...l.dirs] })), exclusive: exclusive.map(n => n.path), blocked, skipped: skipped.map(n => n.path), stale: stale.map(s => s.path) })
-		break
-	}
-	if (!lanes.length) {
-		// Free slots and nothing takeable is a real, reportable state — the
-		// board is not full, it is entangled. "Nothing ready" here would be a
-		// lie a reader would act on.
-		const why = blocked.length
-			? `${remaining} slot(s) free, but every ready node overlaps a directory another session is writing: ${blocked.map(b => `${b.node} (${b.dir})`).join(', ')}`
-			: 'every ready node is exclusive or collides'
-		log(why)
-		allRounds.push({ round, tookNothing: why, blocked })
+		allRounds.push({ round, dryRun: true, maxWorkers, remaining, wouldClaim: readyNodes.slice(0, limit).map(n => n.path), spares: candidates.slice(limit).map(n => n.path) })
 		break
 	}
 
-	// ── Grab ───────────────────────────────────────────────────────────────
+	// ── Grab ∥ Survey ──────────────────────────────────────────────────────
+	// The claim commit is milliseconds and the footprint survey is minutes, so
+	// the survey runs BESIDE the grab, not in front of it — and not at all
+	// when the tickets already carry their footprints. Nothing the survey
+	// finds changes what to claim — priority already decided that — it decides
+	// how the claimed nodes are laid out into disjoint worktree lanes.
 	phase('Grab')
 
-	const grabbed = await agent(
-		`${GROUND}
+	const capIntro = pool
+		? `The global cap is \`max-workers\` on the ROOT node (\`${BOARD}/prd.md\`); if the field is absent it is ${DEFAULT_MAX_WORKERS}. BEFORE your first claim, read it and count live \`claim:\` fields across \`${BOARD}/**/prd.md\` — the free slots are the cap minus that count, and **other sessions may be racing you for them.** Never hold more than the smaller of ${limit} and the free slots.`
+		: `The global cap is \`max-workers: ${maxWorkers}\` and the census saw ${liveClaims.length} live claim(s), so ${remaining} slot(s) were free. **Other sessions are racing you for them.**`
+
+	const [grabbed, fp] = await parallel([
+		() => agent(
+			`${GROUND}
 
 You are the CLAIMER for this session, and the ONLY agent in this run permitted to write \`${BOARD}\`. Work in the MAIN checkout at ${REPO}.
 
 Take a session id once: \`cc-$(date +%s)\`. Use it for every claim.
 
-The global cap is \`max-workers: ${maxWorkers}\` and the census saw ${liveClaims.length} live claim(s), so ${remaining} slot(s) were free. **Other sessions are racing you for them.** Follow worker.md §3 exactly, once per node below, IN ORDER, one commit per node:
+${capIntro} Claim the nodes below IN ORDER, one commit per node, per worker.md §3, and **stop once you hold ${limit}** — the extras at the bottom of the list are spares for races you lose, not additional slots:
 
-1. **Re-read the node's \`prd.md\` from disk first.** If it is no longer \`open\`/unclaimed, SKIP it and say so — losing a race is normal and is not an error.
-2. **Re-check the cap before each claim**: count \`claim:\` fields across \`${BOARD}/**/prd.md\`. If that count has already reached ${maxWorkers}, stop claiming and report how many you took.
+1. **Re-read the node's \`prd.md\` from disk first.** This is the freshness check — the caller's picture may be minutes old. If the node is no longer \`open\`/unclaimed, or it carries \`mode: hitl\` or an \`## Escalation\` heading, SKIP it and say why — losing a race is normal and is not an error.
+2. **Re-check the cap before each claim**: count \`claim:\` fields across \`${BOARD}/**/prd.md\`. If that count has already reached the cap, stop claiming and report how many you took.
 3. Rewrite only that node's frontmatter: \`state: claimed\`, add \`claim: <session>\`. Keep the fences and field order byte-for-byte otherwise.
 4. \`git add\` and commit that ONE file: \`git commit -m "claim <path>: <session>" -- ${BOARD}/<path>/prd.md\`
 5. ${profile.upstream ? `\`git push\` — this branch tracks \`${profile.upstream}\`, so **the push decides the race**. Rejected → \`git pull --rebase\`, push again. A conflict on your node file means someone claimed first: \`git rebase --abort\`, \`git reset --hard @{upstream}\`, skip that node.` : 'This branch has NO upstream, so the commit is the whole lock and there is no push to arbitrate. Do not add a remote.'}
 6. If a commit refuses, restore the file byte-for-byte and report it. Never leave a half-written frontmatter behind.
 
-**Then verify the cap held, and fix it if it did not.** Re-count live claims. The cap is eventually consistent, not instantaneous — two sessions can each see one free slot and each claim a different node. If the total now EXCEEDS ${maxWorkers}, release **your own** most recently claimed nodes (drop the \`claim:\` line, \`state: open\`, commit as \`release <path>: <session> — over the global cap\`) until the total is within it. Release yours, never anyone else's, and say what you released.
+**Then verify the cap held, and fix it if it did not.** Re-count live claims. The cap is eventually consistent, not instantaneous — two sessions can each see one free slot and each claim a different node. If the total now EXCEEDS the cap, release **your own** most recently claimed nodes (drop the \`claim:\` line, \`state: open\`, commit as \`release <path>: <session> — over the global cap\`) until the total is within it. Release yours, never anyone else's, and say what you released.
 
-Nodes to claim, in order:
-${lanes.map((l, i) => `  lane ${i + 1}: ${l.node.path}`).join('\n')}
+Candidates, in priority order (stop once you hold ${limit}):
+${candidates.map((n, i) => `  ${i + 1}. ${n.path}${i >= limit ? '  (spare)' : ''}`).join('\n')}
 
-Return plain text: the session id on the first line, then one line per node — \`<path> :: CLAIMED\` or \`<path> :: SKIPPED, <reason>\` or \`<path> :: RELEASED, over cap\` — then \`git log --oneline -${lanes.length + 2}\`.`,
-		at('probe', { label: `grab-r${round}`, phase: 'Grab' }),
-	)
+Return plain text: the session id on the first line, then one line per node — \`<path> :: CLAIMED\` or \`<path> :: SKIPPED, <reason>\` or \`<path> :: RELEASED, over cap\` — then \`git log --oneline -${candidates.length + 2}\`.`,
+			at('probe', { label: `grab-r${round}`, phase: 'Grab' }),
+		),
+		() => pool
+			// Tickets carry their footprints — synthesise the survey result
+			// instead of paying an agent to re-derive what the plan recorded.
+			? Promise.resolve({ footprints: candidates.map(n => ({ path: n.path, dirs: n.dirs || [], exclusive: n.exclusive === true, first: n.first || n.summary, evidence: 'from the caller\'s ticket' })) })
+			: agent(
+				`${GROUND}
+
+You are the SURVEYOR. READ ONLY — claim nothing, edit nothing, run no tests. A claimer is committing claims on these same nodes RIGHT NOW in the main checkout; that is expected, and none of it changes what you read.
+
+For each node below, work out the **footprint** of its REMAINING work: which source directories a worker would have to write. Read the node's open \`- [ ]\` and \`- [~]\` boxes, read its spec, and grep for every symbol, path, file and command they name. Ground each directory in something you found — put the greps in \`evidence\`.
+
+This decides which of these nodes can be worked concurrently in one session, so err toward including a directory you are unsure about: a missed directory is a merge conflict, a spurious one only costs parallelism.
+
+Mark \`exclusive: true\` where the work is tree-wide and cannot share a tree with anything — a rename sweep, a gate that reads every file, a change to the workspace member list, or any edit to a shared file (${SHARED}).
+
+THE NODES:
+${candidates.map(n => `- \`${n.path}\` — ${n.title} · ${n.open} open, ${n.stub} stubbed${n.memo ? ` · spec: ${n.memo}` : ''}\n  ${n.summary}`).join('\n')}`,
+				at('probe', { label: `survey-r${round}`, phase: 'Survey', schema: FOOTPRINT_SCHEMA }),
+			),
+	])
 
 	const grabText = String(grabbed || '')
-	const held = lanes.filter(l => new RegExp(`${l.node.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*::\\s*CLAIMED`).test(grabText))
+	const held = candidates.filter(n => new RegExp(`${esc(n.path)}\\s*::\\s*CLAIMED`).test(grabText))
 
-	log(`claimed ${held.length} of ${lanes.length} attempted`)
+	log(`claimed ${held.length} of up to ${limit} (from ${candidates.length} candidate(s))`)
 	if (!held.length) {
 		log('lost every race — another session took them first. Nothing to work.')
 		allRounds.push({ round, tookNothing: 'lost every race', grab: grabText })
+		// A ticket the grab explicitly skipped (claimed elsewhere, closed,
+		// escalated) will not come back next round; drop it from the pool.
+		if (pool) pool = pool.filter(t => !new RegExp(`${esc(t.path)}\\s*::\\s*SKIPPED`).test(grabText))
 		continue
 	}
 
-	// ── Reconcile, scoped to what this session holds ───────────────────────
-	// Board-wide reconciliation is not safe with other sessions running. A node
-	// THIS session holds is safe, because the claim is the lock and worker.md
-	// move 2 makes amending your own node free. Read-only in parallel; one
-	// serial writer applies the result.
-	let recons = []
-	if (A.reconcile !== false) {
-		phase('Reconcile')
-		recons = (await parallel(held.map(l => () => agent(
-			`${GROUND}
+	// ── Partition (deterministic, no agent) ────────────────────────────────
+	// Lay the held nodes out into footprint-disjoint lanes, in priority order.
+	// A held node that cannot share the round — it collides with a
+	// higher-priority lane, or it is tree-wide while others run — is handed to
+	// the Lander to RELEASE, not worked into a guaranteed conflict. That is
+	// the only repair this needs, and it happens only when actually blocked.
+	const fpBy = new Map(((fp && fp.footprints) || []).map(f => [f.path, f]))
+	if (!fp) log('  survey returned nothing — lanes run with unknown footprints; the Lander arbitrates any conflict at merge')
 
-You are the RECONCILER for **one node this session now holds**: \`${l.node.path}\`.
-
-READ ONLY. Do not edit the board — a single serial writer applies your findings. Do not run the full gate (\`${FULL_GATE}\`) or the test suite; scoped greps, metadata commands, \`git log\` and reading files are all fine.
-
-Your question: **is this node an accurate description of the work that actually remains?** A worker is about to implement it, and a requirement that is already met, too soft to verify, or pointing at an address that moved costs them the whole node.
-
-  node:   \`${BOARD}/${l.node.path}/prd.md\`
-  spec:   ${l.node.memo || '(none — the node\'s own Requirements / Acceptance / Out of scope is the spec)'}
-  verify: ${l.node.verify || '(none)'}
-  ${l.node.open} open, ${l.node.stub} stubbed · footprint: ${[...l.dirs].join(', ') || '(unknown)'}
-
-Read the node in full, then its spec in full. For every open \`- [ ]\` and stubbed \`- [~]\` box:
-
-1. **Is it already met?** Grep for every symbol, path, test and command it names. If the code already does what the box asks, that is an \`already-met\` amendment — and give the check you ran plus **what that check would have done had the requirement been unmet**. Without that second half it is not evidence, it is a coincidence.
-2. **Does it name an address that moved?** Check every path and symbol against the tree TODAY (\`git log --diff-filter=R\`, the metadata command, \`find\`). A box naming an address that no longer resolves is pre-move — give the current address.
-3. **Is it too soft to verify?** Then \`sharpen\` it. Vagueness left in the line ends up in the code, and sharpening a requirement on a node you hold is worker.md move 2 — free.
-4. **Does it contradict its spec?** That is a **wall**, not an amendment: put it in \`wall\` and propose no text. The spec governs, and work against a node that contradicts it is escalated, never forked.
-
-Be conservative. An amendment that turns out to be wrong is worse than a box left as written, because the next reader trusts it. If you are unsure, use \`note-only\` and record what you found.`,
-			at('probe', { label: `recon:${l.node.path.split('/').pop()}`, phase: 'Reconcile', schema: RECON_SCHEMA }),
-		)))).filter(Boolean)
-
-		const nAmend = recons.reduce((n, r) => n + (r.amendments || []).length, 0)
-		const walls = recons.filter(r => r.wall && r.wall.trim())
-		log(`reconcile: ${nAmend} amendment(s) across ${recons.length} node(s), ${walls.length} wall(s)`)
-
-		if (nAmend > 0 || walls.length > 0) {
-			phase('Amend')
-			await agent(
-				`${GROUND}
-
-You are the AMENDER for this session. You hold these nodes, so you may write them — and **only** these:
-${held.map(l => `  ${BOARD}/${l.node.path}/prd.md`).join('\n')}
-
-Session id: read it off the first line of this grab record.
-${grabText.split('\n').slice(0, 3).join('\n')}
-
-Reconcilers examined each node against its spec and the code. Apply their findings, per worker.md move 2 (amend only your own node — sharpening, recording a decision, noting evidence is free) and move 3 (a wall is escalated, never redefined away).
-
-For each amendment:
-- \`already-met\` — mark the box \`[x]\` ONLY if the evidence includes both the check run and what it would have done had the requirement been unmet. Write that evidence into the node beneath the box. If either half is missing, add it as a note and leave the box open.
-- \`sharpen\` — replace the box text with the tighter version. Keep the requirement number.
-- \`stale-address\` — correct the address in place and note the old one, so a reader of an older commit can still follow it.
-- \`note-only\` — add the note beneath the box, change no state.
-
-For each wall: write an \`## Escalation\` section into that node (what was hit, what change is needed, why), then **release that node** — drop the \`claim:\` line, set \`state: open\`, commit as \`release <path>: <session> — escalated\`. An escalated node leaves the work surface, so it must not go on to a lane.
-
-**Never reuse a requirement number, and never delete a closed \`[x]\` box or an \`## Out of scope\` line.** Those are the record; corrections are appended and shadow.
-
-Commit per node: \`git commit -m "amend <path>: <session> — <what changed>" -- ${BOARD}/<path>/prd.md\`
-
-THE FINDINGS:
-${JSON.stringify(recons, null, 1)}
-
-Return: one line per node — what you amended, what you escalated and released, and the commit hash. Name any finding you did NOT apply and why.`,
-				at('probe', { label: `amend-r${round}`, phase: 'Amend' }),
-			)
-		}
+	const lanes = []
+	const releaseUnworked = []
+	let exclusiveTaken = false
+	for (const n of held) {
+		const f = fpBy.get(n.path)
+		const dirs = new Set(((f && f.dirs) || []).map(norm))
+		const excl = !!(f && f.exclusive === true)
+		if (lanes.length >= limit) { releaseUnworked.push({ node: n, why: `over this session's lane limit (${limit})` }); continue }
+		if (exclusiveTaken) { releaseUnworked.push({ node: n, why: 'an exclusive (tree-wide) lane holds the whole tree this round' }); continue }
+		if (excl && lanes.length) { releaseUnworked.push({ node: n, why: 'tree-wide (exclusive) work — needs a session of its own' }); continue }
+		const clashLane = lanes.find(l => [...dirs].some(d => [...l.dirs].some(o => collides(o, d))))
+		if (clashLane) { releaseUnworked.push({ node: n, why: `footprint collides with \`${clashLane.node.path}\`` }); continue }
+		if (excl) exclusiveTaken = true
+		lanes.push({ node: n, dirs, first: (f && f.first) || n.summary, surveyed: !!f })
 	}
 
-	const escalated = new Set(recons.filter(r => r.wall && r.wall.trim()).map(r => r.node))
-	const working = held.filter(l => !escalated.has(l.node.path))
-	if (escalated.size) log(`${escalated.size} node(s) escalated and released — not worked`)
-	if (!working.length) { allRounds.push({ round, tookNothing: 'every node escalated', grab: grabText, recons }); continue }
+	log(`working ${lanes.length} lane(s): ${lanes.map(l => l.node.path).join(', ')}`)
+	for (const r of releaseUnworked) log(`  claimed but NOT worked this round — ${r.node.path}: ${r.why} (released by the Lander)`)
 
 	// ── Work, then Refute ──────────────────────────────────────────────────
+	// The lane worker reconciles its own node AS IT WORKS — there is no
+	// standalone reconcile pass. Its already-met claims meet the same
+	// adversary as its fresh work, so nothing vouches for itself.
 	phase('Work')
 
 	const worked = await pipeline(
-		working.map((l, i) => ({ lane: i + 1, node: l.node, dirs: [...l.dirs], first: l.first })),
+		lanes.map((l, i) => ({ lane: i + 1, node: l.node, dirs: [...l.dirs], first: l.first, surveyed: l.surveyed })),
 
 		lane => agent(
 			`${GROUND}
 
-You are LANE ${lane.lane} of this session, running in **your own git worktree** — a private checkout. Other lanes of this session, and other sessions entirely, are working other nodes in their own worktrees at the same time. Your lane owns these directories: ${lane.dirs.join(', ') || '(none identified — be conservative and say what you touched)'}. Touch nothing outside them without saying so loudly in \`narrative\`.
+You are LANE ${lane.lane} of this session, running in **your own git worktree** — a private checkout. Other lanes of this session, and other sessions entirely, are working other nodes in their own worktrees at the same time. ${lane.dirs.length ? `Your lane owns these directories: ${lane.dirs.join(', ')}. Touch nothing outside them without saying so loudly in \`narrative\`.` : 'Your lane\'s footprint was not pre-surveyed: stay narrowly inside what your node actually requires, and name every directory you touched in `narrative`.'}
 
-YOUR NODE — claimed by this session, and reconciled against its spec before you started:
+YOUR NODE — claimed by this session moments ago, exactly as it sits on the board:
   ${lane.node.path}
   title:  ${lane.node.title}
   spec:   ${lane.node.memo || '(none — the node\'s own Requirements / Acceptance / Out of scope is the spec)'}
   verify: ${lane.node.verify || '(none)'}
-  ${lane.node.open} open, ${lane.node.stub} stubbed
+  ${lane.node.open >= 0 ? `${lane.node.open} open, ${lane.node.stub} stubbed` : 'box counts unknown — the node file is the truth'}
   ${lane.first}
 
-Read \`${BOARD}/${lane.node.path}/prd.md\` in full — it may have been amended since the census — then its spec in full.
+**RECONCILE AS YOU WORK.** Nobody pre-checked this node against the code — that is your first move, folded into the work itself. Read \`${BOARD}/${lane.node.path}/prd.md\` in full, then its spec in full, then for each open box:
+- **Already met by the code as it stands?** Do not redo it. Claim it \`intended: "x"\` with the check you RAN to establish that (the adversary will try to kill it like any other box).
+- **Names an address that moved?** Work against where it lives TODAY, and put the correction in \`narrative\` so the Lander records it on the node.
+- **Too soft to verify?** State the tighter reading you worked to in \`narrative\`, and meet that.
+- **Contradicts its spec?** That is a wall — stop, fill \`wall\`, and do not work around it. The spec governs; work against a node that contradicts it is escalated, never forked.
 
 THE FOUR MOVES (worker.md §4):
 
 1. **WORK the node.** Implement its open boxes. Requirements say WHAT; the how is yours — except that observable interfaces the node names (paths, flags, formats) ARE requirements.
-2. **AMEND** — you cannot write \`${BOARD}\`; put every amendment you want into \`boxes\` and \`narrative\`. The session's serial writer applies it.
+2. **AMEND** — you cannot write \`${BOARD}\`; put every amendment you want into \`boxes\` and \`narrative\`. The Lander applies it.
 3. **ESCALATE a wall.** A requirement is wrong, or the node's contract with the system must change → stop, put the escalation text in \`wall\`, do not redefine it away, do not narrow the node's scope. Narrowing is not yours.
 4. **SPLIT.** A coherent sub-area with its own contract → describe the child in \`narrative\`. Do not work it.
 
@@ -590,6 +575,8 @@ TESTS: ${profile.testLayout}. Hold that convention whether or not a gate enforce
 You are the ADVERSARY for node \`${work.node}\`. A worker just did the work and intends to mark the boxes below \`[x]\`. **Refute each one.** Law 2: nothing vouches for itself, and the author does not get to say it is done.
 
 The work is on branch \`${work.branch || '(uncommitted)'}\`. Read it with \`git show\`, \`git diff ${profile.branch}...${work.branch || 'HEAD'}\`, and by reading the files. You may run SCOPED tests; do NOT run the full gate (\`${FULL_GATE}\`). ${GATE_RULE}
+
+Some boxes may be claimed \`x\` as **already met before this worker started** — those get no free pass: the check still has to be real and its counterfactual still has to bite.
 
 A box survives only if you fail to kill it:
 - Does the code do what the box says, or something adjacent? Read the diff; do not trust the evidence line.
@@ -615,10 +602,14 @@ One verdict per box, same \`text\`. \`shouldBe\` is what the box should actually
 			const final = b.intended === 'x' && v && !v.survives ? v.shouldBe : b.intended
 			return { text: b.text, final, demoted: final !== b.intended, evidence: b.evidence, refutation: v ? v.why : (b.intended === 'x' ? 'NO VERDICT RETURNED — treat as unproven' : '') }
 		}),
-	}))
+	})).concat(releaseUnworked.map(r => ({
+		node: r.node.path, branch: '', wall: '', gateRun: '(not worked)',
+		narrative: `NOT WORKED this round: ${r.why}. Nothing to merge — release the claim so another session (or a later round) can take it.`,
+		boxes: [],
+	})))
 
 	const demoted = settled.flatMap(s => s.boxes.filter(b => b.demoted))
-	log(`${settled.length} lane(s) worked · ${demoted.length} box(es) demoted by the adversary`)
+	log(`${worked.filter(Boolean).length} lane(s) worked · ${demoted.length} box(es) demoted by the adversary`)
 
 	// ── Land ───────────────────────────────────────────────────────────────
 	phase('Land')
@@ -631,7 +622,7 @@ You are the LANDER for this session, in the MAIN checkout at ${REPO}. This sessi
 Session id: read it off this grab record.
 ${grabText.split('\n').slice(0, 3).join('\n')}
 
-**1. Merge.** For each branch, \`git merge --no-ff <branch>\`. The directory sets were computed disjoint, so a conflict means the partition was wrong — do not paper over it: \`git merge --abort\`, leave that lane unmerged, and report exactly which files collided. A generated lockfile is the one legitimate shared file; resolve it by REGENERATING it with this repo's own command, never by hand-picking hunks.
+**1. Merge.** For each lane with a non-empty \`branch\`, \`git merge --no-ff <branch>\`. The lanes were laid out footprint-disjoint, so a conflict means the layout was wrong — do not paper over it: \`git merge --abort\`, leave that lane unmerged, and report exactly which files collided. A generated lockfile is the one legitimate shared file; resolve it by REGENERATING it with this repo's own command, never by hand-picking hunks. A lane with an EMPTY \`branch\` and no boxes was never worked — its \`narrative\` says why; there is nothing to merge for it, only a release in step 3.
 
 Other sessions may have committed while you worked. ${profile.upstream ? `\`git pull --rebase\` first (this branch tracks \`${profile.upstream}\`).` : 'This branch has no upstream, so there is nothing to pull.'} If a pull brings in a change to a node file you hold, stop and report it — that should not happen, and it means something took your claim.
 
@@ -641,8 +632,10 @@ Other sessions may have committed while you worked. ${profile.upstream ? `\`git 
 **3. Write the board**, per worker.md §6, for each node:
    - **DONE** — every box \`x\`, and if the node carries a \`verify:\`, **you ran it** and its output is the evidence. \`state: done\`, DELETE the \`claim:\` line, commit the node file together with the work it verifies: \`git commit -m "close <path>: <session>" -- <the work> ${BOARD}/<path>/prd.md\`
    - **Boxes still open?** Not done. \`state: open\`, write the honest boxes (\`[ ]\`/\`[~]\`, the stub named beside every \`[~]\`), DROP the \`claim:\` line, commit what landed as \`release <path>: <session>\`.
-   - **A wall?** \`## Escalation\` into that node, release the claim, stop on it.
+   - **Never worked (empty branch, no boxes)?** Just release: \`state: open\`, drop the \`claim:\` line, commit as \`release <path>: <session> — <the narrative's reason>\`. Change nothing else on the node.
+   - **A wall?** \`## Escalation\` into that node (the \`wall\` text), release the claim, stop on it.
    - **Never leave a claim behind.** Closing and abandoning both clear the owner — and with other sessions running, a claim left behind blocks a node for everyone.
+   - **The worker's \`narrative\` may carry amendments** — a corrected stale address, a sharpened requirement reading, a proposed child split. Record them on the node per worker.md move 2: sharpen in place keeping the requirement number, note corrections beneath the box, describe a proposed split under its own heading. Do not invent amendments the narrative does not state.
 
 **4. The box states are settled — transcribe them, do not re-judge them.** Each carries \`final\`, the worker's intent after an adversary tried to kill it. A \`demoted\` box was killed: write the demoted state and put the refutation into the node body as the record of why. Do not restore a box the adversary killed.
 
@@ -653,7 +646,7 @@ ${JSON.stringify(settled, null, 1)}
 
 Return GitHub-flavoured markdown — an artifact, not a transcript:
 ## Landed
-one line per node: closed / released / escalated, with the session id.
+one line per node: closed / released / released unworked / escalated, with the session id.
 ## The gate
 the exact commands and exit status. If red, which lane owns it.
 ## Box-by-box
@@ -665,7 +658,13 @@ the merge and close/release commits, by hash.`,
 		at('build', { label: `land-r${round}`, phase: 'Land' }),
 	)
 
-	allRounds.push({ round, maxWorkers, remaining, grab: grabText, reconciled: recons.length, escalated: [...escalated], nodes: settled.map(s => s.node), demoted: demoted.length, report: landed })
+	allRounds.push({ round, maxWorkers, remaining, grab: grabText, worked: lanes.map(l => l.node.path), releasedUnworked: releaseUnworked.map(r => ({ node: r.node.path, why: r.why })), demoted: demoted.length, report: landed })
+
+	// Drain the ticket pool: worked tickets and explicitly-skipped tickets
+	// leave it; collision-dropped tickets stay for the next round.
+	if (pool) pool = pool.filter(t =>
+		!lanes.some(l => l.node.path === t.path) &&
+		!new RegExp(`${esc(t.path)}\\s*::\\s*SKIPPED`).test(grabText))
 
 	if (round < ROUNDS) log(`round ${round} landed — going round again for more free work`)
 }
@@ -673,6 +672,6 @@ the merge and close/release commits, by hash.`,
 return {
 	rounds: allRounds.length,
 	profile: { ecosystem: profile.ecosystem, head: profile.head, gate: LANE_GATE, fullGate: FULL_GATE },
-	sessions: 'this is one session; launch mi-run again, concurrently, for another',
+	sessions: 'this is one session; launch mi-run again, concurrently, for another. If work is BLOCKED — escalations piling up, stale claims, a board that no longer matches the tree — that is /mi-repair, run deliberately, not more sessions.',
 	detail: allRounds,
 }

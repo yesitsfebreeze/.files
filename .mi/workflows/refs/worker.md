@@ -61,7 +61,6 @@ own. Anything else in the tree is that node's private material: opaque.
 | `state` | `open` \| `claimed` \| `done` \| `out-of-scope` |
 | `mode` | `afk` \| `hitl` — hitl needs the human (naming, taste, money) |
 | `priority` | higher runs first (default 0) |
-| `deps` | node paths that must be **resolved** before this one is ready; a list, `[]` when none |
 | `claim` | the single active owner; absent means unclaimed |
 | `verify` | command that proves this node's own requirements |
 | `est` | working days, advisory |
@@ -91,25 +90,8 @@ scan to one heading is what lets an acceptance clause close unmet. A node
 ## 2. Pick the node
 
 **ready** = (`open` ∨ reopened) ∧ unclaimed ∧ `afk` ∧ no `## Escalation` ∧
-**every child covered** ∧ **every `deps` entry resolved**. Order: `priority`
-desc, then **depth desc** (finish a branch before fanning wider), then path.
-Take the first.
-
-> **`deps` added 2026-08-20**, escalated out of a board repair and cleared by
-> the user. The predicate had no dependency term, so ordering fell through to
-> path — and path order inverts real dependencies: in `01-capsule`,
-> `01-container-lifecycle` depends on `02-dev-image`, so path order built the
-> container before its image. `priority` is not a substitute: it orders
-> *selection among ready nodes*, it does not gate readiness, so a downstream
-> node stayed claimable while its dependency was still open.
->
-> Two consequences. **`deps` is by node path, and resolved means §1 resolved**
-> (`out-of-scope`, or `done` owing nothing) — not merely `done`, or a
-> reopened dependency would count. **`plugin.lua` no longer computes §2**: it
-> predates this term, so `M.claimable` and `board.next` will hand out nodes
-> with unresolved `deps`. Until it is fixed and `just lua-check` pins it, §2
-> is computed by hand — which is the divergence the block above warns about,
-> now recorded at the line that caused it rather than discovered later.
+**every child covered**. Order: `priority` desc, then **depth desc** (finish a
+branch before fanning wider), then path. Take the first.
 
 Never take a **claimed** node (surface a stale claim, never steal it), a
 **hitl** node (ask the user, write the answer into the body, then it closes
@@ -217,7 +199,6 @@ output, box-by-box status, and a few lines of what changed and why.
 state: open          # open | claimed | done | out-of-scope
 mode: afk            # afk | hitl (needs the human: naming, taste, money)
 priority: 0          # optional, higher runs first
-deps: []             # node paths that gate readiness; [] when none
 verify: <command>    # optional, proves this node's own requirements
 ---
 

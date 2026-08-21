@@ -4,7 +4,7 @@ export const meta = {
 	whenToUse: 'When you want a fresh rating page — the scored inventory sorted for low complexity and high usefulness, counter-checked against the .mi/prd board, with a placement verdict per unit.',
 	phases: [
 		{ model: 'haiku', title: 'Profile', detail: 'discover the repo: build system, packages, source roots, live claims' },
-		{ model: 'haiku', title: 'Inventory', detail: 'enumerate every implementation module — find, wc, and the header comment' },
+		{ model: 'haiku', title: 'Inventory', detail: 'enumerate every implementation module — runs beside Doctrine, both need only the profile' },
 		{ model: 'sonnet', title: 'Doctrine', detail: 'what the board commits to, and the one architectural seam it states' },
 		{ model: 'sonnet', title: 'Rate', detail: 'raters in chunks against the doctrine brief, plus one gap-finder' },
 		{ model: 'opus', title: 'Publish', detail: 'calibrate, score, verdict placement, write the page' },
@@ -151,7 +151,10 @@ const UNIT_SCHEMA = {
 
 phase('Inventory')
 
-const inv = await agent(
+// The inventory walks the source roots; the doctrine reads the board. Neither
+// reads the other's subject — both need only the profile — so they run at
+// once instead of queuing.
+const invP = agent(
 	`${GROUND}
 
 Enumerate every implementation module in this tree. One unit per source FILE.
@@ -167,16 +170,12 @@ Completeness matters more than speed. In \`crosscheck\`, give the \`find\` count
 	at('scan', { label: 'inventory', phase: 'Inventory', schema: UNIT_SCHEMA }),
 )
 
-if (!inv || !inv.units || !inv.units.length) return { error: 'inventory came back empty — nothing to rate', profile }
-log(`${inv.units.length} module(s) inventoried — ${inv.crosscheck}`)
-
-// ─────────────────────────────────────────────────────────────────────────
-// Phase 3 — Doctrine. What the board commits to, so the raters measure
-// against the spec instead of against their own taste. And, critically, the
-// SEAM: the one architectural boundary this repo's board actually states.
-// Every placement verdict is relative to that, and it is different in every
-// repository, which is why it is read rather than assumed.
-// ─────────────────────────────────────────────────────────────────────────
+// Doctrine — launched beside the inventory above, joined below. What the board
+// commits to, so the raters measure against the spec instead of against their
+// own taste. And, critically, the SEAM: the one architectural boundary this
+// repo's board actually states. Every placement verdict is relative to that,
+// and it is different in every repository, which is why it is read rather than
+// assumed.
 const DOCTRINE_SCHEMA = {
 	type: 'object', additionalProperties: false,
 	required: ['brief', 'seam', 'mandates', 'contract', 'tensions', 'recordDrift'],
@@ -244,7 +243,7 @@ const DOCTRINE_SCHEMA = {
 
 phase('Doctrine')
 
-const doctrine = await agent(
+const doctrineP = agent(
 	`${GROUND}
 
 Extract what this repository's own board COMMITS to. Read \`${BOARD}/prd.md\` first — its Requirements, Acceptance, Out of scope and its children table are the top-level spec — then every node: ${profile.boardNodes.filter(n => n !== '.').map(n => `\`${BOARD}/${n}/prd.md\``).join(', ')}. Note each node's \`state:\` and each requirement's checkbox.
@@ -264,6 +263,12 @@ For \`recordDrift\`, the pattern to hunt is a box marked \`[x]\` on evidence tha
 Report each with file:line. Do not stop at these shapes; they are where to start.`,
 	at('probe', { label: 'doctrine', phase: 'Doctrine', schema: DOCTRINE_SCHEMA }),
 )
+
+// The join. Both were launched un-awaited so they ran at once.
+const [inv, doctrine] = await Promise.all([invP.catch(() => null), doctrineP.catch(() => null)])
+
+if (!inv || !inv.units || !inv.units.length) return { error: 'inventory came back empty — nothing to rate', profile }
+log(`${inv.units.length} module(s) inventoried — ${inv.crosscheck}`)
 
 if (!doctrine) return { error: 'doctrine came back empty — raters would have nothing to measure against', profile }
 log(`doctrine: ${doctrine.mandates.length} mandate(s), ${doctrine.contract.length} package contract(s), ${doctrine.tensions.length} self-contradiction(s), ${doctrine.recordDrift.length} drift site(s) · seam ${doctrine.seam.stated ? 'stated' : 'NOT stated'}`)

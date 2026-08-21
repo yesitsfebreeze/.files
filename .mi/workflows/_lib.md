@@ -65,8 +65,15 @@ is a paid coin-flip.
 
 ## 3. The Profile step
 
-One `scan` agent, first, in every workflow. It answers the questions that the
-old scripts had hardcoded:
+One `scan` agent, first, in every workflow — run in parallel with any other
+opening scan that does not depend on it (`mi-run` overlaps it with the board
+census, `mi-gantt` with the record load, `mi-repair` with the whole reconcile
+sweep), and skipped entirely when the caller hands a profile in via
+`args.profile` (`mi-gantt` profiles once and passes it to every session it
+dispatches — and its `args.tickets` likewise replace `mi-run`'s board census
+and footprint survey, so a dispatched session spawns no scan agents at all;
+only the claim, which is the lock and the freshness check, still runs). It
+answers the questions that the old scripts had hardcoded:
 
 - what build system is actually on disk, and what are its packages
 - the **scoped gate** a worker runs on its own change, and the **full gate**
@@ -130,7 +137,7 @@ and a skill alone would have burnt the session's context on the sweep.
 | `/mi-plan` | skill | orient in the board, the plan and the ledger; report the state; ask about every fork |
 | `/mi-drill` | skill | grill the plan to exhaustion — frontier by frontier — and split any node holding two contracts |
 | `/mi-max <N>` | skill | store the concurrency cap on the board root |
-| `/mi-gantt` | workflow | run the schedule, wave by wave |
+| `/mi-gantt` | workflow | run the schedule as a dependency frontier — concurrent mi-run sessions, up to the cap |
 | `/mi-run` | workflow | take what is free and work it — one session, N of them concurrently |
 | `/mi-repair` | skill | diagnose what is blocked, ask about the calls that are the user's, then run the engine that sweeps, replans and repairs |
 
@@ -151,9 +158,11 @@ command.
 `workflow()` nests exactly one level. That fixes the shape:
 
 ```
-/mi-gantt  ──▶ mi-run                (per wave, scoped by `nodes`)
+/mi-gantt  ──▶ mi-run  × N CONCURRENTLY  (one session per ready bundle off the
+                                          frontier, `profile` + `tickets`
+                                          handed in — no re-discovery)
 /mi-repair ──▶ lib/mi-repair         (the engine)
-                 ├─▶ lib/mi-reconcile  (drift report)
+                 ├─▶ lib/mi-reconcile  (drift report — runs beside the profile)
                  └─▶ lib/mi-replan     (proposal + its own audit)
 ```
 
@@ -170,11 +179,26 @@ what lets an internal script keep working with no command of its own.
 ### The concurrency cap
 
 One home: `max-workers` on the board **root** node. `mi-run` reads it as the
-*global* cap across every running session; `mi-gantt` reads it to size a wave.
-Absent, the default is **3** — enough that a wave of independent files really
-overlaps, few enough that a bad plan costs three worktrees rather than twelve.
+*global* cap across every running session; `mi-gantt` reads it to bound how
+many lanes it keeps in flight across ALL the sessions it dispatches at once.
+Absent, the default is **3** — enough that independent files really overlap,
+few enough that a bad plan costs three worktrees rather than twelve.
 `/mi-max` is the only thing that writes it. There is deliberately no config file
 and no environment variable: a second home for the cap is a second answer.
+
+### The frontier, and why execution is not waves
+
+`mi-gantt` still computes the wave layout — it is the human view and the
+wall-clock estimate — but it **executes a ready frontier**: every task whose
+deps have been *observed* closed is dispatchable, and as many mi-run sessions
+run concurrently as the cap allows. A wave is a barrier, and a barrier makes
+every task wait for the slowest stranger in its layer; the frontier lets a
+dependent start the moment its actual deps land. Bundling: a task with
+dependents lands as its own session (so it frees them immediately), ready leaf
+tasks batch into one session (amortising the land and the gate), and two tasks
+with colliding file footprints are never in flight at once. Plans should feed
+this: **width beats depth** — an invented dependency edge is parallelism spent,
+and a deep chain is wall-clock nothing can parallelise away.
 
 ### Where a plan lives, and why it differs from a proposal
 
@@ -189,6 +213,8 @@ Both exist, and the difference is whether a human has approved it.
   ledger**, recomputed on read; the human-facing schedule is a *generated view*
   of the two, never authored beside them.
 
-And `mi-gantt` writes the ledger from what it **observes** on the board after a
-wave, not from what the workers reported — progress is computed from observed
-change, never from the actor's account of it.
+And `mi-gantt` writes the ledger from what it **observes** on the board after
+each session lands, not from what the workers reported — progress is computed
+from observed change, never from the actor's account of it. Observation is what
+advances the frontier, so it runs beside the sessions still in flight, with the
+ledger appends serialised so their commits do not race.

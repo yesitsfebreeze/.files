@@ -46,7 +46,7 @@ const REFS = A.refs || '.mi/workflows/refs'
 // Plan artifacts live OUTSIDE the repository: a proposal is not yet a fact
 // worth a commit, and a scratch file inside `.mi/` is walked by the tree-wide
 // gates, so every gate run would depend on whatever a planner last wrote.
-const PLAN_DIR = A.planDir || '/tmp/mi-plan'
+const PLAN_DIR = A.planDir || '.mi/gantt/scratch'
 const PROPOSAL = `${PLAN_DIR}/plan.proposed.md`
 const SCOPE = A.scope || 'open'
 const SEEDS = A.seeds || []
@@ -356,6 +356,7 @@ Rules that decide whether your plan is any good:
 - **Requirements say WHAT, verifiably.** No requirement that cannot be checked by something. A soft line becomes soft code.
 - **\`verify:\` must be a command that exists today**, from the list in the ground rules. A \`verify:\` naming a recipe that was deleted, or one you wish existed, is a node that would close with no proof.
 - **\`footprint\` is what makes the plan runnable.** Two nodes that are ready at the same time must not share a source directory, or the parallel runner serialises no matter how many agents it is given. Fewer, larger nodes beat more, smaller ones where the smaller ones would share a directory — but do not merge across a real contract boundary just to reduce the count.
+- **Width beats depth.** The scheduler dispatches every ready node concurrently, so at every point in your sequence the ready set should be as WIDE as the real dependencies and the footprints allow. A chain is a claim that each link cannot be written and verified without the previous one — where that claim is not literally true, break the chain and let the work run side by side. Equally, keep dependency chains SHALLOW: a deep chain is wall-clock nothing can parallelise away, so prefer a structure where long chains are cut by moving the genuinely-shared piece into its own early node that unblocks many at once.
 - **Say what you are NOT doing.** \`## Out of scope\` is the line that stops drift, and a plan whose nodes have empty out-of-scope sections has not made any decisions.
 - Do not touch closed nodes${PROTECT.length ? ' or the protected nodes named above' : ''}.`,
 	at('judge', { label: `plan:${a.key}`, phase: 'Plan', schema: PLAN_SCHEMA }),

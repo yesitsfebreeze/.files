@@ -27,86 +27,100 @@ So a session never replans. The board-wide restructure is `/mi-repair`, it is
 launched deliberately, and it takes the **root node's claim** as its exclusive
 lock — the same mechanism, one level up.
 
-## Grab first, reconcile second
+## Claim first — nothing slower than the claim runs before it
 
-This is the opposite of the single-session order, and the reason is the race
-window. With one session, a sweep tells you what to take. With N sessions, a
-claim commit is milliseconds and a sweep is minutes, so sweeping first means
-reaching for a board that has moved.
+With one session, a sweep tells you what to take. With N sessions, a claim
+commit is milliseconds and every sweep, survey and reconcile is minutes, so
+anything slow in front of the grab is a race window paid for nothing. The
+order follows from that one rule:
 
-And what a worker actually needs is not the board reconciled — it is **its own
-node** reconciled: is this node an accurate description of the work that
-remains, or is a requirement already met, too soft to verify, or pointing at an
-address the crate split moved? That check is per-node, cheap, and safe at any
-number of sessions, because the claim is the lock.
+- the two opening scans (repo profile, board census) run **in parallel** — and
+  each is skipped entirely when the caller already has its answer:
+  `args.profile` replaces the profile scan, `args.tickets` replaces the census
+  *and* the footprint survey. `mi-gantt` passes both — its plan record already
+  holds every task's node, spec, verify command and file footprint — so a
+  wave's session spawns **zero scan agents** and goes straight to the grab.
+  Discovery happens once, in the planner, never twice;
+- what a ticket does **not** skip is the claim. The claim commit is the lock,
+  not a search — other sessions may be running outside any schedule — and the
+  grab's per-node re-read from disk is the freshness check: a node that
+  closed, escalated or got claimed since the caller looked is skipped there,
+  at the last possible moment, instead of being pre-verified minutes earlier;
+- the footprint **survey runs beside the grab**, not in front of it — it never
+  decides *what* to claim (priority already did), only how the claimed nodes
+  are laid out into disjoint lanes;
+- **reconciling is not a phase.** What a worker needs is not the board
+  reconciled — it is **its own node** reconciled: is this an accurate
+  description of the work that remains, or is a requirement already met, too
+  soft to verify, or pointing at an address that moved? The lane worker reads
+  the node and its spec anyway, so it reconciles *as it works*, and its
+  already-met claims meet the same adversary as its fresh ones;
+- **checking is deferred to where it is needed.** Other sessions' held
+  directories are not pre-surveyed; if a merge actually conflicts, the Lander
+  refuses to paper over it, attributes it, and leaves that lane unmerged.
+  Repair when blocked — `/mi-repair`, deliberately — not insurance up front.
 
 ## The order
 
 ```
-Capacity ─▶ Grab ─▶ Reconcile ─▶ Amend ─▶ Work ─▶ Refute ─▶ Land ─▶ (round again)
-   1          1         N          1        N       N        1
-  read      serial   read-only   serial  worktrees read    serial
-            writes               writes                    gate ×1
-            .mi/prd/             .mi/prd/
+Scout ─▶ Grab ∥ Survey ─▶ Work ─▶ Refute ─▶ Land ─▶ (round again)
+  2∥        1      1        N        N        1
+ scans    serial  read   worktrees  read    serial
+          writes  only                      gate ×1
+          .mi/prd/                          writes .mi/prd/
 ```
 
-**Capacity** computes the ready set per `worker.md` §2 itself, because
-`board.next` does not — the plugin computes only `state == "open" and not
-claim`, with the depth tie-break inverted against its stated intent, so it hands
-out `hitl`, escalated and uncovered-parent nodes. It also reads each ready
-node's **crate footprint**, which is what decides who can work beside whom.
+**Scout** is the repo profile and the board census, two cheap scans with no
+dependency between them, run concurrently. The **ready set** is then computed
+in plain JavaScript per `worker.md` §2 — because `board.next` does not: the
+plugin computes only `state == "open" and not claim`, with the depth tie-break
+inverted against its stated intent, so it hands out `hitl`, escalated and
+uncovered-parent nodes.
 
-Then it answers the question a single-session runner never had to ask: **how
-much may I take?** `max-workers` on the root is a *global* cap across every
-running session, so `remaining = max-workers − live claims`. No free slot means
-this session does nothing and says so, rather than becoming the sixth worker on
-a board that allows five.
+That answers the question a single-session runner never had to ask: **how much
+may I take?** `max-workers` on the root is a *global* cap across every running
+session, so `remaining = max-workers − live claims`. No free slot means this
+session does nothing and says so, rather than becoming the sixth worker on a
+board that allows five.
 
 **Stale claims are surfaced, never taken.** Law 1's rung: a lock is a durable
 commit, surfaced when stale, never taken. A session that died leaves a claim
 that blocks a node, and clearing it is the user's call — an automatic steal is
 how two workers end up in one node with no record that either was there.
 
-**Partition** is plain JavaScript, no agent: deterministic and free. It
-**spreads rather than packs** — a fresh lane cannot collide with anything, so
-while under the limit the answer is always "open one". Collision is
-segment-wise, so `engine/graph` contains `engine/graph/x` and not
-`engine/graph_ops`. The limit is the smallest of this session's own `lanes`, its
-`take`, and the global remaining.
+**Grab** fires immediately, claiming node by node in priority order —
+re-reading each from disk and **re-checking the global cap before every
+claim** — with a couple of spare candidates below the limit so a lost race
+falls through to the next node instead of ending the round short. Losing a
+race is reported, not treated as an error. Afterwards it verifies the cap
+actually held — it is **eventually consistent, not instantaneous**, because
+two sessions can each see one free slot and each claim a different node — and
+if the total now exceeds the cap the session releases **its own** most recent
+claims until it does not. Releasing yours and never anyone else's is the whole
+of the etiquette.
 
-A node whose work is tree-wide — a vocabulary sweep, a gate that reads every
-file, a change to the workspace members list — is **exclusive**: it gets no lane
-and is named in the log, because it needs a session of its own. Nothing is
-silently dropped; a partition that quietly skipped a node would read as
-"covered everything".
-
-**Grab** claims node by node, re-reading each from disk and **re-checking the
-global cap before every claim**. Losing a race is reported, not treated as an
-error. Afterwards it verifies the cap actually held — it is **eventually
-consistent, not instantaneous**, because two sessions can each see one free slot
-and each claim a different node — and if the total now exceeds the cap the
-session releases **its own** most recent claims until it does not. Releasing
-yours and never anyone else's is the whole of the etiquette.
-
-**Reconcile** examines each node this session now holds against its memo and the
-code, read-only and in parallel. A box the code already satisfies, a box too
-soft to verify, a box naming a pre-split `core/src/…` address — each comes back
-as a proposed amendment with its evidence. A requirement that *contradicts* its
-memo comes back as a **wall** instead, because the memo is the spec and work
-against a node that contradicts it is escalated, never forked.
-
-**Amend** is one serial writer, and it may write only the nodes this session
-holds. An `already-met` box is marked `[x]` only if the evidence carries both
-the check and **what that check would have done had the requirement been
-unmet** — without the second half it is not evidence, and the box stays open
-with a note. A walled node gets its `## Escalation` and is released
-immediately, so it never reaches a lane.
+**Survey**, running beside the grab, reads the same candidates' remaining
+boxes and greps out each node's **footprint** — the source directories its
+work would write. The **lane layout** is then plain JavaScript, no agent:
+deterministic and free, in priority order, collision segment-wise (so
+`engine/graph` contains `engine/graph/x` and not `engine/graph_ops`). The
+limit is the smallest of this session's own `lanes`, its `take`, and the
+global remaining. A claimed node that cannot share the round — it collides
+with a higher-priority lane, or it is **exclusive** (tree-wide: a vocabulary
+sweep, a gate that reads every file, a change to the workspace members list)
+while others run — is handed to the Lander to **release unworked**, with its
+reason on the node. Nothing is silently dropped; a layout that quietly skipped
+a node would read as "covered everything".
 
 **Work** is one agent per lane, each in its own git worktree. This is the phase
 the design exists for. `p6m-vocabulary` records what happens without it: two
 sessions edited one working tree at once, one of them holding no claim, and the
-board said the work did not exist. Lanes run `just fast` — the filter that can
-say "not yet" and never "done" — and are forbidden the gate.
+board said the work did not exist. Each lane's **first move is reconciling its
+own node**: an already-met box is claimed `[x]` with the check that was run —
+and the counterfactual, what the check would have done had the requirement been
+unmet — a stale address is corrected in the report, a contradiction with the
+spec is a wall that stops the lane. Lanes run the scoped gate — the filter that
+can say "not yet" and never "done" — and are forbidden the full one.
 
 **Refute** is law 2 on every box. One adversary per node, given the box text and
 the check that was run, prompted to kill it and defaulting to killed. A box
@@ -130,7 +144,8 @@ blocks a node for everyone.
 | keep going after landing | `{ rounds: 3 }` |
 | see what it would take, claim nothing | `{ dryRun: true }` |
 | named nodes only, if free | `{ nodes: ['p6-rust-core/p6l-one-record-shape'] }` |
-| skip the per-node sweep | `{ reconcile: false }` |
+| skip the profile scan | `{ profile: {...} }` — a pre-computed profile |
+| skip census and survey too | `{ tickets: [{ path, title, memo, verify, dirs, ... }] }` — the work, already known; only the claim still runs. `mi-gantt` passes both, one ticket per wave task |
 
 The exclusive restructure is `/mi-repair`, launched deliberately and never by a
 session. Its parts — the board-wide drift sweep and the replanner — are not

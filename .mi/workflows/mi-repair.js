@@ -3,7 +3,7 @@ export const meta = {
 	description: 'Repair a board that has drifted or jammed: sweep the record against the code, replan the open work around what the sweep found, then fix the proposal against its own adversary until it is safe to apply. Reports what only the human can settle rather than deciding it.',
 	whenToUse: 'When the board is what is blocking you — nodes lying about their own state, work specced nowhere, parent checklists disagreeing with their children, a tree of prose that has no claimable nodes. Produces a proposal for a human to approve; it never writes the board.',
 	phases: [
-		{ model: 'haiku', title: 'Profile', detail: 'the facts the auditor must not have to re-derive: claims, recipes, box counts' },
+		{ model: 'haiku', title: 'Profile', detail: 'the facts the auditor must not have to re-derive: claims, recipes, box counts — runs beside the sweep' },
 		{ model: 'opus', title: 'Reconcile', detail: 'sweep the record against the code — what does the board get wrong' },
 		{ model: 'opus', title: 'Replan', detail: 'fold the drift into one streamlined forward plan' },
 		{ model: 'opus', title: 'Repair', detail: 'apply the audit\'s required fixes to the proposal' },
@@ -44,16 +44,23 @@ const BOARD = A.board || '.mi/prd'
 // travel with the workflows instead of being installed per repo. They are read
 // on demand by the agents that need them, not registered as a skill.
 const REFS = A.refs || '.mi/workflows/refs'
-const PLAN_DIR = A.planDir || '/tmp/mi-plan'
-// `mi-reconcile` and `mi-replan` are INTERNAL: they live in `lib/`, outside the
-// directory the harness registers as slash commands, because this workflow is
-// their only call site. Two call sites for one script is two places a caller
-// can be wrong about what it does.
+const PLAN_DIR = A.planDir || '.mi/gantt/scratch'
+// `mi-reconcile` and `mi-replan` are INTERNAL: this workflow is their only
+// call site, and two call sites for one script is two places a caller can be
+// wrong about what it does. They are kept out of `.claude/workflows/`, which
+// is what the harness registers as slash commands — being unregistered is what
+// makes them internal, not which directory they sit in.
 //
 // Derived from the refs path so there is exactly one knob locating the
 // workflows directory. `workflow()` takes a path or a registered name, so the
 // call falls back to the name for a repo that still has them registered.
-const LIB = A.lib || REFS.replace(/\/refs\/?$/, '') + '/lib'
+const WFDIR = REFS.replace(/\/refs\/?$/, '')
+// Two homes, tried in order. These scripts used to live in `<workflows>/lib/`;
+// they now sit beside their caller in `<workflows>/`. Neither is assumed —
+// resolving the wrong one is a whole run lost to a path, which is exactly what
+// happened on 2026-08-21 when `lib/` had been emptied by a migration.
+const LIBS = A.lib ? [A.lib] : [WFDIR, WFDIR + '/lib']
+const LIB = LIBS[0]
 let PROPOSAL = A.proposal || `${PLAN_DIR}/plan.proposed.md`
 const ROUNDS = A.rounds || 2
 
@@ -81,7 +88,10 @@ const FACTS_SCHEMA = {
 
 phase('Profile')
 
-const facts = await agent(
+// Launched un-awaited: when a drift sweep is needed below, that whole child
+// workflow runs BESIDE this scan instead of behind it — they share no input,
+// and the join further down checks the facts before anything reads them.
+const factsP = agent(
 	`Repository: ${REPO}. READ ONLY — never edit, never commit, never run tests.
 
 Establish the facts a plan auditor would otherwise have to re-derive by hand. All mechanical: count and list, judge nothing.
@@ -94,10 +104,6 @@ Establish the facts a plan auditor would otherwise have to re-derive by hand. Al
 6. \`git log --format='%h %s%n%b' | grep -inE 'requirement [0-9]+'\` — every commit that cites a requirement by number. Renumbering an existing requirement silently rewrites what these commits say they did.`,
 	at('scan', { label: 'facts', phase: 'Profile', schema: FACTS_SCHEMA }),
 )
-
-if (!facts) return { error: 'could not establish the board facts — an auditor without them cannot check losslessness' }
-
-log(`board at ${facts.head}: ${facts.open} open + ${facts.stub} stub + ${facts.closed} closed · ${facts.claimed.length} claimed · ${facts.recipes.length} recipe(s) · ${facts.citations.length} requirement citation(s) in the log`)
 
 // ─────────────────────────────────────────────────────────────────────────
 // Reconcile, then replan. The loop further down repairs a PROPOSAL; these two
@@ -117,10 +123,15 @@ let replanAudit = ''
 // BOTH is reported as itself rather than silently skipping the stage — a repair
 // that quietly runs without its drift sweep is worse than one that stops.
 const callLib = async (name, a) => {
-	try {
-		return await workflow({ scriptPath: `${LIB}/${name}.js` }, a)
-	} catch (byPath) {
-		log(`${name}: not at ${LIB}/${name}.js (${String(byPath && byPath.message || byPath)}) — trying the registry name`)
+	for (const dir of LIBS) {
+		try {
+			return await workflow({ scriptPath: `${dir}/${name}.js` }, a)
+		} catch (byPath) {
+			log(`${name}: not at ${dir}/${name}.js (${String(byPath && byPath.message || byPath)})`)
+		}
+	}
+	{
+		log(`${name}: trying the registry name`)
 		try {
 			return await workflow(name, a)
 		} catch (byName) {
@@ -130,12 +141,26 @@ const callLib = async (name, a) => {
 	}
 }
 
-if (!A.proposal) {
+// Start the sweep (a whole child workflow) the moment we know one is needed —
+// the facts scan launched above is still running beside it. The join is right
+// after: the facts gate everything downstream, so they are checked first.
+let sweepP = null
+if (!A.proposal && !A.reconcile) {
 	phase('Reconcile')
+	sweepP = callLib('mi-reconcile', { repo: A.repo, board: BOARD, planDir: PLAN_DIR, refs: A.refs, seeds: A.seeds, models: A.models, effort: A.effort })
+}
+
+const facts = await factsP.catch(() => null)
+if (!facts) return { error: 'could not establish the board facts — an auditor without them cannot check losslessness' }
+
+log(`board at ${facts.head}: ${facts.open} open + ${facts.stub} stub + ${facts.closed} closed · ${facts.claimed.length} claimed · ${facts.recipes.length} recipe(s) · ${facts.citations.length} requirement citation(s) in the log`)
+
+if (!A.proposal) {
 	if (A.reconcile) {
+		phase('Reconcile')
 		log(`reusing the drift report the caller supplied: ${A.reconcile}`)
 	} else {
-		reconcile = await callLib('mi-reconcile', { repo: A.repo, board: BOARD, planDir: PLAN_DIR, refs: A.refs, seeds: A.seeds, models: A.models, effort: A.effort })
+		reconcile = await sweepP
 		if (!reconcile) return { error: `could not run mi-reconcile — looked for \`${LIB}/mi-reconcile.js\` and for a registered workflow of that name`, fix: 'pass { lib: "<dir holding mi-reconcile.js>" }, or { reconcile: "<an existing drift report>" } to skip the sweep' }
 		log(reconcile ? `drift swept at ${reconcile.head}: ${reconcile.surviving} finding(s) survived an adversary, ${reconcile.killed} killed → ${reconcile.reportPath}` : 'the drift sweep returned nothing — the replan will run without it')
 	}
