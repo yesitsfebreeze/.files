@@ -31,6 +31,13 @@ serialising ~22 files.
       `nu-history` channel that `Alt-R` depends on, `ollama-host`, starship,
       `$env.ENV_CONVERSIONS`, `esc_clear`, and the `cursor_shape` / `table` /
       `sync_on_enter` / `completions.external` blocks.
+- [ ] **R7** — L-2: the television `git-log` → `Commits` decoder reads field
+      index 1 of a line the channel has already reduced to a bare hash, and
+      the `^[0-9a-f]{7,}$` guard then drops every row, so commit → `git show`
+      has never run. Record that the decoder reads the field the channel
+      actually emits. Placed here by the conductor on 2026-08-21 because
+      `w0-6-live-bugs` identified the fix and named this node as its owner,
+      but may not write this file.
 
 ## Acceptance
 - [ ] Every requirement box above is `[x]`, and the backlog item it corrects

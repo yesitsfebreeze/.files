@@ -28,6 +28,18 @@ serialising ~22 files.
 - [ ] **R5** — Record that `plugins/editor.lua` is split into one file per
       plugin, and that the filename appears nowhere in the tree though three
       PRDs write it.
+- [ ] **R6** — L-7: oil is lazy on `keys`, so `default_file_explorer` is not
+      installed until `<leader>e` is pressed; with netrw disabled, `:e
+      some/dir` opens neither. `03-editor/06-explorer`'s third acceptance line
+      asserts exactly the behaviour this bug prevents. Correct the load
+      condition, or correct the acceptance line — and say which.
+- [ ] **R7** — L-9: visual-mode `<C-v>` shadows blockwise-visual mode. Record
+      the decision in both `03-editor/02-keymaps` and
+      `03-editor/14-shift-select`, including the "leave `<C-q>` unbound" half,
+      so the decision is reachable from the nodes that implement it. R6 and R7
+      placed here by the conductor on 2026-08-21 because `w0-6-live-bugs`
+      identified them and named this node as their owner, but may not write
+      this file.
 
 ## Acceptance
 - [ ] Every requirement box above is `[x]`, and the backlog item it corrects

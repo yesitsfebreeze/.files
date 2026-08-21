@@ -32,6 +32,16 @@ serialising ~22 files.
       the palette" in five, none of them the terminal epic.
 - [ ] **R6** — Wrap limit exceeded in several files; exempt tables from the
       rule rather than quietly breaking it.
+- [ ] **R7** — `README.md`'s `## Excluded` list carries no provisioning
+      entries, though `capabilities-provisioning.md` holds three verdicts:
+      Windows config mirroring (`DO NOT PORT`), the `wp-stat-overlay`
+      installer (`DEFER`) and the published docs site (`DEFER`). `SYSTEM.md`
+      requires a `DO NOT PORT` decision to appear in the epic's Non-goals
+      *and* the README exclusion list. The Non-goals half is already met —
+      `05-platform/prd.md`'s `## Out of scope` carries both entries — so only
+      the README half is open. Re-homed from `w0-3-platform-rewrite` R2 by
+      the conductor on 2026-08-21 (user decision): W0.3 identified it but
+      does not own `.mi/prd/README.md`; this node does.
 
 ## Acceptance
 - [ ] Every requirement box above is `[x]`, and the backlog item it corrects

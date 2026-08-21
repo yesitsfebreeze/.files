@@ -182,7 +182,28 @@ Note for whoever lands `w0-4-s2-corrections/docs-inventories`: it owns
 Three of those files were edited here, on different lines, with no overlap
 with its requirements — it will rebase onto this.
 
-## Escalation
+## Placed elsewhere
+
+The four requirement lines this node identified but may not write were placed
+by the conductor on 2026-08-21, so each bug is now reachable from the node
+that must not reproduce it:
+
+| bug | now owned by |
+|---|---|
+| L-2 — the `git-log` → `Commits` decoder reads the wrong field | `w0-4-s2-corrections/shell` R7 |
+| L-7 — oil is lazy on `keys`, so `:e some/dir` opens neither | `w0-4-s2-corrections/editor` R6 |
+| L-9 — visual `<C-v>` shadows blockwise-visual | `w0-4-s2-corrections/editor` R7 |
+| L-12 — dead files in the abandoned chezmoi source | `w0-4-s2-corrections/platform` R4 |
+
+L-3 and L-4 needed no placement: `w0-4-s2-corrections/shell` R1 and R2 already
+carry them. L-6 is carried by `w0-4-s2-corrections/editor` R3.
+
+## Resolved escalation (2026-08-20)
+
+Answered by the user on 2026-08-21 — the deployed `~/.config` tree is
+canonical. Recorded as decision 4 in the parent backlog, and again under
+`### Resolved 2026-08-21` at the end of this section. The text below is kept
+as the record of what was found and why it was raised.
 
 **The phrase every inventory in this repo is founded on does not name one
 artifact, and choosing which it names is not an agent's call.**

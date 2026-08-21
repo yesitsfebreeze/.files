@@ -38,66 +38,18 @@ residues that the repo's own conventions require. This closes them.
         land the flat-prose -> node conversion") both created this node file
         and rewrote line 66 to its current text, in the same commit. R1 was
         stillborn, not fixed by anyone.
-- [ ] **R2** — `README.md`'s exclusion list carries no provisioning entries,
-      though `capabilities-provisioning.md` holds three verdicts (Windows
-      config mirroring DO NOT PORT, wp-stat-overlay installer DEFER, published
-      docs site DEFER). `SYSTEM.md` requires a DO NOT PORT decision to appear
-      in the epic Non-goals *and* the README exclusion list.
-      - Correction: R2 is two requirements against two files, and they are in
-        different states. **The epic Non-goals half is already met** —
-        `.mi/prd/05-platform/prd.md`'s `## Out of scope` already carries
-        "Windows of any kind, including the live
-        `run_after_mirror-config-to-windows.sh`" and "`wp-stat-overlay`
-        provisioning and the published docs site (`DEFER`)". **The README half
-        is open**: `grep -in "mirror|wp-stat|docs site|provisioning|chezmoi"
-        .mi/prd/README.md` returns 6 hits, all in the intro paragraph and the
-        tree diagram, none in `## Excluded`; that section's five verdict
-        paragraphs cover legacy `~/.files`, nushell, burrito, Neovim and DEFER,
-        with no provisioning entry. The nearest miss, "cross-platform
-        Lua/shell/PowerShell parity (Windows out of scope)", is a
-        `capabilities.md` legacy entry — a different capability from the
-        chezmoi `run_after_mirror-config-to-windows.sh`.
-      - Proposed split, for whoever folds in the escalation: R2a "the
-        05-platform epic's Non-goals name the three provisioning verdicts"
-        (met, evidence above) and R2b "the README exclusion list carries the
-        same three" (open, and not workable here — see `## Escalation`). The
-        box above stays a single `[ ]` because the conjunction is unmet; the
-        split is recorded, not applied, since applying it would mark a box
-        this session did not put through refutation.
-- [ ] **R3** — `capabilities-provisioning.md` violates the sort rule: its
-      value ratios run 6,7,6,1,4,6,6,6,5,-2,-1,0 in file order and inventories
-      are sorted best-ratio first.
-      - Finding recomputed, not trusted: `grep -n "^## |^- [0-9-]"
-        .mi/docs/capabilities-provisioning.md` yields 12 entries whose
-        (usefulness − complexity) in file order is 9−3=6, 9−2=7, 9−3=6, 9−8=1,
-        8−4=4, 8−2=6, 9−3=6, 8−2=6, 7−2=5, 1−3=−2, 3−4=−1, 4−4=0 — the exact
-        sequence R3 quotes, and not monotonically descending (the 6 → 7 rise at
-        position 2 alone breaks it). The rule is not merely inherited from
-        `SYSTEM.md`: the file's own header line 6 states "sorted best-first by
-        value ratio", so it contradicts itself.
-      - Tightened reading, recorded because "sort it" admits several
-        tie-breaks: descending by (usefulness − complexity), ties broken by
-        existing file order (stable), which is the only tie-break that changes
-        nothing it does not have to. The resulting order, ready to apply:
-        Declarative package set (7) · Shell-init generation (6) · Idempotent
-        apply + push workflow (6) · Homebrew bootstrap (6) · Managed config
-        surface (6) · Starship prompt (6) · Small tool configs (5) · Neovim
-        version gating (4) · Package installer (1) · Published docs site (0) ·
-        wp-stat-overlay installer (−1) · Windows config mirroring (−2). That
-        tie-break also puts the three verdict-marked entries at the bottom in
-        DEFER, DEFER, DO NOT PORT order, so the excluded tail reads as one
-        block.
-      - Not workable by any lane dispatched here: `.mi/docs/` is on the
-        shared-file interdiction list and `plan.json` assigns this exact file
-        to W0.4a. See `## Escalation`.
-
 ## Acceptance
-- [ ] The `SYSTEM.md` epic table, the README exclusion list and the inventory
-      sort are all correct.
-      - One of the three conjuncts holds (the `SYSTEM.md` table, R1). The
-        README exclusion list does not (R2) and the inventory sort does not
-        (R3). It cannot be closed by any lane until the escalation is
-        resolved, because the two false terms live in files no lane may write.
+- [x] The `SYSTEM.md` epic table is correct.
+      - Narrowed on 2026-08-21, when R2 and R3 were re-homed (see `## Re-homed
+        requirements`). It read "the `SYSTEM.md` epic table, the README
+        exclusion list and the inventory sort are all correct"; the two
+        re-homed conjuncts left with their requirements, and their new owners
+        carry them as boxes. The surviving conjunct is R1's, and holds on R1's
+        evidence: `grep -n "05-platform" .mi/SYSTEM.md` returns one hit,
+        line 66, subject "chezmoi provisioning: deploy, packages, shell-init",
+        count `3 (+4)`; `grep -c "macOS dependency bootstrap"` returns 0; and
+        `find .mi/prd/05-platform -name prd.md` returns 8, corroborating the
+        count cell independently rather than reading it off itself.
 - [~] The Wave 0 tree link check passes.
       - STUB: **the Wave 0 tree link check does not exist**.
         `.mi/prd/00-delivery/verification-gates/prd.md` is `state: open` with
@@ -114,7 +66,32 @@ residues that the repo's own conventions require. This closes them.
 - Re-deriving the epic and its children. That work landed; only the residues
       are open.
 
-## Escalation
+## Re-homed requirements
+
+R2 and R3 left this node on 2026-08-21 by user decision. Their numbers are
+retired here and must not be reused; their full text and evidence moved with
+them, under fresh numbers, to the nodes that already own the files:
+
+| was | now | file it needed |
+|---|---|---|
+| R2 (README half) | `w0-4-s2-corrections/delivery` R7 | `.mi/prd/README.md` |
+| R3 | `w0-4-s2-corrections/docs-inventories` R6 | `.mi/docs/capabilities-provisioning.md` |
+
+R2's other half — "the 05-platform epic's Non-goals name the three
+provisioning verdicts" — was **already met** and did not move:
+`05-platform/prd.md`'s `## Out of scope` carries both the Windows entry and
+the `wp-stat-overlay` / docs-site entry. Only the README half was open, and
+only it was re-homed.
+
+## Findings
+
+### The escalation of 2026-08-21, and its resolution
+
+Resolved by the user on 2026-08-21: re-home the two requirements downward, as
+recorded above. The dependency direction is unchanged — `w0-4-s2-corrections`
+and its children still `deps` on this node — and this node's footprint was not
+widened. The escalation text is kept below as the record of what was found.
+
 
 W0.3 cannot be closed inside the footprint it was dispatched with, and the fix
 is a scheduling decision that is not a worker's to make.
@@ -183,11 +160,12 @@ daily-driver base) · the published docs site (`docs/build.py`, orthogonal to
 the daily driver and overlapping `06-help`, which should be built first and
 then reconsidered as the source for any published page)."
 
-The corrected inventory order for R3 is recorded under R3's box above.
+The corrected inventory order for R3 is recorded with the requirement,
+now `w0-4-s2-corrections/docs-inventories` R6.
 
-## Findings
+### Recorded, not acted on
 
-Recorded, not acted on — each names a file this node may not write.
+Each names a file this node may not write.
 
 **Why the second acceptance box is `[~]` and not `[x]`.** The underlying fact
 is true — the board's links resolve — but the check that proved it is a
