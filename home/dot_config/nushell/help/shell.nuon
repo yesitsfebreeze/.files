@@ -155,11 +155,11 @@
     {
         key: "Ctrl-T"
         title: "Insert a path into the line you are typing"
-        use: "Mid-command, press `Ctrl-T`, pick a file or directory: it is inserted at the cursor, shell-quoted, and you carry on typing. Esc leaves the line exactly as it was. This is the fzf reflex, on television."
+        use: "Mid-command, press `Ctrl-T`. The channel list opens first, exactly as it does for `Ctrl-Space` — pick a channel, then pick a row, and it is inserted at the cursor, shell-quoted, for you to carry on typing. Esc at either step leaves the line exactly as it was. This is the fzf reflex, on television."
         topic: "find"
         mode: "shell"
         also: ["Ctrl-Space / F1"]
-        why: "It reaches the channel remote by the same route `Ctrl-Space` does — both end up in `_finder_pick_channel` over `tv list-channels` — so a cable file you add for one key is on the other key too, with nothing to register twice."
+        why: "Both keys end up in `_finder_pick_channel` over `tv list-channels`, so a cable file you add for one is on the other too, with nothing to register twice. The two differ only in what happens to the pick: this one edits it onto the command line instead of opening it."
         verify: [{kind: "keybinding", name: "finder_pick"}]
         source: ".mi/prd/04-shell/04-television/prd.md"
     }

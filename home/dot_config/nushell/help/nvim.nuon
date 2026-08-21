@@ -151,11 +151,11 @@
     {
         key: "<S-Up> <S-Down> <S-Left> <S-Right>"
         title: "Select text with shift and the arrows"
-        use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — `<S-Left>` catches the last two characters, not one, because leaving insert moves the cursor onto the character behind it. It behaves like every non-modal editor."
+        use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. It behaves like every non-modal editor."
         topic: "edit"
         mode: "nvim:normal"
         also: ["h j k l (visual)", "<C-c> (visual)"]
-        why: "`<S-Right>` from insert mode has to move right once before entering visual, because the insert cursor sits between characters and the character under it would otherwise be left out of the selection."
+        why: "The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price."
         verify: [
             {kind: "nvim-map", mode: "n", lhs: "<S-Up>", desc: "Select up"}
             {kind: "nvim-map", mode: "n", lhs: "<S-Down>", desc: "Select down"}

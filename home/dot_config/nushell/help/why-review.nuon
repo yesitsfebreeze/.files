@@ -1,0 +1,102 @@
+# why-review.nuon — who read each `why` against its `use`, and what they read.
+#
+# Spec: `.mi/prd/06-help/01-content-model/prd.md` R5, the clause "`why` only
+# where the reason is non-obvious, and never restating what `use` already said".
+#
+# Why a record and not a check. The restatement is semantic: a competent writer
+# restates in different words, so lexical overlap does not see it. Measured
+# twice, over the 51 pairs that carry a `why`:
+#
+#   whole-`why` content-word containment in `use` — corpus mean 0.11, and the
+#     known defect `Ctrl+V` scored 0.097, rank 28 of 51, below the mean;
+#   best-sentence containment (2026-08-21, finer granularity, to see whether it
+#     separated where the whole-text one did not) — corpus mean 0.157, and the
+#     known defect `Ctrl+C` scored 0.167 at rank 23 of 51, `Ctrl+Shift+B` 0.143
+#     at rank 27. Any threshold that catches them fires on half the manual.
+#
+# Both proxies are recorded so the next worker does not build a third one. What
+# holds the clause instead is a reader — and this file is what stops that being
+# a wish. `tests/help-content-model.nu` requires every `why`-carrying entry to
+# have a row here whose `digest` matches the exact `use`/`why` pair on disk.
+#
+# So: **add a `why`, or edit either field, and the gate fails** until someone
+# reads the new pair against the restatement rule and records it. That is the
+# whole ritual, and it is one line:
+#
+#   1. read the entry's `use` and `why` together. Does the `why` tell you
+#      anything the `use` did not? If not, the fix is to cut it, not to record
+#      it. If the `use` is explaining a mechanism, move the mechanism here and
+#      leave the gesture there.
+#   2. run `nu tests/help-content-model.nu`. It prints the digest to set.
+#   3. add or update the row: id, file, digest, reviewer (your session id),
+#      date. `note` is optional and carries anything that qualifies the review.
+#
+# Reviewing your own writing is the one thing this cannot enforce, so it is
+# stated instead: rows carrying the "reviewer is also the author" note are
+# weaker evidence than the rest, and are the first ones a later reader should
+# re-read.
+#
+# 2026-08-21 · cc-1787301962 swept all 51 pairs. Four were rewritten in that
+# pass and carry the note; the other 47 were written by cc-1787250953 /
+# cc-1787256992 / cc-1787260422 and read by someone who did not write them.
+
+[
+    # shell.nuon
+    {id: "z <query>", file: "shell.nuon", digest: "430480e5111145b8", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<word>", file: "shell.nuon", digest: "9b2306e3c5dee511", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "cd <path>", file: "shell.nuon", digest: "9320e0089a8326ae", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "mkcd", file: "shell.nuon", digest: "e835fa7f1d36daa6", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "ls", file: "shell.nuon", digest: "0f7b212163f82343", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "ls -D", file: "shell.nuon", digest: "a67740b44191fb9b", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl-Space / F1", file: "shell.nuon", digest: "96462df108722934", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl-T", file: "shell.nuon", digest: "743b915a5df8ceba", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision"}
+    {id: "finder", file: "shell.nuon", digest: "9e842b420f3167d0", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "tv channel", file: "shell.nuon", digest: "7da3b18b0ef90a4e", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "grep", file: "shell.nuon", digest: "b4fccb79b4025b7b", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl-R", file: "shell.nuon", digest: "f5891cbd6cad0601", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Alt-R", file: "shell.nuon", digest: "702cd4cf872b6251", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Up / Down", file: "shell.nuon", digest: "a56d932edb29f47e", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "cf <file>", file: "shell.nuon", digest: "bf01c17de2c738ef", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "bb / ba", file: "shell.nuon", digest: "2a3457978f92deff", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "cc [...args]", file: "shell.nuon", digest: "525e5a509dadb0e9", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "help --json", file: "shell.nuon", digest: "46c8832d2b33787c", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "idioms", file: "shell.nuon", digest: "f5c827b8bc2726a1", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "help", file: "shell.nuon", digest: "aaded6d7aed668a8", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "help --check", file: "shell.nuon", digest: "1a29cf82f30a8d3e", reviewer: "cc-1787301962", date: "2026-08-21", note: "borderline and left standing: the why's second sentence re-walks the use's report list before ranking which of the three failures is dangerous. The ranking is the payload"}
+    {id: "pass <tab>", file: "shell.nuon", digest: "a359d049a9d14a90", reviewer: "cc-1787301962", date: "2026-08-21"}
+
+    # nvim.nuon
+    {id: "<leader>", file: "nvim.nuon", digest: "71e4b47556eb7e04", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<Esc>", file: "nvim.nuon", digest: "15564ab8d654c9da", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<C-d> <C-u> n N", file: "nvim.nuon", digest: "a5ec320811e78193", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<leader>p (visual)", file: "nvim.nuon", digest: "a5ec5256b6d11b2b", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<S-Up> <S-Down> <S-Left> <S-Right>", file: "nvim.nuon", digest: "f26cd1d68c5903ce", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. The use carried the insert-cursor mechanism for <S-Left> and the why carried the mirror of it for <S-Right>: one fact, two homes"}
+    {id: "h j k l (visual)", file: "nvim.nuon", digest: "621bc37825b63168", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<C-c> (visual)", file: "nvim.nuon", digest: "56ebe3038d1d60c9", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<C-v> (visual)", file: "nvim.nuon", digest: "857dcd997d08cbd6", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<Tab> <S-Tab> <C-n> <C-p> <C-Space> <C-e>", file: "nvim.nuon", digest: "8ba5e6770c0e113c", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<leader>e", file: "nvim.nuon", digest: "6567f2685c326f64", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<leader>cf", file: "nvim.nuon", digest: "7755bc6ab92859da", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<leader>t", file: "nvim.nuon", digest: "33d2a47a237eccae", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<leader>ff and <leader><space>", file: "nvim.nuon", digest: "078b4f8e3e835629", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "<Tab> <S-Tab> <CR> (telescope)", file: "nvim.nuon", digest: "9efb33206c0151fd", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "gd and gI", file: "nvim.nuon", digest: "f6b0881d074e0d31", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Neovim's own LSP keys", file: "nvim.nuon", digest: "36eb37f762f1c949", reviewer: "cc-1787301962", date: "2026-08-21"}
+
+    # terminal.nuon
+    {id: "F5 <digit>", file: "terminal.nuon", digest: "c7e646b9770a39f5", reviewer: "cc-1787301962", date: "2026-08-21", note: "borderline and left standing: `a one-shot key table, not a mode you have to leave` re-says the use's `the mode is over the moment you press the second key`, but `any key pops it, mapped or not` is not in the use and is the part that matters"}
+    {id: "F5 <letter>", file: "terminal.nuon", digest: "8dc7d41b0734ec59", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "nine tabs", file: "terminal.nuon", digest: "b3db4cf38ed1176a", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl+Shift+X", file: "terminal.nuon", digest: "1fdc0eba74433b26", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl+V", file: "terminal.nuon", digest: "0ef88c8a069e13be", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl+C", file: "terminal.nuon", digest: "8823768355048264", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. The why opened by re-saying the use's two branches before giving the mechanism"}
+    {id: "Ctrl+Shift+D", file: "terminal.nuon", digest: "36384356a8515f8b", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl+Shift+B", file: "terminal.nuon", digest: "69bbc04b413e3091", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. Its why held a copy of `capsule --rebuild`'s why as well as re-saying its own use; the copy now points at the entry that owns the fact"}
+    {id: "Ctrl+Shift+S", file: "terminal.nuon", digest: "e4ba51141e437bfa", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "Ctrl+Shift+T", file: "terminal.nuon", digest: "be71ca7c4a6f7fc9", reviewer: "cc-1787301962", date: "2026-08-21"}
+
+    # capsule.nuon
+    {id: "capsule [dir]", file: "capsule.nuon", digest: "95e3cdd6d57fa2fe", reviewer: "cc-1787301962", date: "2026-08-21"}
+    {id: "capsule --rebuild", file: "capsule.nuon", digest: "23fac1c72bfc6fe9", reviewer: "cc-1787301962", date: "2026-08-21", note: "borderline and left standing: `the only way to force a rebuild` restates the use's first clause, but the exclusivity is new and the sentence after it is the constraint"}
+    {id: "credentials in a capsule", file: "capsule.nuon", digest: "8b2e7d51f3dbda84", reviewer: "cc-1787301962", date: "2026-08-21"}
+]
