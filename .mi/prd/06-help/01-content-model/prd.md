@@ -1,8 +1,9 @@
 ---
-state: open
+state: claimed
 mode: afk
 deps: []
 verify: "nu tests/help-content-model.nu"
+claim: cc-1787301962
 ---
 
 # Content model
