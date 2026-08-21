@@ -29,16 +29,35 @@
 #      leave the gesture there.
 #   2. run `nu tests/help-content-model.nu`. It prints the digest to set.
 #   3. add or update the row: id, file, digest, reviewer (your session id),
-#      date. `note` is optional and carries anything that qualifies the review.
+#      date. If you also wrote or revised the pair, record `author` — see
+#      below, and expect the gate to refuse the row. `note` is optional and
+#      carries anything that qualifies the review.
 #
-# Reviewing your own writing is the one thing this cannot enforce, so it is
-# stated instead: rows carrying the "reviewer is also the author" note are
-# weaker evidence than the rest, and are the first ones a later reader should
-# re-read.
+# **`author`, and why it is a field rather than a sentence.** laws.md 2 asks
+# for "an independent reviewer … who did not write the claim". Until
+# 2026-08-21 that was carried by a prose note reading "reviewer is also the
+# author", which the gate ignored: four rows said in plain words that they
+# vouched for their own writing and the check passed them. `author` now holds
+# the session that wrote or last revised the pair, and
+# `tests/help-content-model.nu` fails any row where it equals `reviewer`.
+#
+# The residual is named rather than dressed up: `author` is optional, because
+# inventing one for the rows that predate the field would be the same false
+# record pointing the other way, and omitting it is not detectable from the
+# data. This hardens an honest record; it does not defeat a careless one.
 #
 # 2026-08-21 · cc-1787301962 swept all 51 pairs. Four were rewritten in that
-# pass and carry the note; the other 47 were written by cc-1787250953 /
-# cc-1787256992 / cc-1787260422 and read by someone who did not write them.
+# pass and carried the self-review note; the other 47 were written by
+# cc-1787250953 / cc-1787256992 / cc-1787260422 and read by someone who did
+# not write them.
+#
+# 2026-08-21 · cc-1787432671 re-read those four — `shell.nuon [Ctrl-T]`,
+# `nvim.nuon [<S-Up> …]`, `terminal.nuon [Ctrl+C]`, `terminal.nuon
+# [Ctrl+Shift+B]` — having written none of them, and all four stand. Each now
+# carries `reviewer: cc-1787432671`, `author: cc-1787301962` and a note giving
+# the reading rather than the fact of it, so the judgement can be checked
+# instead of trusted. No `use` or `why` text was touched, so every digest in
+# this file is unchanged; the reviewers moved, the corpus did not.
 
 [
     # shell.nuon
@@ -49,7 +68,7 @@
     {id: "ls", file: "shell.nuon", digest: "0f7b212163f82343", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "ls -D", file: "shell.nuon", digest: "a67740b44191fb9b", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "Ctrl-Space / F1", file: "shell.nuon", digest: "96462df108722934", reviewer: "cc-1787301962", date: "2026-08-21"}
-    {id: "Ctrl-T", file: "shell.nuon", digest: "743b915a5df8ceba", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision"}
+    {id: "Ctrl-T", file: "shell.nuon", digest: "743b915a5df8ceba", reviewer: "cc-1787432671", author: "cc-1787301962", date: "2026-08-21", note: "re-read by a session that wrote neither field. Stands: the why's first sentence is the shared `_finder_pick_channel` route and the cable-file consequence, which is nowhere in the use. Its second sentence does re-say `inserted at the cursor`, but its payload is the contrast with Ctrl-Space — the use says what the two keys share, the why says what they do not, and that is the pair working as intended rather than one copying the other"}
     {id: "finder", file: "shell.nuon", digest: "9e842b420f3167d0", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "tv channel", file: "shell.nuon", digest: "7da3b18b0ef90a4e", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "grep", file: "shell.nuon", digest: "b4fccb79b4025b7b", reviewer: "cc-1787301962", date: "2026-08-21"}
@@ -70,7 +89,7 @@
     {id: "<Esc>", file: "nvim.nuon", digest: "15564ab8d654c9da", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "<C-d> <C-u> n N", file: "nvim.nuon", digest: "a5ec320811e78193", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "<leader>p (visual)", file: "nvim.nuon", digest: "a5ec5256b6d11b2b", reviewer: "cc-1787301962", date: "2026-08-21"}
-    {id: "<S-Up> <S-Down> <S-Left> <S-Right>", file: "nvim.nuon", digest: "f26cd1d68c5903ce", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. The use carried the insert-cursor mechanism for <S-Left> and the why carried the mirror of it for <S-Right>: one fact, two homes"}
+    {id: "<S-Up> <S-Down> <S-Left> <S-Right>", file: "nvim.nuon", digest: "f26cd1d68c5903ce", reviewer: "cc-1787432671", author: "cc-1787301962", date: "2026-08-21", note: "re-read by a session that wrote neither field. Stands: the use now states only the observable oddity — from insert, <S-Left> catches two characters — and the why states the cause, that the insert cursor sits between characters and leaving insert drops it back. The why's closing `the extra character is the price` names that observation once more, but as the conclusion of the explanation, which is what an explanation is for"}
     {id: "h j k l (visual)", file: "nvim.nuon", digest: "621bc37825b63168", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "<C-c> (visual)", file: "nvim.nuon", digest: "56ebe3038d1d60c9", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "<C-v> (visual)", file: "nvim.nuon", digest: "857dcd997d08cbd6", reviewer: "cc-1787301962", date: "2026-08-21"}
@@ -89,9 +108,9 @@
     {id: "nine tabs", file: "terminal.nuon", digest: "b3db4cf38ed1176a", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "Ctrl+Shift+X", file: "terminal.nuon", digest: "1fdc0eba74433b26", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "Ctrl+V", file: "terminal.nuon", digest: "0ef88c8a069e13be", reviewer: "cc-1787301962", date: "2026-08-21"}
-    {id: "Ctrl+C", file: "terminal.nuon", digest: "8823768355048264", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. The why opened by re-saying the use's two branches before giving the mechanism"}
+    {id: "Ctrl+C", file: "terminal.nuon", digest: "8823768355048264", reviewer: "cc-1787432671", author: "cc-1787301962", date: "2026-08-21", note: "re-read by a session that wrote neither field, and this is the pair a second reader caught once already. Stands: the use gives two independent cases, the why gives the one ordered test that produces them — selection read first, key sent only on empty — plus the trade a plain CopyTo loses. Neither sentence is the other in different words"}
     {id: "Ctrl+Shift+D", file: "terminal.nuon", digest: "36384356a8515f8b", reviewer: "cc-1787301962", date: "2026-08-21"}
-    {id: "Ctrl+Shift+B", file: "terminal.nuon", digest: "69bbc04b413e3091", reviewer: "cc-1787301962", date: "2026-08-21", note: "revised in this pass; reviewer is also the author of the revision. Its why held a copy of `capsule --rebuild`'s why as well as re-saying its own use; the copy now points at the entry that owns the fact"}
+    {id: "Ctrl+Shift+B", file: "terminal.nuon", digest: "69bbc04b413e3091", reviewer: "cc-1787432671", author: "cc-1787301962", date: "2026-08-21", note: "re-read by a session that wrote neither field. Stands, and it is the cleanest of the four: the use is the gesture and when to reach for it, the why is entirely about the key having looked contested and the wallpaper pipeline being DO NOT PORT. No sentence of one appears in the other, and the rebuild rationale now points at the entry that owns it instead of copying it"}
     {id: "Ctrl+Shift+S", file: "terminal.nuon", digest: "e4ba51141e437bfa", reviewer: "cc-1787301962", date: "2026-08-21"}
     {id: "Ctrl+Shift+T", file: "terminal.nuon", digest: "be71ca7c4a6f7fc9", reviewer: "cc-1787301962", date: "2026-08-21"}
 

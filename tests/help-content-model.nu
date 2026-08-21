@@ -34,18 +34,115 @@ const MODES = ["shell" "nvim:normal" "nvim:visual" "nvim:insert" "terminal" "con
 # by how often it's needed"), so it is compared as a list, not as a set.
 const TOPICS = ["navigate" "find" "history" "edit" "git" "containers" "terminal" "agents" "config"]
 
-# kind -> required fields, optional fields. `kind` itself is always required.
+# kind -> required fields, optional fields, and the fields whose value may be
+# an explicit `null`. `kind` itself is always required.
+#
+# **`null` is a value here, not an absence, and the difference is the whole
+# reason `nullable` exists as a field of its own.** `nvim-map`'s `desc` is
+# three-state and every state means something different to the drift check:
+#
+#   field absent      — compare the live `desc` against this entry's `title`
+#   desc: null        — the live map carries no description on purpose, so the
+#                       drift check asserts existence only and never a mismatch
+#                       (14 targets do this today)
+#   desc: "some text" — the live map's description must equal that string
+#
+# The three states are README.md's rule, not this file's invention — see its
+# "`verify` — a list of typed targets" section, which is where a writer meets
+# them. `nullable` is that rule transcribed, the same way TOPICS and CONCEPTS
+# transcribe theirs instead of reading them back out of the data.
+#
+# Measured before relying on it, because a table would have destroyed the
+# distinction: nushell's `open` on a heterogeneous `.nuon` list keeps the
+# records heterogeneous rather than null-filling them into a table, so a target
+# that omits `scope` reads back with no `scope` column while one that writes
+# `desc: null` reads back with a `desc` column holding null. Absence and null
+# survive the round trip and are distinguishable, so the shape check can hold
+# both rules at once.
 const VERIFY_KINDS = {
-    "keybinding": {req: ["name"], opt: []}
-    "alias": {req: ["name"], opt: []}
-    "command": {req: ["name"], opt: []}
-    "nvim-map": {req: ["mode" "lhs"], opt: ["desc" "scope"]}
-    "wezterm-key": {req: ["key" "mods"], opt: ["table"]}
-    "prose": {req: [], opt: []}
+    "keybinding": {req: ["name"], opt: [], nullable: []}
+    "alias": {req: ["name"], opt: [], nullable: []}
+    "command": {req: ["name"], opt: [], nullable: []}
+    "nvim-map": {req: ["mode" "lhs"], opt: ["desc" "scope"], nullable: ["desc"]}
+    "wezterm-key": {req: ["key" "mods"], opt: ["table"], nullable: []}
+    "prose": {req: [], opt: [], nullable: []}
 }
 
 const NVIM_MAP_MODES = ["n" "v" "x" "i" "o" "t" "c" "s"]
 const NVIM_MAP_SCOPES = ["global" "buffer"]
+
+# --- value shape -------------------------------------------------------------
+#
+# R2 says every entry's fields are "present and well-typed". Until 2026-08-21
+# that was gated as field *presence* plus closed-set *membership* and nothing
+# else, so a field could be present, correctly named, and hold nothing:
+#
+#   verify: [{kind: "command", name: ""}]   exited 0
+#   key: ""                                 exited 0, and the entry then had
+#                                           no id, so every message about it
+#                                           read `shell.nuon []`
+#   source: ""                              exited 0 — `path join ""` is the
+#                                           repo root, which exists
+#
+# laws.md 2, rung 1: "strict schemas at every boundary — required fields, no
+# unknown keys, no silent default". Presence and membership were two thirds of
+# a schema. These two predicates are the third, and they are deliberately ONE
+# implementation used at all four boundaries this file reads (entry fields,
+# verify targets, topics.nuon rows, why-review.nuon rows) rather than four
+# spellings of the same idea — adding a fifth boundary should touch one place.
+#
+# Both return "" for a good value and the reason otherwise, so a caller reads
+# as `let b = (bad-string $v); if $b != "" { ... }` everywhere.
+
+def shape-of [v: any] { ($v | describe -d).type }
+
+def bad-string [v: any] {
+    let t = (shape-of $v)
+    if $t != "string" { return $"is a ($t), not a string" }
+    if ($v | str trim | is-empty) { return "is empty" }
+    ""
+}
+
+def bad-string-list [v: any] {
+    let t = (shape-of $v)
+    if not ($t in ["list" "table"]) { return $"is a ($t), not a list" }
+    if ($v | is-empty) { return "is an empty list" }
+    for x in $v {
+        let b = (bad-string $x)
+        if $b != "" { return $"has an element that ($b)" }
+    }
+    ""
+}
+
+# Every field an entry may carry, and the shape its value must have. `verify`
+# is checked structurally further down (its elements are typed records, not
+# strings), so it is listed as a record list and nothing more here.
+const FIELD_SHAPES = {
+    key: "string"
+    cmd: "string"
+    title: "string"
+    use: "string"
+    topic: "string"
+    mode: "string"
+    verify: "record-list"
+    source: "string"
+    also: "string-list"
+    why: "string"
+}
+
+def bad-field [name: string, v: any] {
+    let want = ($FIELD_SHAPES | get -o $name)
+    if $want == null { return "" }   # unknown field: reported by the caller
+    match $want {
+        "string" => (bad-string $v)
+        "string-list" => (bad-string-list $v)
+        "record-list" => {
+            let t = (shape-of $v)
+            if not ($t in ["list" "table"]) { $"is a ($t), not a list" } else { "" }
+        }
+        _ => ""
+    }
+}
 
 # Transcribed from the node's coverage requirements, NOT read back out of the
 # data files — that is the whole point. If a requirement names a surface and no
@@ -126,6 +223,37 @@ def id [e: record] {
 # fine; R5's own example ("press `F5`, then a digit 1-9") does exactly that.
 def restates-key [use: string, eid: string] {
     ($use | str starts-with $eid) or ($use | str starts-with $"`($eid)`")
+}
+
+# R2's `use` sub-box — "the actual gesture, in order, including what to press
+# next and what comes back".
+#
+# **This is a vacuity floor and it is not that clause.** Say it plainly,
+# because this corpus has already shipped two checks that read as enforcement
+# and enforced nothing. Whether a `use` describes the *real* gesture is truth
+# against a live surface: it is `coverage`'s R5 for the entries that have one,
+# and for the 80 of 84 that have no deployed surface it cannot be decided here
+# at all. Nothing below moves that.
+#
+# What it does decide is the one escape the node names by hand: replacing
+# `capsule list`'s `use` with the single character `"x"` exited 0. A gesture
+# has steps; one word is not an under-described gesture, it is an absent one.
+#
+# The floor is set from the corpus, not from taste. Measured 2026-08-21 over
+# all 84 live entries: shortest `use` is 8 words (`nvim.nuon
+# [<leader>w and <leader>q]`, 60 characters), next 9, mean 34. Five leaves
+# three words of headroom under the shortest thing anyone has actually
+# written, so this cannot fire on a real entry today — which is exactly why it
+# is a floor against nothing rather than a rule about length. If a legitimate
+# four-word `use` ever exists, the honest fix is to widen the floor with the
+# new measurement recorded, not to delete the check.
+const USE_MIN_WORDS = 5
+
+def too-thin [use: string] {
+    let n = ($use | split row " " | where {|w| ($w | str trim) != "" } | length)
+    if $n < $USE_MIN_WORDS {
+        $"is ($n) word-long, under the ($USE_MIN_WORDS)-word floor — a gesture has steps, and the shortest real `use` in this manual is 8 words"
+    } else { "" }
 }
 
 # R5 — "`title` is one line, imperative, no trailing period". One-line and the
@@ -283,6 +411,54 @@ def selftest [] {
     if (restates-key "Press `Ctrl-X`, then a digit 1-9" "Ctrl-X") {
         $bad = ($bad | append "selftest: restates-key fires on a gesture that merely names its key, which R5 asks for")
     }
+    # the value-shape predicates. The hole they close was present-but-empty, so
+    # the controls that matter are the empty ones: each of these was a live
+    # exit-0 before 2026-08-21.
+    if (bad-string "a real value") != "" {
+        $bad = ($bad | append "selftest: bad-string rejects an ordinary non-empty string")
+    }
+    if (bad-string "") == "" {
+        $bad = ($bad | append "selftest: bad-string accepts the empty string — this is the hole R2 named, `verify: [{kind: \"command\", name: \"\"}]` exiting 0")
+    }
+    if (bad-string "   ") == "" {
+        $bad = ($bad | append "selftest: bad-string accepts whitespace — a value that trims to nothing is nothing")
+    }
+    if (bad-string 5) == "" {
+        $bad = ($bad | append "selftest: bad-string accepts a non-string — `well-typed` has to mean the type too")
+    }
+    if (bad-string null) == "" {
+        $bad = ($bad | append "selftest: bad-string accepts null")
+    }
+    if (bad-string-list ["a" "b"]) != "" {
+        $bad = ($bad | append "selftest: bad-string-list rejects an ordinary list of strings")
+    }
+    if (bad-string-list []) == "" {
+        $bad = ($bad | append "selftest: bad-string-list accepts an empty list")
+    }
+    if (bad-string-list ["a" ""]) == "" {
+        $bad = ($bad | append "selftest: bad-string-list accepts a list with an empty element — `also: [\"\"]` would point at nothing while looking populated")
+    }
+    if (bad-string-list "a") == "" {
+        $bad = ($bad | append "selftest: bad-string-list accepts a bare string where a list is required")
+    }
+    if (bad-field "also" "not-a-list") == "" {
+        $bad = ($bad | append "selftest: bad-field does not apply the list shape to `also`")
+    }
+    if (bad-field "title" "") == "" {
+        $bad = ($bad | append "selftest: bad-field does not apply the string shape to `title`")
+    }
+    if (bad-field "title" "Jump to a tab") != "" {
+        $bad = ($bad | append "selftest: bad-field rejects a good title")
+    }
+    # the `use` vacuity floor. The first control is the escape the node names
+    # by hand; the second is the shortest `use` the live manual actually
+    # carries, and it must stay under the floor's ceiling.
+    if (too-thin "x") == "" {
+        $bad = ($bad | append "selftest: too-thin accepts a one-word `use` — that is the `capsule list` escape, exiting 0")
+    }
+    if (too-thin "Press `<leader>w` to save the buffer and `<leader>q` to close the window") != "" {
+        $bad = ($bad | append "selftest: too-thin fires on a real `use` — the floor has risen above something someone wrote, and the measurement in the comment above it is stale")
+    }
     $bad
 }
 
@@ -307,7 +483,12 @@ def main [dir?: path] {
     for t in $topics {
         let cols = ($t | columns)
         for f in ["id" "title" "summary"] {
-            if not ($f in $cols) { $errors = ($errors | append $"topics.nuon: topic ($t.id? | default '?') is missing `($f)`") }
+            if not ($f in $cols) {
+                $errors = ($errors | append $"topics.nuon: topic ($t.id? | default '?') is missing `($f)`")
+                continue
+            }
+            let b = (bad-string ($t | get -o $f))
+            if $b != "" { $errors = ($errors | append $"topics.nuon [($t.id? | default '?')]: `($f)` ($b)") }
         }
     }
 
@@ -342,6 +523,13 @@ def main [dir?: path] {
                 if not ($f in ($REQUIRED | append $OPTIONAL)) { $errors = ($errors | append $"($at): unknown field `($f)`") }
             }
 
+            # R2 — and well-typed. Presence above, shape here: a field that is
+            # present but holds "" or the wrong type used to pass.
+            for f in $cols {
+                let b = (bad-field $f ($e | get -o $f))
+                if $b != "" { $errors = ($errors | append $"($at): `($f)` ($b)") }
+            }
+
             # R3 — topic is one of the nine
             if ("topic" in $cols) and (not ($e.topic in $topic_ids)) {
                 $errors = ($errors | append $"($at): topic `($e.topic)` is not in topics.nuon")
@@ -352,15 +540,17 @@ def main [dir?: path] {
             }
 
             # R5 — writing rules
-            if ("title" in $cols) {
-                if ($e.title | str trim | is-empty) { $errors = ($errors | append $"($at): empty title") }
+            # the shape pass above already reported an absent or non-string
+            # title, so these read a value they know is a non-empty string
+            if ("title" in $cols) and ((bad-string $e.title) == "") {
                 if ($e.title | str contains "\n") { $errors = ($errors | append $"($at): title spans more than one line") }
                 if ($e.title | str ends-with ".") { $errors = ($errors | append $"($at): title ends with a period") }
                 let mood = (non-imperative $e.title)
                 if $mood != "" { $errors = ($errors | append $"($at): title is not imperative — it ($mood)") }
             }
-            if ("use" in $cols) {
-                if ($e.use | str trim | is-empty) { $errors = ($errors | append $"($at): empty use") }
+            if ("use" in $cols) and ((bad-string $e.use) == "") {
+                let thin = (too-thin $e.use)
+                if $thin != "" { $errors = ($errors | append $"($at): use ($thin)") }
                 if $has_key and (restates-key $e.use $eid) {
                     $errors = ($errors | append $"($at): use opens by restating the key — R5 wants the gesture, as in 'press ($eid), then …', not the title again")
                 }
@@ -391,6 +581,18 @@ def main [dir?: path] {
                         for f in $tc {
                             if not ($f in (["kind"] | append $shape.req | append $shape.opt)) {
                                 $errors = ($errors | append $"($at): ($t.kind) target has unknown field `($f)`")
+                                continue
+                            }
+                            # every field of every verify target is a non-empty
+                            # string — an empty one is a target that resolves
+                            # to nothing while looking well-formed, the hole
+                            # R2 named: `[{kind: "command", name: ""}]` passed.
+                            # The exception is a `nullable` field written as an
+                            # explicit null, which is an assertion, not a gap.
+                            let val = ($t | get -o $f)
+                            if not (($val == null) and ($f in $shape.nullable)) {
+                                let b = (bad-string $val)
+                                if $b != "" { $errors = ($errors | append $"($at): ($t.kind) target's `($f)` ($b)") }
                             }
                         }
                         if ($t.kind == "nvim-map") and ("mode" in $tc) and (not ($t.mode in $NVIM_MAP_MODES)) {
@@ -469,9 +671,27 @@ def main [dir?: path] {
                 if not ($f in $rc) { $errors = ($errors | append $"why-review.nuon: a row is missing `($f)`") }
             }
             for f in $rc {
-                if not ($f in ["id" "file" "digest" "reviewer" "date" "note"]) {
+                if not ($f in ["id" "file" "digest" "reviewer" "author" "date" "note"]) {
                     $errors = ($errors | append $"why-review.nuon [($r.id? | default '?')]: unknown field `($f)`")
+                    continue
                 }
+                let b = (bad-string ($r | get -o $f))
+                if $b != "" { $errors = ($errors | append $"why-review.nuon [($r.id? | default '?')]: `($f)` ($b)") }
+            }
+            # laws.md 2, rung 3: "an independent reviewer is asked to refute
+            # each claim". `author` records the session that wrote or last
+            # revised the pair; where it is recorded, a reviewer who is that
+            # session is the record vouching for its own writing, and this
+            # refuses it rather than filing it as a softer note.
+            #
+            # Optional, and the residual is named rather than dressed up:
+            # omitting `author` is not detectable from the data, so this
+            # hardens an honest record, it does not defeat a careless one.
+            # Rows written before the field existed do not carry it, because
+            # inventing an author for them would be the same false record in
+            # the other direction.
+            if ("author" in $rc) and ($r.author? == $r.reviewer?) {
+                $errors = ($errors | append $"why-review.nuon [($r.id? | default '?')]: reviewer and author are both ($r.reviewer?) — a `why` reviewed by the session that wrote it is the record vouching for itself; it needs a reader who did not write it")
             }
             $seen = ($seen | append $"($r.file?)|($r.id?)")
         }
