@@ -24,5 +24,6 @@ anyone deciding. Gates C.1.
 
 ## Notes
 
- Human answers the ## Open questions section of 01-capsule/02-dev-image.md and
-      records the answer there. The PRD's own recommendation is "drop".
+ Human answers the ## Open questions section of
+      `.mi/prd/01-capsule/02-dev-image/prd.md` and records the answer there.
+      The PRD's own recommendation is "drop".

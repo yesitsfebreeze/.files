@@ -10,10 +10,12 @@ Companion to [`capabilities.md`](capabilities.md),
 **Why this inventory exists.** It was missing, and its absence was a hole in
 the plan: the PRD tree referenced "generated at chezmoi-apply time" and
 "installed by the bootstrap" without ever rating or speccing the layer that
-does it. The real dotfiles repo is the chezmoi source at
-`~/.local/share/chezmoi` (`home/` + `justfile` + `docs/`), and it — not the
-legacy `~/.files` symlink deployer, and not the legacy `conf/bootstrap.lua` —
-is how this machine actually gets configured.
+does it. The deployed `~/.config` tree is canonical (Decision 4,
+`.mi/prd/00-delivery/corrections/prd.md`, 2026-08-21); the chezmoi source at
+`~/.local/share/chezmoi` (`home/` + `justfile` + `docs/`) is not a port
+target, and the capabilities rated below are what `05-platform` rebuilds from
+scratch — not the legacy `~/.files` symlink deployer, and not the legacy
+`conf/bootstrap.lua`.
 
 **Correction it forces.** `capabilities.md`'s "Cross-platform dependency
 bootstrap" (the WezTerm-Lua checker that installs zoxide/docker and stamps
@@ -99,7 +101,8 @@ ported; see [`05-platform`](../prd/05-platform/prd.md).
   `quicklist.nu`, `overlay.nu` and `opacity.nu` exist only under `~/.config`
   and are not in the source at all. So "chezmoi-managed", written at the head
   of these inventories, is not true of the files they rate. Which artifact is
-  canonical is a human decision — see the escalation on
+  canonical was decided 2026-08-21 (Decision 4): the deployed tree is
+  canonical — see the resolution on
   `00-delivery/corrections/w0-6-live-bugs`.
 - 3
 - 9

@@ -8,7 +8,8 @@ verify: ""
 
 # run_once homebrew bootstrap
 
-Parent: [`../prd.md`](../prd.md) · source: [`02-package-provisioning.md`](../prd.md) requirements R3
+Parent: [`02-package-provisioning`](../prd.md) · source:
+[`02-package-provisioning`](../prd.md) requirements R3
 
 ## Requirements
 - [ ] **R3** — **Homebrew first.** `run_once_before` installs Homebrew on a

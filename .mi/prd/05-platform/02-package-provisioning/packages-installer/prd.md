@@ -9,7 +9,8 @@ verify: ""
 
 # packages.yaml + run_onchange installer
 
-Parent: [`../prd.md`](../prd.md) · source: [`02-package-provisioning.md`](../prd.md) requirements R1, R2, R4, R5, R6, R7
+Parent: [`02-package-provisioning`](../prd.md) · source:
+[`02-package-provisioning`](../prd.md) requirements R1, R2, R4, R5, R6, R7
 
 ## Requirements
 - [ ] **R1** — **Tools as data.** `.chezmoidata/packages.yaml` holds the

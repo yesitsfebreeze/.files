@@ -977,8 +977,8 @@
     "W0.6"
    ],
    "verify": "",
-   "manual": "Human decides. Record in 04-corrections-backlog.md with a date.",
-   "notes": "Open decision 2. Needs no inventory. Gates T.1, E.5, E.13 and S.1 (the tinty palette re-assert in config.nu is orphaned if theme is dropped) — S.1 is on the critical path. Shares 04-corrections-backlog.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
+   "manual": "Human decides. Record in .mi/prd/00-delivery/corrections/prd.md with a date.",
+   "notes": "Open decision 2. Needs no inventory. Gates T.1, E.5, E.13 and S.1 (the tinty palette re-assert in config.nu is orphaned if theme is dropped) — S.1 is on the critical path. Shares .mi/prd/00-delivery/corrections/prd.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
   },
   {
    "id": "D.1c",
@@ -994,8 +994,8 @@
     "W0.6"
    ],
    "verify": "",
-   "manual": "Human decides. Record in 04-corrections-backlog.md with a date.",
-   "notes": "Open decision 3. Gates S.4 (req 2) and P.2 (05-platform/02 req 7 already hard-codes \"fzf is required whether or not it is wanted\"). Shares 04-corrections-backlog.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
+   "manual": "Human decides. Record in .mi/prd/00-delivery/corrections/prd.md with a date.",
+   "notes": "Open decision 3. Gates S.4 (req 2) and P.2 (05-platform/02 req 7 already hard-codes \"fzf is required whether or not it is wanted\"). Shares .mi/prd/00-delivery/corrections/prd.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
   },
   {
    "id": "D.1d",
@@ -1012,7 +1012,7 @@
    ],
    "verify": "",
    "manual": "Human decides whether the live wallpaper/opacity features are ported or dropped on the record, and who gets Ctrl+Shift+B.",
-   "notes": "T-11 was never fixed nor converted into a task, violating the backlog acceptance criterion \"every S1 item is either fixed or converted into a task\". C-1 hands Ctrl+Shift+B to capsule, silently deleting the live wallpaper feature. Gates T.1 and C.2. Shares 04-corrections-backlog.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
+   "notes": "T-11 was never fixed nor converted into a task, violating the backlog acceptance criterion \"every S1 item is either fixed or converted into a task\". C-1 hands Ctrl+Shift+B to capsule, silently deleting the live wallpaper feature. Gates T.1 and C.2. Shares .mi/prd/00-delivery/corrections/prd.md with the other decisions and with W0.6; the W0.6 edge is kept because an afk agent must not write that file while a human is answering into it, but the three decisions are not serialised against each other — a person settles them in one sitting, and hitl nodes are never dispatched concurrently to agents."
   },
   {
    "id": "G.1",
@@ -1078,7 +1078,7 @@
    ],
    "deps": [],
    "verify": "",
-   "manual": "Human answers the ## Open questions section of 01-capsule/02-dev-image.md and records the answer there. The PRD's own recommendation is \"drop\".",
+   "manual": "Human answers the ## Open questions section of .mi/prd/01-capsule/02-dev-image/prd.md and records the answer there. The PRD's own recommendation is \"drop\".",
    "notes": "CLAUDE.md Known gaps lists this as undecided. It was an ## Open questions section on an afk node, so an agent would have silently taken the recommendation and closed the fork without anyone deciding. Gates C.1."
   },
   {

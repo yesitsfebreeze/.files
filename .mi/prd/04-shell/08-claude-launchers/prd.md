@@ -35,4 +35,4 @@ the minimal base, keep the daily commands and shed ceremony.
 - `cl <task>` — goal-loop seeding via `cl.py` under a pty.
 - `jj` — zoxide-resolved journal dir + Claude.
 - `zc` stays, but it's specced with the zoxide suite
-  ([03-zoxide.md](../03-zoxide/prd.md)).
+  ([`03-zoxide`](../03-zoxide/prd.md)).

@@ -8,7 +8,8 @@ verify: "chezmoi apply on a scratch target is idempotent (second apply is a no-o
 
 # Repo skeleton: chezmoi source layout, home/, justfile
 
-Parent: [`../prd.md`](../prd.md) · source: [`01-deploy-mechanism.md`](../prd.md) requirements R1, R3, R5
+Parent: [`01-deploy-mechanism`](../prd.md) · source:
+[`01-deploy-mechanism`](../prd.md) requirements R1, R3, R5
 
 ## Requirements
 - [ ] **R1** — **Source layout.** `home/` holds the managed tree

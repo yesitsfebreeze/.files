@@ -131,6 +131,7 @@ the dependency graph permits, not a preference.
 13. H.3
 14. H.5
 15. H.4
+16. H.1c
 
 Bold is `hitl` — a person answers it; an agent must not.
 

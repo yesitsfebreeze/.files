@@ -8,7 +8,8 @@ verify: ""
 
 # Managed config surface + dot_gitconfig.tmpl
 
-Parent: [`../prd.md`](../prd.md) · source: [`01-deploy-mechanism.md`](../prd.md) requirements R2
+Parent: [`01-deploy-mechanism`](../prd.md) · source:
+[`01-deploy-mechanism`](../prd.md) requirements R2
 
 ## Requirements
 - [ ] **R2** — **Managed config surface.** One source of truth per tool under
