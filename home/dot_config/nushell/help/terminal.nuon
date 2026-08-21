@@ -148,7 +148,7 @@
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+V", "Ctrl+Shift+X"]
-        why: "One key for both because the terminal can tell them apart: the binding reads the pane's selection first and only falls through to sending the key when it is empty. That buys the platform-native copy shortcut without giving up the interrupt, which is the trade a plain `CopyTo` binding loses."
+        why: "The binding reads the pane's selection first and only falls through to sending the key when it is empty. That is what buys the platform-native copy shortcut without giving up the interrupt — the trade a plain `CopyTo` binding loses, and the reason this key is not simply left to the shell."
         verify: [{kind: "wezterm-key", key: "c", mods: "CTRL"}]
         source: ".mi/prd/02-terminal/prd.md"
     }
@@ -172,7 +172,7 @@
         topic: "containers"
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
-        why: "You rarely need it: a changed image definition is detected and rebuilt on the next mount by itself, and nothing else ever rebuilds implicitly. The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but `capabilities-terminal.md` rates that whole pipeline DO NOT PORT, so the key comes free with the port and there is nothing left to settle."
+        why: "The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but `capabilities-terminal.md` rates that whole pipeline DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here."
         verify: [{kind: "wezterm-key", key: "B", mods: "CTRL"}]
         source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
     }

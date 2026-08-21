@@ -16,6 +16,7 @@ schema; read this before editing an entry.
 | `nvim.nuon` | Neovim — keymaps, plugin keys, and the core keys we keep |
 | `terminal.nuon` | WezTerm — jump mode, window/tab keys, copy mode, clipboard, capsule bindings |
 | `capsule.nuon` | the capsule CLI and what a container gets from the host |
+| `why-review.nuon` | not content: the record of who read each `why` against its `use`, and of the exact text they read |
 
 NUON, not YAML: `open shell.nuon` in nushell returns a table with no parser and
 no dependency. Comments are legal and used for section headers.
@@ -133,13 +134,20 @@ table silently documents nothing.
 
 - `title` is one line, imperative, no trailing period. For an `nvim-map` target
   with no explicit `desc`, the title *is* the string compared against the live
-  map, so it must match the `desc` in the config. All three clauses are gated:
-  "imperative" is decided from the first word, which is where its three failure
-  modes show — a gerund ("Jumping to a tab"), a third-person verb ("Jumps to a
-  tab") or a noun phrase ("The fastest way to a tab"). Verbs that genuinely end
-  in `s` (`Press`, `Pass`, `Focus`) are allowlisted, and the allowlist is
-  itself a `selftest` control, because a rule that rejects `Press` in a manual
-  about keys would be turned off within the week.
+  map, so it must match the `desc` in the config. All three clauses are gated,
+  and "imperative" **fails closed**: the first word must be a base-form verb on
+  the gate's `IMPERATIVE_VERBS` list, and anything else is a violation. Write a
+  title whose verb is not on the list yet and the gate tells you so; add the
+  verb in the same change, having read the title. That one-line edit is the
+  review.
+
+  It used to be a blocklist — a gerund, a third-person verb, or one of 33
+  determiners, all decided from the first word — and it let through everything
+  it had not thought of. Three confirmed escapes, all exit 0: `Tab jumping by
+  number` (the gerund is not the first word), `Fast tab access by number`
+  (adjective-led noun phrase), `Jumped to a tab by its number` (past tense).
+  All three are now `selftest` controls. The set of noun phrases is unbounded;
+  the set of verbs this manual opens a title with is 51 long.
 - `use` is the gesture, not the key again: "press `F5`, then a digit 1–9",
   never "presses F5 to jump". Naming the key mid-sentence is fine — R5's own
   example does it. What is not fine is *opening* with it, which is the title
@@ -157,20 +165,26 @@ table silently documents nothing.
   the thing to change; the wording of R5 is an open question against this
   corpus, not a licence to add whys.
 
-  **This one clause is held by review, not by the gate, and that is a measured
-  decision rather than an omission.** The obvious mechanical proxy is word
-  overlap between `use` and `why`, and it was computed over all 51 pairs
-  (content words, stopped and deduplicated, containment of `why` in `use`).
-  It does not separate the defects from the good entries: the corpus mean is
-  0.11, and the one entry known to state the same fact twice — `Ctrl+V`, whose
-  `why` said the paste "works inside a running program and not only at a
-  prompt" while its `use` already said "in any pane — a shell prompt, nvim, a
-  running agent alike" — scores **0.097, ranking 28th of 51, below the mean**.
-  A threshold that caught it would fire on more than half the manual. The
-  restatement is semantic, in different words, so it takes a reader. Both
-  defects the 2026-08-20 review found (`Ctrl+V` and `Ctrl-T`) were rewritten
-  in that pass; re-run the review when entries are added rather than trusting
-  the gate to notice.
+  **This one clause is held by a reader, not by a text check, and the gate
+  holds the reader to it.** Two mechanical proxies were built and measured, and
+  both are recorded here so a third is not attempted:
+
+  | proxy | corpus mean | where the known defects landed |
+  |---|---|---|
+  | containment of `why`'s content words in `use` | 0.11 | `Ctrl+V` 0.097 — rank 28 of 51, *below* the mean |
+  | best single sentence of `why`, same containment (2026-08-21) | 0.157 | `Ctrl+C` 0.167 — rank 23; `Ctrl+Shift+B` 0.143 — rank 27 |
+
+  Neither separates anything: a threshold that catches those entries fires on
+  half the manual. The reason is that the restatement is semantic — `Ctrl+C`'s
+  `why` opened "One key for both because the terminal can tell them apart",
+  which is exactly what its `use` says in completely different words.
+
+  So the clause is held by a person, and `why-review.nuon` is what stops that
+  being a wish. Every `why`-carrying entry needs a row there whose `digest`
+  matches its current `use`/`why` pair; add a `why` or edit either field and
+  the gate fails until someone reads the new pair and records it. The file
+  itself carries the three-step ritual. Reviewing your own writing is the part
+  no gate can enforce, so rows say when the reviewer was also the author.
 - Add the entry in the **same change** as the binding. `help --check` exits
   non-zero on an undocumented one, which is the only reason this file stays true.
 
@@ -187,9 +201,10 @@ Strings are single-line by design, even long ones: it keeps `grep` and
 nu tests/help-content-model.nu
 ```
 
-Strict schema, topics, the writing rules, `also` resolution and the coverage
-the PRD's `coverage/` child names, R1–R4. It exits non-zero on any violation,
-and it fails rather than passes when it finds nothing to check.
+Strict schema, topics, the writing rules, `also` resolution, the currency of
+`why-review.nuon`, and the coverage the PRD's `coverage/` child names, R1–R4.
+It exits non-zero on any violation, and it fails rather than passes when it
+finds nothing to check.
 
 Requirement numbers moved when the node split on 2026-08-20: the four coverage
 requirements became the child's R1–R4, the old R8 (concepts) is now R4 and the
@@ -206,12 +221,12 @@ assert that the data agrees with itself:
   was read out of `topics.nuon`, so renaming `git` to `vcs` or deleting
   `history` both exited 0.
 
-`selftest` runs both prose predicates against known-bad and known-good strings
-on every run, so a repeat of the backtick miss above fails here instead of
-passing quietly for a cycle. The imperative check finds no violation in the
-current 84 entries, which is why its controls matter more than its output: a
-check with subjects and no violations and a check that cannot fire read
-identically from the outside.
+`selftest` runs all three predicates — `restates-key`, `non-imperative` and
+`why-digest` — against known-bad and known-good inputs on every run, so a
+repeat of the backtick miss above fails here instead of passing quietly for a
+cycle. The imperative check finds no violation in the current 84 entries, which
+is why its controls matter more than its output: a check with subjects and no
+violations and a check that cannot fire read identically from the outside.
 
 What it cannot do is confirm a `verify` target resolves against a live shell,
 editor or terminal: that is `help --check`

@@ -129,41 +129,102 @@ def restates-key [use: string, eid: string] {
 }
 
 # R5 — "`title` is one line, imperative, no trailing period". One-line and the
-# trailing period are checked in `main`; "imperative" had no test at all, so a
-# clause R5 calls gated was two thirds gated and the remaining third read as
-# covered.
+# trailing period are checked in `main`; "imperative" is decided here.
 #
-# Imperative is decided from its failure modes rather than by tagging parts of
-# speech, and all three are visible in the first word: a gerund ("Jumping to a
-# tab"), a third-person verb ("Jumps to a tab"), or a noun phrase ("The tab
-# jumper", "A faster route to ..."). Bare-verb openers are left alone, which is
-# what an imperative is.
+# **This check fails closed, and that is the repair.** The first version decided
+# from three failure shapes visible in the first word — a gerund ("Jumping to a
+# tab"), a third-person verb ("Jumps to a tab"), or one of 33 hardcoded
+# determiners ("The fastest way to a tab"). Anything else passed, so anything
+# the blocklist had not thought of passed. Three escapes were confirmed by hand
+# and all exited 0: `Tab jumping by number` (gerund, not in first position),
+# `Fast tab access by number` (adjective-led noun phrase), `Jumped to a tab by
+# its number` (past tense). A blocklist of noun phrases is unbounded; the set of
+# verbs a keyboard manual opens a title with is not.
 #
-# The -s allowlist is not a curiosity: several perfectly imperative verbs end in
-# s, and `Press` opens titles in a manual about keys more than any other word.
+# So the rule is inverted: the first word must be a base-form verb on the list
+# below, and an unknown opener is an error rather than a shrug (laws.md 3, rung
+# 1 — "an unknown name is an error, never an empty value"). Adding a verb is a
+# deliberate one-line edit by someone who has read the title, which is the
+# review this clause is entitled to.
 #
-# Measured before this was written, over all 84 titles: 0 end in `-ing`, 0 end
-# in `-s`, 0 open with a determiner — so it finds no violation today. That is a
-# passing check with 84 subjects, not the empty check law 3 refuses: `selftest`
-# below is what tells the two apart, and this corpus has already shipped one
-# check that could not fire (see `restates-key`).
+# The list is seeded from the 51 distinct openers of the 84 live titles plus the
+# ordinary manual verbs a later entry is likely to need. Compounds are
+# head-final, so `fuzzy-search` is admitted by `search` and no compound needs
+# listing. Verbs that genuinely end in `s` (`press`, `pass`, `focus`) are just
+# members like any other — the old `-s` allowlist was a patch on a rule that no
+# longer exists.
+#
+# It finds no violation in the current 84 titles. That is a passing check with
+# 84 subjects, not the empty check law 3 refuses: `selftest` below is what tells
+# the two apart, and this corpus has already shipped one check that could not
+# fire (see `restates-key`).
+const IMPERATIVE_VERBS = [
+    # the 51 openers the live corpus uses
+    "jump" "open" "search" "paste" "move" "copy" "reopen" "list" "understand"
+    "rebuild" "drop" "use" "read" "close" "step" "run" "pick" "remove" "see"
+    "freeze" "expect" "rename" "send" "switch" "grep" "find" "work" "format"
+    "drive" "select" "save" "indent" "keep" "walk" "split" "resize" "clear"
+    "show" "complete" "pull" "check" "write" "resume" "start" "spawn" "leave"
+    "dump" "insert" "enter" "toggle" "press"
+    # ordinary manual verbs, seeded so a later entry is not blocked on a
+    # one-word edit here. Extend deliberately; every member is a base form.
+    "add" "attach" "cancel" "confirm" "create" "cycle" "delete" "detach"
+    "disable" "edit" "enable" "exit" "explore" "filter" "focus" "follow"
+    "give" "hide" "install" "kill" "land" "load" "look" "make" "mark" "mount"
+    "name" "navigate" "pass" "preview" "print" "push" "put" "quit" "reach"
+    "refresh" "reload" "repeat" "replace" "reset" "restart" "restore" "scroll"
+    "set" "sort" "stop" "swap" "take" "trim" "turn" "undo" "unmount" "view"
+    "yank" "zoom"
+]
+
+# Kept only for the diagnostic: an unknown opener is a violation either way, but
+# these three shapes get a message that names the mistake instead of the word.
 const NOUN_PHRASE_OPENERS = ["the" "a" "an" "this" "that" "these" "those" "your" "my" "our" "you" "it" "there" "here" "when" "how" "what" "why" "where" "which" "whether" "if" "to" "for" "with" "about" "into" "from" "some" "every" "each" "any" "no"]
-const IMPERATIVE_S_VERBS = ["press" "pass" "focus" "cross" "process" "dismiss" "discuss" "toss" "miss" "address" "express" "compress" "access" "guess"]
 
 def non-imperative [title: string] {
     let first = ($title | str trim | split row " " | first
         | str replace --all --regex '[^A-Za-z-]' '' | str lowercase)
     if ($first | is-empty) { return "" }
+    # head-final compounds: `fuzzy-search` is a `search`
+    let head = ($first | split row "-" | last)
+    if ($first in $IMPERATIVE_VERBS) or ($head in $IMPERATIVE_VERBS) { return "" }
     if ($first in $NOUN_PHRASE_OPENERS) {
         return $"opens with `($first)`, which starts a noun phrase rather than telling the reader to do something"
     }
     if ($first | str ends-with "ing") {
         return $"opens with the gerund `($first)`"
     }
-    if ($first | str ends-with "s") and (not ($first in $IMPERATIVE_S_VERBS)) {
+    if ($first | str ends-with "s") {
         return $"opens with the third-person `($first)` — a title describes the reader's action, in the form they would be told to take it"
     }
-    ""
+    $"opens with `($first)`, which is not a base-form verb on IMPERATIVE_VERBS — either the title is not imperative, or the verb is new and belongs on that list"
+}
+
+# R5 — "`why` … never restates what `use` already said". This clause cannot be
+# gated by word overlap, and that is measured twice over, not assumed:
+#
+#   whole-`why` containment of content words in `use`, over the 51 pairs that
+#   carry a `why` — corpus mean 0.11, and the known defect `Ctrl+V` scored
+#   0.097, rank 28 of 51 (below the mean);
+#   best-sentence containment, computed on 2026-08-21 to see whether a finer
+#   granularity separated them — corpus mean 0.157, and the known defect
+#   `Ctrl+C` scored 0.167, rank 23 of 51, while `Ctrl+Shift+B` scored 0.143,
+#   rank 27. Any threshold catching them fires on half the manual.
+#
+# The reason is that a good writer restates in different words: `Ctrl+C`'s `why`
+# opened "One key for both because the terminal can tell them apart", which
+# repeats a `use` that says "with text selected … with nothing selected" and
+# shares almost no vocabulary with it. It takes a reader.
+#
+# So the clause is held on laws.md 3's third rung — a named reviewer who did not
+# write the claim — and this is what makes that assignment real rather than a
+# note in a README: every `why` is recorded in `why-review.nuon` against a
+# digest of the exact `use`/`why` pair that was read. Add a `why`, or edit
+# either field, and the digest stops matching and the gate fails until someone
+# re-reads the pair and records it. The review stays human; the *obligation* to
+# have done it is mechanical.
+def why-digest [use: string, why: string] {
+    $"($use)\n--\n($why)" | hash sha256 | str substring 0..15
 }
 
 # Law 3, rung 2: a gate that cannot fire is a wish, and this one silently could
@@ -188,6 +249,30 @@ def selftest [] {
     }
     if (non-imperative "The fastest way to a tab") == "" {
         $bad = ($bad | append "selftest: non-imperative misses a noun-phrase title")
+    }
+    # The three escapes that the blocklist version let through, all confirmed
+    # by hand at exit 0 before IMPERATIVE_VERBS replaced it. They are controls
+    # rather than history: each one is a shape no blocklist catches.
+    if (non-imperative "Tab jumping by number") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses a gerund that is not the first word — the escape a first-word blocklist cannot see")
+    }
+    if (non-imperative "Fast tab access by number") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses an adjective-led noun phrase")
+    }
+    if (non-imperative "Jumped to a tab by its number") == "" {
+        $bad = ($bad | append "selftest: non-imperative misses a past-tense opener")
+    }
+    if (non-imperative "Frobnicate the widget") == "" {
+        $bad = ($bad | append "selftest: non-imperative accepts an opener that is on no list — the check has stopped failing closed, which is the whole repair")
+    }
+    if (why-digest "a" "b") != (why-digest "a" "b") {
+        $bad = ($bad | append "selftest: why-digest is not stable for one pair")
+    }
+    if (why-digest "a" "b") == (why-digest "a" "c") {
+        $bad = ($bad | append "selftest: why-digest ignores a changed `why` — a recorded review would survive the edit it is supposed to notice")
+    }
+    if (why-digest "a" "b") == (why-digest "x" "b") {
+        $bad = ($bad | append "selftest: why-digest ignores a changed `use` — a `why` restating a rewritten `use` would pass on the old review")
     }
     if not (restates-key "`Ctrl-X` closes the pane" "Ctrl-X") {
         $bad = ($bad | append "selftest: restates-key misses the backticked form — the corpus writes every id in backticks, so this is the form that matters")
@@ -360,6 +445,56 @@ def main [dir?: path] {
                 if not ($a in $ids) {
                     $errors = ($errors | append $"($row.file) [($row.id)]: also references `($a)`, which is not an entry")
                 }
+            }
+        }
+    }
+
+    # R5 — the `why` restatement clause, held by a recorded review because no
+    # lexical proxy separates the defects (see `why-digest` above). What is
+    # gated here is that the review exists and is current for the exact text
+    # that is on disk.
+    let review_path = ($dir | path join "why-review.nuon")
+    if not ($review_path | path exists) {
+        $errors = ($errors | append "why-review.nuon: missing — every `why` is held by a recorded review, and with no record there is nothing holding R5's restatement clause")
+    } else {
+        let review = (open $review_path)
+        if ($review | is-empty) {
+            print -e "why-review.nuon records no reviews — refusing to pass a check with nothing to check"
+            exit 1
+        }
+        mut seen = []
+        for r in $review {
+            let rc = ($r | columns)
+            for f in ["id" "file" "digest" "reviewer" "date"] {
+                if not ($f in $rc) { $errors = ($errors | append $"why-review.nuon: a row is missing `($f)`") }
+            }
+            for f in $rc {
+                if not ($f in ["id" "file" "digest" "reviewer" "date" "note"]) {
+                    $errors = ($errors | append $"why-review.nuon [($r.id? | default '?')]: unknown field `($f)`")
+                }
+            }
+            $seen = ($seen | append $"($r.file?)|($r.id?)")
+        }
+        # matched by (file, id) with `where`, never by a record key: ids carry
+        # dots and spaces (`cc [...args]`), and a cell-path lookup would split
+        # them.
+        let with_why = ($all | where {|r| "why" in ($r.entry | columns) })
+        for row in $with_why {
+            let hit = ($review | where {|r| ($r.file? == $row.file) and ($r.id? == $row.id) })
+            if ($hit | is-empty) {
+                $errors = ($errors | append $"($row.file) [($row.id)]: carries a `why` with no row in why-review.nuon — read it against its `use` for restatement, then record the pair")
+                continue
+            }
+            let want = (why-digest $row.entry.use $row.entry.why)
+            let got = ($hit | first | get digest)
+            if $got != $want {
+                $errors = ($errors | append $"($row.file) [($row.id)]: `use`/`why` changed since the recorded review — re-read the pair for restatement, then set digest to ($want)")
+            }
+        }
+        let live_keys = ($with_why | each {|r| $"($r.file)|($r.id)" })
+        for k in $seen {
+            if not ($k in $live_keys) {
+                $errors = ($errors | append $"why-review.nuon: row `($k)` reviews a `why` that no entry carries any more — delete it, or the record starts vouching for text that is gone")
             }
         }
     }
