@@ -1,0 +1,26 @@
+FAIL: section 'Track T — terminal' carries 2 '| ID |' header rows, expected 1
+FAIL: no table row for H.1c (06-help/01-content-model/coverage) — the file's own acceptance requires every feature PRD to appear exactly once
+FAIL: no table row for S.9 (04-shell/09-theme-switcher) — the file's own acceptance requires every feature PRD to appear exactly once
+FAIL: no table row for T.6 (02-terminal/05-tab-content-state) — the file's own acceptance requires every feature PRD to appear exactly once
+FAIL: no table row for T.7 (02-terminal/06-launchd-path) — the file's own acceptance requires every feature PRD to appear exactly once
+FAIL: T.5 is a removed task and must not have a table row
+FAIL: D.1 is a removed task and must not have a table row
+FAIL: burrito survives only inside a table row; it belongs in the prose record of its removal, not in a task
+FAIL: line 146 still targets the legacy `conf/` layout: | C.4 | [`01-capsule/04`](../../01-capsule/04-recent-workspaces/prd.md) recents picker | M | `conf/`, capsule tool | C.2, T.1 |
+FAIL: line 45 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 64 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 77 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 97 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 122 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 128 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 141 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: line 151 still has a 'Depends on' column; the dependency graph lives in plan.json and is cross-linked, not restated
+FAIL: the file does not cross-link ../../../gantt/plan.json, which now holds the dependency graph the deleted column used to restate
+FAIL: an acceptance box still requires dependency edges to appear in the task rows, which no longer carry them — reword it, do not leave a box that cannot be satisfied
+FAIL: no acceptance box names plan.json as where the dependency graph now lives
+FAIL: C.4 Files cell does not name 'wezterm.lua': '`conf/`, capsule tool' (plan.json has capsule/capsule-tool/, home/dot_config/wezterm/wezterm.lua, home/dot_config/capsule/recents.nuon)
+FAIL: C.4 Files cell does not name 'recents': '`conf/`, capsule tool' (plan.json has capsule/capsule-tool/, home/dot_config/wezterm/wezterm.lua, home/dot_config/capsule/recents.nuon)
+FAIL: P.2 Files cell is '`.chezmoidata/`, `run_onchange_*`'; commit 8fe3a71 deleted .chezmoidata/packages.yaml and the run_onchange installer and replaced them with install.sh (plan.json agrees)
+FAIL: line 67 still names a file commit 8fe3a71 deleted: | P.2 | `packages.yaml` + `run_onchange` installer | L | `.chezmoidata
+FAIL: table row D.1 matches no task in plan.json and no known unscheduled node
+FAIL: table row T.5 matches no task in plan.json and no known unscheduled node

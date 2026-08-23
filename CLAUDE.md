@@ -1,1 +1,1 @@
-.mi/SYSTEM.md
+AGENTS.md

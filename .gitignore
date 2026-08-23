@@ -12,5 +12,11 @@
 .claude/CLAUDE.local.md
 .claude/worktrees/
 
-# mi planning scratch — sweeps and proposals, evidence not yet fact
-.mi/gantt/scratch/
+# pearde lives in its own repo (~/dev/infra/pearde); this is a local symlink
+.claude/skills/pearde
+# the stale forked copy it replaced, kept only until it is salvaged or deleted
+.pearde-fork-2026-08-24/
+# pearde view state — regenerable, rewritten continuously by the live service
+prds/.history.jsonl
+prds/.plan.json
+prds/.view.html

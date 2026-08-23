@@ -1,0 +1,27 @@
+# gates/waves.tsv — the wave registry. Tab-separated: wave <TAB> tasks <TAB> gates
+#
+# WAVE NUMBERING: these are R4's GATE waves 0–6, the same numbering
+# prds/00-delivery/parallelization/prd.md's Waves table uses. Membership
+# follows that table wherever it names a task; tasks it does not name are
+# placed by their dependencies and their track. Task -> node and node states
+# come from the board itself: each node's prd.md frontmatter carries `task:`
+# and `state:`, and gates/wave-status.sh reads both from there.
+#
+# Gate commands are `|`-separated and run FROM THE REPO ROOT. A command
+# prefixed `external ` names a script owned by another node (everything under
+# tests/): the runner invokes it, and gates/selftest.sh reports it as
+# unverified-by-contract rather than failing on it, because the --selftest
+# contract cannot be imposed on a file this node must not edit.
+#
+# An EMPTY gates cell is legal only while the wave is PENDING. The moment
+# every task in the row is `done` at its node, the wave is ARMED and an empty
+# cell is RED — "this wave finished and nobody wrote its gate" is exactly the
+# failure that produced this node. Each wave's own tasks add their gate here.
+wave	tasks	gates
+0	W0.1 W0.2 W0.3 W0.4 W0.4a W0.4b W0.4c W0.4d W0.4e W0.4f W0.4g W0.4h W0.4i W0.5 W0.6 W0.7 W0.8 W0.9 G.1 D.1b D.1c D.1d	bash gates/tree-links.sh | bash gates/audit-findings.sh | bash gates/manual-coverage.sh | external bash tests/live-bugs.sh
+1	P.1 P.2 P.3 P.5 E.1	external bash tests/deploy-skeleton.sh | external bash tests/managed-config.sh | external bash tests/provisioning.sh
+2	P.4 E.2 C.1 T.1 D.2	external bash tests/shell-init.sh | external bash tests/dev-image.sh --static | external bash tests/wezterm-appearance.sh
+3	S.1 E.3 E.4 E.5 E.6 E.8 E.9 E.10 T.2 T.3 T.8 C.2	external bash tests/nushell-core.sh
+4	S.2 S.3 S.4 S.5 S.9 E.7 E.11 E.12 E.13 E.14 E.15 T.4 T.6 T.7 C.3 C.4 H.1 D.3	external nu tests/help-content-model.nu | external bash tests/shell-listing.sh | external bash tests/nushell-aliases.sh | external bash tests/theme-switcher.sh | external bash tests/shell-zoxide.sh
+5	S.6 S.7 S.8 H.2 H.3	external bash tests/shell-claude.sh
+6	H.4 H.5 H.1c	
