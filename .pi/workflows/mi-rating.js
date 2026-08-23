@@ -1,1 +1,0 @@
-../../.mi/workflows/mi-rating.js
