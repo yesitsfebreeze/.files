@@ -3,10 +3,10 @@
 -- self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's;
 -- later terminal nodes (F5, copy mode, grid centering) extend this file.
 --
--- Deliberately absent: default_prog, set_environment_variables and the launchd
--- PATH block — prds/02-terminal/06-launchd-path owns those and lands later;
--- until then WezTerm falls back to the login shell and this file loads
--- standalone.
+-- The launch environment — default_prog, set_environment_variables and the
+-- macOS PATH prefix — is prds/02-terminal/06-launchd-path's, and it sits
+-- immediately below: a GUI-launched WezTerm inherits launchd's environment,
+-- so nushell has to be named and its PATH seeded before the spawn.
 
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
@@ -17,6 +17,68 @@ local triple = wezterm.target_triple
 local is_mac = triple:find("darwin") ~= nil
 
 local home = os.getenv("HOME") or ""
+
+-- ── 06-launchd-path: the launch environment ─────────────────────────────────
+
+-- Nushell, with both config files named absolutely (R6). A GUI-launched
+-- WezTerm gets no default_prog for free and WezTerm then falls back to the
+-- passwd login shell. Measured 2026-08-23 on this machine: `dscl . -read
+-- /Users/feb UserShell` is /bin/zsh, launchd's GUI environment exports no
+-- SHELL (only SSH_AUTH_SOCK -- see the foreground-process comment further
+-- down), and a wezterm-mux-server started under `env -i` with no
+-- default_prog spawns `-zsh`. So without this line the terminal never starts
+-- nushell at all: no aliases, no keybindings, no `help`.
+--
+-- Both files are named rather than left to discovery, because the config
+-- directory nushell would discover is not the managed one -- see the
+-- XDG_CONFIG_HOME comment below, which is the other half of the same fact.
+local nu_config = home .. "/.config/nushell/config.nu"
+local nu_env = home .. "/.config/nushell/env.nu"
+config.default_prog = { "nu", "--config", nu_config, "--env-config", nu_env }
+
+-- XDG_CONFIG_HOME is exported at LAUNCH, and that is the whole point (R7).
+-- $nu.default-config-dir is a launch-time CONSTANT, so env.nu's own
+-- assignment runs too late to move it and everything nushell derives from it
+-- drifts out of the managed tree. Measured 2026-08-23 on nushell 0.114.1:
+-- with --config/--env-config but no export, $nu.default-config-dir is
+-- ~/Library/Application Support/nushell and $nu.history-path is the
+-- history.sqlite3 under it -- and reedline really does create it there, so
+-- the shell history silently leaves ~/.config. history.nu's header records
+-- the same lesson for that path; this line is what makes it come out right.
+-- Not inside the is_mac branch: it is correct on every platform.
+config.set_environment_variables = {
+    XDG_CONFIG_HOME = home .. "/.config",
+}
+
+-- PATH seeding, macOS only (R2, R3). default_prog above is spawned by
+-- WezTerm itself -- execvp against the process PATH, never through a login
+-- shell -- and a GUI launch inherits launchd's PATH. Measured 2026-08-23:
+-- `launchctl getenv PATH` is unset, so that is the hardcoded
+-- /usr/bin:/bin:/usr/sbin:/sbin, with no Homebrew in it. Without this prefix
+-- the spawn fails with `No viable candidates found in PATH` and the pane
+-- STAYS OPEN carrying that message plus "didn't exit cleanly" -- WezTerm's
+-- default exit_behavior is CloseOnCleanExit, so the failure is a terminal
+-- you cannot type into rather than a window that disappears.
+--
+-- Four DIRECTORIES, fixed, not a list computed from the installed package
+-- set: it seeds directories, so adding a package to the provisioning set
+-- needs no change here. Not seeded on Linux -- this is a macOS-host-only
+-- configuration and nu is on PATH there already.
+--
+-- Getting the binary spawned is all this does; env.nu owns PATH inside the
+-- shell, and it wins by construction (R5). env.nu `prepend`s ~/.cargo/bin
+-- and ~/.local/bin, `append`s the Homebrew and system dirs and `uniq`s, so
+-- the duplicates this prefix creates collapse and the shell's resolution
+-- order is env.nu's under either launch shape. Measured both ways on
+-- 0.114.1: the repaired PATH is
+-- .cargo/bin:.local/bin:/opt/homebrew/bin:... whether the launch PATH was
+-- this prefix or a terminal's inherited one.
+if is_mac then
+    config.set_environment_variables.PATH =
+        "/opt/homebrew/bin:/opt/homebrew/sbin:"
+        .. home .. "/.local/bin:" .. home .. "/.cargo/bin:"
+        .. (os.getenv("PATH") or "")
+end
 
 -- ── 02-startup-layout: the self-healing nine-tab floor ──────────────────────
 
@@ -136,8 +198,11 @@ end
 -- A nested pass saw a half-built window -- two tabs, say -- concluded seven
 -- slots were missing, and filled them while the outer pass was still filling
 -- its own: startup produced 16 tabs instead of 9 before this guard. This one
--- is deliberately a module-local, not GLOBAL: it only has to hold across a
--- synchronous re-entry, which by definition happens in the same Lua context.
+-- is deliberately a module-local, not GLOBAL, for two reasons. It only has
+-- to hold across a synchronous re-entry, which by definition happens in the
+-- same Lua context. And GLOBAL survives a config reload (see the theme
+-- block) while a local does not, so a guard parked in GLOBAL would outlive
+-- the one event measured to clear a stuck one -- see the pcall below.
 local repairing = false
 
 local function live_tab_ids(mux_win)
@@ -229,9 +294,17 @@ local function reconcile_tabs(window)
 
     repairing = true
     -- pcall so a spawn failure (out of ptys, bad default_prog) can't leave
-    -- the guard latched -- that would silently disable healing for the rest
-    -- of the session. A `false` left in the map is harmless: the next pass
-    -- reads it as a dead slot and retries the refill.
+    -- the guard latched. Measured 2026-08-23 on 20240203 with a probe
+    -- config in an isolated GUI: one evaluation of this file creates 2 Lua
+    -- contexts (4 with three windows), and exactly one of them serves every
+    -- trigger of that generation -- 0 of 268 fires reached a sibling, even
+    -- with an 800 ms busy-wait held inside update-status. So a latched local
+    -- is read as latched by every later fire, in every window, including
+    -- windows opened after it latched, and only a re-evaluation of this file
+    -- clears it: a reload does (every tinty apply is one, via the colors.lua
+    -- watch), and a config that fails to parse does not, because the body
+    -- never runs. A `false` left in the map is harmless: the next pass reads
+    -- it as a dead slot and retries the refill.
     local done, err = pcall(function()
         local first_new = nil
         -- Left to right, one hole at a time. Slots before `pos` are settled
@@ -1024,9 +1097,28 @@ config.keys = {
     -- effect arrives when tinty rewrites colors.lua and the reload watch
     -- above fires.
     --
-    -- The inline PATH seeding repeats for the reason
-    -- prds/02-terminal/06-launchd-path owns: a GUI-launched WezTerm inherits
-    -- launchd's minimal PATH, where neither `nu` nor `tinty` resolves.
+    -- The inline PATH seeding repeats the four directories
+    -- prds/02-terminal/06-launchd-path seeds at launch, for a RELATED BUT
+    -- DIFFERENT reason (that node's R4). What it earns here is NOT `nu`:
+    -- `sh -lc` is a LOGIN shell, so /etc/profile runs path_helper, which
+    -- reads /etc/paths.d/homebrew and puts /opt/homebrew/bin on PATH by
+    -- itself. Measured 2026-08-23 --
+    --   env -i HOME=$HOME PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+    --     /bin/sh -lc 'command -v nu; command -v tinty'
+    -- answers /opt/homebrew/bin/nu, and `tinty: NOT FOUND`. So the prefix is
+    -- load-bearing for ~/.local/bin (where tinty is installed) and
+    -- ~/.cargo/bin, neither of which path_helper ever adds, plus
+    -- /opt/homebrew/sbin -- /etc/paths.d/homebrew names only `bin`.
+    --
+    -- DO NOT "simplify" this away on the grounds that `nu` resolves without
+    -- it. The toggle would then fail one layer further in, on `tinty`, where
+    -- the cause is much harder to see than a missing shell.
+    --
+    -- One further live-machine trap, to guard against rather than rely on:
+    -- this developer's ~/.profile sources ~/.cargo/env, which is what puts
+    -- ~/.cargo/bin into a login shell's PATH HERE. This repo deploys no
+    -- ~/.profile (`git ls-files home` has no dot_profile), so that is a local
+    -- accident and nothing may depend on it.
     {
         key = "F6",
         mods = "NONE",
@@ -1077,6 +1169,44 @@ config.keys = {
     -- keystrokes — that is the wrapper being thin, not a bug to guard.
     { key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },
     { key = "b", mods = "CTRL|SHIFT", action = act.SendString("capsule --rebuild\r") },
+    -- prds/01-capsule/04-recent-workspaces R2: the recents picker, in this
+    -- pane and in a new tab. Both keys are thin wrappers over the one CLI
+    -- (the epic's one-entry-path acceptance); `capsule recent` owns the
+    -- store, the picker screen and the mount.
+    --
+    -- Ctrl+Shift+S is the Ctrl+Shift+D shape: SendString into this pane,
+    -- whose shell has the TTY tv needs.
+    --
+    -- Ctrl+Shift+O is SpawnCommandInNewTab, and deliberately NOT "spawn a
+    -- tab, then send text into it": a pane that was created this instant has
+    -- no shell reading its pty yet, so typed input would race the shell's
+    -- startup. Making the picker the tab's PROGRAM removes the race. nushell
+    -- --execute runs the command and then stays interactive, so an aborted
+    -- pick leaves exactly the plain tab Ctrl+Shift+T would have given, and
+    -- $nu.is-interactive is TRUE while --execute runs (measured on nushell
+    -- 0.114.1, 2026-08-23; it is false under -c) so the picker's own TTY
+    -- guard passes.
+    --
+    -- nu_config and nu_env are 06-launchd-path's locals, reused and not
+    -- respelled: SpawnCommandInNewTab replaces default_prog, so both config
+    -- paths have to be named a second time, and taking them from the one
+    -- source is the difference between a reuse and two spellings that drift.
+    -- The spawn resolves `nu` through config.set_environment_variables.PATH,
+    -- the same seeding default_prog depends on under a GUI launch -- if that
+    -- ever stops applying to a pane spawn, the symptom is the launchd-path
+    -- one: "No viable candidates found in PATH" in a tab that stays open.
+    --
+    -- Ctrl+Shift+T keeps WezTerm's SpawnTab and the tab reconciler's manual
+    -- new-tab path (finding C-1). Either key's extra tab is adopted by the
+    -- nine-tab floor, never closed by it.
+    { key = "s", mods = "CTRL|SHIFT", action = act.SendString("capsule recent\r") },
+    {
+        key = "o",
+        mods = "CTRL|SHIFT",
+        action = act.SpawnCommandInNewTab({
+            args = { "nu", "--config", nu_config, "--env-config", nu_env, "--execute", "capsule recent" },
+        }),
+    },
     -- F5: push jump_mode (prds/02-terminal/03-f5-jump-mode). A direct
     -- action, not a callback — the live callback existed only to paint the
     -- pane overlay first, and there is no overlay. one_shot resolves the

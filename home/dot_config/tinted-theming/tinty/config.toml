@@ -1,0 +1,28 @@
+# tinty (Tinted Theming) — the engine behind the `theme` switcher (theme.nu).
+# `tinty apply` is the single palette funnel: this file is what makes an apply
+# propagate to every reader. The tinted-shell item emits OSC sequences that
+# retint the terminal's ANSI colors live; the hook then runs
+# wezterm-colors.sh, which writes ~/.config/wezterm/colors.lua.
+#
+# The split matters: the OSC sequences from tinted-shell only ever reach the
+# ONE pane the hook ran in, so they can never retint the whole terminal on
+# their own. The global path is colors.lua — WezTerm dofile's it into
+# config.colors and has it on the config-reload watch list, so that one write
+# retints every window/tab/pane at once.
+#
+# `default-scheme` is the Gruvbox base16 hard scheme, matching WezTerm's
+# builtin fallback, so a fresh checkout with no prior pick lands on a neutral
+# base. The colors.lua generator and `tinty init` resolve the LAST picked
+# scheme (current_scheme) first and fall back to this only when nothing has
+# ever been picked — so the last `theme` choice persists across applies and
+# new shells.
+
+default-scheme = "base16-gruvbox-dark-hard"
+shell = "bash -c '{}'"
+
+[[items]]
+name = "tinted-shell"
+path = "https://github.com/tinted-theming/tinted-shell"
+themes-dir = "scripts"
+hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/wezterm-colors.sh\""
+supported-systems = ["base16", "base24"]

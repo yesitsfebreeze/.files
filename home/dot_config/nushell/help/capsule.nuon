@@ -8,13 +8,13 @@
     {
         cmd: "capsule [dir]"
         title: "Drop a directory into a dev container"
-        use: "Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in a shell at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and you are back in the same container in well under a second; if it was stopped it starts, if the image definition changed it rebuilds first."
+        use: "Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in zsh at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and, if the container is still running, you are back in it in well under a second; if it was stopped it starts and attaches, and if the image definition changed it rebuilds the image first, which takes as long as docker takes. Every successful mount is recorded for the recent-workspace picker."
         topic: "containers"
         mode: "shell"
         also: ["capsule --rebuild", "capsule list", "credentials in a capsule", "Ctrl+Shift+D"]
         why: "One container per directory, named after it, with a short path hash appended so two directories called `api` in different parents do not collide. This one command replaced five loosely coupled pieces — a terminal binding, a shell function, a task-runner recipe, a second Dockerfile and a credential script — that overlapped and drifted."
         verify: [{kind: "command", name: "capsule"}]
-        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule --rebuild"
@@ -25,7 +25,7 @@
         also: ["capsule [dir]", "Ctrl+Shift+B"]
         why: "The only way to force a rebuild. A changed image definition is picked up automatically on the next mount; nothing else rebuilds implicitly, because an implicit rebuild in the middle of a working day is the thing that makes people stop using the tool."
         verify: [{kind: "command", name: "capsule"}]
-        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule list"
@@ -35,17 +35,17 @@
         mode: "shell"
         also: ["capsule clean"]
         verify: [{kind: "command", name: "capsule"}]
-        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule clean"
         title: "Remove capsules you are finished with"
-        use: "`capsule clean` removes the stopped capsules; it can take everything, running ones included, when you ask it to. Only containers this tool created are touched."
+        use: "`capsule clean` removes capsules you are finished with — the stopped ones, or all of them including the running. Which of the two a bare `capsule clean` does, and what you pass to get the other, is not settled: the specification names both modes and neither invocation. Only containers this tool created are ever touched."
         topic: "containers"
         mode: "shell"
         also: ["capsule list"]
         verify: [{kind: "command", name: "capsule"}]
-        source: ".mi/prd/01-capsule/01-container-lifecycle/prd.md"
+        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "credentials in a capsule"
@@ -54,8 +54,8 @@
         topic: "containers"
         mode: "container"
         also: ["capsule [dir]", "cc [...args]"]
-        why: "Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `~/.ssh` is mounted read-only and the keys are copied to a container-local directory with 600/700 permissions on first run, with GitHub's host keys pre-added so nothing asks you to trust them. `.gitconfig` is mounted read-only so authorship matches the host. HTTPS credentials are refreshed out of the host keychain on every mount into a cache file the container uses as its credential store, which is what makes a rotated token heal by reconnecting instead of by rebuilding."
+        why: "Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `~/.ssh` is mounted read-only and the keys are copied to a container-local directory with 600/700 permissions on first run, with GitHub's host keys pre-added so nothing asks you to trust them. `.gitconfig` is mounted read-only so authorship matches the host. The HTTPS credential is exported from the host's credential helper into a cache directory the container reads as its git credential store — synchronously on create and on `--rebuild`, backgrounded on any attach to an existing capsule, and on either path skipped while every exported file is under 60 seconds old, because the four-file export costs ~1.5s (git's helper 0.75–1.16s, an agent keychain read 0.34–0.50s) — over the whole warm-attach budget. That path is bound as a directory, never file by file: the refresh renames each file into place, so a rotated token reaches an already-running capsule."
         verify: [{kind: "prose"}]
-        source: ".mi/prd/01-capsule/03-credential-propagation/prd.md"
+        source: "prds/01-capsule/03-credential-propagation/prd.md"
     }
 ]

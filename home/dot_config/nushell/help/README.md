@@ -4,7 +4,7 @@ The manual's single data source. Every renderer — `help` itself, the tv
 browser, `help --json`, `help --md` — reads these files and holds layout only.
 No description text for this environment lives anywhere else.
 
-Spec: `.mi/prd/06-help/01-content-model/prd.md`. Read that before editing the
+Spec: `prds/06-help/01-content-model/prd.md`. Read that before editing the
 schema; read this before editing an entry.
 
 ## Files
@@ -17,6 +17,7 @@ schema; read this before editing an entry.
 | `terminal.nuon` | WezTerm — jump mode, window/tab keys, copy mode, clipboard, capsule bindings |
 | `capsule.nuon` | the capsule CLI and what a container gets from the host |
 | `why-review.nuon` | not content: the record of who read each `why` against its `use`, and of the exact text they read |
+| `use-review.nuon` | not content: the record of who read each `use` against its `source` PRD and its live route, and of the exact pair they read |
 
 NUON, not YAML: `open shell.nuon` in nushell returns a table with no parser and
 no dependency. Comments are legal and used for section headers.
@@ -57,8 +58,9 @@ an under-described gesture but an absent one. It is set from the corpus, not
 from taste: measured over all 84 entries the shortest real `use` is 8 words and
 the mean is 34, so the floor has three words of headroom and cannot fire on
 anything anyone has written. Whether a `use` describes the *real* gesture is a
-different question, decided against a live surface and not here — see
-"Checking it" below.
+different question, decided by a reader against the entry's `source` PRD and
+its live route, and recorded in `use-review.nuon` — see "Writing an entry"
+below.
 
 ### `verify` — a list of typed targets
 
@@ -85,6 +87,16 @@ Two nuances the drift check depends on:
 - **`scope: "buffer"`** marks a buffer-local map (the LSP aliases attach on
   `LspAttach`), so introspection needs a buffer with a server attached. A
   global-map lookup would report it stale.
+
+**Every element of the list must be a record, and that is now said with a
+message rather than a stack trace.** A `verify` holding a non-record — `verify:
+["foo"]`, `[5]`, `[null]` — used to die inside the gate with an uncaught
+`nu::shell::only_supports_this_input_type`: still exit 1, so nothing unsafe
+passed, but the run stopped at the first bad entry and reported nothing about
+the rest of the corpus. Since 2026-08-21 it reports
+``verify target is a string, not a record`` against the file and entry id and
+carries on, so an unrelated defect elsewhere in the manual shows up in the same
+run.
 
 `prose` covers both an entry with no live counterpart (a concept) and one with
 no introspectable handle — the bare-word fallback is a `pre_execution` hook and
@@ -179,6 +191,28 @@ table silently documents nothing.
   only, every id in this corpus is written in backticks, and so it fired on
   none of the 84 entries while 24 of them opened with their own id. Nine were
   real violations.
+
+  That rule is scoped to `key` entries, deliberately. A `cmd` entry has no key
+  to restate: for `g` or `capsule list` the invocation *is* the gesture,
+  because typing it is what you do.
+
+  **And the gesture itself is held by a reader, the way `why` is — see
+  `use-review.nuon`.** Presence, a five-word floor and the opener rule are all
+  floors under vacuity; whether the `use` describes the gesture the spec and
+  the configuration actually perform is a reading, and every entry needs a row
+  in `use-review.nuon` recording that someone did it. The digest there keys on
+  the `use` **and** the `source` together, because a review says "this prose
+  matches that spec" — so re-pointing an entry at a different PRD invalidates
+  it just as rewriting the prose does. The file carries the ritual.
+
+  The premise that kept this ungated for three cycles was that "80 of 84
+  entries have no deployed surface to be checked against". It was wrong on its
+  own terms: every entry carries a `source:` naming the PRD that specifies the
+  capability, all 84 of those resolve, and a spec is exactly what a `use` is
+  supposed to describe. 79 of the 84 have a live route to read as well. The
+  `Ctrl-T` defect cited as proof the clause was uncheckable had itself been
+  found by reading `config.nu:635` → `config.nu:686` → `finder.nu:33`. The
+  method worked; what was missing was the obligation to run it.
 - `why` only where the reason is non-obvious, and never restating what `use`
   already said — if `use` explains a mechanism, the mechanism belongs here and
   the gesture stays there. Measured on 2026-08-20: 51 of 84 entries carry a
@@ -234,7 +268,8 @@ nu tests/help-content-model.nu
 ```
 
 Strict schema, topics, the writing rules, `also` resolution, the currency of
-`why-review.nuon`, and the coverage the PRD's `coverage/` child names, R1–R4.
+`why-review.nuon` and of `use-review.nuon`, and the coverage the PRD's
+`coverage/` child names, R1–R4.
 It exits non-zero on any violation, and it fails rather than passes when it
 finds nothing to check.
 
@@ -258,7 +293,8 @@ only assert that the data agrees with itself:
   weight rather than decorating the record.
 
 `selftest` runs every predicate — `restates-key`, `non-imperative`,
-`why-digest`, `bad-string`, `bad-string-list`, `bad-field` and `too-thin` —
+`why-digest`, `use-digest`, `bad-string`, `bad-string-list`, `bad-record`,
+`bad-field` and `too-thin` —
 against known-bad and known-good inputs on every run, so a repeat of the
 backtick miss above fails here instead of passing quietly for a cycle. The
 imperative check and the shape checks find no violation in the current 84
@@ -266,19 +302,28 @@ entries, which is why their controls matter more than their output: a check
 with subjects and no violations and a check that cannot fire read identically
 from the outside.
 
-**What it cannot do, and no amount of tightening here will change**: confirm
-that a `use` describes the gesture the configuration actually performs. The
-gate holds `use` to presence, a non-empty string, a five-word floor and the
-no-restating-the-key opener — every one of those is a floor under vacuity, not
-the clause. The gap is not theoretical: `shell.nuon [Ctrl-T]`'s `use` skipped a
-whole step of the live route, sat marked as met for a cycle, and was found by a
-person reading `config.nu`, not by this file. 80 of the 84 entries describe a
-surface that is not deployed yet, so for those there is nothing to be checked
-against at all.
+**What it cannot do by itself**: confirm that a `use` describes the gesture the
+configuration actually performs. The gate holds `use` to presence, a non-empty
+string, a five-word floor and the no-restating-the-key opener — every one of
+those is a floor under vacuity, not the clause. The gap was not theoretical:
+`shell.nuon [Ctrl-T]`'s `use` skipped a whole step of the live route, sat
+marked as met for a cycle, and was found by a person reading `config.nu`, not
+by this file.
+
+What changed on 2026-08-21 is that the reading is now *obligatory* rather than
+occasional. `use-review.nuon` holds one row per entry, keyed on a digest of the
+`use` and the `source` together, and the gate fails on a missing row, a stale
+row, a row reviewing an entry that is gone, or a row whose `reviewer` is its
+`author`. The gate still does not decide the clause — a person does — but it
+decides whether a person has, and against exactly which text. The old claim
+that "80 of the 84 entries describe a surface that is not deployed, so there is
+nothing to be checked against" was wrong twice over: all 84 carry a `source:`
+PRD that resolves, and 79 have a live route as well. Only `capsule.nuon`'s five
+have neither, and their rows say so.
 
 The rest of that sentence: it cannot confirm a `verify` target resolves against
 a live shell, editor or terminal either — that is `help --check`
-(`.mi/prd/06-help/04-drift-check`), and it needs a deployed configuration —
+(`prds/06-help/04-drift-check`), and it needs a deployed configuration —
 which does not exist yet. Until then the target names are the contract the
 shell, editor and terminal work must meet, and the shell ones were read off
 the live nushell config (`hist_picker_local`, `hist_picker_global`,

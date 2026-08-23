@@ -1,0 +1,39 @@
+# television cable channel: `tv theme` — the base16/base24 scheme picker that
+# backs the `theme` nushell command (theme.nu).
+#
+# source : _theme_list from theme.nu — the A/B slot pair first (the active
+#          one tagged " (A · current)", the other " (B)"), then the
+#          alphabetical catalog. That head ordering is the whole point of the
+#          channel, so sorting and frecency are both OFF; television
+#          otherwise reorders the list out from under it.
+# preview: theme-preview.sh paints a self-contained swatch from the scheme's
+#          own hex values and emits ONE OSC 11 so the real window background
+#          previews live. Browsing never fires tinty's hook chain — an apply
+#          per focused row would run the whole chain on every keystroke.
+# enter  : prints the focused id to stdout; theme.nu applies it afterwards,
+#          in the live interactive shell, so tinty's hooks run with the real
+#          env, not a stripped television-action subprocess.
+#
+# Both paths are templated to ABSOLUTE paths rather than `~/…` because
+# television hands the command to $SHELL — here nu — and an absolute path is
+# the one form that runs identically under nu, bash and sh.
+
+[metadata]
+name = "theme"
+description = "base16/base24 colour schemes — live preview, enter applies via tinty"
+requirements = ["nu", "tinty"]
+
+[source]
+command = "nu -n -c 'source {{ .chezmoi.homeDir }}/.config/nushell/theme.nu; _theme_list | to text'"
+output = "{}"
+no_sort = true
+frecency = false
+
+[preview]
+command = "{{ .chezmoi.homeDir }}/.config/television/theme-preview.sh '{}'"
+
+[ui]
+preview_panel = { size = 65 }
+
+[ui.input_bar]
+header = "theme: {}"

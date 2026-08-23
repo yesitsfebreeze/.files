@@ -44,10 +44,11 @@
 #            naming the gate and the module, so the line says what to add
 #            and where.
 #
-# Known state on 2026-08-23: exactly one MISS — tests/shell-television.sh
-# does not stage help.nu (config.nu:450). It is a separate finding, out of
-# scope for the node that wrote this gate, and the red is CORRECT until it
-# lands.
+# Known state on 2026-08-23: ZERO misses — every in-scope gate stages every
+# module config.nu sources, `help.nu` included (config.nu:565, staged by
+# tests/shell-television.sh:471). An earlier version of this comment recorded
+# one standing MISS and called the red CORRECT until it landed; it landed, so
+# green is now the expected verdict and any MISS here is a live regression.
 #
 #   bash gates/nushell-module-staging.sh [--repo <root>]
 #   bash gates/nushell-module-staging.sh --selftest
@@ -277,6 +278,19 @@ run_repo() { bash "$GATES_DIR/nushell-module-staging.sh" --repo "$1" > /dev/null
 # shellcheck disable=SC2329
 says()     { bash "$GATES_DIR/nushell-module-staging.sh" --repo "$1" 2>&1 | $GREP -qF "$2"; }
 
+# edit_proved <label> <file> <sed -E expr>  — apply an in-place edit and PROVE
+# it changed the file. A sed whose anchor stopped matching is indistinguishable
+# from success, which is how this selftest's GREEN half went vacuous; the
+# sha256 comparison is what makes the two distinguishable.
+# shellcheck disable=SC2329
+edit_proved() {
+  local label="$1" f="$2" expr="$3" before after
+  before="$(shasum -a 256 "$f" | awk '{print $1}')"
+  LC_ALL=C sed -i '' -E "$expr" "$f"
+  after="$(shasum -a 256 "$f" | awk '{print $1}')"
+  chk_ok "$label (sha ${before:0:12} -> ${after:0:12})" test "$before" != "$after"
+}
+
 selftest() {
   local T RED GREEN
   T="$(gates_tmpdir)/module-staging-selftest"
@@ -302,19 +316,27 @@ selftest() {
   chk_ok   "selftest RED: and the FAIL names the gate and the module" \
     says "$RED" "does not stage newmod.nu"
 
-  # ── GREEN — repair the one real MISS, in a copy ───────────────────────────
-  # tests/shell-television.sh not staging help.nu is a REAL miss owned by a
-  # separate finding, so it is repaired here and never in the repo. Without
-  # this half the gate would only have proved it can fail.
+  # ── GREEN — red by this half's OWN mutation, then repaired ──────────
+  # The MISS this half was built around (shell-television not staging help.nu)
+  # was fixed on the live tree, so a repair-only half repaired nothing: the
+  # copy was byte-identical to its source, the gate was green because it was
+  # ALREADY green, and the end-state grep that guarded it matched the
+  # unmutated file. The red-before is what earns the green-after.
   GREEN="$T/green"
   scratch_tree "$GREEN" > /dev/null
-  LC_ALL=C sed -i '' -E \
-    's/^([[:space:]]*for m in [a-z ]*copymode)(; do)/\1 help\2/' \
-    "$GREEN/tests/shell-television.sh"
-  echo "      MUTATION: repaired the known help.nu MISS in $GREEN/tests/shell-television.sh"
-  chk_ok "selftest GREEN: the repair really landed in the copy" \
-    $GREP -qE 'for m in .*copymode help; do' "$GREEN/tests/shell-television.sh"
-  chk_ok "selftest GREEN: with the known MISS repaired, the gate is green" \
+  local TV="$GREEN/tests/shell-television.sh"
+  edit_proved "selftest GREEN: the mutation changed the copy — help dropped from shell-television's staging list" \
+    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode) help(; do)/\1\2/'
+  echo "      MUTATION: removed help from the \`for m in\` staging list in $TV"
+  chk_fail "selftest GREEN: the copy is red before repair" run_repo "$GREEN"
+  chk_ok   "selftest GREEN: and the FAIL names the gate and the module" \
+    says "$GREEN" "does not stage help.nu"
+  edit_proved "selftest GREEN: the repair changed the copy back" \
+    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode)(; do)/\1 help\2/'
+  echo "      MUTATION: repaired the copy by restoring help to the staging list"
+  chk_ok "selftest GREEN: the repaired copy is byte-identical to the managed file — the repair is the exact inverse" \
+    cmp -s "$TV" "$REPO_ROOT/tests/shell-television.sh"
+  chk_ok "selftest GREEN: with the repair landed, the gate is green" \
     run_repo "$GREEN"
 
   assert_unchanged "selftest: the managed nushell tree is untouched by both halves"

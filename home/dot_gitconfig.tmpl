@@ -1,0 +1,85 @@
+[user]
+    name = {{ .name }}
+    email = {{ .email }}
+
+[init]
+    defaultBranch = main
+
+# Route github.com auth through gh (gh auth git-credential) so pushes follow
+# gh's *active* account instead of whatever token the system helper has cached.
+# The empty `helper =` is load-bearing, not noise: it resets the inherited
+# helper list for these two URLs only, so the system-level helper (osxkeychain
+# on this host) does NOT also answer for github.com, while every other host
+# still gets it. Requires gh on PATH (installed via install.sh). This is what
+# `gh auth setup-git` writes, made declarative.
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !gh auth git-credential
+
+[core]
+    pager = delta
+    # `input` normalises CRLF on commit and leaves the working tree alone.
+    autocrlf = input
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    line-numbers = true
+    side-by-side = false
+    # "ansi" is a builtin bat/delta syntax theme (no fetch) that maps tokens onto
+    # the terminal's 16 ANSI slots (gruvbox dark hard), so delta's code syntax
+    # highlighting follows the terminal palette instead of a pinned gruvbox one.
+    # Frame accents already use ANSI color names; diff backgrounds use delta's
+    # own defaults.
+    syntax-theme = ansi
+    line-numbers-minus-style = red
+    line-numbers-plus-style  = green
+    file-style               = bold
+    hunk-header-style        = blue bold
+
+[merge]
+    conflictStyle = zdiff3
+
+[diff]
+    colorMoved = default
+    algorithm = histogram
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+    default = current
+
+[fetch]
+    prune = true
+
+[rebase]
+    autoStash = true
+    autoSquash = true
+
+[column]
+    ui = auto
+
+[branch]
+    sort = -committerdate
+
+[alias]
+    s = status -sb
+    co = checkout
+    sw = switch
+    br = branch
+    cm = commit -m
+    ca = commit --amend
+    can = commit --amend --no-edit
+    unstage = restore --staged
+    last = log -1 HEAD --stat
+    lg = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) %C(dim white)%an%C(reset) %C(green)(%ar)%C(reset)%C(auto)%d%C(reset)%n          %s'
+    undo = reset --soft HEAD~1
+    wip = !git add -A && git commit -m 'wip'
+    aliases = config --get-regexp ^alias\\.

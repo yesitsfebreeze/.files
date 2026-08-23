@@ -1,0 +1,19 @@
+# Target-path ignore rules for the managed tree. Matches TARGET paths, not
+# source names, and accepts `#` comments.
+#
+# No OS conditionals here, deliberately. The host is macOS only (see AGENTS.md,
+# "Scope decisions already made"). The live source's .chezmoiignore gated its
+# Homebrew bootstrap out on non-macOS for a dual-platform setup that is
+# DO NOT PORT; do not re-add that ladder.
+
+# Documentation of the source tree is not configuration. The manual's own
+# README (home/dot_config/nushell/help/README.md) tells an editor how to write
+# an entry; it is not part of the deployed manual, which is the .nuon files.
+README.md
+**/README.md
+
+# Finder litter. chezmoi reads the filesystem, not the git index, so a stray
+# .DS_Store inside home/ becomes a real ~/.config/.DS_Store even though the
+# repo's .gitignore drops it.
+.DS_Store
+**/.DS_Store

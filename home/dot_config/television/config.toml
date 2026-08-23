@@ -1,0 +1,16 @@
+# Television (tv) config. "default" is the builtin tv theme whose colors are
+# ANSI names (bright-blue, white, …) with no fixed `background`, so tv
+# inherits the terminal's 16 ANSI slots from tinty — the epic's I5: tinty
+# owns the palette and no child hardcodes one. The hex themes (gruvbox-dark,
+# television, …) bake their palette and never follow the terminal (R6).
+[ui]
+theme = "default"
+
+[ui.input_bar]
+border_type = "rounded"
+
+[ui.results_panel]
+border_type = "rounded"
+
+[ui.preview_panel]
+border_type = "rounded"

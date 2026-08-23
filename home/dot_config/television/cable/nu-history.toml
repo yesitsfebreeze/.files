@@ -1,0 +1,40 @@
+# Custom nu-history channel — a deliberate local override of tv's builtin,
+# for two reasons worth keeping (04-shell/04-television R5):
+#   * the builtin cold-starts a FULL nushell per keypress — re-sourcing
+#     starship, zoxide and the tv init on every Ctrl-R / Alt-R;
+#   * it assumes the plaintext history format, while this config runs
+#     `file_format: sqlite` (nushell/config.nu), so the builtin read a
+#     SQLiteDatabase as text and mangled the list.
+# This version runs `nu -n` (no config load — the latency win) and queries
+# the sqlite history directly: correct, complete, most-recent-first dedup.
+#
+# THE DB PATH IS DERIVED FROM `$nu.history-path`, NEVER A LITERAL. The live
+# channel hardcodes a ~/.config-rooted path, which resolved correctly only
+# because the LIVE wezterm exports XDG_CONFIG_HOME — a line the repo's
+# wezterm.lua deliberately omits. Measured 2026-08-22 on the pinned 0.114.1:
+#   env -i           nu -n -c '$nu.history-path'
+#       -> ~/Library/Application Support/nushell/history.txt
+#   env -i XDG_CONFIG_HOME=<dir> nu -n -c '$nu.history-path'
+#       -> <dir>/nushell/history.txt
+# The constant honours XDG_CONFIG_HOME from the LAUNCH environment, exactly
+# as reedline does, so `path dirname` of it is the directory the real db
+# lives in wherever the terminal's env puts it. Inside this `nu -n` the
+# loaded config's `file_format: sqlite` is NOT in effect (the filename says
+# .txt), which is why the source joins `history.sqlite3` onto the DIRECTORY
+# rather than using the constant whole.
+#
+# The missing-db guard: a fresh machine has no sqlite yet (reedline creates
+# it on the first interactive Enter), and an unguarded `open` is a red error
+# inside the picker. Return nothing instead.
+
+[metadata]
+name = "nu-history"
+description = "A channel to select from your nu history"
+
+# The nu code rides in SINGLE quotes: television hands this line to $SHELL,
+# and while nu never expands $vars inside plain strings, a bourne fallback
+# would expand `$nu`/`$db` inside double quotes to nothing.
+[source]
+command = '''nu -n -c 'let db = ($nu.history-path | path dirname | path join history.sqlite3); if ($db | path exists) { open $db | query db "SELECT command_line FROM history GROUP BY command_line ORDER BY MAX(id) DESC" | get command_line | to text }' '''
+no_sort = true
+frecency = false

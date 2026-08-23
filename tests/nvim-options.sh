@@ -228,8 +228,8 @@ stage_tree() {
 
   local files
   files="$(cd "$NVIM_SRC" && find . -type f | LC_ALL=C sort | paste -sd' ' -)"
-  [ "$files" = "./init.lua ./lazy-lock.json ./lua/config/autocmds.lua ./lua/config/lazy.lua ./lua/config/options.lua ./lua/plugins/colorscheme.lua ./lua/plugins/completion.lua ./lua/plugins/explorer.lua ./lua/plugins/init.lua ./lua/plugins/lsp.lua ./lua/plugins/statusline.lua ./lua/plugins/telescope.lua ./lua/plugins/treesitter.lua" ]
-  chk "tree: home/dot_config/nvim/ holds exactly the post-E.13 census — statusline.lua included (got: $files)" $?
+  [ "$files" = "./init.lua ./lazy-lock.json ./lua/config/autocmds.lua ./lua/config/keymaps.lua ./lua/config/lazy.lua ./lua/config/options.lua ./lua/plugins/autopairs.lua ./lua/plugins/colorscheme.lua ./lua/plugins/completion.lua ./lua/plugins/conform.lua ./lua/plugins/explorer.lua ./lua/plugins/gitsigns.lua ./lua/plugins/init.lua ./lua/plugins/lsp.lua ./lua/plugins/statusline.lua ./lua/plugins/table-mode.lua ./lua/plugins/telescope.lua ./lua/plugins/treesitter.lua ./lua/plugins/which-key.lua" ]
+  chk "tree: home/dot_config/nvim/ holds exactly the post-E.12 census — gitsigns.lua, which-key.lua and autopairs.lua included (got: $files)" $?
 
   # Comment lines are stripped first: the seam comment NAMES the later
   # requires, and a match inside prose is not a load order.

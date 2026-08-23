@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
 # Gate for the `help` content model — home/dot_config/nushell/help/*.nuon.
-# Spec: .mi/prd/06-help/01-content-model/prd.md — R1 format, R2 entry schema,
+# Spec: prds/06-help/01-content-model/prd.md — R1 format, R2 entry schema,
 # R3 topics, R4 concept entries, R5 writing rules — plus the surface lists of
 # its `coverage/` child, R1 shell · R2 nvim · R3 terminal · R4 capsule.
 #
@@ -18,7 +18,7 @@
 #
 # What it does NOT check, and cannot: whether a `verify` target actually
 # resolves against a live shell, editor or terminal. That is `help --check`
-# (.mi/prd/06-help/04-drift-check), and it needs a deployed configuration.
+# (prds/06-help/04-drift-check), and it needs a deployed configuration.
 
 const REQUIRED = ["title" "use" "topic" "mode" "verify" "source"]
 const OPTIONAL = ["key" "cmd" "also" "why"]
@@ -114,9 +114,40 @@ def bad-string-list [v: any] {
     ""
 }
 
+# The `verify` boundary, and the one place the shape layer could still throw.
+#
+# `record-list` used to check list-ness and never element-ness, so a `verify`
+# holding a non-record reached `$t | columns` in the target loop and died with
+# an uncaught `nu::shell::only_supports_this_input_type` at the first bad
+# entry: exit 1, so it failed closed, but the reader got a stack trace instead
+# of an entry id and the rest of the corpus went unreported. That asymmetry is
+# what these two close — `bad-record-list` is `bad-string-list` with `record`
+# where it says `string`, deliberately the same shape rather than a fifth
+# spelling of the idea.
+#
+# No emptiness check here on purpose: the `verify` loop already reports an
+# empty list with a message that tells the writer what to put there
+# (`[{kind: "prose"}]`), and a second, blanker violation for the same fact
+# would be noise.
+def bad-record [v: any] {
+    let t = (shape-of $v)
+    if $t != "record" { return $"is a ($t), not a record" }
+    ""
+}
+
+def bad-record-list [v: any] {
+    let t = (shape-of $v)
+    if not ($t in ["list" "table"]) { return $"is a ($t), not a list" }
+    for x in $v {
+        let b = (bad-record $x)
+        if $b != "" { return $"has an element that ($b)" }
+    }
+    ""
+}
+
 # Every field an entry may carry, and the shape its value must have. `verify`
-# is checked structurally further down (its elements are typed records, not
-# strings), so it is listed as a record list and nothing more here.
+# is a list whose elements must be records; which *kind* of record each one is,
+# and which fields that kind requires, is checked structurally further down.
 const FIELD_SHAPES = {
     key: "string"
     cmd: "string"
@@ -136,10 +167,7 @@ def bad-field [name: string, v: any] {
     match $want {
         "string" => (bad-string $v)
         "string-list" => (bad-string-list $v)
-        "record-list" => {
-            let t = (shape-of $v)
-            if not ($t in ["list" "table"]) { $"is a ($t), not a list" } else { "" }
-        }
+        "record-list" => (bad-record-list $v)
         _ => ""
     }
 }
@@ -155,7 +183,7 @@ const COVERAGE = {
         "z <query>" "zi" "zz" "zl <query>" "zc <query>" "cdi" "<word>" "cd <path>"
         "ls" "ls -D" "l / ll / la"
         "cat <file>" "grep" "g" "lg" "nv / vi" "nn" "q / :q / /exit" "rr"
-        "bb / ba" "cf <file>" "pass <tab>"
+        "cf <file>" "pass <tab>"
         "cc [...args]" "cr [...args]"
     ]
     # coverage R2 — Neovim
@@ -189,7 +217,7 @@ const COVERAGE = {
     # safe direction. `F6` (DEFER) and the `Ctrl+Shift+B` wallpaper pipeline
     # (DO NOT PORT) are the two live keys deliberately NOT listed.
     "terminal.nuon": [
-        "F5 <digit>" "F5 <letter>" "Ctrl+Shift+Q" "nine tabs"
+        "F5 <digit>" "Ctrl+Shift+<arrow>" "Ctrl+Shift+Q" "nine tabs"
         "Ctrl+Shift+D" "Ctrl+Shift+B" "Ctrl+Shift+S" "Ctrl+Shift+T"
         "Ctrl+Shift+X" "Ctrl+V" "Ctrl+C"
     ]
@@ -355,6 +383,38 @@ def why-digest [use: string, why: string] {
     $"($use)\n--\n($why)" | hash sha256 | str substring 0..15
 }
 
+# R2's `use` sub-box and R5's second clause — "`use` describes the real
+# gesture, including what to press next and what comes back" — held the same
+# way, and for the same reason: no lexical proxy decides it, so a reader does,
+# and this makes the *obligation* to have read it mechanical.
+#
+# **The premise that kept this open for three sessions was wrong, and saying so
+# is the point of this comment.** The box read "80 of 84 entries have no
+# deployed surface to be checked against", so the clause was parked on
+# `coverage`'s R5. But every entry carries a `source:` naming the PRD that
+# specifies the capability, all 84 of those resolve (this file already enforces
+# that, further down), and a PRD is exactly what a `use` is supposed to
+# describe. 79 of the 84 additionally have a live route to read
+# (`~/.config/nushell`, `~/.config/nvim`, `~/.config/wezterm` all exist); only
+# `capsule.nuon`'s 5 have no surface at all, and their rows say so. The
+# `Ctrl-T` defect this node cites as proof the clause was ungated was found by
+# exactly that method — `config.nu:635` -> `config.nu:686` -> `finder.nu:33`.
+# The method worked; what was missing was the obligation to run it.
+#
+# **The digest keys on `use` AND `source` together, and that is the difference
+# from `why-digest`.** A row here says "this prose matches that spec", which is
+# a claim about a pair — so editing *either* side has to invalidate it.
+# Re-pointing an entry at a different PRD without re-reading the `use` against
+# it is the drift this catches and `why-review.nuon` structurally cannot.
+#
+# Do NOT replace this with a text metric. Two were measured and both failed:
+# whole-`why` containment (mean 0.11) and best-sentence containment (mean
+# 0.157) each put the known defects at or below the corpus mean. That history
+# is written out above `why-digest` and in README.md so a third is not built.
+def use-digest [use: string, source: string] {
+    $"($use)\n--\n($source)" | hash sha256 | str substring 0..15
+}
+
 # Law 3, rung 2: a gate that cannot fire is a wish, and this one silently could
 # not for a whole cycle. Positive and negative controls run every time, so the
 # next person to touch `restates-key` finds out here rather than in review.
@@ -401,6 +461,19 @@ def selftest [] {
     }
     if (why-digest "a" "b") == (why-digest "x" "b") {
         $bad = ($bad | append "selftest: why-digest ignores a changed `use` — a `why` restating a rewritten `use` would pass on the old review")
+    }
+    if (use-digest "a" "b") != (use-digest "a" "b") {
+        $bad = ($bad | append "selftest: use-digest is not stable for one pair")
+    }
+    if (use-digest "a" "b") == (use-digest "x" "b") {
+        $bad = ($bad | append "selftest: use-digest ignores a changed `use` — a rewritten gesture would keep the review of the old one")
+    }
+    # the control that separates this record from why-review.nuon: a review
+    # says "this prose matches that spec", so re-pointing an entry at a
+    # different spec has to invalidate it. Make the digest blind to `source`
+    # and this is what says so.
+    if (use-digest "a" "b") == (use-digest "a" "c") {
+        $bad = ($bad | append "selftest: use-digest ignores a changed `source` — an entry could be re-pointed at a different PRD and keep a review that read it against the old one")
     }
     if not (restates-key "`Ctrl-X` closes the pane" "Ctrl-X") {
         $bad = ($bad | append "selftest: restates-key misses the backticked form — the corpus writes every id in backticks, so this is the form that matters")
@@ -449,6 +522,25 @@ def selftest [] {
     }
     if (bad-field "title" "Jump to a tab") != "" {
         $bad = ($bad | append "selftest: bad-field rejects a good title")
+    }
+    # the `verify` element shape. Before 2026-08-21 the first of these returned
+    # "" and the string then reached `$t | columns`, which threw
+    # `only_supports_this_input_type` — the one boundary in this file that
+    # crashed instead of reporting.
+    if (bad-field "verify" ["foo"]) == "" {
+        $bad = ($bad | append "selftest: bad-field accepts a `verify` element that is a string — that element reaches `$t | columns` and crashes the run, so one bad entry hides the whole corpus")
+    }
+    if (bad-field "verify" [{kind: "prose"}]) != "" {
+        $bad = ($bad | append "selftest: bad-field rejects a well-formed `verify` list")
+    }
+    if (bad-record {kind: "prose"}) != "" {
+        $bad = ($bad | append "selftest: bad-record rejects an ordinary record")
+    }
+    if (bad-record 5) == "" {
+        $bad = ($bad | append "selftest: bad-record accepts an int")
+    }
+    if (bad-record null) == "" {
+        $bad = ($bad | append "selftest: bad-record accepts null")
     }
     # the `use` vacuity floor. The first control is the escape the node names
     # by hand; the second is the shortest `use` the live manual actually
@@ -565,6 +657,16 @@ def main [dir?: path] {
                     $errors = ($errors | append $"($at): verify is an empty list — use [{kind: \"prose\"}] for an entry with no live handle")
                 } else {
                     for t in $v {
+                        # a non-record element is reported and skipped, never
+                        # walked into: `$t | columns` on a string used to throw
+                        # `only_supports_this_input_type` and take the whole run
+                        # with it, so one bad element hid every other violation
+                        # in the corpus.
+                        let bt = (bad-record $t)
+                        if $bt != "" {
+                            $errors = ($errors | append $"($at): verify target ($bt)")
+                            continue
+                        }
                         let tc = ($t | columns)
                         if not ("kind" in $tc) {
                             $errors = ($errors | append $"($at): verify target with no `kind`")
@@ -715,6 +817,67 @@ def main [dir?: path] {
         for k in $seen {
             if not ($k in $live_keys) {
                 $errors = ($errors | append $"why-review.nuon: row `($k)` reviews a `why` that no entry carries any more — delete it, or the record starts vouching for text that is gone")
+            }
+        }
+    }
+
+    # R2's `use` sub-box and R5's gesture clause, held the same way `why` is
+    # held just above — see `use-digest` for why this is decidable here and
+    # what the digest keys on.
+    #
+    # The one structural difference from the block above: `why` is optional, so
+    # only `why`-carrying entries need a row. `use` is REQUIRED, so **every**
+    # entry needs a current row, and an entry with none is a violation. That
+    # makes this record complete by construction rather than by whoever
+    # remembered.
+    let use_review_path = ($dir | path join "use-review.nuon")
+    if not ($use_review_path | path exists) {
+        $errors = ($errors | append "use-review.nuon: missing — every `use` is held by a recorded reading against its `source` PRD, and with no record there is nothing holding R2's `use` clause or R5's gesture clause")
+    } else {
+        let ureview = (open $use_review_path)
+        if ($ureview | is-empty) {
+            print -e "use-review.nuon records no reviews — refusing to pass a check with nothing to check"
+            exit 1
+        }
+        mut useen = []
+        for r in $ureview {
+            let rc = ($r | columns)
+            for f in ["id" "file" "digest" "reviewer" "date"] {
+                if not ($f in $rc) { $errors = ($errors | append $"use-review.nuon: a row is missing `($f)`") }
+            }
+            for f in $rc {
+                if not ($f in ["id" "file" "digest" "reviewer" "author" "date" "note"]) {
+                    $errors = ($errors | append $"use-review.nuon [($r.id? | default '?')]: unknown field `($f)`")
+                    continue
+                }
+                let b = (bad-string ($r | get -o $f))
+                if $b != "" { $errors = ($errors | append $"use-review.nuon [($r.id? | default '?')]: `($f)` ($b)") }
+            }
+            # same rule and same reason as why-review.nuon's: a reader who is
+            # the writer is the record vouching for its own writing.
+            if ("author" in $rc) and ($r.author? == $r.reviewer?) {
+                $errors = ($errors | append $"use-review.nuon [($r.id? | default '?')]: reviewer and author are both ($r.reviewer?) — a `use` reviewed by the session that wrote it is the record vouching for itself; it needs a reader who did not write it")
+            }
+            $useen = ($useen | append $"($r.file?)|($r.id?)")
+        }
+        # matched by (file, id) with `where` for the same reason as above: ids
+        # carry dots, spaces and brackets (`cc [...args]`, `capsule [dir]`).
+        for row in $all {
+            let hit = ($ureview | where {|r| ($r.file? == $row.file) and ($r.id? == $row.id) })
+            if ($hit | is-empty) {
+                $errors = ($errors | append $"($row.file) [($row.id)]: has no row in use-review.nuon — read the `use` against ($row.entry.source? | default 'its source PRD') and the live route, then record the reading with digest (use-digest ($row.entry.use? | default '') ($row.entry.source? | default ''))")
+                continue
+            }
+            let want = (use-digest $row.entry.use $row.entry.source)
+            let got = ($hit | first | get digest)
+            if $got != $want {
+                $errors = ($errors | append $"($row.file) [($row.id)]: `use`/`source` changed since the recorded reading — re-read the gesture against the spec, then set digest to ($want)")
+            }
+        }
+        let ulive_keys = ($all | each {|r| $"($r.file)|($r.id)" })
+        for k in $useen {
+            if not ($k in $ulive_keys) {
+                $errors = ($errors | append $"use-review.nuon: row `($k)` reviews a `use` that no entry carries any more — delete it, or the record starts vouching for text that is gone")
             }
         }
     }

@@ -9,15 +9,16 @@
 # Stages:
 #   --tree      the managed files as TEXT: capsule.nu's defs in parse order,
 #               the source line under MODULES, the mk_machine staging line in
-#               every sibling nushell gate, the two wezterm.lua bindings, and
-#               the C-3 regression absences. Each claim carries a
+#               every sibling nushell gate, the two wezterm.lua bindings, the
+#               C-3 regression absences, and the `docker rm` site roster with
+#               the guard attribution over each site. Each claim carries a
 #               counterfactual: a deliberately broken copy that must FAIL the
 #               same check.
 #   --hermetic  the REAL CLI under a REAL nushell against a RECORDING docker
 #               shim first on PATH — no docker daemon, no network, ever. The
 #               shim appends its argv to invocations.log and answers from
 #               control files, so every scenario asserts what docker was
-#               ASKED to do. Eleven scenarios plus three selftest controls
+#               ASKED to do. Twelve scenarios plus four selftest controls
 #               (a check that cannot fail proves nothing).
 #   (no arg)    both.
 #
@@ -54,6 +55,26 @@ WEZTERM_LUA="$REPO/home/dot_config/wezterm/wezterm.lua"
 NU="$(command -v nu || true)"
 
 ANCHORS="CONFIG ALIASES LISTING FUNNEL HOOKS GENERATED MODULES PALETTE THEME KEYBINDINGS"
+
+# THE `docker rm` SITES, and why this is a roster and not a count: RM_SITES
+# declares every removal site in capsule.nu, once, and stage --tree asserts
+# SET EQUALITY between it and the file. Never `-eq 3`. A count passes while
+# naming nothing, which is the shape prds/00-delivery/corrections/
+# armed-count-tripwires just removed from four checks. Rows are scoped by
+# the enclosing def, because a fourth `^docker rm -f $name` added inside
+# _capsule_build has identical command text to the one in `capsule` and a
+# text-only set would absorb it in silence. No line numbers: a comment edit
+# moves every site and must not move this list.
+#
+# The guard over each site — the whole point of the node this check serves:
+#   capsule            step 7, --rebuild -> step 6's dir_label refusal
+#   capsule clean      the stopped branch -> _capsule_owned
+#   capsule clean      the running branch -> _capsule_owned
+RM_SITES=(
+  'capsule :: ^docker rm -f $name'
+  'capsule clean :: ^docker rm -f $row.name'
+  'capsule clean :: ^docker rm $row.name'
+)
 
 SCRATCH="$(gates_tmpdir)"
 # Real path: capsule.nu `path expand`s its target and $TMPDIR here is
@@ -132,6 +153,59 @@ c3_ok() {
   [ "$($GREP -cwE 'cd' "$f")" -eq 0 ]
 }
 
+# Every `^docker rm` site, scoped by the def it sits in: "<def> :: <cmd>".
+# COMMENT LINES ARE SKIPPED: the corrected prose quotes `^docker rm -f
+# $name`, and a comment must no more be able to fake a site than to satisfy
+# a presence check (tests/capsule-credentials.sh:146-148, the same rule in the
+# other direction).
+rm_sites() {
+  awk '
+    /^[[:space:]]*#/ { next }
+    /^def / { d = $0; sub(/^def /, "", d); sub(/ *\[.*$/, "", d); gsub(/"/, "", d) }
+    /\^docker rm/ {
+      c = $0
+      sub(/^.*\^docker rm/, "^docker rm", c)
+      sub(/ \| ignore.*$/, "", c)
+      gsub(/[[:space:]]+/, " ", c)
+      print (d == "" ? "<no-def>" : d) " :: " c
+    }
+  ' "$1"
+}
+
+# Set equality between the `docker rm` sites in $1 and the roster named in
+# $2 (an array name). Prints the count on success and MISSING/UNEXPECTED on
+# failure, so one function serves the check and both counterfactuals.
+# chk_ok discards output, so callers use `if diag="$(sites_ok ...)"`.
+sites_ok() {
+  local f="$1" arr="$2[@]" got want missing extra
+  got="$(rm_sites "$f" | sort)"
+  want="$(printf '%s\n' "${!arr}" | sort)"
+  if [ "$got" = "$want" ]; then
+    printf '%s sites' "$(printf '%s\n' "$got" | wc -l | tr -d ' ')"
+    return 0
+  fi
+  missing="$(comm -23 <(printf '%s\n' "$want") <(printf '%s\n' "$got") | paste -sd, -)"
+  extra="$(comm -13 <(printf '%s\n' "$want") <(printf '%s\n' "$got") | paste -sd, -)"
+  printf 'MISSING [%s]; UNEXPECTED [%s]' "$missing" "$extra"
+  return 1
+}
+
+# The guard attribution, as prose. Set equality proves the site COUNT; it
+# cannot say whether the comment still names the right guard for each site,
+# and naming the wrong one is the defect this node corrects. Comment lines
+# only. The absence pin matters most: the sentence that stood at :453 said
+# no code path reached a removal outside the _capsule_owned set, which was
+# measurably false, and it must not come back as prose or as a quotation.
+attribution_ok() {
+  local f="$1" c
+  c="$($GREP -E '^[[:space:]]*#' "$f")"
+  printf '%s\n' "$c" | $GREP -qiF 'no code path' && return 1
+  printf '%s\n' "$c" | $GREP -qF 'THE THREE `docker rm` SITES, AND THE GUARD OVER EACH' || return 1
+  printf '%s\n' "$c" | $GREP -qF "guarded by step 6's" || return 1
+  [ "$(printf '%s\n' "$c" | $GREP -cF 'guarded by _capsule_owned')" -eq 2 ] || return 1
+  printf '%s\n' "$c" | $GREP -qF 'dir_label is load-bearing'
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # stage --tree
 # ════════════════════════════════════════════════════════════════════════════
@@ -197,6 +271,39 @@ stage_tree() {
   chk_ok "tree: counterfactual copy really mounts the workspace/ subpath" \
          $GREP -qF '($target)/workspace:/workspace' "$CF_MNT"
   chk_fail "tree: counterfactual mount-target-rewritten FAILS the C-3 check" c3_ok "$CF_MNT"
+
+  # The `docker rm` roster (R4), as a set, plus both counterfactuals.
+  local diag
+  if diag="$(sites_ok "$CAPSULE_NU" RM_SITES)"; then
+    chk "tree: the \`docker rm\` sites are exactly the ${#RM_SITES[@]} RM_SITES, def-scoped ($diag) — capsule step 7 guarded by the dir_label refusal, both clean branches by _capsule_owned" 0
+  else
+    chk "tree: the \`docker rm\` sites are not the ${#RM_SITES[@]} RM_SITES — $diag. An UNEXPECTED site is a NEW destructive path: name its guard in the \`capsule clean\` comment and add it here. A MISSING one means a removal moved or went away" 1
+  fi
+  local CF_RM_A="$SCRATCH/cf-rm-site-dropped.nu"
+  awk '!/\^docker rm \$row.name/' "$CAPSULE_NU" > "$CF_RM_A"
+  chk_ok "tree: counterfactual copy really dropped the stopped-branch removal" \
+         test "$($GREP -vE '^[[:space:]]*#' "$CF_RM_A" | $GREP -cF '^docker rm $row.name')" -eq 0
+  chk_fail "tree: counterfactual rm-site-dropped FAILS the site-set check" \
+           sites_ok "$CF_RM_A" RM_SITES
+  local CF_RM_B="$SCRATCH/cf-rm-site-in-another-def.nu"
+  awk '/^def _capsule_build \[\] \{$/ { print; print "    ^docker rm -f $name | ignore"; next } { print }' \
+      "$CAPSULE_NU" > "$CF_RM_B"
+  chk_ok "tree: counterfactual copy really added a fourth removal inside _capsule_build" \
+         test "$($GREP -vE '^[[:space:]]*#' "$CF_RM_B" | $GREP -cF '^docker rm -f $name')" -eq 2
+  chk_fail "tree: counterfactual rm-site-in-another-def FAILS the site-set check — identical command text, different def" \
+           sites_ok "$CF_RM_B" RM_SITES
+
+  # The guard attribution as prose (R1, R2), plus the restored-claim
+  # counterfactual.
+  chk_ok "tree: each removal site's comment names the guard that covers IT — step 6's dir_label refusal for --rebuild, _capsule_owned twice for clean — and the universal claim is gone" \
+         attribution_ok "$CAPSULE_NU"
+  local CF_CLAIM="$SCRATCH/cf-universal-claim-restored.nu"
+  awk '/^#   \* the stopped branch below/ { print "# There is no code path that reaches `docker rm` outside the _capsule_owned set." } { print }' \
+      "$CAPSULE_NU" > "$CF_CLAIM"
+  chk_ok "tree: counterfactual copy really restored the universal claim" \
+         $GREP -qiF 'no code path' "$CF_CLAIM"
+  chk_fail "tree: counterfactual universal-claim-restored FAILS the attribution check" \
+           attribution_ok "$CF_CLAIM"
 
   guard_end
 }
@@ -328,6 +435,26 @@ clean_foreign_ok() {
     if $GREP -E "^rm " "$M/invocations.log" 2>/dev/null | $GREP -qF "$name"; then return 1; fi
   done
   return 0
+}
+
+# Scenario 12's rebuild guard as a function (control 4 re-runs it on a copy
+# with the dir_label refusal neutered): `--rebuild` against an existing
+# container of the derived name that carries NO capsule.dir label must exit
+# non-zero, say so, and reach `docker rm` NEVER. Nothing else in either
+# capsule gate notices if that refusal is dropped, and dropping it removes a
+# foreign container — measured.
+rebuild_foreign_ok() {
+  local mod="$1" M="$2" dir name prc
+  mk_cap "$M"
+  dir="$M/proj"; name="$(expect_name "$dir")"
+  printf '%s\n' "$(df_hash "$M")" > "$M/ctl/image-hash"
+  # Exists, running, capsule.dir EMPTY — the shim prints "true\t".
+  printf 'running\n\n' > "$M/ctl/ct-$name"
+  nu_cap_with "$mod" "$M" "capsule --rebuild $dir" > "$M/rf.out" 2> "$M/rf.err"
+  prc=$?
+  [ "$prc" -ne 0 ] || return 1
+  $GREP -qF 'was not created by capsule' "$M/rf.err" || return 1
+  [ "$(log_n "$M" '^rm ')" -eq 0 ]
 }
 
 # Scenario 11 as a function (control 3 re-runs it on a copy that records
@@ -510,20 +637,24 @@ stage_hermetic() {
   chk_ok "hermetic: s11 docker absent from PATH: non-zero exit, an error naming docker, EMPTY log, no recents write" \
          no_docker_ok "$CAPSULE_NU" "$SCRATCH/h11"
 
-  # ── scenario 12: selftest controls — each mutation must FAIL its scenario ──
+  # ── scenario 12: --rebuild never removes a foreign container ──────────────
+  chk_ok "hermetic: s12 --rebuild against a same-named container with NO capsule.dir label: non-zero exit, an error naming the container, ZERO rm lines — step 6's refusal, not _capsule_owned" \
+         rebuild_foreign_ok "$CAPSULE_NU" "$SCRATCH/h12"
+
+  # ── scenario 13: selftest controls — each mutation must FAIL its scenario ──
   local MUT
   MUT="$SCRATCH/mut-mount.nu"
   sed 's|($target):/workspace|($target)/workspace:/workspace|' "$CAPSULE_NU" > "$MUT"
-  chk_ok "hermetic: s12 control copy really mounts the workspace/ subpath" \
+  chk_ok "hermetic: s13 control copy really mounts the workspace/ subpath" \
          $GREP -qF '($target)/workspace:/workspace' "$MUT"
-  chk_fail "hermetic: s12 control mount-target-(\$target)/workspace FAILS scenario 6" \
+  chk_fail "hermetic: s13 control mount-target-(\$target)/workspace FAILS scenario 6" \
            mount_source_ok "$MUT" "$SCRATCH/h12a"
 
   MUT="$SCRATCH/mut-unfiltered.nu"
   sed 's|--filter \$"label=(\$CAPSULE_DIR_LABEL)" ||' "$CAPSULE_NU" > "$MUT"
-  chk_ok "hermetic: s12 control copy really dropped the label filter" \
+  chk_ok "hermetic: s13 control copy really dropped the label filter" \
          test "$($GREP -cF -- '--filter' "$MUT")" -eq 0
-  chk_fail "hermetic: s12 control rm-outside-the-owned-set (label filter dropped) FAILS scenario 9" \
+  chk_fail "hermetic: s13 control rm-outside-the-owned-set (label filter dropped) FAILS scenario 9" \
            clean_foreign_ok "$MUT" "$SCRATCH/h12b"
 
   MUT="$SCRATCH/mut-record-early.nu"
@@ -532,10 +663,18 @@ stage_hermetic() {
     { print }
     /^    let target = / { print "    _capsule_record $target" }
   ' "$CAPSULE_NU" > "$MUT"
-  chk_ok "hermetic: s12 control copy really records before the preconditions" \
+  chk_ok "hermetic: s13 control copy really records before the preconditions" \
          test "$(line_of "$MUT" '_capsule_record $target')" -lt "$(line_of "$MUT" 'which docker')"
-  chk_fail "hermetic: s12 control record-before-the-checks FAILS scenario 11" \
+  chk_fail "hermetic: s13 control record-before-the-checks FAILS scenario 11" \
            no_docker_ok "$MUT" "$SCRATCH/h12c"
+
+  MUT="$SCRATCH/mut-noguard.nu"
+  awk 'index($0, "if $state.exists and ($state.dir_label | is-empty) {") { print "    if false {"; next } { print }' \
+      "$CAPSULE_NU" > "$MUT"
+  chk_ok "hermetic: s13 control copy really neutered the dir_label refusal" \
+         test "$($GREP -cF 'dir_label | is-empty' "$MUT")" -eq 0
+  chk_fail "hermetic: s13 control dir_label-refusal-neutered FAILS scenario 12 — the foreign container is removed" \
+           rebuild_foreign_ok "$MUT" "$SCRATCH/h13b"
 
   # ── the live tree, untouched ──────────────────────────────────────────────
   assert_unchanged "hermetic: live ~/.cache/capsule and ~/.config/nushell/capsule.nu untouched"

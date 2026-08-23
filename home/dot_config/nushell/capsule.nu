@@ -103,6 +103,21 @@ def _capsule_build [] {
 # _capsule_state: {exists, running, dir_label} for one container name.
 # dir_label empty on an existing container means it is NOT ours (R6's
 # ownership marker) — never adopt it, never remove it.
+#
+# dir_label is load-bearing: it is what guards the `--rebuild` REMOVAL. Step
+# 6 of `capsule` refuses on an empty dir_label, and step 7's
+# `^docker rm -f $name` never consults _capsule_owned — so nothing else
+# stands between a forced rebuild and a container this tool did not create.
+# Measured 2026-08-23: with the emptiness test neutered, `--rebuild` against
+# a same-named container carrying no capsule.dir label asks docker to remove
+# it. The foreign-rebuild scenario in tests/capsule-lifecycle.sh and its
+# control hold that down; a refactor that drops the refusal turns them red.
+#
+# Empty here really does mean "no marker": `index .Config.Labels` prints the
+# empty string for a container that has no such label — measured against
+# docker 29.4.0 and against text/template's `index` on a nil map, an empty
+# map and a missing key. It never prints <no value>, which would read as
+# non-empty and open the guard.
 def _capsule_state [name: string] {
     let r = (^docker container inspect $name --format $"{{.State.Running}}{{\"\\t\"}}{{index .Config.Labels \"($CAPSULE_DIR_LABEL)\"}}" | complete)
     if $r.exit_code != 0 {
@@ -351,6 +366,75 @@ def _capsule_cred_mounts [] {
     $flags
 }
 
+# ── the recents picker (01-capsule/04, task C.4) ────────────────────────────
+#
+# THE PICKER IS A TELEVISION AD-HOC CHANNEL, NOT A HAND-ROLLED TUI. 04-shell's
+# invariant I3 gives every picker screen to tv and names exactly one exception
+# (fzf behind `zi`), so a second hand-rolled picker would be a new decision.
+# Ad-hoc (`^tv --source-command …`, no channel argument) rather than a cable
+# file, because a cable file would put a capsule surface inside
+# ~/.config/television, which 04-shell/04 owns.
+#
+# EVERY TV CALL GOES THROUGH `^tv`, for the same reason every docker call goes
+# through `^docker`: a PATH shim can then observe it, so
+# tests/capsule-recents.sh drives the real picker path against a recording
+# shim and never needs a terminal.
+
+# _capsule_recents_read (R4): the store, pruned on read. A directory that no
+# longer exists is dropped AND the pruned list is written back, so a dead
+# entry leaves the picker for good instead of being filtered on every open.
+# The write-back is non-fatal, like _capsule_record's: a store that cannot be
+# rewritten must still be pickable.
+def _capsule_recents_read [] {
+    let f = (_capsule_recents)
+    if not ($f | path exists) { return [] }
+    let stored = (try { open $f } catch { [] })
+    let live = ($stored | where {|d| ($d | path type) == "dir" })
+    if $live != $stored {
+        try { $live | save -f $f } catch {
+            print -e "capsule: could not prune the recents store (non-fatal)"
+        }
+    }
+    $live
+}
+
+# _capsule_shquote: POSIX single-quote one path for the source command tv
+# runs through sh — everything inside '' is literal, and an embedded quote is
+# closed, escaped and reopened. A LOCAL helper and not finder.nu's: this file
+# parses standalone under `nu -n` and the gate sources it directly, so no def
+# here may belong to another module.
+def _capsule_shquote [p: string] {
+    "'" + ($p | str replace -a "'" "'\\''") + "'"
+}
+
+# _capsule_recents_pick (R2, R3): the picker screen. Returns the chosen
+# directory, or "" when the pick was aborted.
+#
+# The flag set, every flag load-bearing, measured against television 0.15.9 on
+# 2026-08-23:
+#   --input-header "Recent"  is R3's mode feedback, and the picker surface is
+#       its host because the WezTerm status bar is clock-only and
+#       set_left_status is never called (finding C-5). tv defaults this title
+#       to the channel name, which for an ad-hoc channel says nothing.
+#   --no-sort  keeps the source order, and the source order IS the recency
+#       order (R1: most recent first). Without it tv reorders by match
+#       quality and the newest entry is no longer on top.
+#   --keybindings 'enter="confirm_selection"'  confirms the pick whatever
+#       ~/.config/television/config.toml binds — that file belongs to
+#       04-shell/04, and an ad-hoc channel has no prototype of its own to
+#       carry the binding. The grammar is key="action" and tv validates it
+#       eagerly: the inverse config-file form `confirm_selection = "enter"`
+#       exits 1 with `Error parsing CLI arguments`, so a typo is loud rather
+#       than silent.
+#   --no-preview  a list of directories has nothing to preview.
+def _capsule_recents_pick [dirs: list] {
+    let src = $"printf '%s\\n' ($dirs | each {|d| _capsule_shquote $d } | str join ' ')"
+    let raw = (try {
+        ^tv --source-command $src --input-header "Recent" --no-sort --no-preview --keybindings 'enter="confirm_selection"'
+    } catch { "" })
+    $raw | lines | where {|l| ($l | str trim) != "" } | get -o 0 | default "" | str trim
+}
+
 # capsule [dir] [--rebuild] — mount a directory (default: $env.PWD) into its
 # per-directory dev container and attach an interactive zsh at /workspace.
 def capsule [dir?: path, --rebuild] {
@@ -402,6 +486,9 @@ def capsule [dir?: path, --rebuild] {
     # 7 — only --rebuild recreates (R4). The auto path never removes a
     # container: a hash-triggered rebuild updated the image only, and the
     # existing container is attached as-is.
+    # The removal below is covered by step 6's dir_label refusal, NOT by
+    # _capsule_owned — the site roster and both guards are enumerated at
+    # `capsule clean`.
     if $rebuild and $state.exists { ^docker rm -f $name | ignore }
     let exists = ($state.exists and not $rebuild)
     if not $exists {
@@ -449,8 +536,28 @@ def "capsule list" [] {
 # capsule clean [--all] (R6): remove the STOPPED capsules; a bare invocation
 # never kills a running container — the cheap mistake has to be the safe one.
 # --all additionally stops and removes the running ones. Returns the removed
-# names; an empty set returns an empty list and touches nothing. There is no
-# code path that reaches `docker rm` outside the _capsule_owned set.
+# names; an empty set returns an empty list and touches nothing.
+#
+# THE THREE `docker rm` SITES, AND THE GUARD OVER EACH. Enumerated, never
+# claimed universally: what stood here was a universal claim, and it was
+# measurably false — it said every removal went through the _capsule_owned
+# set, and the `--rebuild` recreate never reads that set at all.
+#   * `capsule` step 7, the `--rebuild` recreate — guarded by step 6's
+#     dir_label refusal. See _capsule_state for why that field is
+#     load-bearing.
+#   * the stopped branch below — guarded by _capsule_owned.
+#   * the running branch below, --all only — guarded by _capsule_owned.
+#
+# The two guards are not the same test. _capsule_owned is label-key AND name
+# prefix; step 6 tests the label's VALUE. They agree on every container this
+# tool can create, because the create line always writes a non-empty
+# capsule.dir. They diverge on one input nothing here can produce: a
+# container someone else named capsule-* and labelled with an EMPTY
+# capsule.dir. Step 6 refuses that one; clean removes it.
+#
+# tests/capsule-lifecycle.sh declares this list as RM_SITES and asserts set
+# equality against the file, so a fourth site turns that gate red until the
+# roster and this comment are updated with it.
 def "capsule clean" [--all] {
     let owned = (_capsule_owned)
     let victims = (if $all { $owned } else { $owned | where status == "stopped" })
@@ -462,4 +569,33 @@ def "capsule clean" [--all] {
         }
         $row.name
     }
+}
+
+# capsule recent (R2): pick a recently mounted directory and mount it. The
+# pick funnels straight back into `capsule`, so there is exactly one mount
+# path (the epic's one-entry-path acceptance) and this def knows nothing
+# about images, names or containers.
+#
+# THE TTY GUARD IS $nu.is-interactive, and it fails FIRST. tv has no headless
+# mode: run without a terminal it aborts with "television had a problem and
+# crashed" and writes a crash report (measured 0.15.9, 2026-08-23), so the
+# clean error has to come before the call. Ctrl+Shift+O reaches this def
+# through `nu --execute`, where $nu.is-interactive is TRUE — measured on
+# nushell 0.114.1, 2026-08-23; it is false under `-c`, which is why the
+# hermetic gate drives the helpers rather than this def.
+def "capsule recent" [] {
+    if not $nu.is-interactive {
+        error make {msg: "capsule recent: interactive-only — tv needs a TTY"}
+    }
+    if (which tv | is-empty) {
+        error make {msg: "capsule recent: `tv` (television) is not installed — the picker needs it"}
+    }
+    let dirs = (_capsule_recents_read)
+    if ($dirs | is-empty) {
+        print "capsule recent: no recent workspaces yet — mount one with `capsule`"
+        return
+    }
+    let picked = (_capsule_recents_pick $dirs)
+    if ($picked | is-empty) { return }
+    capsule $picked
 }
