@@ -214,17 +214,32 @@ Four rules for keeping ratings honest across the tree:
 
 Real, recorded so nobody mistakes them for finished work:
 
-- **`02-terminal` is invalid as written.** The inventory
-  (`docs/capabilities-terminal.md`) exists; the from-scratch re-spec is task
-  W0.2. The mismatches are findings T-1 to T-11 in the
-  [corrections backlog](prds/00-delivery/corrections/prd.md).
-- **`03-editor/14` (shift-to-select) is specified but unbuilt.** The fork is
-  **settled**: decided 2026-08-21, full port *with* the tests, and the
-  simplification declined on the record — so collapse-on-motion (R6) is not
-  optional and the rating stays `C 7 · U 7`. See
-  [`decisions/shift-select-scope`](prds/00-delivery/decisions/shift-select-scope/prd.md).
-  What remains is that E.14 has not been implemented. An agent finding the
-  tests burdensome does **not** get to re-take the fork; it files a correction.
+*Both bullets that stood here on 2026-08-24 described work that had since
+landed, and are corrected below rather than deleted — a gap that closed is
+worth more as a record of how it closed than as a blank space.*
+
+- **`02-terminal` was invalid as written; the re-spec landed.** Corrected
+  2026-08-24. This bullet said the epic was invalid and the from-scratch
+  re-spec was still task W0.2. `w0-2-terminal-respec` is `done`, and all
+  seven children of [`02-terminal`](prds/02-terminal/prd.md) are `done`. The
+  findings T-1 to T-11 that motivated it are in the
+  [corrections backlog](prds/00-delivery/corrections/prd.md), where the
+  history lives. What remains on that epic is **human verification, not
+  work**: T.4, T.6 and T.7 in `gates/manual/wave4.md`.
+- **`03-editor/14` (shift-to-select) is built, and the fork stays settled.**
+  Corrected 2026-08-24. This bullet said "specified but unbuilt" and that
+  E.14 had not been implemented; both were false by the time they were read.
+  The node is `done` at `f9cb54b`, the code is
+  `home/dot_config/nvim/lua/config/shift-select.lua`, and
+  `bash tests/nvim-shift-select.sh` exits 0 with all fifteen spec boxes
+  closed. The fork itself is unchanged and still binding: decided 2026-08-21,
+  full port *with* the tests, simplification declined on the record — so
+  collapse-on-motion (R6) is not optional and the rating stays `C 7 · U 7`.
+  See [`decisions/shift-select-scope`](prds/00-delivery/decisions/shift-select-scope/prd.md).
+  An agent finding the tests burdensome does **not** get to re-take the fork;
+  it files a correction. What remains is E.14 in `gates/manual/wave4.md` — a
+  human watching the collapse under real keyboard timing, which no gate can
+  do.
 
 ## How to write a PRD
 

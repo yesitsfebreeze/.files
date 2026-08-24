@@ -22,12 +22,25 @@ Automated half: `just gate 4`.
       FAIL: an off-by-one (M-2 records two live ones: `S-Right` already
       selects two chars via `v<Right>`, and `S-Left` from insert selects two
       via `yz`) or a collapse that depends on how fast you typed.
-- [ ] **D.3** — decision: the shift-to-select full port with tests, or the
+- [x] **D.3** — decision: the shift-to-select full port with tests, or the
       conscious downgrade? Pick a path and record it in
       [`03-editor/14`](../../prds/03-editor/14-shift-select/prd.md).
       PASS: the PRD names the chosen path. If the downgrade is taken, the C/U
       header is updated to roughly C 3 / U 5 and the inventory entry with it.
       FAIL: the code lands before the choice is written down.
+      **Closed 2026-08-24 from the record, not by a fresh decision.** This is
+      the one box on this page a human does not have to re-run: its PASS
+      criterion is "the PRD names the chosen path", which is a document to
+      read rather than a screen to watch. It does.
+      `prds/03-editor/14-shift-select/prd.md` carries
+      `## Simplification option — DECLINED 2026-08-21` — "Declined on
+      2026-08-21 by the human, in `shift-select-scope` (task D.3). The full
+      port is the path: R1-R8 in full, with the tests." The header stays
+      `C 7 · U 7` and the inventory entry is unchanged, which is what the
+      PASS clause requires of the branch taken.
+      The FAIL clause is also satisfied in order: the decision is dated
+      2026-08-21 and the code landed 2026-08-24 at `f9cb54b` — the choice was
+      written down first.
 - [ ] **T.4** — copy mode enters clean. Select some text with the mouse,
       then press `Ctrl+Shift+X`.
       PASS: copy mode opens with no selection carried in, and `h`/`j`/`k`/`l`,
