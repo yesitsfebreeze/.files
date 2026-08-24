@@ -432,8 +432,24 @@ knowledge, and every entry below that depends on one names it.
   `get_lines_as_text` and restored by hand (attributes are not recoverable, so
   a label sits on plain text and the cells come back uncoloured until the app
   repaints). Nothing is painted on a single-pane tab. The saved cells live in
-  `GLOBAL` keyed by pane id, since the callbacks run in a different Lua
-  context from the painter and a pane id survives a tab switch. All 26 letters
+  `GLOBAL` keyed by pane id for **lifetime**, not for context count: a
+  module-local starts `nil` in every newly evaluated Lua context, every
+  config reload makes new ones, and a reload landing inside the 5000 ms
+  window (every `tinty apply` is one, because `colors.lua` is on the watch
+  list — and F6 runs `tinty apply`) would strand the labels on screen with no
+  saved text to put back. The pane-id key is the other half and it stands: a
+  pane id survives a tab switch. The older wording — "the callbacks run in a
+  different Lua context from the painter" — is **refuted**. Measured
+  2026-08-24 on `20240203` against an **instrumented copy of the deployed
+  `~/.config/wezterm/wezterm.lua`**, the only tree that still carries the
+  painter, in two isolated `wezterm-gui` processes: 10 evaluations, **117
+  handler fires**, **9 complete painter chains, 0 of them split across
+  contexts**. The painter's `config.keys` callback, `paint_labels`, the
+  key-table digit and letter callbacks, `unpaint_labels` and the
+  `update-right-status` sweep on the timeout exit all ran in the same
+  context, with exactly one context serving events at a time. A physical
+  keypress is the one segment no probe can drive; that hop is recorded
+  unmeasured rather than covered by the refutation. All 26 letters
   are bound, not just the ones a pane has, because `until_unknown` pops the
   table without eating the keystroke — an unbound letter would type itself
   into nvim or Claude; a miss rings BEL through the same parser instead. A

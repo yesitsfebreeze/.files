@@ -77,8 +77,14 @@ look like the drift this whole task exists to remove.
       into the pane's own parser so they land *on* the pane; covered cells
       read back with `get_lines_as_text` and restored by hand, attributes
       being unrecoverable; the saved cells in `wezterm.GLOBAL` keyed by pane
-      id, because the callbacks run in a different Lua context from the
-      painter and a pane id survives a tab switch; nothing painted on a
+      id — for **lifetime**, because a module-local starts `nil` in every
+      newly evaluated Lua context and a reload landing inside the 5000 ms
+      window (every `tinty apply` is one) would strand the labels with no
+      saved text, and because a pane id survives a tab switch. **Not**
+      "the callbacks run in a different Lua context from the painter":
+      measured 2026-08-24, 9 of 9 painter chains ran wholly inside one
+      context, 0 split — see
+      `00-delivery/corrections/f5-context-claim`; nothing painted on a
       single-pane tab; and a janitor on `update-right-status`, scoped to the
       painting window, for the two exits that run no callback (timeout and
       `until_unknown`). Record the evidence for the decision too: on this

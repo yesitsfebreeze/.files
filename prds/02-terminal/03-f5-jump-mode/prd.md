@@ -126,9 +126,25 @@ panes by letter:
 - The covered cells were read back with `get_lines_as_text` and restored by
   hand; attributes are not recoverable, so a label sat on plain text and the
   cells came back uncoloured until the app repainted.
-- The saved cells lived in `wezterm.GLOBAL` keyed by pane id, because the
-  callbacks run in a different Lua context from the painter and a pane id
-  survives a tab switch.
+- The saved cells lived in `wezterm.GLOBAL` keyed by pane id, and the reason
+  is **lifetime**, not context count. Every evaluation of the config creates
+  fresh Lua contexts and a module-local starts `nil` in each, so cells parked
+  in a local were lost to any reload landing inside the 5000 ms window — and
+  every `tinty apply` is a reload, F6 included — which would strand the
+  labels on screen with no saved text to put back. The pane-id key is the
+  other half and it stands: a pane id survives a tab switch, so the restore
+  lands on the right pane after a digit has moved the window elsewhere.
+- What this entry used to give as the reason, and what does **not** happen:
+  "the callbacks run in a different Lua context from the painter". Measured
+  2026-08-24 on `20240203` against an instrumented copy of the deployed
+  config — the only tree that still carries the painter — in two isolated GUI
+  processes: 10 evaluations, 117 handler fires, 9 complete painter chains,
+  and **0** of them split across contexts. The painter's `config.keys`
+  callback, `paint_labels`, the key-table digit and letter callbacks,
+  `unpaint_labels` and the `update-right-status` sweep all ran in the same
+  context, with exactly one context serving events at a time. The record is
+  `00-delivery/corrections/f5-context-claim`; a physical keypress is the one
+  segment no probe could drive, and it is recorded there as unmeasured.
 - Nothing was painted on a single-pane tab.
 - A janitor on `update-right-status`, scoped to the painting window, swept
   labels left behind by the two exits that run no callback: the timeout and
