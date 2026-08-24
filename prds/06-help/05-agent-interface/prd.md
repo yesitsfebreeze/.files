@@ -231,3 +231,26 @@ constraints and it resolved cleanly.
 lane, and this gate adopted `line_of_code` for its three code lookups while
 keeping a local `line_of` for the clause **comment** lookups, which
 `line_of_code` skips by construction.
+
+### The reading test, re-run 2026-08-24 after the title fix
+
+Same protocol as the first run: a fresh `claude -p` session outside the repo,
+no tools, no repo context, given only the rendered `help` output — which now
+carries `idioms — Search with rg, find with fd, pick with tv` — and a task
+needing a string search and a file-find (locate where the terminal's tab-jump
+keys are configured).
+
+**Result: the failure mode of the first run did not recur.** The plan it
+produced routed through `help terminal` and `help "F5 <digit>"` before any
+search, used `fd -H wezterm ~` to locate the config and `rg -in` for both the
+literal `F5` and the `ActivateTab` fallback, and pipelined `help --json`
+through nushell forms (`open | to text`). Its own attribution, verbatim:
+
+> **"idioms — Search with rg, find with fd, pick with tv"** dictates the
+> tooling in steps 5–7: `fd` to locate files, `rg` to search contents,
+> rather than `find`/`grep`.
+
+No `grep`, `find` or `fzf` appears anywhere in its eight steps. The one
+outside-knowledge item it used (`ActivateTab`) it flagged itself as not
+coming from the help text. Graded against the H.5 PASS line this is a pass by
+the letter; the tick in `gates/manual/wave6.md` remains the human's.

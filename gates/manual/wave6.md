@@ -69,3 +69,10 @@ record which ones, because on a fresh *Mac* they must all run.
       deliberately uninformed agent. The result is recorded in
       [`06-help/05-agent-interface`](../../prds/06-help/05-agent-interface/prd.md)'s
       closing note. It is evidence for whoever ticks this box, not a tick.
+      Re-run later the same day, after the `idioms` title was changed to name
+      the tools (grader's decision, commit 0f9f635): a second uninformed
+      session, given only the rendered `help` output, prescribed `fd` to
+      locate files and `rg` to search them, credited the idioms line for both
+      ("rather than `find`/`grep`"), and named no `grep`, `find` or `fzf`
+      anywhere in its plan. The full transcript is quoted in the same PRD's
+      closing note. Evidence, still not a tick.
