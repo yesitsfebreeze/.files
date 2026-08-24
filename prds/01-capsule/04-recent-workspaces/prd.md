@@ -146,3 +146,7 @@ Landed: `capsule.nu` (`_capsule_recents_read`, `_capsule_shquote`, `_capsule_rec
 Still owed by the orchestrator: the `gates/waves.tsv` wave-4 row `external bash tests/capsule-recents.sh`. `gates/wave-status.sh --validate` reports exactly one red (`unreferenced: capsule-recents.sh`) and the row closes it. The file is held by the `02-keymaps` lane.
 
 Two deliberate deviations, both accepted: the hermetic PATH follows `capsule-lifecycle.sh`'s shape, because `/opt/homebrew/bin` holds the real `tv` and the real `docker` and made the spec's own precondition unachievable; and two counts skip comment lines, since the picker's header quotes its own `^tv --source-command` call.
+
+## Answers
+
+we should have a picker, bit i dont know hat your question is here

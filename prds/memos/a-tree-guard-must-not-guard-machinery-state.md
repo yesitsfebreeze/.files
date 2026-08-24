@@ -70,6 +70,35 @@ seeing `wrote nothing outside its scratch` FAILs that **named a different set
 of gates on each run**, and another seeing a `prds` red on two of three
 consecutive runs. Same cause, three surfaces.
 
+## Corrected 2026-08-24 — the Decision above is too blunt as written
+
+The rule says a gate "must treat `prds/` as SOFT / INDETERMINATE". Measured by
+`gates-lib-anchored-lookup`'s analyst, **a name-keyed exclusion of `prds/`
+inside `gates/lib.sh` would be actively wrong**:
+`gates/retired-phrases.sh:395` hashes `$root/prds` where `$root` is a **scratch
+copy**, which is a perfectly legitimate HARD subject. Excluding by name would
+un-guard a real assertion in order to quiet a false one.
+
+So the rule is about **the live board**, not about the path spelling. The
+distinction a gate needs is which paths a daemon or an orchestrator writes
+*during this run* — and `snapshot_paths` cannot know that, because it hashes
+whatever list it is handed.
+
+The judgement, from the same analysis: `lib.sh` is the right home for the
+**mechanism** and the wrong home for the **policy**. The HARD/SOFT split that
+solves this already exists — roughly 60 lines of `GATES_META_GUARD_HARD` /
+`_SOFT` — but it lives inside `gates/selftest.sh`, and **none of the five other
+sites inherited it**: `tests/provisioning.sh:497`, `tests/shell-init.sh:576`,
+`tests/dev-image.sh:414`, and `gates/retired-phrases.sh:395` and `:735` (CF13)
+all hash `prds/` HARD. Lift the split into `lib.sh` as an inheritable
+`snapshot_soft` plus indeterminate-reporting pair, and leave the choice of
+which paths are SOFT to each gate. That is two nodes, and neither is the one
+that found it.
+
+The machinery files, for whoever writes that: `prds/.plan.json`,
+`prds/.view.html`, `prds/.history.jsonl` — all git-ignored, all rewritten
+repeatedly on 2026-08-24, and all inside a bare `find` over `prds/`.
+
 ## Alternatives considered
 
 **Stop the daemon while gates run** — rejected. It is the thing keeping the
