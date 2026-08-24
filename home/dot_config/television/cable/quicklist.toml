@@ -1,0 +1,38 @@
+# quicklist — the cross-channel recents channel (04-shell/07 R3). The rows
+# come from recents.nu's log; the runner in quicklist.nu decides what `enter`
+# and `ctrl-r` do with the row it gets back.
+#
+# Field indexes are the log's four-field row: 0 kind, 1 value, 2 cwd,
+# 3 channel.
+
+[metadata]
+name = "quicklist"
+description = "Recent picks across every channel — enter opens by type, ctrl-r replays in its cwd"
+requirements = ["nu"]
+
+# TWO `source`s, NOT ONE. recents.nu reuses dirstack.nu's `_state_dir` so the
+# state directory has exactly one definition, so this `nu -n` needs both
+# files; recent-dirs.toml already uses the same idiom for `_dirstack_list`.
+# `nu -n` loads no config, which is the latency reason nu-history.toml
+# records: the builtin channels that cold-start a FULL nushell re-source
+# starship, zoxide and the tv init on every keypress.
+[source]
+command = "nu -n -c 'source ~/.config/nushell/dirstack.nu; source ~/.config/nushell/recents.nu; _recents_lines'"
+# BOTH KEYS ARE LOAD-BEARING, and the live cable file has neither. The log is
+# already newest-first and its 200-entry cap makes any re-ranking wrong —
+# without these two tv reorders the rows and R1's "newest first" is false at
+# the only place a user ever sees it. zoxide.toml and nu-history.toml are the
+# precedent for both.
+no_sort = true
+frecency = false
+# THE `\\t` ESCAPING TRAP: `\\t` in TOML reaches tv as the literal escape
+# `\t`, which its template engine treats as the tab delimiter. A single `\t`
+# here would be a REAL tab character and the template would stop splitting.
+display = "{split:\\t:1}    ({split:\\t:3})  {split:\\t:2}"
+# The WHOLE row, because the runner needs the kind (to open by type) and the
+# cwd and channel (to replay), not just the display column.
+output = "{}"
+
+# No [preview]: a row's value may be a path, a grep row (`file:line:text`) or
+# a bare commit hash, and one preview command cannot be right for all three.
+# Out of scope for this node.
