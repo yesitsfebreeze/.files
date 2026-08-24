@@ -21,6 +21,10 @@
 #                           comment's line number silently defuses the
 #                           comparison — in the PASSING direction. Neither is
 #                           named `line_of`, deliberately; see the section.
+#   line_of_lua_code /
+#   last_line_of_lua_code   the same lookup for Lua's `--` comments — the
+#                           wezterm gates' targets are all indented Lua, so
+#                           neither of the two above can read them.
 #   snapshot_paths /
 #   assert_unchanged        the untouched-file guard. This REPLACES
 #                           `git diff --quiet` and `git status --porcelain`,
@@ -173,6 +177,31 @@ line_of_decl() {
 line_of_code() {
   awk -v s="$2" '$0 !~ /^[[:space:]]*#/ && index($0, s) { print NR; exit }' "$1" \
     | { read -r n; echo "${n:-0}"; }
+}
+
+# line_of_lua_code <file> <string> — first NON-comment line containing the
+# string, the file's own line number; 0 if absent. The Lua twin of
+# line_of_code, and it exists because neither lookup above can read the
+# wezterm targets: every one is indented Lua, so line_of_decl's column-1
+# anchor returns 0 on all ten positions measured 2026-08-23, and
+# line_of_code's `#` test does not see a Lua `--`, so a comment quoting a
+# target would resolve — the silent-defusal defect, in a file
+# (home/dot_config/wezterm/wezterm.lua) that is 595 comment lines out of
+# 1237. Same rules as line_of_code: awk with a comment test keeping the
+# file's own NR, never a strip-pipe, which renumbers (the 219-vs-102
+# measurement above). And nothing here is named `line_of` — fourteen gates
+# define their own and would shadow it.
+line_of_lua_code() {
+  awk -v s="$2" '$0 !~ /^[[:space:]]*--/ && index($0, s) { print NR; exit }' "$1" \
+    | { read -r n; echo "${n:-0}"; }
+}
+
+# last_line_of_lua_code <file> <string> — LAST such line; 0 if absent. For
+# order contracts whose target legitimately recurs (wezterm's Ctrl+C
+# callback holds the file's second `act.ClearSelection, pane`) and the LAST
+# occurrence is the one the contract compares.
+last_line_of_lua_code() {
+  awk -v s="$2" '$0 !~ /^[[:space:]]*--/ && index($0, s) { n = NR } END { print n + 0 }' "$1"
 }
 
 # ── the untouched-file guard ────────────────────────────────────────────────

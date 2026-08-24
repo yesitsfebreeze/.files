@@ -39,6 +39,20 @@ WEZTERM="$(command -v wezterm || true)"
 SCRATCH="$(gates_tmpdir)"
 SCRATCH="$(cd "$SCRATCH" && pwd -P)"
 
+# R14's order contract, as a function over a file argument. This used to be
+# a pair of first-occurrence substring greps justified by "both strings
+# occur only inside that callback" — an assumption a single quoting comment
+# falsifies, in a file that is 48% comments and that seven terminal nodes
+# write. The lookups read CODE lines only (gates/lib.sh line_of_lua_code),
+# so a comment quoting a target cannot move them; both positions are
+# required > 0, so a deleted target reads red, never `0 < n` green.
+r14_order() {   # <wezterm.lua>
+  local mark close
+  mark="$(line_of_lua_code "$1" 'mark_closing(mux_win:window_id())')"
+  close="$(line_of_lua_code "$1" 'act.CloseCurrentTab({ confirm = false })')"
+  [ "$mark" -gt 0 ] && [ "$close" -gt 0 ] && [ "$mark" -lt "$close" ]
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # stage --static (spec01 R1-R14, as greps over the source)
 # ════════════════════════════════════════════════════════════════════════════
@@ -98,13 +112,28 @@ stage_static() {
   chk_ok "static: gui-startup calls toggle_fullscreen (R12)" \
          $GREP -q 'toggle_fullscreen' "$SRC"
 
-  # R14 — mark_closing precedes the close loop in the key callback; both
-  # strings occur only inside that callback, so first occurrences compare.
+  # R14 — mark_closing precedes the close loop in the key callback. Read via
+  # line_of_lua_code — code lines only, the file's own numbers — so a
+  # comment quoting either target cannot move the comparison (the defusal
+  # prds/00-delivery/corrections/wezterm-gate-positional-lookups closes).
   local mark_line close_line
-  mark_line="$($GREP -n 'mark_closing(mux_win:window_id())' "$SRC" | head -1 | cut -d: -f1)"
-  close_line="$($GREP -n 'act.CloseCurrentTab({ confirm = false })' "$SRC" | head -1 | cut -d: -f1)"
-  chk_ok "static: mark_closing (line ${mark_line:-absent}) precedes the CloseCurrentTab loop (line ${close_line:-absent}) (R14)" \
-         test -n "$mark_line" -a -n "$close_line" -a "${mark_line:-0}" -lt "${close_line:-0}"
+  mark_line="$(line_of_lua_code "$SRC" 'mark_closing(mux_win:window_id())')"
+  close_line="$(line_of_lua_code "$SRC" 'act.CloseCurrentTab({ confirm = false })')"
+  chk_ok "static: mark_closing (code line $mark_line) precedes the CloseCurrentTab loop (code line $close_line) (R14)" \
+         r14_order "$SRC"
+  # The landed counterfactual (shape: tests/shell-listing.sh — contract as a
+  # function, mutated copy under $SCRATCH, chk_fail): mark_closing deleted,
+  # and quoted in a comment just above the CloseCurrentTab line. A substring
+  # lookup resolves the comment and stays green — the defusal this node
+  # closes; the code lookup reads mark = 0 and goes red.
+  local CF_R14="$SCRATCH/cf-mark-quoted.lua"
+  awk '
+    !d && index($0, "mark_closing(mux_win:window_id())") { d = 1; next }
+    !c && index($0, "act.CloseCurrentTab({ confirm = false })") { print "            -- mark_closing(mux_win:window_id())"; c = 1 }
+    { print }
+  ' "$SRC" > "$CF_R14"
+  chk_fail "static: counterfactual mark-quoted — the R14 order contract goes red on the mutated copy (mark reads 0)" \
+           r14_order "$CF_R14"
   chk_ok "static: confirm = false in the close loop (R14)" \
          $GREP -qF 'confirm = false' "$SRC"
 

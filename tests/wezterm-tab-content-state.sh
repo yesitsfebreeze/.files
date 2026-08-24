@@ -162,6 +162,31 @@ BLOCK="$SCRATCH/tab-content-block"
 # mid-phrase.
 block_prose() { sed -e 's/^[[:space:]]*--[[:space:]]*//' "$BLOCK" | norm; }
 
+# ── the two order contracts over the block, as functions over a file
+# argument. $BLOCK is a sed window that PRESERVES the file's Lua `--`
+# comment lines, so the code-line lookups (gates/lib.sh line_of_lua_code /
+# last_line_of_lua_code) apply to it unchanged and a comment quoting a
+# target cannot move either comparison. Every position is required > 0, so
+# a deleted target reads red, never `0 < n` green.
+
+# R1: `return true` INSIDE the loop precedes the LAST `return false` after
+# it — the OR over panes, not an AND.
+r1_or_shape() {   # <block>
+  local t f
+  t="$(line_of_lua_code "$1" 'return true')"
+  f="$(last_line_of_lua_code "$1" 'return false')"
+  [ "$t" -gt 0 ] && [ "$f" -gt 0 ] && [ "$t" -lt "$f" ]
+}
+
+# R5: the pcall opens at or before the accessor call — the two sit on
+# adjacent lines and the guard clause allows equality today, hence <=.
+r5_pcall_guard() {   # <block>
+  local p g
+  p="$(line_of_lua_code "$1" 'local ok, name = pcall(function()')"
+  g="$(line_of_lua_code "$1" 'get_foreground_process_name')"
+  [ "$p" -gt 0 ] && [ "$g" -gt 0 ] && [ "$p" -le "$g" ]
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # stage --static (spec01 R1-R6, as greps over wezterm.lua)
 # ════════════════════════════════════════════════════════════════════════════
@@ -187,12 +212,25 @@ stage_static() {
          $GREP -qF 'if base ~= nil and fg ~= base then' "$BLOCK"
   # The OR, not an AND: `return true` sits INSIDE the loop and `return false`
   # after it. An AND would invert both, and the two look identical at a
-  # glance, so the order of the two returns is what is asserted.
+  # glance, so the order of the two returns is what is asserted — on code
+  # lines (r1_or_shape), so a comment quoting either return cannot move it.
   local true_line false_line
-  true_line="$($GREP -n 'return true' "$BLOCK" | head -1 | cut -d: -f1)"
-  false_line="$($GREP -n 'return false' "$BLOCK" | tail -1 | cut -d: -f1)"
-  chk_ok "static: return true (line ${true_line:-absent} of the block) precedes return false (line ${false_line:-absent}) — the OR over panes, not an AND (R1)" \
-         test -n "$true_line" -a -n "$false_line" -a "${true_line:-0}" -lt "${false_line:-0}"
+  true_line="$(line_of_lua_code "$BLOCK" 'return true')"
+  false_line="$(last_line_of_lua_code "$BLOCK" 'return false')"
+  chk_ok "static: return true (code line $true_line of the block) precedes return false (code line $false_line) — the OR over panes, not an AND (R1)" \
+         r1_or_shape "$BLOCK"
+  # The landed counterfactual (mutated copy of $BLOCK under $SCRATCH): the
+  # `return true` code line deleted, and quoted in a comment near the top of
+  # the copy. A substring lookup resolves the comment and stays green — the
+  # defusal this node closes; the code lookup reads true = 0 and goes red.
+  local CF_OR="$SCRATCH/cf-return-true-quoted"
+  awk '
+    NR == 1 { print; print "-- return true"; next }
+    !d && $0 !~ /^[[:space:]]*--/ && index($0, "return true") { d = 1; next }
+    { print }
+  ' "$BLOCK" > "$CF_OR"
+  chk_fail "static: counterfactual return-true-quoted — the OR-shape contract goes red on the mutated block copy (true reads 0)" \
+           r1_or_shape "$CF_OR"
 
   # ── R2 — four recheck triggers, one registration each.
   local ev
@@ -266,11 +304,24 @@ stage_static() {
          sh -c "awk '/^local function learn_pane_programs\(\)/{f=1} f{print} f&&/^end\$/{exit}' '$SRC' | $GREP -q 'get_foreground_process_name'"
   # pcall on a line at or before it, in that function: a pane can die
   # mid-iteration, which is why 01-appearance R6 wraps inject_output too.
+  # Code-line lookups (r5_pcall_guard), so a quoting comment cannot move
+  # either position.
   local pcall_line fg_line
-  pcall_line="$($GREP -n 'local ok, name = pcall(function()' "$BLOCK" | head -1 | cut -d: -f1)"
-  fg_line="$($GREP -n 'get_foreground_process_name' "$BLOCK" | head -1 | cut -d: -f1)"
-  chk_ok "static: pcall (line ${pcall_line:-absent} of the block) guards the accessor call (line ${fg_line:-absent}) (R5)" \
-         test -n "$pcall_line" -a -n "$fg_line" -a "${pcall_line:-0}" -le "${fg_line:-0}"
+  pcall_line="$(line_of_lua_code "$BLOCK" 'local ok, name = pcall(function()')"
+  fg_line="$(line_of_lua_code "$BLOCK" 'get_foreground_process_name')"
+  chk_ok "static: pcall (code line $pcall_line of the block) guards the accessor call (code line $fg_line) (R5)" \
+         r5_pcall_guard "$BLOCK"
+  # The landed counterfactual (mutated copy of $BLOCK under $SCRATCH): the
+  # pcall line deleted, and quoted in a comment after the accessor line. The
+  # code lookup reads pcall = 0 and goes red — never resolves the comment.
+  local CF_PC="$SCRATCH/cf-pcall-quoted"
+  awk '
+    !d && index($0, "local ok, name = pcall(function()") { d = 1; next }
+    { print }
+    !c && index($0, "get_foreground_process_name") { print "                        -- local ok, name = pcall(function()"; c = 1 }
+  ' "$BLOCK" > "$CF_PC"
+  chk_fail "static: counterfactual pcall-quoted — the pcall-guard contract goes red on the mutated block copy (pcall reads 0)" \
+           r5_pcall_guard "$CF_PC"
 
   # ── R6 — the baseline lives in GLOBAL, and is rebuilt rather than mutated.
   chk_ok "static: wezterm.GLOBAL.tab_pane_program is assigned exactly once (R6)" \

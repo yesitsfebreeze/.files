@@ -18,8 +18,9 @@
 # That is the whole point: this repo's original failure was specs drifting
 # from the config they described, discovered only by a four-agent audit.
 #
-# Reads the live config and the chezmoi source read-only. Never writes
-# anything, anywhere.
+# Reads the live config and the chezmoi source read-only. Never writes to
+# either — the one write it makes is the L-8 counterfactual's mutated COPY
+# of treesitter.lua, in its own mktemp directory, removed before exit.
 # Usage: bash tests/live-bugs.sh
 
 set -u
@@ -169,11 +170,29 @@ grep -rq 'netrw' "$LIVE/nvim/lua/"; chk "netrw is disabled in the config" $?
 grep -q 'Live bug L-7' "$DOCS/capabilities-nvim.md"; chk "doc: L-7 recorded" $?
 
 echo "── L-8  two autocmds are ungrouped, so a reload stacks duplicates ───"
-ungrouped() { # file, autocmd event — no `group =` in the option table
-  local f="$1" ev="$2" ln
-  ln=$(grep -n "nvim_create_autocmd(\"$ev\"" "$f" | head -1 | cut -d: -f1)
-  [ -n "$ln" ] || return 2
-  [ "$(sed -n "${ln},$((ln + 6))p" "$f" | grep -c 'group *=')" -eq 0 ]
+# R2 verdict (wezterm-gate-positional-lookups, 2026-08-24): this used to be a
+# substring anchor plus a fixed `sed -n "$ln,$((ln+6))p"` window over live
+# Lua — and a quoting comment defuses it TWICE, both in the passing
+# direction: a comment above the call moves the whole window onto prose, and
+# a comment inside the span pushes a real `group =` line out of it. The
+# input is Lua, so the read is taken over comment-stripped text: the anchor
+# AND the window both skip `--` lines, in ONE awk pass keeping the file's
+# own lines — never a strip-pipe, which renumbers. Measured 2026-08-24: the
+# FileType autocmd sits at ~/.config/nvim/lua/plugins/treesitter.lua:31, the
+# ModeChanged one at ~/.config/nvim/lua/config/keymaps.lua:58, neither
+# preceded by a quoting comment today, so no conclusion changes.
+ungrouped() { # file, autocmd event — no `group =` in the option table.
+  # Returns 0 ungrouped, 1 grouped, 2 call absent. The anchor is the first
+  # NON-comment line containing the call; the window is that line plus the
+  # next 6 NON-comment lines; `group *=` is counted over those 7 code lines.
+  local f="$1" ev="$2" pat
+  pat='nvim_create_autocmd("'"$ev"'"'
+  awk -v pat="$pat" '
+    $0 ~ /^[[:space:]]*--/ { next }              # comments: never the anchor, never the window
+    !found && index($0, pat) { found = 1 }
+    found && n < 7 { n += 1; if ($0 ~ /group *=/) g = 1 }
+    END { if (!found) exit 2; exit (g ? 1 : 0) }
+  ' "$f"
 }
 ungrouped "$LIVE/nvim/lua/plugins/treesitter.lua" FileType
 chk "treesitter.lua's FileType autocmd has no group = in its option table" $?
@@ -181,6 +200,24 @@ ungrouped "$LIVE/nvim/lua/config/keymaps.lua" ModeChanged
 chk "keymaps.lua's shift-select ModeChanged autocmd has no group = either" $?
 [ "$(grep -c 'group = augroup(' "$LIVE/nvim/lua/config/autocmds.lua")" -gt 0 ]
 chk "control: config/autocmds.lua DOES group all of its autocmds — the grep finds a group when there is one" $?
+# The landed counterfactual, on a scratch COPY (the one write this file
+# makes, and it is to mktemp space, never to any config): a comment quoting
+# the call planted far above the real one, and a real `group =` planted into
+# the real call's option table. The old substring anchor lands on the
+# comment, sees no `group =` in the prose window, and returns 0 — the
+# defusal being closed. The code-line read anchors on the real call, sees
+# the planted group, and reads GROUPED (non-zero).
+CF_L8_DIR=$(mktemp -d "${TMPDIR:-/tmp}/live-bugs-cf.XXXXXX")
+awk '
+  NR == 1 { print "-- vim.api.nvim_create_autocmd(\"FileType\", {"; print; next }
+  { print }
+  index($0, "vim.api.nvim_create_autocmd(\"FileType\", {") {
+    print "            group = vim.api.nvim_create_augroup(\"cf_l8\", {}),"
+  }
+' "$LIVE/nvim/lua/plugins/treesitter.lua" > "$CF_L8_DIR/treesitter.lua"
+if ungrouped "$CF_L8_DIR/treesitter.lua" FileType; then cf_l8=1; else cf_l8=0; fi
+chk "counterfactual: quoting comment + planted group = reads GROUPED (non-zero) on the mutated copy" $cf_l8
+rm -rf "$CF_L8_DIR"
 
 echo "── L-9  <C-v> shadows blockwise-visual  [DECIDED: intentional] ──────"
 grep -q 'map("v", "<C-v>"' "$LIVE/nvim/lua/config/keymaps.lua"; chk "<C-v> is bound in visual mode only, so normal mode is untouched" $?

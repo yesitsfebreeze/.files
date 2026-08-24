@@ -262,6 +262,23 @@ arming_is() {   # arming_is <registry> <board> <wave> <ARMED|PENDING>
     | awk -v w="$3" '$1 == w {print $2}' | grep -qx "$4"
 }
 
+# R2 verdict (wezterm-gate-positional-lookups, 2026-08-24): selftest section
+# 6's two-line window is bounded on a substring over PROSE by design — the
+# wrapped link is norm's own fixture, and markdown has no comment syntax to
+# strip, so the bound cannot be anchored on anything a comment could not
+# also be. It is made SELF-CHECKING instead: the position is used only when
+# `\[tv needs a$` matches exactly one line of the file (measured 2026-08-24:
+# one match, line 42 of prds/06-help/prd.md), so a duplicate turns the
+# selftest red instead of silently moving the window onto a different pair
+# of lines and norming something else.
+# shellcheck disable=SC2329
+wrapped_link_line() {   # <file> — the line number, ONLY when the match is unique
+  local f="$1" n
+  n="$(grep -c '\[tv needs a$' "$f")"
+  [ "$n" -eq 1 ] || return 1
+  grep -n '\[tv needs a$' "$f" | head -1 | cut -d: -f1
+}
+
 selftest() {
   local T R B
   T="$(gates_tmpdir)/harness"; mkdir -p "$T"
@@ -332,10 +349,12 @@ selftest() {
 
   # 6. norm collapses a link whose text wraps across a newline — the exact
   #    case that fooled the W0.3 stand-in walker. Located by content, never
-  #    by a hardcoded line number.
+  #    by a hardcoded line number — and only through wrapped_link_line, whose
+  #    exactly-one bound is what keeps a planted duplicate from silently
+  #    moving the two-line window (see the R2 verdict at its definition).
   local ln wrapped flat
-  ln="$(grep -n '\[tv needs a$' "$ROOT/prds/06-help/prd.md" | head -1 | cut -d: -f1)"
-  chk_ok "norm: the wrapped link is still in prds/06-help/prd.md (line ${ln:-<gone>})" test -n "$ln"
+  ln="$(wrapped_link_line "$ROOT/prds/06-help/prd.md")"
+  chk_ok "norm: the wrapped link is in prds/06-help/prd.md exactly once (line ${ln:-<gone or duplicated>})" test -n "$ln"
   wrapped="$(sed -n "${ln:-1},$((${ln:-1} + 1))p" "$ROOT/prds/06-help/prd.md")"
   flat="$(norm <<< "$wrapped")"
   echo "      norm: $(head -c 100 <<< "$flat")…"
@@ -343,6 +362,15 @@ selftest() {
     grep -qF '[tv needs a TTY](../04-shell/04-television/prd.md)' <<< "$flat"
   chk_fail "norm: the raw two lines do NOT contain that phrase — this is why norm exists" \
     grep -qF 'tv needs a TTY' <<< "$wrapped"
+  # The landed counterfactual: a copy with a second line ending `[tv needs a`
+  # planted above the real one. The old presence-only bound would keep the
+  # first hit and norm two different lines; the uniqueness bound goes red.
+  local DUP="$T/prd-dup.md"
+  awk '/\[tv needs a$/ && !d { print "  a planted duplicate line ending [tv needs a"; d = 1 } { print }' \
+    "$ROOT/prds/06-help/prd.md" > "$DUP"
+  echo "      MUTATION: $DUP carries a second line ending [tv needs a, above the real one"
+  chk_fail "norm: the window bound goes red on the duplicated copy instead of silently moving" \
+    wrapped_link_line "$DUP"
 
   # 7. assert_unchanged fires on a mutated file and stays quiet on an
   #    untouched one — WHILE git is dirty, which is the point: the guard must

@@ -1,6 +1,8 @@
 ---
-state: claimed
-claim: implementer-4 2026-08-24T11:50Z
+state: done
+claim: 
+actual: 2026-08-24T15:10Z
+commit: 24111c4
 priority: 18
 est:
 mode: afk

@@ -51,6 +51,35 @@ SCRATCH="$(cd "$SCRATCH" && pwd -P)"
 # mid-phrase.
 src_prose() { sed -e 's/^[[:space:]]*--[[:space:]]*//' "$SRC" | norm; }
 
+# ── the two order contracts, as functions over a file argument ──────────────
+# Both used to be first/last substring greps justified by "enter_copy_mode is
+# the first place either name appears, so first occurrences compare" — an
+# assumption a single quoting comment falsifies, in a file that is 48%
+# comments and that seven terminal nodes write. The lookups now read CODE
+# lines only (gates/lib.sh line_of_lua_code / last_line_of_lua_code), so a
+# comment quoting a target cannot move them; and every position is required
+# > 0, so a deleted target reads red, never `0 < n` green.
+
+# R1: the reset precedes the activation.
+r1_order() {   # <wezterm.lua>
+  local clear activate
+  clear="$(line_of_lua_code "$1" 'act.ClearSelection')"
+  activate="$(line_of_lua_code "$1" 'act.ActivateCopyMode')"
+  [ "$clear" -gt 0 ] && [ "$activate" -gt 0 ] && [ "$clear" -lt "$activate" ]
+}
+
+# R7: the copy, then the clear-after-copy, then the Ctrl-C fallthrough. The
+# clear is the file's LAST `act.ClearSelection, pane` — the R1 entry holds
+# the first — so that one is a last-occurrence lookup.
+r7_order() {   # <wezterm.lua>
+  local copy clear2 send
+  copy="$(line_of_lua_code "$1" 'act.CopyTo("ClipboardAndPrimarySelection"), pane')"
+  clear2="$(last_line_of_lua_code "$1" 'act.ClearSelection, pane')"
+  send="$(line_of_lua_code "$1" 'act.SendKey({ key = "c", mods = "CTRL" })')"
+  [ "$copy" -gt 0 ] && [ "$clear2" -gt 0 ] && [ "$send" -gt 0 ] \
+    && [ "$copy" -lt "$clear2" ] && [ "$clear2" -lt "$send" ]
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # stage --static (spec01 R1-R8 and spec02, as greps over the source files)
 # ════════════════════════════════════════════════════════════════════════════
@@ -69,14 +98,15 @@ stage_static() {
          $GREP -qF 'act.ClearSelection' "$SRC"
   chk_ok "static: act.ActivateCopyMode present (R1)" \
          $GREP -qF 'act.ActivateCopyMode' "$SRC"
-  # The reset must precede the activation — enter_copy_mode is the first
-  # place either name appears, so first occurrences compare (the
-  # mark_closing-before-close shape from tests/wezterm-startup-layout.sh).
+  # The reset must precede the activation. Read via line_of_lua_code — code
+  # lines only, the file's own numbers — so a comment quoting either name
+  # cannot move the comparison (the defusal
+  # prds/00-delivery/corrections/wezterm-gate-positional-lookups closes).
   local clear_line activate_line
-  clear_line="$($GREP -n 'act.ClearSelection' "$SRC" | head -1 | cut -d: -f1)"
-  activate_line="$($GREP -n 'act.ActivateCopyMode' "$SRC" | head -1 | cut -d: -f1)"
-  chk_ok "static: ClearSelection (line ${clear_line:-absent}) precedes ActivateCopyMode (line ${activate_line:-absent}) (R1)" \
-         test -n "$clear_line" -a -n "$activate_line" -a "${clear_line:-0}" -lt "${activate_line:-0}"
+  clear_line="$(line_of_lua_code "$SRC" 'act.ClearSelection')"
+  activate_line="$(line_of_lua_code "$SRC" 'act.ActivateCopyMode')"
+  chk_ok "static: ClearSelection (code line $clear_line) precedes ActivateCopyMode (code line $activate_line) (R1)" \
+         r1_order "$SRC"
 
   # ── R2 — the default table is extended, never replaced.
   chk_ok "static: wezterm.gui.default_key_tables().copy_mode present (R2)" \
@@ -135,15 +165,45 @@ stage_static() {
          $GREP -qF 'window:get_selection_text_for_pane(pane)' "$SRC"
   chk_ok "static: the fallthrough sends CTRL-c to the pty (R7)" \
          $GREP -qF 'act.SendKey({ key = "c", mods = "CTRL" })' "$SRC"
-  # Both arms live in the one callback: the copy, then the clear.
+  # Both arms live in the one callback: the copy, then the clear, then the
+  # fallthrough. Same code-line lookups as R1, so a quoting comment cannot
+  # move any of the three.
   local copy_line clear2_line send_line
-  copy_line="$($GREP -n 'act.CopyTo("ClipboardAndPrimarySelection"), pane' "$SRC" | head -1 | cut -d: -f1)"
-  clear2_line="$($GREP -n 'act.ClearSelection, pane' "$SRC" | tail -1 | cut -d: -f1)"
-  send_line="$($GREP -n 'act.SendKey({ key = "c", mods = "CTRL" })' "$SRC" | head -1 | cut -d: -f1)"
-  chk_ok "static: in the Ctrl+C callback CopyTo (line ${copy_line:-absent}) precedes the ClearSelection-after-copy (line ${clear2_line:-absent}) (R7)" \
-         test -n "$copy_line" -a -n "$clear2_line" -a "${copy_line:-0}" -lt "${clear2_line:-0}"
-  chk_ok "static: the SendKey fallthrough (line ${send_line:-absent}) follows both (R7)" \
-         test -n "$send_line" -a "${clear2_line:-0}" -lt "${send_line:-0}"
+  copy_line="$(line_of_lua_code "$SRC" 'act.CopyTo("ClipboardAndPrimarySelection"), pane')"
+  clear2_line="$(last_line_of_lua_code "$SRC" 'act.ClearSelection, pane')"
+  send_line="$(line_of_lua_code "$SRC" 'act.SendKey({ key = "c", mods = "CTRL" })')"
+  chk_ok "static: Ctrl+C callback order — CopyTo (code line $copy_line) < ClearSelection-after-copy (code line $clear2_line) < SendKey fallthrough (code line $send_line) (R7)" \
+         r7_order "$SRC"
+
+  # ── the landed counterfactuals: a quoting comment must not defuse either
+  # order contract (shape: tests/shell-listing.sh — contract as a function,
+  # mutated copy under $SCRATCH, chk_fail).
+  # CF-A: the entry's ClearSelection line deleted, and the name quoted in a
+  # comment just above ActivateCopyMode. A substring lookup would resolve the
+  # comment and stay green — the defusal this node closes; the code lookup
+  # finds only the Ctrl+C callback's ClearSelection, far below
+  # ActivateCopyMode, and goes red.
+  local CF_A="$SCRATCH/cf-clear-quoted.lua"
+  awk '
+    !d && index($0, "window:perform_action(act.ClearSelection, pane)") { d = 1; next }
+    !c && index($0, "act.ActivateCopyMode") { print "    -- act.ClearSelection"; c = 1 }
+    { print }
+  ' "$SRC" > "$CF_A"
+  chk_fail "static: counterfactual clear-quoted — the R1 order contract goes red on the mutated copy" \
+           r1_order "$CF_A"
+  # CF-B: the SendKey fallthrough deleted, and quoted in a comment after the
+  # last `act.ClearSelection, pane` line. `send` must read 0 and the contract
+  # go red — never resolve the comment.
+  local CF_B="$SCRATCH/cf-send-quoted.lua" cfb_ln
+  awk '
+    !d && index($0, "act.SendKey({ key = \"c\", mods = \"CTRL\" })") { d = 1; next }
+    { print }
+  ' "$SRC" > "$CF_B.pre"
+  cfb_ln="$(last_line_of_lua_code "$CF_B.pre" 'act.ClearSelection, pane')"
+  awk -v n="$cfb_ln" '{ print } NR == n { print "                -- act.SendKey({ key = \"c\", mods = \"CTRL\" })" }' \
+      "$CF_B.pre" > "$CF_B"
+  chk_fail "static: counterfactual send-quoted — the R7 order contract goes red on the mutated copy (send reads 0)" \
+           r7_order "$CF_B"
 
   # ── R8 — the two mouse bindings, with the flags that make them work.
   chk_ok "static: exactly one config.mouse_bindings assignment (R8)" \
