@@ -24,7 +24,7 @@ handoff, per the `capsule.nuon` precedent in `w0-4-s2-corrections/capsule`.
    >       not by the terminal layer. State, not config: the store lives
    >       outside `~/.config`, so `chezmoi apply` never touches it and
    >       the managed-config surface census stays at nine
-   >       ([managed-config](../../05-platform/01-deploy-mechanism/managed-config/prd.md)).
+   >       ([managed-config](../../../../05-platform/01-deploy-mechanism/managed-config/prd.md)).
 
    This settles the discrepancy `00-delivery/work-breakdown` records under
    Track C: the schedule put the store at
@@ -81,7 +81,7 @@ handoff, per the `capsule.nuon` precedent in `w0-4-s2-corrections/capsule`.
    > indicator, and its header comment calls `Ctrl+Shift+T` "the one real
    > collision left". Correcting them is `06-help` work with an
    > independent re-read attached, per the `capsule.nuon` precedent in
-   > [`w0-4-s2-corrections/capsule`](../../00-delivery/corrections/w0-4-s2-corrections/capsule/prd.md).
+   > [`w0-4-s2-corrections/capsule`](../../w0-4-s2-corrections/capsule/prd.md).
 
 ## Acceptance
 

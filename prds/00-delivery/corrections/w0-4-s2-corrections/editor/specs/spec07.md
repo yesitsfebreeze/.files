@@ -92,7 +92,7 @@ stays disabled — that is not the half being corrected),
 >       which is what the live config does and is live bug L-7: oil installs
 >       its `default_file_explorer` hijack in `setup()`, so while it is
 >       unloaded it hijacks nothing — and with netrw disabled by
->       [`04-plugin-manager`](../04-plugin-manager/prd.md), `:e some/dir`
+>       [`04-plugin-manager`](../../../../../03-editor/04-plugin-manager/prd.md), `:e some/dir`
 >       opens neither, a dead end stock Neovim does not have. `<leader>e`
 >       (R3) is unaffected; it stops being a *loader* and stays a binding.
 
@@ -102,12 +102,12 @@ stays disabled — that is not the half being corrected),
 >       back: live bug L-7 offered two corrections — make oil eager, or drop
 >       the `:e some/dir` acceptance check. The first was taken
 >       (2026-08-21, afk, under
->       [`w0-4-s2-corrections/editor`](../../00-delivery/corrections/w0-4-s2-corrections/editor/prd.md)
+>       [`w0-4-s2-corrections/editor`](../prd.md)
 >       R6). Dropping the check would have made this node self-consistent by
 >       abandoning the capability its Purpose names — replacing netrw — and
 >       left `:e some/dir` worse than stock. The cost is one C-2 plugin at
 >       startup, the same trade
->       [`11-colorscheme`](../11-colorscheme/prd.md) R1 already makes for
+>       [`11-colorscheme`](../../../../../03-editor/11-colorscheme/prd.md) R1 already makes for
 >       tinted-nvim: a thing that must be in place before the user's first
 >       action cannot be lazy on that action.
 
@@ -115,7 +115,7 @@ stays disabled — that is not the half being corrected),
 
 > Parent: [Neovim epic](../prd.md) · C 2 · U 8 · source: "File explorer
 > (oil.nvim)" in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 ### 4. The acceptance line
 

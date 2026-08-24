@@ -15,7 +15,7 @@ the backlog.
 - `.mi/prds/00-delivery/corrections/prd.md` — numbered item 4 only.
 
 **Source text, to be transcribed rather than re-derived:**
-[`../platform/decision4-replacement.md`](../platform/decision4-replacement.md).
+[`../platform/decision4-replacement.md`](../../platform/decision4-replacement.md).
 
 **RED baseline, measured before writing this spec:** `bash check02.sh` →
 **26 FAIL**, exit 1.

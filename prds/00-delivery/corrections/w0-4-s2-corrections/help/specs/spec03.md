@@ -46,8 +46,8 @@ them.
 
    `- [x]` **`source`** — the PRD this entry is specified by, repo-root
    relative; required, and **the field the detail views render**
-   ([`02`](../02-help-command/prd.md) R4,
-   [`03`](../03-browser/prd.md) R4). Gated: it must be present, a string, and
+   ([`02`](../../../../../06-help/02-help-command/prd.md) R4,
+   [`03`](../../../../../06-help/03-browser/prd.md) R4). Gated: it must be present, a string, and
    resolve against the repo.
 
    Mark it `[x]` and name the check that proves it — `nu

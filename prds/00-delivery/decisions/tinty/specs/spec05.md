@@ -97,9 +97,9 @@ Append at the end:
 >
 > **Decided 2026-08-21 (user): tinty stays as palette owner and its `DEFER`
 > "cosmetic" verdict is withdrawn.** Recorded from
-> [`00-delivery/decisions/tinty`](../../00-delivery/decisions/tinty/prd.md);
+> [`00-delivery/decisions/tinty`](../prd.md);
 > the backlog copy is open decision 2 of
-> [the corrections backlog](../../00-delivery/corrections/prd.md). This node
+> [the corrections backlog](../../../corrections/prd.md). This node
 > keeps every requirement it had — the answer changes R6's *direction* (the
 > terminal reads the palette, tinty owns it) and adds R7, the boundary of
 > what actually follows a live switch.
@@ -112,9 +112,9 @@ Append at the end. Nothing else in the file changes:
 >
 > **Decided 2026-08-21 (user): tinty stays as palette owner and its `DEFER`
 > "cosmetic" verdict is withdrawn.** Recorded from
-> [`00-delivery/decisions/tinty`](../../00-delivery/decisions/tinty/prd.md).
+> [`00-delivery/decisions/tinty`](../prd.md).
 > R1–R6 stand unchanged: the palette this statusline builds its theme from is
-> the one [`11-colorscheme`](../11-colorscheme/prd.md) applies, which is
+> the one [`11-colorscheme`](../../../../03-editor/11-colorscheme/prd.md) applies, which is
 > tinty's downstream copy, so `get_palette()` stays the only source and no hex
 > value is written here. The same boundary applies as in `11-colorscheme` R7 —
 > a live `tinty apply` does not restyle the statusline, because the editor's

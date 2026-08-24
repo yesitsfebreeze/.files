@@ -71,7 +71,7 @@ Wrap at ~78 columns; keep the box open.
 >       non-existent `~/docker`, then calls `just run "$PWD"` on a recipe
 >       that takes zero parameters and mounts `./workspace`). Credential
 >       mounts per
->       [03-credential-propagation](../03-credential-propagation/prd.md).
+>       [03-credential-propagation](../../../../../01-capsule/03-credential-propagation/prd.md).
 
 The C-3 citation is not decoration. It is what tells a reader who finds the
 inventory entry describing `mount` as working software that the disagreement
@@ -99,7 +99,7 @@ Keep the existing bullet, append:
 >   behaviour to stay compatible with; they are inputs to the design, not
 >   the specification. The related framing question — that this node's title
 >   says "consolidates" of pieces that never ran (C-2) — belongs to
->   [`w0-5-capsule-rebase`](../../00-delivery/corrections/w0-5-capsule-rebase/prd.md),
+>   [`w0-5-capsule-rebase`](../../../w0-5-capsule-rebase/prd.md),
 >   which rebases the epic on "build once".
 
 Do not mark any box in the PRD `[x]` or `[~]`. Nothing here is implemented.

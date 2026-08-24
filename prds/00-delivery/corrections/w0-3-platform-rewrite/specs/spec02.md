@@ -86,7 +86,7 @@ Keep the existing node-form parent link `[Provisioning epic](../prd.md)` and
 the existing `C n · U n` — only the truncated tail is restored. Wrap the
 continuation at ~78 columns, as the originals did. Link the inventory rather
 than naming it bare, matching how the epic does it:
-`[capabilities-provisioning.md](../../docs/capabilities-provisioning.md)`.
+`[capabilities-provisioning.md](../../../../../docs/capabilities-provisioning.md)`.
 
 For the R4 bullet, write something that names the destination, e.g.:
 

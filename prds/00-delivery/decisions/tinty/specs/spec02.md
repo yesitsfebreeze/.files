@@ -77,7 +77,7 @@ it is, and write:
 
 > **Decided 2026-08-21 (user): tinty stays as palette owner and the `DEFER`
 > "cosmetic" verdict is withdrawn** — see open decision 2 in
-> [the corrections backlog](../prds/00-delivery/corrections/prd.md). It is
+> [the corrections backlog](../../../corrections/prd.md). It is
 > infrastructure: `tinty apply` is what writes both the WezTerm palette
 > (`~/.config/wezterm/colors.lua`) and the tinted-shell artifact a new shell
 > re-asserts, so dropping it would leave WezTerm, Neovim, tv and the shell

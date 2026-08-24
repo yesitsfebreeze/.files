@@ -80,6 +80,11 @@ structural defects the backlog already filed:
 Relative links shown under **What to write** are written *into the target
 file*, so they resolve from that file's directory, not from this spec's.
 
+<!-- tree-links: target-file-vantage — the relative links in this section are
+     markup written into prds/00-delivery/work-breakdown/prd.md and resolve
+     from that file's directory, not from this spec's. Repairing them here
+     would falsify the instruction. -->
+
 1. **`## Track T`** — delete the first (empty) header row and its `|---|`
    separator, so the section reads: prose note, then one header, then the
    rows. Delete the `T.5` row entirely. Add:

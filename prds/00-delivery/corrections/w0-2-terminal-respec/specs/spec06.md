@@ -24,7 +24,7 @@ unusually good and mostly survives. One requirement does not.
 - [x] **B1 — R4 is unbuildable as written, and this is the fix.** It requires
       classifying panes by "prompt emission via the terminal stream, not via
       a shell hook", while
-      [`04-shell/01-core-config`](../../04-shell/01-core-config/prd.md) R5
+      [`04-shell/01-core-config`](../../../../04-shell/01-core-config/prd.md) R5
       turns **OSC 133/633 off** on purpose (the phantom-blank-line fix for
       the starship two-line prompt under WezTerm). OSC 133 *is* the
       terminal-stream prompt marker, so R4 asks for a signal the shell is
@@ -54,7 +54,7 @@ unusually good and mostly survives. One requirement does not.
       `status_update_interval`.
 - [x] **B5 — R3's colours cross-link rather than restate.** The two states
       derive from the active scheme with no hardcoded hex; the derivation
-      lives in [`01-appearance`](../01-appearance/prd.md) B4, which already
+      lives in [`01-appearance`](../../../../02-terminal/01-appearance/prd.md) B4, which already
       owns `colors.tab_bar`. Keep R3's distinction that occupied/inactive is
       a separate signal from focused/inactive.
 
@@ -89,7 +89,7 @@ nor rating.
 - [x] **B9 — the same seeding is repeated inline in the F6 `sh -lc`**, for
       the identical reason. One repetition now, not two: the second
       subprocess was the `Ctrl+Shift+B` wallpaper pipeline, dropped by
-      decision 5(a). Cross-link [`01-appearance`](../01-appearance/prd.md)
+      decision 5(a). Cross-link [`01-appearance`](../../../../02-terminal/01-appearance/prd.md)
       B11, which owns the F6 binding.
 - [x] **B10 — R3 survives unchanged.** A terminal launch is unaffected: no
       doubled or reordered entries that change which binary wins.

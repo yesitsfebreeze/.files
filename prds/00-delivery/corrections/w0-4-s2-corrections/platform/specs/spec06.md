@@ -30,7 +30,7 @@ commit `8fe3a71` (2026-08-19) as what removed the rest.
 epic used to be specced from `capabilities.md`'s WezTerm-Lua bootstrap and
 that winget is out of scope — is still correct and still explains why the epic
 exists. And the closing sentence, that the shell-init generation is
-load-bearing for [`04-shell/01`](../04-shell/01-core-config/prd.md) which
+load-bearing for [`04-shell/01`](../../../../../04-shell/01-core-config/prd.md) which
 requires shell launch to do zero setup work, is the most valuable line in the
 file: `run_after_generate-shell-init.sh` survives `8fe3a71` intact, so the
 dependency is unchanged and must not be lost in the rewrite.

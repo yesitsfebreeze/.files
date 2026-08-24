@@ -85,14 +85,14 @@ not to be unified."* This is where a reader looks, so extend that bullet
 rather than adding an eighth:
 
 > - **Two finders, deliberately.** television in the shell
->   ([`04-shell/04`](.mi/prds/04-shell/04-television/prd.md)), telescope in
->   the editor ([`03-editor/08`](.mi/prds/03-editor/08-telescope/prd.md)).
+>   ([`04-shell/04`](../../../../04-shell/04-television/prd.md)), telescope in
+>   the editor ([`03-editor/08`](../../../../03-editor/08-telescope/prd.md)).
 >   They are not to be unified. **fzf is a third picker and the one accepted
 >   exception** to "tv owns every picker screen": `zi`/`cdi` reach it through
 >   `zoxide query --interactive`, and owning that screen would mean owning
 >   zoxide's frecency ranking. Decided 2026-08-21 — see
->   [`decisions/fzf`](.mi/prds/00-delivery/decisions/fzf/prd.md) and the
->   invariant it amends, [`04-shell`](.mi/prds/04-shell/prd.md) I3.
+>   [`decisions/fzf`](../prd.md) and the
+>   invariant it amends, [`04-shell`](../../../../04-shell/prd.md) I3.
 
 Match the link style the section already uses (repo-root-relative, because
 `AGENTS.md` is read from the root through the symlink). The bullet count in

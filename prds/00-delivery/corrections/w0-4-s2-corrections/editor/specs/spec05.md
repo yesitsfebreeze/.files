@@ -14,9 +14,9 @@ this epic write to it:
 
 | node | task | what it puts there |
 |---|---|---|
-| [`07-formatting`](../../../../03-editor/07-formatting/prd.md) | E.11 | conform.nvim |
-| [`12-small-plugins`](../../../../03-editor/12-small-plugins/prd.md) | E.12 | gitsigns, which-key, autopairs |
-| [`15-markdown-tables`](../../../../03-editor/15-markdown-tables/prd.md) | E.15 | vim-table-mode |
+| [`07-formatting`](../../../../../03-editor/07-formatting/prd.md) | E.11 | conform.nvim |
+| [`12-small-plugins`](../../../../../03-editor/12-small-plugins/prd.md) | E.12 | gitsigns, which-key, autopairs |
+| [`15-markdown-tables`](../../../../../03-editor/15-markdown-tables/prd.md) | E.15 | vim-table-mode |
 
 **The filename appears nowhere in the `03-editor` tree.** `grep -rn
 'editor\.lua' .mi/prds/03-editor/` returns zero hits. It appears only in
@@ -73,13 +73,13 @@ Apply spec02 first: it introduces **I7**, and this invariant is **I8**.
 >       The live config has one — `lua/plugins/editor.lua`, holding five
 >       unrelated specs (gitsigns, which-key, nvim-autopairs, conform,
 >       vim-table-mode) — and three nodes of this epic write to it:
->       [`07-formatting`](07-formatting/prd.md) (conform),
->       [`12-small-plugins`](12-small-plugins/prd.md) (the first three) and
->       [`15-markdown-tables`](15-markdown-tables/prd.md) (vim-table-mode).
+>       [`07-formatting`](../../../../../03-editor/07-formatting/prd.md) (conform),
+>       [`12-small-plugins`](../../../../../03-editor/12-small-plugins/prd.md) (the first three) and
+>       [`15-markdown-tables`](../../../../../03-editor/15-markdown-tables/prd.md) (vim-table-mode).
 >       Until this invariant existed the filename appeared nowhere in this
 >       epic, so nothing warned the three that they collide, and the
 >       resolution lived only in
->       [`parallelization`](../00-delivery/parallelization/prd.md) — a
+>       [`parallelization`](../../../../parallelization/prd.md) — a
 >       document none of them links. Splitting is what makes the three
 >       buildable in parallel instead of serialised, and it is why each node
 >       below names its own target files.
@@ -93,8 +93,8 @@ Add as the last requirement (**R4** — the file currently ends at R3):
 >       `lua/plugins/gitsigns.lua`, `lua/plugins/which-key.lua` and
 >       `lua/plugins/autopairs.lua` — never in a shared
 >       `lua/plugins/editor.lua`, which is what the live config has and what
->       puts this node, [`07-formatting`](../07-formatting/prd.md) and
->       [`15-markdown-tables`](../15-markdown-tables/prd.md) in a three-way
+>       puts this node, [`07-formatting`](../../../../../03-editor/07-formatting/prd.md) and
+>       [`15-markdown-tables`](../../../../../03-editor/15-markdown-tables/prd.md) in a three-way
 >       write collision.
 
 ### 3. `01-options` R2 gains `cmdheight`

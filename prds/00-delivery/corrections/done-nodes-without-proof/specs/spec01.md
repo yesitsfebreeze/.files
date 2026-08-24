@@ -103,7 +103,7 @@ check`. Reproduced from two working directories.
 | `w0-4-s2-corrections/capsule` | **spent one-shot guard**, plus one drift | The three retired commands were written to fail if a box closed *during that node's own run*. `01-container-lifecycle` now holds 12 closed boxes and `R1`–`R8`; the guard fires on work that landed later and legitimately. The drift is `requirement count is not 7` — a later lane added `R8` |
 | `decisions/odin-toolchain` | **spent one-shot guard**, plus drift, plus one environmental FAIL | spec01 fails only on `a box was closed`; `02-dev-image` now holds 10 closed boxes. spec02 fails on `Known gaps should hold exactly 3 bullets` (`AGENTS.md` holds 2) and `an unrelated Known-gaps bullet was disturbed` — the fzf bullet, which `decisions/fzf` removed. The third, `capabilities.md was modified`, is a dirty working tree under another lane, not a defect |
 | `corrections/stale-framework-links` | **drift** | `nu tests/help-content-model.nu` exits **0** and prints **92 entries**; the assertion pins **84**. The gate is green; the pin is spent. Every assertion on this node's own R1–R4 passes |
-| `00-delivery/verification-gates` | **the node's own requirement, and correctly board-wide** | `verify: "just gate-selftest && just gates"`. Measured 2026-08-23: `just gate-selftest` exit **1**, 34 PASS / **1 FAIL** — `contract: retired-phrases.sh accepts --selftest and exits 0 (rc 1)`. `just gates` exit **1**, **12 FAILs** across 47 gate verdicts, ~50 minutes. The red has *moved* since `mi-rooted-verify-commands` measured it: `wave-status.sh --selftest` is fixed, and the selftest half is now owned by [`phrase-sweep-selftest-inversion`](../phrase-sweep-selftest-inversion/prd.md). `just gates` is board-wide by construction because the node's requirement is "the runner runs the whole set in one command"; substituting something narrower would be inventing a weaker proof. This red closes when the board does |
+| `00-delivery/verification-gates` | **the node's own requirement, and correctly board-wide** | `verify: "just gate-selftest && just gates"`. Measured 2026-08-23: `just gate-selftest` exit **1**, 34 PASS / **1 FAIL** — `contract: retired-phrases.sh accepts --selftest and exits 0 (rc 1)`. `just gates` exit **1**, **12 FAILs** across 47 gate verdicts, ~50 minutes. The red has *moved* since `mi-rooted-verify-commands` measured it: `wave-status.sh --selftest` is fixed, and the selftest half is now owned by [`phrase-sweep-selftest-inversion`](../../phrase-sweep-selftest-inversion/prd.md). `just gates` is board-wide by construction because the node's requirement is "the runner runs the whole set in one command"; substituting something narrower would be inventing a weaker proof. This red closes when the board does |
 
 Then the fifth red, which is new and is a **real defect introduced by the
 retirement itself**:
@@ -128,7 +128,7 @@ and a solo re-run confirmed both:
   PASS / 1 FAIL: `counterfactual: the dependency deleted -> NO
   lualine_x_filetype_DevIcon group in the render`. Reproduced with no
   argument and with `--headless`.
-  [`lsp-gate-parser-seed`](../lsp-gate-parser-seed/prd.md) already records it
+  [`lsp-gate-parser-seed`](../../lsp-gate-parser-seed/prd.md) already records it
   as "not this node's"; **no node owns it**. Re-measure after the live nvim
   lane lands — `home/dot_config/nvim/lua/plugins/statusline.lua` is staged and
   in flight.

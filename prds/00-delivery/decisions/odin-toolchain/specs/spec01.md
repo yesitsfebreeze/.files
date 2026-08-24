@@ -55,7 +55,7 @@ holding `**Decided <date> (<who>):**`. Write it as:
 > **Decided 2026-08-21 (user): the Odin compiler built from source, and the
 > `pi` agent with its ~20 pi-oilrig extensions, are dropped from the
 > consolidated image.** Recorded from
-> [`00-delivery/decisions/odin-toolchain`](../../00-delivery/decisions/odin-toolchain/prd.md),
+> [`00-delivery/decisions/odin-toolchain`](../prd.md),
 > which is where the fork was put to the human. This matches the
 > recommendation this PRD carried while the question was open.
 >

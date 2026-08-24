@@ -62,7 +62,7 @@ Add after I4, keeping the box open:
       (`01-core-config` R10), and television inherits it by running the
       `default` ANSI theme (`04-television` R6) rather than a hex theme.
       Decided 2026-08-21 — see
-      [`decisions/tinty`](../00-delivery/decisions/tinty/prd.md).
+      [`decisions/tinty`](../prd.md).
 
 ### 3. `04-shell/prd.md` — `## Out of scope`
 
@@ -74,7 +74,7 @@ revisit later)." with:
   ladder and R/G/B tuner, which the 2026-08-21 `SIMPLIFY` drops. The theme
   switcher itself is **not** out of scope any more: tinty owns the palette
   (I5): `theme.nu` (the A/B slots, `_theme_toggle`, the tv scheme picker) is
-  [`09-theme-switcher`](09-theme-switcher/prd.md)'s, created 2026-08-21 when
+  [`09-theme-switcher`](../../../../04-shell/09-theme-switcher/prd.md)'s, created 2026-08-21 when
   this decision landed, and the F6 binding that calls it is
   `w0-2-terminal-respec` R5's to place.
 
@@ -132,13 +132,13 @@ Append at the end of the file, matching the convention
 >
 > **Decided 2026-08-21 (user): tinty stays as palette owner and its `DEFER`
 > verdict is withdrawn.** Recorded from
-> [`00-delivery/decisions/tinty`](../../00-delivery/decisions/tinty/prd.md);
+> [`00-delivery/decisions/tinty`](../prd.md);
 > the backlog's copy is open decision 2 of
-> [the corrections backlog](../../00-delivery/corrections/prd.md). R10 is what
+> [the corrections backlog](../../../corrections/prd.md). R10 is what
 > that answer adds to this node — the re-assert was previously listed as an
 > uncovered live behaviour that would be orphaned if the theme surface was
 > dropped. The `theme` command itself is not this node's — it belongs to
-> [`04-shell/09-theme-switcher`](../09-theme-switcher/prd.md), which this node
+> [`04-shell/09-theme-switcher`](../../../../04-shell/09-theme-switcher/prd.md), which this node
 > only has to leave a working palette re-assert underneath.
 
 ## Acceptance

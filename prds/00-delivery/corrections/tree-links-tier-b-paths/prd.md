@@ -1,15 +1,18 @@
 ---
-state: analyzing
+state: specced
 priority: 15
 est:
 mode: afk
 needs:
 footprint:
   - gates/tree-links.sh
+  - gates/tree-links.py
 verify: "bash gates/tree-links.sh"
 origin: derived
 from: 00-delivery/verification-gates
-claim: analyst-tree-links-tier-b-paths 2026-08-24T18:04Z
+claim: 
+complexity: 45
+blast-radius: mid
 ---
 
 # 119 broken links sit in Tier B, permanently un-gated and permanently wrong

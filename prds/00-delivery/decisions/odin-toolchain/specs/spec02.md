@@ -66,7 +66,7 @@ and add the exclusion:
   manages nor discovers it, which is what keeps "one image definition" true.
 - The Odin compiler built from source, and the `pi` agent with its pi-oilrig
   extensions. Dropped from the image 2026-08-21; the decision and its reason
-  are recorded in [`02-dev-image`](02-dev-image/prd.md) under
+  are recorded in [`02-dev-image`](../../../../01-capsule/02-dev-image/prd.md) under
   `## Decisions`, and projects needing them layer them per-project.
 
 Leave the other two bullets alone.
@@ -82,7 +82,7 @@ few lines above it:
 > dominate cold build time and serve a minority of projects. Relocated rather
 > than lost — a project that needs them layers them per-project on top of the
 > base image. Recorded in
-> [`01-capsule/02-dev-image`](01-capsule/02-dev-image/prd.md).
+> [`01-capsule/02-dev-image`](../../../../01-capsule/02-dev-image/prd.md).
 
 Do **not** touch `.mi/docs/capabilities.md`, even though its line 95
 ("Standalone dev container image") is where this toolchain is inventoried.

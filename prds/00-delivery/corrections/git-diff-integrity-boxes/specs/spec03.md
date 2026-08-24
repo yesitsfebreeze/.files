@@ -113,7 +113,7 @@ The last two are doubly dead: the pathspec names a path removed with the `.mi`
 tree, so even the trackedness question is moot. `stale-mi-paths` swept prose
 and missed these because they sit inside a box's backticks. Fixing the path in
 the same edit is correct here; note it in the report so
-[`stale-mi-keeplist-ruling`](../stale-mi-keeplist-ruling/prd.md) knows the
+[`stale-mi-keeplist-ruling`](../../stale-mi-keeplist-ruling/prd.md) knows the
 class exists inside boxes too.
 
 ## Acceptance

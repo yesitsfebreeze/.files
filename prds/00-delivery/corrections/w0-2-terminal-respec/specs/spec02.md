@@ -100,7 +100,7 @@ OpenGL with capped frame rate C 1 / U 6 · F6 theme toggle C 3 / U 6.
       covers only the pipeline and the OSC toggle.
 - [x] **B8 — `window_padding` is zeroed *because* centering owns it.** All
       four sides zero, with a cross-link to
-      [`07-grid-centering`](../07-grid-centering/prd.md) naming it as the
+      [`07-grid-centering`](../../../../02-terminal/07-grid-centering/prd.md) naming it as the
       runtime owner. Written as a dependency, not a coincidence: this is
       finding **T-4**, and zeroed padding without the centering node is the
       one combination that leaves the terminal visibly wrong.
@@ -132,8 +132,8 @@ OpenGL with capped frame rate C 1 / U 6 · F6 theme toggle C 3 / U 6.
       rather than `run_child_process` because `tinty apply` runs the whole
       hook chain and blocking the GUI thread freezes every window for its
       duration. Its `sh -lc` repeats the PATH seeding inline for the reason
-      [`06-launchd-path`](../06-launchd-path/prd.md) owns. The shell half is
-      [`04-shell/09-theme-switcher`](../../04-shell/09-theme-switcher/prd.md);
+      [`06-launchd-path`](../../../../02-terminal/06-launchd-path/prd.md) owns. The shell half is
+      [`04-shell/09-theme-switcher`](../../../../04-shell/09-theme-switcher/prd.md);
       cross-link, do not restate.
 - [x] **B12 — the escalation and the textual damage go.** The
       `## Escalation` section is answered by this rewrite and comes out; so

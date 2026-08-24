@@ -99,9 +99,9 @@ above already established:
 > nodes with no palette owner, so the `DEFER` came off and the inventory
 > verdict is now `SIMPLIFY`: the palette-owning core is in, the background
 > override ladder and its tuner stay out. Recorded in
-> [`00-delivery/decisions/tinty`](00-delivery/decisions/tinty/prd.md) and open
+> [`00-delivery/decisions/tinty`](../prd.md) and open
 > decision 2 of the
-> [corrections backlog](00-delivery/corrections/prd.md). It still owes a node:
+> [corrections backlog](../../../corrections/prd.md). It still owes a node:
 > `theme.nu` has no child in `04-shell`, and the F6 binding is
 > `w0-2-terminal-respec` R5's to place.
 
@@ -119,7 +119,7 @@ Replace the bullet that begins "**The terminal owns the palette.**" with:
 >   Nothing below WezTerm hardcodes hex values. This corrects the earlier
 >   "the terminal owns the palette" wording, which had the direction
 >   backwards — see finding T-3 and open decision 2 in the
->   [corrections backlog](.mi/prds/00-delivery/corrections/prd.md).
+>   [corrections backlog](../../../corrections/prd.md).
 
 Keep the bullet in its current position in the list.
 

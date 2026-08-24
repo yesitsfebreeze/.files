@@ -30,7 +30,7 @@ link to the inventory — copy their shape rather than inventing one.
 The pre-conversion text is recoverable and was recovered:
 `git show 8ecbbe4^:.mi/prd/03-editor/<node>.md | sed -n '3,4p'`. The C/U
 numbers below were then re-checked against
-[`capabilities-nvim.md`](../../../../../docs/capabilities-nvim.md) on
+[`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md) on
 2026-08-21, entry by entry, rather than trusted from the old text.
 
 ## Files touched
@@ -60,25 +60,25 @@ was lost). Wrap at ~78 columns.
 > Parent: [Neovim epic](../prd.md) · C 2 · U 9 · sources: "Options baseline"
 > (C 2 / U 9 — dominant), "Whitespace rendering (VS Code parity)"
 > (C 2 / U 7), "LSP log kill-switch" (C 1 / U 7) in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 `03-autocmds` — one source:
 
 > Parent: [Neovim epic](../prd.md) · C 3 · U 8 · source: "Editor autocmds" in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 `11-colorscheme` — one source, whose name contains the `+` that the
 truncation cut at:
 
 > Parent: [Neovim epic](../prd.md) · C 5 · U 8 · source: "Colorscheme +
 > mode-aware cursor" in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 `12-small-plugins` — three sources:
 
 > Parent: [Neovim epic](../prd.md) · C 2 · U 7 · sources: "Git signs"
 > (C 2 / U 7 — dominant), "which-key" (C 2 / U 7), "Autopairs" (C 1 / U 6) in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 Two notes for whoever applies this:
 

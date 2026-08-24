@@ -134,4 +134,4 @@ been refilled *and repositioned* repeatedly within one session.
 
 - The tab *title* (spec02's B5) and tab-bar colours (spec02's B4).
 - Tab content-state colouring, which is
-  [`05-tab-content-state`](../05-tab-content-state/prd.md).
+  [`05-tab-content-state`](../../../../02-terminal/05-tab-content-state/prd.md).

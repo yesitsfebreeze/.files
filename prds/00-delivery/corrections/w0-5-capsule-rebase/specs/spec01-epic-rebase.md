@@ -43,18 +43,18 @@ Never edit the frontmatter (`---` block) of any file.
    >
    > | Key | Runs | Owner |
    > |---|---|---|
-   > | `Ctrl+Shift+D` | `capsule` on the pane's directory | [`01-container-lifecycle`](01-container-lifecycle/prd.md) R8 |
-   > | `Ctrl+Shift+B` | `capsule --rebuild` | [`01-container-lifecycle`](01-container-lifecycle/prd.md) R4, R8 |
-   > | `Ctrl+Shift+S` | recents picker, current pane | [`04-recent-workspaces`](04-recent-workspaces/prd.md) R2 |
-   > | `Ctrl+Shift+O` | recents picker, new tab | [`04-recent-workspaces`](04-recent-workspaces/prd.md) R2 |
+   > | `Ctrl+Shift+D` | `capsule` on the pane's directory | [`01-container-lifecycle`](../../../../01-capsule/01-container-lifecycle/prd.md) R8 |
+   > | `Ctrl+Shift+B` | `capsule --rebuild` | [`01-container-lifecycle`](../../../../01-capsule/01-container-lifecycle/prd.md) R4, R8 |
+   > | `Ctrl+Shift+S` | recents picker, current pane | [`04-recent-workspaces`](../../../../01-capsule/04-recent-workspaces/prd.md) R2 |
+   > | `Ctrl+Shift+O` | recents picker, new tab | [`04-recent-workspaces`](../../../../01-capsule/04-recent-workspaces/prd.md) R2 |
    >
    > All four are unbound in the deployed `wezterm.lua` and in WezTerm's
    > defaults (`wezterm -n show-keys`, checked 2026-08-22);
    > `Ctrl+Shift+B` is free because the wallpaper pipeline is dropped
-   > ([decision 5(c)](../00-delivery/corrections/prd.md)). `Ctrl+Shift+T`
+   > ([decision 5(c)](../../prd.md)). `Ctrl+Shift+T`
    > is not capsule's: it stays WezTerm's `SpawnTab`, the tab
    > reconciler's manual new-tab path. The rekey record is in
-   > [`04-recent-workspaces`](04-recent-workspaces/prd.md)
+   > [`04-recent-workspaces`](../../../../01-capsule/04-recent-workspaces/prd.md)
    > `## Decisions`.
 
 3. Replace the first Acceptance box ("One command (and one terminal
@@ -90,10 +90,10 @@ Never edit the frontmatter (`---` block) of any file.
    > `Ctrl+Shift+T` was the separate collision: WezTerm's default
    > `SpawnTab`, the tab reconciler's manual new-tab path.
    > Resolved 2026-08-22 by
-   > [`w0-5-capsule-rebase`](../../00-delivery/corrections/w0-5-capsule-rebase/prd.md)
+   > [`w0-5-capsule-rebase`](../prd.md)
    > R2: `SpawnTab` keeps the key, and the recents picker's new-tab
    > variant moves to `Ctrl+Shift+O` — record in
-   > [`04-recent-workspaces`](../04-recent-workspaces/prd.md)
+   > [`04-recent-workspaces`](../../../../01-capsule/04-recent-workspaces/prd.md)
    > `## Decisions`.
 
 ### `prds/README.md`

@@ -59,7 +59,7 @@ look like the drift this whole task exists to remove.
       present and unshadowed: `Ctrl+Shift+`arrow → `ActivatePaneDirection`
       (`wezterm show-keys --lua` rows 137–143). Name them, because a manual
       that says "F5 does panes" and an environment where it does not is the
-      exact failure [`06-help`](../../06-help/prd.md) exists to prevent.
+      exact failure [`06-help`](../../../../06-help/prd.md) exists to prevent.
 - [x] **B5 — L-11 is recorded as unreachable, not as fixed.** The live bug is
       that a missed jump letter rings BEL into a config with
       `audible_bell = "Disabled"` and no `visual_bell`, so the miss is

@@ -100,13 +100,13 @@ columns and leave both boxes open.
 >       `statusline.lua`, `colorscheme.lua` and `lsp.lua`, so a grep for
 >       `augroup` finds seven hits and passes falsely — the check has to be
 >       per call site, not per file. Binds
->       [`03-autocmds`](03-autocmds/prd.md),
->       [`09-lsp`](09-lsp/prd.md),
->       [`10-treesitter`](10-treesitter/prd.md),
->       [`11-colorscheme`](11-colorscheme/prd.md),
->       [`13-statusline`](13-statusline/prd.md),
->       [`14-shift-select`](14-shift-select/prd.md) and
->       [`15-markdown-tables`](15-markdown-tables/prd.md) — every node that
+>       [`03-autocmds`](../../../../../03-editor/03-autocmds/prd.md),
+>       [`09-lsp`](../../../../../03-editor/09-lsp/prd.md),
+>       [`10-treesitter`](../../../../../03-editor/10-treesitter/prd.md),
+>       [`11-colorscheme`](../../../../../03-editor/11-colorscheme/prd.md),
+>       [`13-statusline`](../../../../../03-editor/13-statusline/prd.md),
+>       [`14-shift-select`](../../../../../03-editor/14-shift-select/prd.md) and
+>       [`15-markdown-tables`](../../../../../03-editor/15-markdown-tables/prd.md) — every node that
 >       registers an autocmd.
 
 ### 2. `03-autocmds` gains R5

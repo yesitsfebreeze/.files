@@ -54,7 +54,7 @@ wrapping at ~78 columns:
 > 2. **Does tinty stay?** **Decided 2026-08-21 (user): tinty stays as palette
 >    owner, and the `DEFER` "cosmetic" verdict on it is withdrawn.** It is
 >    infrastructure, not decoration. Recorded from
->    [`00-delivery/decisions/tinty`](../decisions/tinty/prd.md), where the
+>    [`00-delivery/decisions/tinty`](../prd.md), where the
 >    fork was put to the human.
 >
 >    What the decision settles:

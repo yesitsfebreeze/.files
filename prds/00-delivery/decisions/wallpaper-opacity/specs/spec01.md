@@ -64,7 +64,7 @@ same cell, before the closing `|`:
 
 > **Closed 2026-08-21 — converted to a decision and answered: both features
 > are dropped on the record.** See open decision 5 below and
-> [`decisions/wallpaper-opacity`](../decisions/wallpaper-opacity/prd.md).
+> [`decisions/wallpaper-opacity`](../prd.md).
 
 Do not delete the row and do not move it. Other documents cite findings by
 number, and a finding that is gone reads as a finding that was never made.
@@ -90,7 +90,7 @@ decision settles" sub-list). Wrap at ~78 columns.
 >    What the decision settles:
 >    - (a) The `Ctrl+Shift+B` **wallpaper pipeline is not ported**, confirming
 >      the `DO NOT PORT` (C 8 / U 3) verdict in
->      [`capabilities-terminal.md`](../../../docs/capabilities-terminal.md).
+>      [`capabilities-terminal.md`](../../../../../docs/capabilities-terminal.md).
 >      The engineering is careful, but the capability is a GUI keypress that
 >      rewrites the OS desktop *and* another tool's source tree, depends on
 >      ImageMagick, and is the largest block in the file after the tab floor.
@@ -102,7 +102,7 @@ decision settles" sub-list). Wrap at ~78 columns.
 >      keeps its existing `DEFER` (C 3 / U 3) — deferred is not refused, and
 >      it may come back with the theme switcher it shares a surface with.
 >    - (c) **`Ctrl+Shift+B` goes to capsule** — `capsule --rebuild`,
->      [`01-capsule/01`](../../01-capsule/01-container-lifecycle/prd.md) R4.
+>      [`01-capsule/01`](../../../../01-capsule/01-container-lifecycle/prd.md) R4.
 >      C-1's collision is **dissolved, not resolved**: with the incumbent
 >      dropped the key is free, so no rekey is needed and none should be
 >      invented. `Ctrl+Shift+T` is a separate collision and is untouched by
@@ -113,15 +113,15 @@ decision settles" sub-list). Wrap at ~78 columns.
 >      baseline** entry (C 2 / U 7, take-over-as-is) — a different capability
 >      from either feature dropped above, and one the inventory already
 >      rates.
->      [`02-terminal/01-appearance`](../../02-terminal/01-appearance/prd.md)'s
+>      [`02-terminal/01-appearance`](../../../../02-terminal/01-appearance/prd.md)'s
 >      escalation names this node as their decider; it is mistaken.
->      [`w0-2-terminal-respec`](w0-2-terminal-respec/prd.md) specs them from
+>      [`w0-2-terminal-respec`](../../../corrections/w0-2-terminal-respec/prd.md) specs them from
 >      the inventory like every other appearance field, and must not wait on
 >      an answer that is not coming.
 >
 >    T-11 is thereby closed as *converted to a decision and answered* — gantt
 >    task D.1d, board node
->    [`decisions/wallpaper-opacity`](../decisions/wallpaper-opacity/prd.md).
+>    [`decisions/wallpaper-opacity`](../prd.md).
 
 Check every relative link resolves from
 `.mi/prds/00-delivery/corrections/prd.md` before you finish: `../../../docs/`

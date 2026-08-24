@@ -58,7 +58,7 @@ unfalsifiable.
 - [ ] **B4 — the head also points at `capabilities-terminal.md`.** Add one
       line to the head saying that the WezTerm entries below describe the
       **legacy** `~/.files` config, that the live one is rated in
-      [`capabilities-terminal.md`](capabilities-terminal.md), and that
+      [`capabilities-terminal.md`](../../../../../../docs/capabilities-terminal.md), and that
       `02-terminal` is specced from that file. This is the same treatment
       `capabilities-nvim.md`'s IMPORTANT note already gives the Neovim
       entries, and it is what makes B5's `DO NOT PORT` on a capability that

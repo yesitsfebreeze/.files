@@ -85,6 +85,11 @@ paragraph closes with "It still owes a node: `theme.nu` has no child in
 Relative links shown under **What to write** are written *into the target
 file*, so they resolve from that file's directory, not from this spec's.
 
+<!-- tree-links: target-file-vantage — the relative links in this section are
+     markup written into prds/README.md, and resolve from that file's
+     directory, not from this spec's. Repairing them here would falsify the
+     instruction. -->
+
 1. **Delete** the post-tree paragraph "Windows/PowerShell support was dropped
    from scope entirely; see the exclusion list at the end for the full set."
    The pointer near the top already does that job, and Windows is in the list.

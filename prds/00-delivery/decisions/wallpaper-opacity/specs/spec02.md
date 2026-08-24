@@ -113,7 +113,7 @@ Append at the end of the file, after `## Out of scope`. Same convention as
 >
 > **Decided 2026-08-21 (user): `Ctrl+Shift+B` is capsule's.** R4 keeps it and
 > needs no rekey. Recorded from
-> [`00-delivery/decisions/wallpaper-opacity`](../../00-delivery/decisions/wallpaper-opacity/prd.md),
+> [`00-delivery/decisions/wallpaper-opacity`](../prd.md),
 > where the fork was put to the human.
 >
 > Why this needs saying at all: the audit's finding C-1 found `Ctrl+Shift+B`
@@ -122,14 +122,14 @@ Append at the end of the file, after `## Out of scope`. Same convention as
 > void. The incumbent is dropped (`DO NOT PORT`, C 8 / U 3), so the collision
 > is **dissolved rather than resolved** and the key comes free with the port.
 > Anyone re-reading C-1, or
-> [`w0-5-capsule-rebase`](../../00-delivery/corrections/w0-5-capsule-rebase/prd.md)
+> [`w0-5-capsule-rebase`](../../../corrections/w0-5-capsule-rebase/prd.md)
 > R2, should stop here rather than invent a replacement key — a rekey now
 > would cost the muscle memory the port exists to keep.
 >
 > `Ctrl+Shift+T` is **not** settled by this. It is a separate and still-live
 > collision with WezTerm's default `SpawnTab`, which the tab reconciler treats
 > as the manual new-tab path; it is claimed by
-> [`04-recent-workspaces`](../04-recent-workspaces/prd.md) and belongs to
+> [`04-recent-workspaces`](../../../../01-capsule/04-recent-workspaces/prd.md) and belongs to
 > W0.5 R2.
 
 Do not renumber, reword or re-flow R1–R7 — other documents cite them by
@@ -146,7 +146,7 @@ Keep the existing sentence verbatim; add a paragraph under it:
 > rebuilt both ideas in new form — the `Ctrl+Shift+B` pipeline that blurs an
 > image and applies it as the **OS desktop** wallpaper, and the OSC-1337
 > `opacity` user-var. Both live forms are out too, and the reasons are in
-> [`decisions/wallpaper-opacity`](../00-delivery/decisions/wallpaper-opacity/prd.md).
+> [`decisions/wallpaper-opacity`](../prd.md).
 > This does **not** touch the static `window_background_opacity` of the
 > Appearance baseline, which is a separate take-over-as-is capability and is
 > W0.2's to spec.
@@ -168,7 +168,7 @@ shape the burrito and Odin entries established:
 > opacity picker keeps its `DEFER` below, and the static
 > `window_background_opacity` of the appearance baseline is untouched.
 > Recorded in
-> [`00-delivery/decisions/wallpaper-opacity`](00-delivery/decisions/wallpaper-opacity/prd.md).
+> [`00-delivery/decisions/wallpaper-opacity`](../prd.md).
 
 Wrap all three at ~78 columns. Check each relative link resolves from the file
 it is written in.

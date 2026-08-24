@@ -143,7 +143,7 @@ I6 (the invariant spec02 numbers) — append the floor/target paragraph:
 > binary every acceptance check in this epic is executed against — is the
 > live 0.12.4, so a 0.12 deprecation binds even where the floor is lower:
 > `vim.highlight.*` is deprecated in favour of `vim.hl.*`, and
-> [`03-autocmds`](03-autocmds/prd.md) R1 is written to the new name
+> [`03-autocmds`](../../../../../03-editor/03-autocmds/prd.md) R1 is written to the new name
 > (correction M-3).
 
 ## Acceptance

@@ -54,6 +54,12 @@ turns it red instead of leaving it quietly wrong.
 Relative links shown under **What to write** are written *into the target
 file*, so they resolve from that file's directory, not from this spec's.
 
+<!-- tree-links: target-file-vantage — the relative links in this section are
+     markup written into prds/00-delivery/work-breakdown/prd.md and resolve
+     from that file's directory, not from this spec's. One of them,
+     ../../../gantt/plan.json, has no target in the tree at all: the mi
+     planning machinery was retired and no target was invented for it. -->
+
 1. **Restate the critical path** as the 16-task path above, in the fenced
    block, with `→` between ids, and the figure `≈ 49.5 agent-hours`
    immediately after it. Say in the same paragraph that it is computed from

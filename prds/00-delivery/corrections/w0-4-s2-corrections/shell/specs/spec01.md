@@ -102,7 +102,7 @@ premise of the fix.
    - the non-cable assets: `bg-preview.sh` is **not ported** (it belongs to
      the wallpaper pipeline dropped by `decisions/wallpaper-opacity`);
      `theme-preview.sh` belongs to
-     [`09-theme-switcher`](../../../../04-shell/09-theme-switcher/prd.md),
+     [`09-theme-switcher`](../../../../../04-shell/09-theme-switcher/prd.md),
      referenced, not owned here.
    - **the `theme` channel moves out of "migrate only on demand".**
      `09-theme-switcher` R3 requires a tv-backed scheme picker and points at

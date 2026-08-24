@@ -50,7 +50,7 @@ structure:
      own run. "Stale" is not a reason.
    - quotes the FAIL line and exit status measured above.
    - names this node
-     ([`verify-all-empty-eval`](../../../verify-all-empty-eval/prd.md)) as
+     ([`verify-all-empty-eval`](../prd.md)) as
      what retired it.
    - keeps the retired command **byte-identical** in a ```` ```text ````
      fence, as the execution record of a check that once ran green.

@@ -71,15 +71,15 @@ the "L-9, resolved" record), `~/.config/nvim`.
 Append after R8, keeping every existing number:
 
 > - [ ] **R9** — **`<C-v>` shadows blockwise-visual, deliberately; `<C-q>`
->       stays unbound.** [`14-shift-select`](../14-shift-select/prd.md) R7
+>       stays unbound.** [`14-shift-select`](../../../../../03-editor/14-shift-select/prd.md) R7
 >       binds `<C-v>` in **visual mode** to `"_dP`, which shadows vim's entry
 >       into blockwise-visual from a selection. That is live bug L-9, and it
 >       was **decided 2026-08-21 (afk) to port as-is** — see
->       [the corrections backlog](../../00-delivery/corrections/prd.md). It is
+>       [the corrections backlog](../../../prd.md). It is
 >       half of the `<C-c>`/`<C-v>` pair that is the whole point of
 >       shift-select, and the shadow is narrow: the map is `v`-mode only, so
 >       normal-mode `<C-v>` still enters blockwise, and
->       [`01-options`](../01-options/prd.md) R9's `virtualedit=block` still
+>       [`01-options`](../../../../../03-editor/01-options/prd.md) R9's `virtualedit=block` still
 >       applies. Rejected: moving paste to another key, which breaks the pair
 >       for a mode that keeps a working alternative.
 >

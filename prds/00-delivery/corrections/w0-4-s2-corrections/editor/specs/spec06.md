@@ -73,7 +73,7 @@ already carries the "Live bug L-6, resolved" record), `~/.config/nvim`.
 >       L-6 (decided 2026-08-21, afk): matches are highlighted while you type
 >       and stop being highlighted when you stop, so there is nothing to
 >       clear afterwards — which is why
->       [`02-keymaps`](../02-keymaps/prd.md) R1 does **not** port the live
+>       [`02-keymaps`](../../../../../03-editor/02-keymaps/prd.md) R1 does **not** port the live
 >       `<Esc>` → `nohlsearch` map. Turning `hlsearch` on to give that map a
 >       job was considered and rejected; it changes the feel of every search
 >       for one dead line.
@@ -86,20 +86,20 @@ disappearing, and R2–R8 are not renumbered.
 
 > - [ ] **R1** — **Search: no `nohlsearch` map.** The live `<Esc>` →
 >       `<cmd>nohlsearch<CR>` map (`lua/config/keymaps.lua:4`) is **not
->       ported**. With [`01-options`](../01-options/prd.md) R6's
+>       ported**. With [`01-options`](../../../../../03-editor/01-options/prd.md) R6's
 >       `hlsearch=false` there is never a highlight to clear, so the map is
 >       inert — live bug L-6, decided 2026-08-21 (afk) in
->       [the corrections backlog](../../00-delivery/corrections/prd.md).
+>       [the corrections backlog](../../../prd.md).
 >       Rejected: the LazyVim pairing, turning `hlsearch` on and keeping the
 >       map, which changes the feel of every search to give one dead line a
->       job and would make [`06-help`](../../06-help/prd.md) document a
+>       job and would make [`06-help`](../../../../../06-help/prd.md) document a
 >       binding that never fires. This requirement keeps its number and
 >       prescribes no keymap.
 
 ### 3. `02-keymaps` header
 
 > Parent: [Neovim epic](../prd.md) · C 2 · U 9 · source: "Core keymaps" in
-> [`capabilities-nvim.md`](../../../docs/capabilities-nvim.md)
+> [`capabilities-nvim.md`](../../../../../../docs/capabilities-nvim.md)
 
 ## Acceptance
 

@@ -55,10 +55,10 @@ five months from now needs to know what the fork *was* — then answer it:
 >      unchanged.
 >    - (c) The exception is **written down, not merely tolerated**, in two
 >      places: the shell epic's invariant I3 in
->      [`04-shell/prd.md`](../../04-shell/prd.md) names fzf as the one
+>      [`04-shell/prd.md`](../../../../04-shell/prd.md) names fzf as the one
 >      exception *and why*, and `help` carries an entry saying so. Without
 >      the second, the manual teaches a rule the environment breaks, which
->      is the failure mode [`06-help`](../../06-help/prd.md) exists to
+>      is the failure mode [`06-help`](../../../../06-help/prd.md) exists to
 >      prevent.
 >    - (d) It is an exception, not a precedent. Nothing else may add a
 >      picker outside tv; a second one is a new decision, not an appeal to

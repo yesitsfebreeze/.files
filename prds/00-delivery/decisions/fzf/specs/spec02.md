@@ -76,17 +76,17 @@ invariants by number, and `03-zoxide` R4 already leans on the funnel pair.
       exception.** No hand-coded TUIs; new pickers are new cable channels
       plus a typed decode. The exception is **fzf**, reached only through
       `zoxide query --interactive` behind `zi`/`cdi`
-      ([03-zoxide](03-zoxide/prd.md) R2). Zoxide ships its own interactive
+      ([03-zoxide](../../../../04-shell/03-zoxide/prd.md) R2). Zoxide ships its own interactive
       mode, and replacing it with a tv channel would mean reimplementing its
       frecency ranking and its `--exclude $PWD` semantics to own one picker
       screen — so fzf stays in the required package set
-      ([P.2](../05-platform/02-package-provisioning/packages-installer/prd.md)
+      ([P.2](../../../../05-platform/02-package-provisioning/packages-installer/prd.md)
       R7) as `zi`'s dependency, never as a picker anything else may reach
       for. It is an exception and **not a precedent**: a second picker
       outside tv is a new decision, not an appeal to this one, and `help`
       documents it so the manual does not teach a rule the environment
       breaks. Decided 2026-08-21 (user), recorded in
-      [decisions/fzf](../00-delivery/decisions/fzf/prd.md).
+      [decisions/fzf](../prd.md).
 
 Keep the box open (`- [ ]`) — nothing here is implemented.
 
@@ -112,8 +112,8 @@ verify guards it. Replace only the trailing parenthetical:
 > `zoxide query --interactive` spawns it. **Decided 2026-08-21 (user)** — an
 > accepted, documented exception to `04-shell`'s "tv owns every picker
 > screen"; see
-> [`decisions/fzf`](../../../00-delivery/decisions/fzf/prd.md) and the
-> record in [`corrections`](../../../00-delivery/corrections/prd.md),
+> [`decisions/fzf`](../prd.md) and the
+> record in [`corrections`](../../../corrections/prd.md),
 > decision 3.)
 
 The old wording — "required whether or not it is wanted" — must be gone. It
@@ -126,10 +126,10 @@ Append one bullet to `## Out of scope`:
 
 - Deciding whether a documented entry *should* exist. H.4 checks that the
   manual and the live surfaces agree, not that the configuration is right.
-  The fzf exception ([decisions/fzf](../../00-delivery/decisions/fzf/prd.md),
+  The fzf exception ([decisions/fzf](../prd.md),
   decided 2026-08-21) needed no requirement change here for that reason: it
   changes the manual's content, which is
-  [01-content-model](../01-content-model/prd.md)'s, not the check's rules.
+  [01-content-model](../../../../06-help/01-content-model/prd.md)'s, not the check's rules.
 
 Do **not** add a requirement. Adding an R9 that says "check the fzf entry
 exists" would make the check's rule set carry one entry's name, which is

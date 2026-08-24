@@ -60,6 +60,11 @@ a build stalls on a question already answered.
 Relative links shown under **What to write** are written *into the target
 file*, so they resolve from that file's directory, not from this spec's.
 
+<!-- tree-links: target-file-vantage — the relative links in this section are
+     markup written into prds/00-delivery/work-breakdown/prd.md and
+     prds/README.md, and resolve from those files' directories, not from this
+     spec's. Repairing them here would falsify the instruction. -->
+
 1. **Rewrite the second Wave 0 paragraph.** Drop "three scope forks need a
    human answer". State instead that the audit's forks are now all answered,
    with the date, and that the wave's remaining size comes from the terminal

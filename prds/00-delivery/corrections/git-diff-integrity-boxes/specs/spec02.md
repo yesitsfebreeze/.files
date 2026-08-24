@@ -14,7 +14,7 @@ implementer may write: `.claude/skills/prd/README.md` is the board protocol,
 and `truncated-source-attributions/specs/spec01.md` is a `done` node's spec.
 
 **Footprint collision, flagged deliberately.**
-[`analyst-brief-census-rule`](../analyst-brief-census-rule/prd.md) is `open`
+[`analyst-brief-census-rule`](../../analyst-brief-census-rule/prd.md) is `open`
 with footprint `[.claude/skills/prd/README.md]` — the same file. It edits the
 *analyst brief* about census vocabulary; this edits the *box-discipline*
 paragraph. Different paragraphs, same file, so the two nodes must not be in
