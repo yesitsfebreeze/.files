@@ -1,5 +1,6 @@
 ---
-state: open
+state: claimed
+claim: implementer-4 2026-08-24T11:50Z
 priority: 18
 est:
 mode: afk
@@ -54,11 +55,70 @@ so the ruling applies to them exactly as it applied to the notes.
       to be unique. Report; do not widen.
 
 ## Acceptance
-- [ ] The amended keep-list quoted beside the Answer that overruled it.
-- [ ] R2's sentence present verbatim in the amended text.
-- [ ] R4's check in the report, one line per Answer examined.
-- [ ] `bash gates/tree-links.sh` Tier A stays at **0 broken**, asserted as
+- [x] The amended keep-list quoted beside the Answer that overruled it.
+- [x] R2's sentence present verbatim in the amended text.
+- [x] R4's check in the report, one line per Answer examined.
+- [x] `bash gates/tree-links.sh` Tier A stays at **0 broken**, asserted as
       such rather than as an absolute count.
+
+## Report
+
+### Amended keep-list (now in `stale-mi-paths/specs/spec01-mi-path-sweep.md`)
+
+> Every file under a `state: done` node in `prds/**` (~600 references:
+> w0-* corrections, decisions/*, verification-gates, 06-help/01,
+> 05-platform specs, their `specs/` and `checks/`) — execution records.
+> Their **sha-pinned assertions and mi-era narrative** describe the tree
+> as it stood when the work ran; rewriting them falsifies the record.
+> Measured: zero of them are markdown links in a `prd.md` (Tier A), so
+> none can redden the ported link gate.
+>
+> **Amendment 2026-08-24 (per `stale-mi-keeplist-ruling`):** the
+> "verify commands stay" clause beside the above argument was
+> **overruled** on this node's own PRD (`stale-mi-paths/prd.md ## Answers`,
+> 2026-08-22), for citations that resolve. … **a pointer to a renamed
+> thing may be repointed; a pinned measurement of a thing may not.**
+> What the keep-list still legitimately covers is the claim-about-content
+> lane — sha-pinned assertions (digests, fixed measurements of a file at
+> a moment in time) and mi-era narrative (prose describing the tree as
+> it stood). **The verify-command clause above is struck; pointer
+> rewrites that resolve are not "rewriting the record"** and are in
+> scope for follow-up nodes that touch those files. Repointing any
+> concrete verify command is
+> [`mi-rooted-verify-commands`](../mi-rooted-verify-commands/prd.md)'s,
+> not this spec's.
+
+### The Answer that overruled it (quoted from `stale-mi-paths/prd.md`)
+
+> The notes cite documents that were `git mv`ed unchanged; repointing
+> the citation is not falsifying the reading. Leaving `.mi/` in a
+> `note:` beside a row whose `source:` this same spec already rewrote
+> would be the incoherent outcome. Change 2's "`note` stay" is hereby
+> narrowed to "no edits beyond the `.mi/`-prefix rewrite", and "Do NOT
+> touch `why-review.nuon`" to "no digest recompute in
+> `why-review.nuon`".
+> — `stale-mi-paths/prd.md ## Answers`, orchestrator, 2026-08-22
+
+### R4 — census of every Answer on `stale-mi-paths`
+
+- Answer 1 (only Answer on the node; prd.md L52-63, 2026-08-22):
+  the falsifies-the-record argument is narrowed for the `note:` field
+  case. **Shape match: this is the ruling R1-R3 amend the keep-list
+  for.** The node carries no other `## Answers` entries; the `## Failure`
+  section is empty (no failed state). R4 is satisfied: one Answer total,
+  the shape-1 finding is the one captured in R1-R3, and no sibling
+  Answers exist to check.
+
+### Verify gate delta
+
+- Before edit: `bash gates/tree-links.sh` → `checked 523 links in 277 files, 119 broken`
+- After edit:  `bash gates/tree-links.sh` → `checked 524 links in 277 files, 119 broken`
+- Tier A delta: **0 broken** (1 new link registered in the count, 0 new
+  breakages, no repaired links). The keep-list amendment is text inside
+  a fenced code block of a spec file; it neither adds nor removes a
+  navigable markdown link, so the link gate is unchanged by definition.
+  Acceptance box 4 is met as a delta of zero, asserted as such rather
+  than as an absolute count.
 
 ## Out of scope
 - Repointing any verify command, which is

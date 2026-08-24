@@ -110,10 +110,33 @@ in the excluded `gates/` lane.
 - Every file under a `state: done` node in `prds/**` (~600 references:
   w0-* corrections, decisions/*, verification-gates, 06-help/01,
   05-platform specs, their `specs/` and `checks/`) — execution records.
-  Their verify commands, sha-pinned assertions, and mi-era narrative
-  describe the tree as it stood when the work ran; rewriting them falsifies
-  the record. Measured: zero of them are markdown links in a `prd.md`
-  (Tier A), so none can redden the ported link gate.
+  Their sha-pinned assertions and mi-era narrative describe the tree as it
+  stood when the work ran; rewriting them falsifies the record. Measured:
+  zero of them are markdown links in a `prd.md` (Tier A), so none can
+  redden the ported link gate.
+
+  **Amendment 2026-08-24 (per `stale-mi-keeplist-ruling`):** the
+  "verify commands stay" clause beside the above argument was **overruled**
+  on this node's own PRD (`stale-mi-paths/prd.md ## Answers`,
+  2026-08-22), for citations that resolve. That Answer held:
+
+  > The notes cite documents that were `git mv`ed unchanged; repointing the
+  > citation is not falsifying the reading.
+
+  — and the same reasoning extends to every `.mi/` token in a verify
+  command whose target exists on disk (measured: every such path
+  resolves via `.mi/prds/`→`prds/`, `.mi/docs/`→`docs/`,
+  `.mi/SYSTEM.md`→`AGENTS.md`). The keep-list is therefore narrowed: a
+  pointer to a renamed thing may be repointed; a pinned measurement of a
+  thing may not. What the keep-list still legitimately covers is the
+  claim-about-content lane — sha-pinned assertions (digests, fixed
+  measurements of a file at a moment in time) and mi-era narrative
+  (prose describing the tree as it stood). **The verify-command clause
+  above is struck; pointer rewrites that resolve are not "rewriting the
+  record" and are in scope for follow-up nodes that touch those files.**
+  Repointing any concrete verify command is
+  [`mi-rooted-verify-commands`](../../mi-rooted-verify-commands/prd.md)'s,
+  not this spec's.
 
 ## Excluded — other lanes, do not touch
 
