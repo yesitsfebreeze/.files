@@ -1,8 +1,8 @@
 ---
 state: done
 claim:
-priority: 14
-est: 2h
+priority: 30
+est: 45m
 task: E.3
 mode: afk
 needs:
@@ -238,3 +238,174 @@ that nothing on the board owns; recorded in
 [`the counterfactual memo`](../../memos/a-counterfactual-proves-its-own-mutation.md)'s
 territory and reported in the round rather than absorbed into an unrelated
 node's acceptance.
+
+## Reopened 2026-08-24 by the orchestrator — this node's gate is red
+
+`done` → `open`. Not a retraction of the work: `lua/config/keymaps.lua` is
+correct, committed, and byte-identical to what landed. **This node's gate no
+longer exits 0**, so its acceptance is no longer true, and leaving it `done`
+would be a false record of the kind this board keeps deleting.
+
+**The failing check** is `tests/nvim-keymaps.sh:370` —
+`R4: <A-k> on the lines 3-4 block moves it up`. Full run 106/107; `--tree`
+green with all three guard lines PASS.
+
+**The behaviour is not regressed, and that is the whole point.** Measured both
+ways by `14-shift-select`'s implementer with that module present:
+
+| how the keys are sent | result |
+|---|---|
+| one at a time (`3G`, `V`, `j`, `<A-k>`) | `one,three,four,two`, mode `V`, selection 2-3 — **this node's expected value** |
+| one `nvim_feedkeys` batch, as the gate does | `one,three,two,four` |
+
+`j` is now a visual-mode callback map (`14-shift-select` R6), and a fed `j` is
+appended to the **end** of the typeahead, so the trailing `<A-k>` runs first.
+So this node's own documented mechanic #2 — "feedkeys IS SYNCHRONOUS HERE" —
+stops holding for any batch that crosses an E.14 map. It was true when it was
+written and the live config has always carried both map sets in one file, which
+is why nothing warned.
+
+**The fix is in this node's gate, not in either module**: send the count and
+the motion the way `tests/nvim-shift-select.sh` learned to — one key per call,
+with a queued settle marker — and record why mechanic #2 is now conditional.
+Only this one check in one gate feeds a visual motion after `V`; the sweep over
+`tests/*.sh` found no other instance.
+
+**Priority raised to 30** because a registered wave-3 gate is red, so the
+board's own verification story is red until this closes. `actual:` was dropped
+with the reopen: the elapsed time of the original run no longer measures a
+completed node.
+
+## Repaired 2026-08-24 — spec03, the R4 v-mode send
+
+The gate is green again. `bash tests/nvim-keymaps.sh` exits 0 at **111 PASS /
+0 FAIL**; `--tree` 42/0 and `--headless` 95/0, both rc 0. All twelve of
+[`spec03`](specs/spec03-visual-motion-send.md)'s acceptance boxes are `[x]`
+against the output they rest on. The footprint was one file,
+`tests/nvim-keymaps.sh` — `lua/config/keymaps.lua` is untouched and still
+byte-identical to what landed, `shift-select.lua` was read and never written,
+and `gates/waves.tsv` needed nothing.
+
+**The behaviour was never regressed; the send was.** `feed("3GVj<A-k>")`
+became four calls — `feed("3G")`, `feed("V")`, `feed("j")`, `feed("<A-k>")` —
+with the count riding its motion. Red before / green after, run in that
+order: `after=one,three,two,four` with the FAIL, then
+`start=3 after=one,three,four,two mode=V sel=2-3` with 0 FAIL.
+
+**The counterfactual that had stopped discriminating.** `cf-movesel` asserted
+`after != one,three,four,two`. Under the batched send the *correct* config
+also compared unequal, so it kept passing while the check it guards was FAIL.
+It now asserts the exact value `one,two,three,four`. Distinctness was verified
+rather than assumed, because four exact-value assertions now share one probe
+shape: correct `one,three,four,two`, batched `one,three,two,four`,
+maps-deleted `one,two,three,four`, split-count `one,two,four,three` — four
+distinct permutations, all four measured in the green run.
+
+**Two new counterfactuals, both probe-body rather than config mutations,**
+because the variable under test is the send and not the config: a batch-form
+probe measuring exactly `one,three,two,four` against the correct config, and
+a split-count probe measuring exactly `one,two,four,three` with `start=4`.
+The `start=` emission the repaired probe adds is what makes a dropped count
+red on its own line instead of an inference from the final buffer.
+
+**Check count 107 → 111**, never sideways, per
+[`a-counterfactual-proves-its-own-mutation`](../../memos/a-counterfactual-proves-its-own-mutation.md).
+Counted as `grep -cE '^(PASS|FAIL)  '` — the trailing summary line also starts
+with `PASS`/`FAIL`, so a naive `^PASS` count reads 106 against 112 and looks
+like +6. Labels were diffed one by one: four added, one reworded, none
+removed. This supersedes the `108 PASS` figure in
+`## Verification — implemented 2026-08-23`, which was true of the gate as it
+stood that day.
+
+**Measured mechanic #2 in the gate header is now conditional, and says so.**
+It carries the mechanism (`visual_motion` at
+`lua/config/shift-select.lua:92-102` calls `nvim_feedkeys(…, "n", false)`,
+which *appends*, so a batch's trailing `<A-k>` runs ahead of the fed `j`), the
+named E.14 maps (v-mode `h j k l <Up> <Down> <Left> <Right>`), both measured
+values with the date, and the count-with-its-motion rule.
+
+**The transport question is recorded so nobody re-runs the 2×2.** The same
+batch over `--remote-send` measures the same wrong value, and one key per send
+over either transport measures the same correct value on all three observables
+— so the variable is batching, not transport, and this gate keeps
+`nvim_feedkeys` rather than inheriting `tests/nvim-shift-select.sh`'s settle
+marker, 30-tick poll and TIMEOUT path, whose failure mode is load. It is also
+not that gate's mechanic #1 case, where `feedkeys` genuinely mis-measured the
+insert maps.
+
+**The other ten batched sends were swept, not left unexamined**, and the
+header says so in one paragraph: `gg`, `<A-j>`, `2GV<A-k>`, `2GV>>`, `2GV`,
+`3GV`, `<S-l>`, `<S-h>`, `<leader>w`, `<leader>p`, checked against
+shift-select's full 22-map list (4 n-mode `<S-arrow>`, 4 v-mode `<S-arrow>`,
+8 v-mode motions, 4 i-mode `<S-arrow>`, v-mode `<C-c>`/`<C-v>`, at
+`shift-select.lua:104-138`). None sends a key E.14 maps in the mode it is sent
+in, so they stay batched.
+
+The three guard lines [`14-shift-select`](../14-shift-select/prd.md) depends
+on still PASS in `--tree`, plus the epic-wide `<C-q>` sweep:
+
+    PASS  tree: no shift-select machinery — no shift_select flag, no <S-arrow> map (E.14's)
+    PASS  tree: zero autocmds — the live ungrouped ModeChanged is L-8 and E.14's
+    PASS  tree: no map call on <C-q>, <C-c> or <C-v> (R9 and E.14's keys)
+    PASS  tree: R9 epic-wide — no map call under lua/ takes <C-q>, including unloaded plugin keys
+
+Rejected, on the record: passing `insert = true` to `visual_motion`'s
+`nvim_feedkeys` would put the fed key at the *front* of the typeahead and make
+the batch work. It is another node's file, and it would bend E.14's runtime
+behaviour to suit a test harness.
+
+## Re-closed 2026-08-24 by the orchestrator
+
+`done` again, and the gate is green on its own terms. Verified by the
+orchestrator on this transition: `bash tests/nvim-keymaps.sh` → **rc 0, 111
+PASS / 0 FAIL**, with `move selection (rc 0): start=3
+after=one,three,four,two mode=V sel=2-3` — the value this node always
+expected. Red before the repair was 106 PASS / 1 FAIL over 107 checks; the
+green run is 111 over 111, so the floor rose.
+
+**`actual:` stays empty, deliberately.** This dispatch was clean and took about
+six minutes against a 45m estimate — but `actual:` describes the *node*, and
+this node delivered three specs across two sessions with a swept `claimed` and
+a `## Failure` in its history. Writing six minutes there would say the node
+cost six minutes. The spec03 measurement is recorded here instead, where it
+cannot be mistaken for the whole.
+
+**The analyst's 2×2 is the finding, and it overruled the orchestrator's
+instruction.** The brief said to copy `tests/nvim-shift-select.sh`'s RPC
+harness. Measured instead:
+
+| transport | sent | result |
+|---|---|---|
+| `nvim_feedkeys` | one batch | `one,three,two,four` — 5/5 |
+| `nvim_feedkeys` | one key per call | `one,three,four,two` — **10/10** |
+| `--remote-send` | one key per send | correct — 6/6 |
+| `--remote-send` | one batch | same wrong value |
+
+**The transport was never the variable; the batching was.** So the gate keeps
+`feedkeys`, for two reasons better than the instruction's: `feedkeys` has no
+poll and no timeout, so it is not load-sensitive — 5/5 stable at load 4.9 under
+ten synthetic busy loops, where an RPC settle poll is exactly the machinery
+whose failure mode *is* load — and this is not the sibling's mechanic #1 case,
+where `feedkeys` genuinely mis-measured the insert maps.
+
+**`cf-movesel` had stopped discriminating, and this is the third instance
+tonight.** It asserted `after != one,three,four,two`; under the batch bug the
+**correct** config also compared unequal, so it passed while the check it
+exists to guard was FAIL. Now pinned to the exact `one,two,three,four`, with
+all four values in play verified distinct — correct `one,three,four,two`,
+batched `one,three,two,four`, maps-deleted `one,two,three,four`, split-count
+`one,two,four,three` — so no counterfactual collides with its own negation.
+
+**Mechanic #2 was rewritten rather than deleted**, carrying the condition, the
+append mechanism at `shift-select.lua:92-102`, the named v-mode maps, both
+dated values, the count-with-its-motion rule, and the `--remote-send` result
+with why the RPC harness was declined. The two sentences that are still true
+survive as its closing paragraph. A mechanic that has become conditional and
+does not say so is the stale-reason class this board keeps paying for.
+
+**A counting trap, confirmed by the orchestrator and worth generalising:** the
+gate's summary line begins `PASS —`, so `grep -c '^PASS'` counts it. Measured
+here: naive `^PASS` gives **112**, the two-space form `^PASS  ` gives **111**.
+Every check-count figure in this session's reports that used the naive form is
+one too high; none of them changed a verdict, because the exit codes are what
+closed the boxes. `grep -cE '^(PASS|FAIL)  '` is the honest count.

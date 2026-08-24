@@ -45,11 +45,59 @@
 #    `<leader>w` as a literal `" w"`, `<` as `<lt>` — so a lookup by written
 #    lhs silently finds nothing and the gate passes on an empty result.
 #
-# 2. feedkeys IS SYNCHRONOUS HERE. `nvim_feedkeys(keys, "mx", false)` drains
+# 2. feedkeys IS SYNCHRONOUS PER CALL, AND ONE KEY PER CALL IS THE RULE WHEN
+#    THE BATCH CROSSES AN E.14 MAP. `nvim_feedkeys(keys, "mx", false)` drains
 #    the typeahead before returning ("x"), and "m" is what lets the mapping
-#    apply at all. None of these maps does async work, so every behavioral
-#    probe is a plain `-c` chain ending in `-c 'qa!'` — no defer_fn, no poll
-#    loop, no backgrounding. (The E.6 gate needs those; this one does not.)
+#    apply at all — but "mx" drains only what THAT ONE CALL was given. A
+#    `vim.keymap.set` callback that itself calls
+#    `nvim_feedkeys(…, "n", false)` APPENDS its key to the END of the
+#    typeahead (`insert` is false), so the batch's own remaining keys execute
+#    FIRST and the fed key lands after them.
+#
+#    The maps that make this conditional are 14-shift-select's visual-mode
+#    motion callbacks — v-mode `h j k l <Up> <Down> <Left> <Right>`, at
+#    lua/config/shift-select.lua:92-102 (`visual_motion`) — which are in the
+#    same staged config as this node's maps. Measured 2026-08-24 on the R4
+#    v-mode probe (`3G`, `V`, `j`, `<A-k>` over one,two,three,four):
+#
+#      one key per nvim_feedkeys call:  after=one,three,four,two  (correct)
+#      one batch "3GVj<A-k>":           after=one,three,two,four  (wrong —
+#                                       the trailing <A-k> ran before the
+#                                       fed `j`)
+#
+#    THE VARIABLE IS BATCHING, NOT TRANSPORT, and that was measured rather
+#    than reasoned: the SAME batch sent over `--remote-send` measures the
+#    SAME wrong value (one,three,two,four), and one-key-per-send over
+#    `--remote-send` measures the same correct value as one-key feedkeys, on
+#    all three observables (buffer, mode(), line("v")-line(".")). So this
+#    gate KEEPS nvim_feedkeys and does NOT adopt tests/nvim-shift-select.sh's
+#    RPC harness: that harness needs a queued settle marker with a 30-tick
+#    poll and a TIMEOUT path, machinery whose failure mode is load, and it
+#    would buy nothing here. Nobody needs to re-run the 2x2 to learn why.
+#    (This is also NOT tests/nvim-shift-select.sh mechanic #1's case, where
+#    feedkeys genuinely MIS-measured the insert-mode maps; here the two
+#    transports agree.)
+#
+#    A COUNT AND ITS MOTION SHARE A CALL. Measured the same day: splitting
+#    them — `feed("3")` then `feed("G")`, no marker involved — loses the
+#    count, because each "x" drain ends the pending command. The probe lands
+#    on line 4 (`start=4`) and measures one,two,four,three. So `3G` travels
+#    as one call and every other key gets its own; the probe emits `start=`
+#    so a dropped count is red on its own line instead of inferred from the
+#    buffer. Both failure modes are asserted as exact-value counterfactuals
+#    below.
+#
+#    SWEPT, so the remaining batched sends are justified rather than
+#    unexamined: every other `feed()` in this gate was checked against
+#    shift-select's full 22-map list (v-mode `h j k l <Up> <Down> <Left>
+#    <Right>`; n/v/i `<S-Up>/<S-Down>/<S-Left>/<S-Right>`; v-mode
+#    `<C-c>`/`<C-v>`) and NONE sends a key E.14 maps in the mode it is sent
+#    in — `gg`, `<A-j>`, `2GV<A-k>`, `2GV>>`, `2GV`, `3GV`, `<S-l>`,
+#    `<S-h>`, `<leader>w`, `<leader>p`. They stay batched.
+#
+#    None of these maps does async work, so every behavioral probe is still a
+#    plain `-c` chain ending in `-c 'qa!'` — no defer_fn, no poll loop, no
+#    backgrounding. (The E.6 gate needs those; this one does not.)
 #
 # 3. THE PASTE PROBE'S REGISTER, AND A CORRECTION TO spec02. spec02
 #    prescribes asserting `getreg("+")`, with the counterfactual "change
@@ -361,13 +409,65 @@ vim.cmd("qa!")
 LUA
 
 # R4, visual mode — the PRD's second acceptance box, executed.
+#
+# ONE KEY PER feed() CALL, `3G` excepted because a count rides with its
+# motion. This is the only probe in the gate whose keys cross an E.14 map
+# (visual `j`), and measured mechanic 2 has the two values and the 2x2 that
+# settled the transport question. `start=` is emitted between the count-motion
+# and the `V` so a dropped count goes red on its own line rather than being
+# inferred from the final buffer. The batch form and the split-count form are
+# both kept as exact-value counterfactuals below.
 cat > "$W/movesel.lua" <<'LUA'
 local function put(k, v) io.stderr:write("\n" .. k .. "=" .. tostring(v) .. "\n") end
 local function feed(s)
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(s, true, false, true), "mx", false)
 end
 vim.api.nvim_buf_set_lines(0, 0, -1, false, { "one", "two", "three", "four" })
+feed("3G")
+put("start", vim.fn.line("."))
+feed("V")
+feed("j")
+feed("<A-k>")
+put("after", table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), ","))
+put("mode", vim.fn.mode())
+put("sel", vim.fn.line("v") .. "-" .. vim.fn.line("."))
+vim.cmd("qa!")
+LUA
+
+# Counterfactual probe A — THE BATCH FORM, i.e. exactly what this gate sent
+# until 2026-08-24. Identical to movesel.lua but for the send. It must measure
+# one,three,two,four: that is the check that proves the one-key discipline
+# above is what carries the R4 v-mode pass, and not something incidental.
+cat > "$W/movesel-batch.lua" <<'LUA'
+local function put(k, v) io.stderr:write("\n" .. k .. "=" .. tostring(v) .. "\n") end
+local function feed(s)
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(s, true, false, true), "mx", false)
+end
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { "one", "two", "three", "four" })
 feed("3GVj<A-k>")
+put("after", table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), ","))
+put("mode", vim.fn.mode())
+put("sel", vim.fn.line("v") .. "-" .. vim.fn.line("."))
+vim.cmd("qa!")
+LUA
+
+# Counterfactual probe B — THE SPLIT COUNT. `3` and `G` in two calls, every
+# other key as in movesel.lua. The count is lost (each "x" drain ends the
+# pending command), so `G` goes to the last line: start=4 and the buffer
+# measures one,two,four,three. This is what makes the `start=` emission a
+# check rather than decoration.
+cat > "$W/movesel-splitcount.lua" <<'LUA'
+local function put(k, v) io.stderr:write("\n" .. k .. "=" .. tostring(v) .. "\n") end
+local function feed(s)
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(s, true, false, true), "mx", false)
+end
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { "one", "two", "three", "four" })
+feed("3")
+feed("G")
+put("start", vim.fn.line("."))
+feed("V")
+feed("j")
+feed("<A-k>")
 put("after", table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), ","))
 put("mode", vim.fn.mode())
 put("sel", vim.fn.line("v") .. "-" .. vim.fn.line("."))
@@ -692,7 +792,9 @@ stage_headless() {
 
   # ── R4, visual mode: the PRD's second acceptance box ─────────────────────
   code="$(nv_in "$S" "$E" -c "luafile $W/movesel.lua" -c 'qa!')"
-  echo "      move selection (rc $code): after=$(val "$E" after) mode=$(val "$E" mode) sel=$(val "$E" sel)"
+  echo "      move selection (rc $code): start=$(val "$E" start) after=$(val "$E" after) mode=$(val "$E" mode) sel=$(val "$E" sel)"
+  [ "$(val "$E" start)" = "3" ]
+  chk "R4 precondition: the count survived its motion — 3G landed the cursor on line 3, so a dropped count is red HERE and not inferred from the buffer" $?
   [ "$(val "$E" after)" = "one,three,four,two" ]
   chk "R4: <A-k> on the lines 3-4 block moves it up — one,two,three,four becomes one,three,four,two" $?
   [ "$(val "$E" mode)" = "V" ]
@@ -753,8 +855,34 @@ stage_headless() {
   code="$(nv_in "$R" "$E" -c "luafile $W/movesel.lua" -c 'qa!')"
   after2="$(val "$E" after)"
   echo "      no visual move maps (rc $code): after=$after2 sel=$(val "$E" sel)"
-  if [ "$after2" != "one,three,four,two" ]; then st=0; else st=1; fi
-  chk "counterfactual: without the visual maps the block does NOT move (after=$after2) — the R4 v-mode probe FAILS" "$st"
+  # EXACT value, not `!= one,three,four,two`. The inequality form is what let
+  # the 2026-08-24 red hide: under the batched send the CORRECT config also
+  # compared unequal to the expected value, so this counterfactual went on
+  # passing while the check it exists to guard was FAIL. All four values in
+  # play are distinct — correct one,three,four,two; batched one,three,two,four;
+  # maps-deleted one,two,three,four; split-count one,two,four,three — so no
+  # counterfactual here can collide with its own negation.
+  if [ "$after2" = "one,two,three,four" ]; then st=0; else st=1; fi
+  chk "counterfactual: without the visual maps the block does NOT move — the buffer is EXACTLY the untouched one,two,three,four (got $after2), so the R4 v-mode probe FAILS" "$st"
+
+  # ── the two send-form counterfactuals ────────────────────────────────────
+  # Probe-body mutations, not config mutations: the config here is the
+  # CORRECT staged one ($S), and what changes is how the keys travel. Each
+  # asserts its EXACT measured value, so neither can pass by merely differing
+  # from the expected one.
+  code="$(nv_in "$S" "$E" -c "luafile $W/movesel-batch.lua" -c 'qa!')"
+  after2="$(val "$E" after)"
+  echo "      batched send, correct config (rc $code): after=$after2 mode=$(val "$E" mode) sel=$(val "$E" sel)"
+  if [ "$after2" = "one,three,two,four" ]; then st=0; else st=1; fi
+  chk "counterfactual: ONE nvim_feedkeys batch \`3GVj<A-k>\` measures EXACTLY one,three,two,four (got $after2) — E.14's visual \`j\` appends behind the pending <A-k>, which is why the R4 probe sends one key per call" "$st"
+
+  code="$(nv_in "$S" "$E" -c "luafile $W/movesel-splitcount.lua" -c 'qa!')"
+  after2="$(val "$E" after)"
+  echo "      split count, correct config (rc $code): start=$(val "$E" start) after=$after2 mode=$(val "$E" mode) sel=$(val "$E" sel)"
+  if [ "$(val "$E" start)" = "4" ]; then st=0; else st=1; fi
+  chk "counterfactual: splitting \`3\` from \`G\` LOSES the count — start=$(val "$E" start), i.e. line 4, not 3" "$st"
+  if [ "$after2" = "one,two,four,three" ]; then st=0; else st=1; fi
+  chk "counterfactual: and the split-count send measures EXACTLY one,two,four,three (got $after2) — which is why a count rides with its motion in one call" "$st"
 
   R="$W/cf-noeq"
   cf_stage "$R" "s|:m '<-2<CR>gv=gv|:m '<-2<CR>gv|"
