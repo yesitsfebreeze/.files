@@ -391,7 +391,7 @@
     }
     {
         cmd: "idioms"
-        title: "Use the tools this environment actually has"
+        title: "Search with rg, find with fd, pick with tv"
         use: "Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`) — the single exception is `zi`, which opens fzf, and it is the only place fzf belongs. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given."
         topic: "agents"
         mode: "shell"

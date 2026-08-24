@@ -96,7 +96,12 @@ correctly — which finder is installed, how navigation works, what the keys do
           For agents:
             help --json — Read this manual as structured data
             help --md — Write this manual out as markdown
-            idioms — Use the tools this environment actually has
+            idioms — Search with rg, find with fd, pick with tv
+
+      (The `idioms` title was `Use the tools this environment actually has`
+      until 2026-08-24, when the H.5 reading test showed the block routed but
+      did not inform — the grader's decision was to make the corpus title name
+      the tools, keeping the render prose-free.)
 
       Checked by `tests/help-agent.sh`'s DISCOVERY check, with a
       counterfactual that renames the `idioms` entry in a scratch **corpus**

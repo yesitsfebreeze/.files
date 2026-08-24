@@ -1,5 +1,6 @@
 ---
 state: done
+commit: 1f6c720
 claim:
 priority: 22
 est: 4h

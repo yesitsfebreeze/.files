@@ -1,5 +1,6 @@
 ---
 state: done
+commit: 4c2fa3d
 priority: 32
 est: 4h
 task: S.2

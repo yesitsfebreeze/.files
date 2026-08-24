@@ -218,7 +218,7 @@ Two edits, both in `_help_overview`, both layout only:
    For agents:
      help --json — Read this manual as structured data
      help --md — Write this manual out as markdown
-     idioms — Use the tools this environment actually has
+     idioms — Search with rg, find with fd, pick with tv
    ```
 
    Extract the existing curated-id render out of the `first` block into one
