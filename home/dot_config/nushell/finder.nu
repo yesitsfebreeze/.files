@@ -241,17 +241,21 @@ def _finder_decode [stage] {
         }
         "Commits" => {
             # The L-2 fix: consume the emitted value WHOLE. git-log.toml's
-            # `output = "{strip_ansi|split: :1}"` has already reduced the
-            # entry to a bare hash — the extraction belongs to the CHANNEL,
-            # which uses that same template for its preview and its three
-            # actions; a second extraction here is the duplication that
+            # `output = "{strip_ansi|regex_extract:[0-9a-f]{7,}}"` has already
+            # reduced the entry to a bare hash — the extraction belongs to the
+            # CHANNEL, which uses that same template for its preview and its
+            # three actions; a second extraction here is the duplication that
             # rotted (the live decoder split the bare hash again, read index
             # 1 — empty — and the guard ate every row, so commit → git show
-            # never ran). The `^[0-9a-f]{7,}$` guard is KEPT, as a validity
-            # filter that now passes. Shape is {hash}: `subject` is dropped
-            # — a bare hash cannot fill it and nothing consumes it; a label
-            # would come from the channel's display template, never
-            # reconstructed here.
+            # never ran). The channel selects the hash BY PATTERN because it
+            # runs `git log --graph`: positional field 1 is `*` on a
+            # `| * <hash>` row and `|` on a `* | <hash>` row, and the channel
+            # now also drops the connector rows that carry no hash at all, so
+            # nothing reaches this decoder without one. The `^[0-9a-f]{7,}$`
+            # guard is KEPT, as a validity filter that now passes. Shape is
+            # {hash}: `subject` is dropped — a bare hash cannot fill it and
+            # nothing consumes it; a label would come from the channel's
+            # display template, never reconstructed here.
             $results | each { |line| { hash: ($line | str trim) } }
                 | where { |r| $r.hash =~ '^[0-9a-f]{7,}$' }
         }

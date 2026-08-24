@@ -4,14 +4,30 @@ description = "A channel to select from git log entries"
 requirements = ["git"]
 
 [source]
-command = "git log --graph --pretty=format:'%C(yellow)%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --color=always"
-output = "{strip_ansi|split: :1}"
+# Only rows that carry a commit become entries. `git log --graph` also draws
+# connector rows (`|\`, `|/`) that hold no hash; television has no
+# non-selectable entry, so a connector row would reach the decoder, extract
+# to "" and raise the same error a genuinely broken decode raises. The grep
+# runs on the COLOURED stream while the extraction below runs after
+# strip_ansi; the two were measured to keep the same rows on a merge-lane
+# fixture and on this repository's own history. Lane art on the surviving
+# rows is untouched — the fork/join elbows are the only thing lost.
+command = "git log --graph --pretty=format:'%C(yellow)%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --color=always | grep -E '[0-9a-f]{7,}'"
+# The hash is selected BY PATTERN, never by position: `--graph` prepends lane
+# art, so the hash has no fixed field index. The retired template split the
+# row on a space and read field 1, which is `*` on a `| * <hash>` row, `|` on
+# a `* | <hash>` row and "" on the three-space-padded merge row — three of the
+# five commit rows of a merge-lane fixture wrong. The art alphabet is
+# `* | / \ _` and space, so no run of 7 hex characters can precede the hash;
+# --abbrev-commit with core.abbrev unset gives at least 7, the same floor
+# finder.nu's `^[0-9a-f]{7,}$` guard asserts.
+output = "{strip_ansi|regex_extract:[0-9a-f]{7,}}"
 ansi = true
 no_sort = true
 frecency = false
 
 [preview]
-command = "git show -p --stat --pretty=fuller --color=always '{strip_ansi|split: :1}' | head -n 1000"
+command = "git show -p --stat --pretty=fuller --color=always '{strip_ansi|regex_extract:[0-9a-f]{7,}}' | head -n 1000"
 
 [keybindings]
 ctrl-y = "actions:cherry-pick"
@@ -20,15 +36,15 @@ ctrl-o = "actions:checkout"
 
 [actions.cherry-pick]
 description = "Cherry-pick the selected commit"
-command = "git cherry-pick '{strip_ansi|split: :1}'"
+command = "git cherry-pick '{strip_ansi|regex_extract:[0-9a-f]{7,}}'"
 mode = "execute"
 
 [actions.revert]
 description = "Revert the selected commit"
-command = "git revert '{strip_ansi|split: :1}'"
+command = "git revert '{strip_ansi|regex_extract:[0-9a-f]{7,}}'"
 mode = "execute"
 
 [actions.checkout]
 description = "Checkout the selected commit"
-command = "git checkout '{strip_ansi|split: :1}'"
+command = "git checkout '{strip_ansi|regex_extract:[0-9a-f]{7,}}'"
 mode = "execute"

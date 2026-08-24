@@ -74,6 +74,11 @@ FINDER_NU="$NUSHELL_SRC/finder.nu"
 
 NU="$(command -v nu || true)"
 PYTHON="$(command -v python3 || true)"
+# The REAL tv binary, resolved BEFORE any stage mangles PATH. The hermetic
+# stage replaces tv with a recording stub under $SCRATCH that never evaluates
+# a template, so the git-log output template could not be executed at all
+# without this. A missing tv is a FAIL, never a skip — see the checks below.
+TV="$(command -v tv || true)"
 LIVE_CACHE="$HOME/.cache/nushell"
 
 ANCHORS="CONFIG ALIASES LISTING FUNNEL HOOKS GENERATED MODULES PALETTE THEME KEYBINDINGS"
@@ -86,6 +91,11 @@ PTY="$SCRATCH/nupty.py"
 BAD_RCWD='rc''wd'
 BAD_DB_PATH=".config/nushell/""history.sqlite3"
 UNHIJACK='enter="confirm_selection";tab="toggle_selection"'
+# git-log.toml's hash extraction, before and after the --graph field-1 fix.
+# The retired positional spelling is assembled, like BAD_RCWD above, so this
+# script's own text is never a hit for its own zero-hit grep.
+BAD_GITLOG_TPL='{strip_ansi|spl''it: :1}'
+GITLOG_TPL='{strip_ansi|regex_extract:[0-9a-f]{7,}}'
 
 # ── helpers ─────────────────────────────────────────────────────────────────
 sha_file() { if [ -f "$1" ]; then shasum -a 256 "$1" | awk '{print $1}'; else echo "<absent>"; fi; }
@@ -171,12 +181,73 @@ hexfree_ok() {
 }
 
 # git-log.toml: the one hash extraction, owned by the channel — in output,
-# preview and all three actions (R2b).
+# preview and all three actions (R2b) — and it selects the hash BY PATTERN,
+# never by position. `git log --graph` prepends lane art, so there is no fixed
+# field index: positional field 1 is `*` on a `| * <hash>` row, `|` on a
+# `* | <hash>` row and "" on the three-space-padded merge row. The retired
+# positional spelling must have ZERO hits anywhere under the managed
+# television tree, not merely in this one file.
 gitlog_tpl_ok() {
   local f="$1"
-  [ "$($GREP -cF '{strip_ansi|split: :1}' "$f")" -eq 5 ] || return 1
-  $GREP -qE '^output = .\{strip_ansi\|split: :1\}' "$f" || return 1
-  [ "$($GREP -c 'strip_ansi|split: :1' <($GREP -A2 -E '^\[(preview|actions\.(cherry-pick|revert|checkout))\]' "$f"))" -eq 4 ]
+  [ "$($GREP -cF "$GITLOG_TPL" "$f")" -eq 5 ] || return 1
+  $GREP -qxF "output = \"$GITLOG_TPL\"" "$f" || return 1
+  [ "$($GREP -cF "$GITLOG_TPL" <($GREP -A2 -E '^\[(preview|actions\.(cherry-pick|revert|checkout))\]' "$f"))" -eq 4 ] || return 1
+  [ "$($GREP -rcF -- "$BAD_GITLOG_TPL" "$TV_SRC" | $GREP -v ':0$' | wc -l | tr -d ' ')" -eq 0 ]
+}
+
+# The fixture carries a merge lane BY CONSTRUCTION. `--no-ff` is deliberate:
+# a fast-forward merge draws no lane at all, and the whole point of the checks
+# below is a `| * <hash>` row. Asserted before anything depends on it, so a
+# fixture that silently stopped producing one is a FAIL and not a vacuous pass.
+gitlog_fixture_lane_ok() {
+  local R="$1"
+  (cd "$R" && /usr/bin/git log --graph --pretty=format:'%h' --abbrev-commit) \
+    | $GREP -qE '^\| \* '
+}
+
+# Every row the channel offers extracts that row's OWN commit, driven through
+# the real channel FILE (TELEVISION_CONFIG points at a copy of the managed
+# tree) by the real tv binary. `--take-1` selects without a pty, which is what
+# lets a gate evaluate an output template at all.
+#
+# The population is READ FROM THE FIXTURE — one iteration per commit the repo
+# holds — so a commit added to the fixture is covered without editing this
+# function. Separator is a TAB, not the `|` a subject could itself contain.
+#
+# Echoes the number of rows walked, so a label can name it.
+gitlog_rows_ok() {
+  local C="$1" R="$2" want subj got n=0
+  while IFS="$(printf '\t')" read -r want subj; do
+    got="$(cd "$R" && /usr/bin/env HOME="$R" TELEVISION_CONFIG="$C" \
+             PATH="/opt/homebrew/bin:/usr/bin:/bin" \
+             "$TV" git-log --input "$subj" --exact --take-1 --no-preview \
+             < /dev/null 2>/dev/null)"
+    [ "$got" = "$want" ] || return 1
+    n=$((n+1))
+  done < <(cd "$R" && /usr/bin/git log --format="%h$(printf '\t')%s")
+  # n > 0 is load-bearing: an empty git log would walk zero rows and return 0,
+  # and a check that passes on an empty population proves nothing.
+  [ "$n" -gt 0 ] || return 1
+  echo "$n"
+}
+
+# R3: the source offers no row that carries no hash, so a connector row can
+# never reach the decoder and raise the same error a broken decode raises.
+# Rows emitted == commits. awk counts the final line even without a trailing
+# newline; `wc -l` does not, and `git log --pretty=format:` emits none.
+# The command is read from the [source] TABLE — git-log.toml has five
+# `command = ` lines, and an unscoped sed would splice all five together.
+# Echoes "<emitted>/<commits>", so a label can name both.
+gitlog_no_artrows_ok() {
+  local C="$1" R="$2" cmd emitted commits
+  cmd="$(awk '/^\[source\]/{s=1;next} /^\[/{s=0} s && /^command = /{sub(/^command = "/,"");sub(/"$/,"");print}' \
+          "$C/cable/git-log.toml")"
+  [ -n "$cmd" ] || return 1
+  emitted="$(cd "$R" && /usr/bin/env HOME="$R" PATH="/opt/homebrew/bin:/usr/bin:/bin" \
+               sh -c "$cmd" 2>/dev/null | awk 'END { print NR }')"
+  commits="$(cd "$R" && /usr/bin/git rev-list --count HEAD)"
+  echo "$emitted/$commits"
+  [ "$emitted" -eq "$commits" ]
 }
 
 # finder.nu's type map (L-3): recent-dirs and recent-files decode as
@@ -398,8 +469,16 @@ stage_tree() {
   chk_ok "tree: the L-3 bug id appears nowhere under the managed television tree" \
          test "$($GREP -rc "$BAD_RCWD" "$TV_SRC" | $GREP -v ':0$' | wc -l | tr -d ' ')" -eq 0
 
-  chk_ok "tree: git-log.toml carries {strip_ansi|split: :1} in output, preview and all three actions — one extraction, owned by the channel" \
+  chk_ok "tree: git-log.toml extracts the hash BY PATTERN — $GITLOG_TPL in output, preview and all three actions (one extraction, owned by the channel), and the retired positional split has 0 hits under the managed television tree" \
          gitlog_tpl_ok "$CABLE/git-log.toml"
+  # Counterfactual: the same check against a copy whose output line carries the
+  # retired positional split must go RED. --graph is why: field 1 is lane art.
+  local CF_TPL="$SCRATCH/cf-gitlog-tpl.toml"
+  sed "s@^output = .*@output = \"$BAD_GITLOG_TPL\"@" "$CABLE/git-log.toml" > "$CF_TPL"
+  chk_ok "tree: (the counterfactual copy really carries the reverted positional split in output)" \
+         $GREP -qxF "output = \"$BAD_GITLOG_TPL\"" "$CF_TPL"
+  chk_fail "tree: counterfactual positional-field-1 output FAILS the pattern-extraction check" \
+           gitlog_tpl_ok "$CF_TPL"
 
   chk_ok "tree: nu-history.toml derives the db from \$nu.history-path's directory; the live literal spelling has 0 hits" \
          nuhist_path_ok "$CABLE/nu-history.toml"
@@ -685,6 +764,80 @@ stage_hermetic() {
   set_startdir "$M" "$M/home"
   chk_ok "hermetic: _finder_open on the decode runs git show — the scratch commit's message is in the output (L-2: never passed against the live config)" \
          test -n "$(printf '%s' "$out" | $GREP -oF 'L2-CANARY-COMMIT')"
+
+
+  # ── the git-log OUTPUT TEMPLATE, EXECUTED against a merge lane ────────────
+  # Everything above this point proves finder.nu's side of L-2 against a
+  # single-commit repo drawn in one lane, and the tv here is the recording
+  # stub, which never evaluates a template. So the channel's own `output` had
+  # never been RUN in this gate at all — and it was wrong: `git log --graph`
+  # prepends lane art, so positional field 1 is `*` on a `| * <hash>` row,
+  # `|` on a `* | <hash>` row and "" on the three-space-padded merge row.
+  # These checks use the REAL tv (--take-1 selects with no pty) against a
+  # fixture built with a --no-ff merge, so a `| * <hash>` row exists by
+  # construction rather than by luck.
+  chk_ok "hermetic: the git-log template checks resolve the REAL tv binary, not the recording stub (resolved: ${TV:-<none>})" \
+         test -n "$TV"
+  local TV_IS_STUB=1
+  case "$TV" in "$SCRATCH"*) TV_IS_STUB=0 ;; esac
+  chk_ok "hermetic: …and that path is not under \$SCRATCH ($SCRATCH), where the stub lives" \
+         test "$TV_IS_STUB" -eq 1
+
+  local L="$SCRATCH/gitlane"
+  mkdir -p "$L"
+  (cd "$L" \
+    && /usr/bin/env HOME="$L" /usr/bin/git init -q . \
+    && printf 'a\n' > f && /usr/bin/git add f \
+    && /usr/bin/git -c user.name=gate -c user.email=gate@gate commit -qm BASE-CANARY \
+    && /usr/bin/git checkout -qb side \
+    && printf 'b\n' > s && /usr/bin/git add s \
+    && /usr/bin/git -c user.name=gate -c user.email=gate@gate commit -qm "LANE-CANARY commit on the side lane" \
+    && { /usr/bin/git checkout -q main 2>/dev/null || /usr/bin/git checkout -q master; } \
+    && printf 'c\n' >> f && /usr/bin/git add f \
+    && /usr/bin/git -c user.name=gate -c user.email=gate@gate commit -qm MAIN-CANARY \
+    && /usr/bin/git -c user.name=gate -c user.email=gate@gate merge -q --no-ff side -m MERGE-CANARY \
+    && printf 'd\n' >> f && /usr/bin/git add f \
+    && /usr/bin/git -c user.name=gate -c user.email=gate@gate commit -qm TIP-CANARY) 2>/dev/null
+  chk_ok "hermetic: the git-log fixture's graph carries a second-lane row by construction (--no-ff; graph: $(cd "$L" && /usr/bin/git log --graph --pretty=format:'%h' --abbrev-commit | norm))" \
+         gitlog_fixture_lane_ok "$L"
+
+  # Drive tv through a COPY of the managed television tree, so the assertion
+  # runs the channel FILE rather than a template retyped into this script.
+  local C="$SCRATCH/tvcfg"
+  rm -rf "$C"; mkdir -p "$C"
+  cp -R "$CABLE" "$C/cable"
+  rm -f "$C/cable/theme.toml.tmpl"
+  printf '[ui]\n' > "$C/config.toml"
+
+  local ARTROWS ROWSWALKED
+  ARTROWS="$(gitlog_no_artrows_ok "$C" "$L")"
+  chk_ok "hermetic: the git-log source offers no row that carries no hash — rows emitted/commits = ${ARTROWS:-<none>} (R3: a connector row never reaches the decoder)" \
+         gitlog_no_artrows_ok "$C" "$L"
+  ROWSWALKED="$(gitlog_rows_ok "$C" "$L")"
+  chk_ok "hermetic: every row the git-log channel offers extracts its OWN commit through the channel file — ${ROWSWALKED:-0} rows walked, fixture holds $(cd "$L" && /usr/bin/git rev-list --count HEAD) commits" \
+         gitlog_rows_ok "$C" "$L"
+
+  # ── R4's counterfactual, EXECUTED ────────────────────────────────────────
+  # Only `output` is reverted: --take-1 prints the output template and nothing
+  # else, so the preview and the three actions are not what this check reads.
+  # Reverting the one line is the tighter counterfactual.
+  # It also proves TELEVISION_CONFIG is honoured: if tv ignored it and read the
+  # live tree, the reverted copy would never be reached and chk_fail would FAIL.
+  local CF_TV="$SCRATCH/tvcfg-cf"
+  rm -rf "$CF_TV"; cp -R "$C" "$CF_TV"
+  sed "s@^output = .*@output = \"$BAD_GITLOG_TPL\"@" "$C/cable/git-log.toml" > "$CF_TV/cable/git-log.toml"
+  chk_ok "hermetic: (the counterfactual copy really carries the reverted positional split in output, and only there)" \
+         $GREP -qxF "output = \"$BAD_GITLOG_TPL\"" "$CF_TV/cable/git-log.toml"
+  local CF_VAL CF_WANT
+  CF_WANT="$(cd "$L" && /usr/bin/git log --format=%h --grep=LANE-CANARY)"
+  CF_VAL="$(cd "$L" && /usr/bin/env HOME="$L" TELEVISION_CONFIG="$CF_TV" \
+              PATH="/opt/homebrew/bin:/usr/bin:/bin" \
+              "$TV" git-log --input "LANE-CANARY commit on the side lane" --exact \
+              --take-1 --no-preview < /dev/null 2>/dev/null)"
+  chk_ok "hermetic: …and on the | * <hash> row that reverted output yields the lane art, not the commit (got '$CF_VAL', the row's own %h is '$CF_WANT')" \
+         test "$CF_VAL" = '*'
+  chk_fail "hermetic: counterfactual output=$BAD_GITLOG_TPL FAILS the per-row hash check — the | * <hash> row yields '*'" \
+           gitlog_rows_ok "$CF_TV" "$L"
 
   # ── R2b: an empty decode over a non-empty selection raises ────────────────
   reset_stub "$M"
