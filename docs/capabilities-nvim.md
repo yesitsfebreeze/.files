@@ -174,8 +174,17 @@ be ported.
 - Global statusline, no separators; mode / branch+diff+diagnostics /
   filename(path=1) / encoding+fileformat+filetype / progress / location.
   Theme is BUILT from tinted-nvim's live palette and rebuilt on ColorScheme —
-  never lualine's `auto`, which collapses base16-* to a bundled theme
-  requiring the absent nvim-base16 plugin; `gruvbox_dark` is the pre-palette
+  never lualine's `auto`. `auto` resolves cleanly, exits 0, and silently
+  paints a hardcoded Tomorrow-Night palette: `auto.lua` collapses any
+  `base16-*` colorscheme to lualine's bundled `base16` theme, which
+  falls through three steps — `setup_base16_vim()` wants `vim.g.base16_gui00`
+  or `vim.g.tinted_gui00` (and **tinted-nvim sets zero `vim.g` keys matching
+  either prefix**), `setup_base16_nvim()` wants the absent `nvim-base16`,
+  then `setup_default()` paints `#81a2be` / `#b5bd68` / `#b294bb` / `#de935f`
+  on `#282a2e`, with `command` collapsed onto `normal`. The only signal is a
+  deferred WARN at ~2 s plus `:LualineNotices` appearing. So `auto` does not
+  error — it silently paints a scheme nothing else in the environment uses,
+  and `tinty apply` would not move it; `gruvbox_dark` is the pre-palette
   fallback.
 - 6
 - 7
