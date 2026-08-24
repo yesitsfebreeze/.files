@@ -57,9 +57,15 @@ become thin wrappers over this one command — no parallel implementations.
       **stopped** ones; a bare invocation never kills a running container,
       because the cheap mistake has to be the safe one. `capsule clean
       --all` additionally stops and removes the running ones. Both only
-      ever touch containers this tool created (the `capsule-` name prefix
-      of R1) — never any other container on the host, which is what the
-      old `dk` force-remove alias could not promise.
+      ever touch containers this tool created — the guard is the
+      `capsule.dir` label key **and** the `capsule-` name prefix, applied
+      via `_capsule_owned` (`capsule.nu:138-153`); a hand-rolled container
+      named `capsule-*` but lacking the label is still never touched, and
+      a label-only renamed container never reaches either command. The
+      imitator seam (a `capsule-*` container labelled with an *empty*
+      `capsule.dir`) is recorded on
+      [`capsule-rm-guard-attribution`](../../00-delivery/corrections/capsule-rm-guard-attribution/prd.md)
+      and is **not** closed by this node.
 - [~] **R7** — **Recency hook.** Every successful mount records the directory
       for the [recent-workspaces picker](../04-recent-workspaces/prd.md).
 - [x] **R8** — **Terminal bindings.** This node delivers the WezTerm
