@@ -122,7 +122,7 @@ sign column" stays: it covers add/change, which were never broken.
 - [ ] `bash tests/live-bugs.sh` still exits 0 (this spec changes no live
       config, so the L-10 assertions must not move).
 
-verify: `bash -c 'cd "$(git rev-parse --show-toplevel)"; rc=0; F=prds/03-editor/12-small-plugins/prd.md; r1=$(awk "/\*\*R1\*\*/{r=1} r&&/^- \[.\] \*\*R[0-9]/&&!/R1/{r=0} r&&/^## /{r=0} r" "$F" | tr "\n" " " | tr -s " "); [ -n "$r1" ] || { echo "FAIL: no R1 found"; rc=1; }; bt=$(printf "\140\140"); printf "%s" "$r1" | grep -qF "$bt" && { echo "FAIL: R1 still carries an empty backtick pair - the bug is still copied into the spec"; rc=1; }; printf "%s" "$r1" | grep -qF "L-10" || { echo "FAIL: R1 does not name L-10"; rc=1; }; printf "%s" "$r1" | grep -qE "not.{0,20}reproduce|do not reproduce" || { echo "FAIL: R1 does not say the loss is not reproduced"; rc=1; }; printf "%s" "$r1" | grep -qE "non-empty" || { echo "FAIL: R1 does not state the non-empty property"; rc=1; }; printf "%s" "$r1" | grep -qE "distinct" || { echo "FAIL: R1 does not require the delete glyph to differ from the add/change glyph"; rc=1; }; [ "$(printf "%s" "$r1" | grep -oE "U\+[0-9A-Fa-f]{4}" | sort -u | wc -l | tr -d " ")" -ge 2 ] || { echo "FAIL: R1 names fewer than two glyphs by U+ codepoint"; rc=1; }; printf "%s" "$r1" | grep -qE "fallback" || { echo "FAIL: R1 offers no font-free fallback"; rc=1; }; printf "%s" "$r1" | grep -qF "lewis6991/gitsigns.nvim" || { echo "FAIL: R1 lost the plugin name"; rc=1; }; printf "%s" "$r1" | grep -qF "BufReadPre" || { echo "FAIL: R1 lost the lazy event"; rc=1; }; acc=$(awk "/^## Acceptance/{r=1;next} r&&/^## /{r=0} r" "$F" | tr "\n" " " | tr -s " "); printf "%s" "$acc" | grep -qE "not blank|non-empty|not be blank" || { echo "FAIL: no acceptance line asserts the delete sign is non-blank"; rc=1; }; printf "%s" "$acc" | grep -qE "gitsigns.config|:lua|read it back|Read it back" || { echo "FAIL: the delete-sign acceptance is by eye, with no way to read the value back"; rc=1; }; for i in 2 3; do printf "%s" "$(tr "\n" " " < "$F")" | grep -qF "**R$i**" || { echo "FAIL: lost R$i"; rc=1; }; done; grep -qE "^- \[[x~]\]" "$F" && { echo "FAIL: a box was closed"; rc=1; }; bash tests/live-bugs.sh >/dev/null 2>&1 || { echo "FAIL: tests/live-bugs.sh no longer exits 0"; rc=1; }; [ $rc -eq 0 ] && echo OK; exit $rc'`
+verify: ""
 
 **Proven RED against the current tree before this spec was written**, run
 verbatim as the string above. It reports, in order: R1 still carries an empty
@@ -146,3 +146,28 @@ either: `grep -F` takes it as the four characters `\x60`, so the clause
 silently never fires. That was the first draft here, and it passed on a file
 that plainly contains the pair; octal-through-`printf` is what actually
 matches.
+
+## Spent proof
+
+`prds/03-editor/12-small-plugins/prd.md` has closed boxes because
+`12-small-plugins` is `state: done` — its boxes were closed with executed
+proofs when the node landed. The firing clause,
+`grep -qE "^- \[[x~]\]" prds/03-editor/12-small-plugins/prd.md`
+("a box was closed"), was a one-shot delta guard written to catch a box
+closing during this correction ticket's own run, so it now fires on
+legitimate history. "Stale" is not the reason; the node landing is. Run
+alone on 2026-08-24 it prints exactly one FAIL and exits 1 — every other
+clause passes:
+
+    FAIL: a box was closed
+    status: 1
+
+Retired from `verify:` by
+[`verify-all-empty-eval`](../../../verify-all-empty-eval/prd.md). The
+command below is byte-identical to the line this file's `verify:` carried;
+it is kept because it is the execution record of a check that once ran
+green.
+
+```text
+verify: `bash -c 'cd "$(git rev-parse --show-toplevel)"; rc=0; F=prds/03-editor/12-small-plugins/prd.md; r1=$(awk "/\*\*R1\*\*/{r=1} r&&/^- \[.\] \*\*R[0-9]/&&!/R1/{r=0} r&&/^## /{r=0} r" "$F" | tr "\n" " " | tr -s " "); [ -n "$r1" ] || { echo "FAIL: no R1 found"; rc=1; }; bt=$(printf "\140\140"); printf "%s" "$r1" | grep -qF "$bt" && { echo "FAIL: R1 still carries an empty backtick pair - the bug is still copied into the spec"; rc=1; }; printf "%s" "$r1" | grep -qF "L-10" || { echo "FAIL: R1 does not name L-10"; rc=1; }; printf "%s" "$r1" | grep -qE "not.{0,20}reproduce|do not reproduce" || { echo "FAIL: R1 does not say the loss is not reproduced"; rc=1; }; printf "%s" "$r1" | grep -qE "non-empty" || { echo "FAIL: R1 does not state the non-empty property"; rc=1; }; printf "%s" "$r1" | grep -qE "distinct" || { echo "FAIL: R1 does not require the delete glyph to differ from the add/change glyph"; rc=1; }; [ "$(printf "%s" "$r1" | grep -oE "U\+[0-9A-Fa-f]{4}" | sort -u | wc -l | tr -d " ")" -ge 2 ] || { echo "FAIL: R1 names fewer than two glyphs by U+ codepoint"; rc=1; }; printf "%s" "$r1" | grep -qE "fallback" || { echo "FAIL: R1 offers no font-free fallback"; rc=1; }; printf "%s" "$r1" | grep -qF "lewis6991/gitsigns.nvim" || { echo "FAIL: R1 lost the plugin name"; rc=1; }; printf "%s" "$r1" | grep -qF "BufReadPre" || { echo "FAIL: R1 lost the lazy event"; rc=1; }; acc=$(awk "/^## Acceptance/{r=1;next} r&&/^## /{r=0} r" "$F" | tr "\n" " " | tr -s " "); printf "%s" "$acc" | grep -qE "not blank|non-empty|not be blank" || { echo "FAIL: no acceptance line asserts the delete sign is non-blank"; rc=1; }; printf "%s" "$acc" | grep -qE "gitsigns.config|:lua|read it back|Read it back" || { echo "FAIL: the delete-sign acceptance is by eye, with no way to read the value back"; rc=1; }; for i in 2 3; do printf "%s" "$(tr "\n" " " < "$F")" | grep -qF "**R$i**" || { echo "FAIL: lost R$i"; rc=1; }; done; grep -qE "^- \[[x~]\]" "$F" && { echo "FAIL: a box was closed"; rc=1; }; bash tests/live-bugs.sh >/dev/null 2>&1 || { echo "FAIL: tests/live-bugs.sh no longer exits 0"; rc=1; }; [ $rc -eq 0 ] && echo OK; exit $rc'`
+```

@@ -1,5 +1,6 @@
 ---
-state: open
+state: question
+claim:
 priority: 24
 est:
 mode: afk
@@ -96,3 +97,52 @@ follow-up it named.
   [`retired-phrase-sweep`](../retired-phrase-sweep/prd.md)'s question and was
   answered there: a phrase gate can prove the word `exact` is absent, which
   "definitely" trivially satisfies.
+
+## Questions
+
+Asked 2026-08-24. The target file this PRD names is gone, and its successor
+is not in this repo. Measured:
+
+- `.claude/skills/prd/README.md` — this PRD's footprint and premise — does
+  not exist. The mi-era skills were retired; `AGENTS.md` records the path
+  correction dated 2026-08-24.
+- The analyst brief now lives in the **Worker briefs** section of
+  `.claude/skills/pearde/README.md`, a symlink to
+  `~/dev/infra/pearde/README.md` — a separate, project-agnostic repo,
+  published at github.com/yesitsfebreeze/pearde, with no board of its own.
+  Its own settings reference warns: "The skill folder is shared across
+  installs — never write values here; they leak into every board."
+- The `AGENTS.md` clause landed by
+  [`census-verdict-discipline`](../census-verdict-discipline/prd.md) is
+  injected into every agent's context in this repo by the harness —
+  `reproduced (this node's own analyst brief, 2026-08-24)`; other boards
+  using pearde: `unmeasured`.
+- R1's "in the form the backlog states them" and R2's "a link to the
+  backlog" cannot be met in pearde as written: a generic brief cannot carry
+  a relative link into one board's corrections backlog.
+
+Question *Q1*: **Where does the rule land, now that the brief lives in
+pearde?**
+(a) Edit `~/dev/infra/pearde/README.md` — add the rules, genericized, to
+"Rules for every worker" (covering analyst and implementer in one place,
+answering R4 for free), no backlog link, R1/R2's letter relaxed to fit a
+project-agnostic file. This changes a separate published product for every
+board that uses it.
+(b) Close this PRD as overtaken: the file it targets is gone, and in this
+repo the `AGENTS.md` clause already reaches every worker at claim time via
+context injection. The gap then remains only for other pearde boards —
+pearde's own product question, not this board's.
+(c) Something else — say where.
+
+Recommendation (a), with this three-sentence addition to "Rules for every
+worker":
+
+> A measured claim gets one of three verdicts — `reproduced`, `refuted`,
+> `unmeasured`, never `exact` — with the fixture in a parenthesis beside it,
+> and a claim cheap to run is run twice with a different input. A census
+> enumerates its population; it never names the members it already knows.
+> The words catch nothing on their own — only the second run does.
+
+The PRD's argument — unmissable at the moment a claim is taken, for every
+agent the rule binds — survives the move and is the reason (b) is second:
+context injection covers this repo, and only this repo.

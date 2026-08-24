@@ -1,7 +1,9 @@
 ---
-state: open
+state: done
+claim:
 priority: 29
-est:
+est: 1.75h
+actual: 20m
 mode: afk
 footprint:
   - prds/00-delivery/corrections/w0-4-s2-corrections/editor/specs/verify-all.sh
