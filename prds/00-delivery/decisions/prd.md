@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 priority: 0
 est: 0h
 kind: epic
@@ -15,7 +15,10 @@ decision, gating a different part of the build; each is answered by a person
 and recorded with a date.
 
 ## Acceptance
-- [ ] - Every child is resolved, so no node is waiting on an unanswered fork.
+- [x] - Every child is resolved, so no node is waiting on an unanswered fork.
+      Checked 2026-08-24: `grep -H '^state:' prds/00-delivery/decisions/*/prd.md`
+      → all five children `done` (fzf, odin-toolchain, shift-select-scope,
+      tinty, wallpaper-opacity), and each body records a `Decision` line.
 
 ## Out of scope
 - Implementing any answer. The work lives in the nodes each decision gates.
