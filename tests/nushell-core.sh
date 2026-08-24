@@ -132,6 +132,36 @@ TEXTUAL_ORDER=(
   'alias cd = mkcd|source ~/.cache/nushell/init/zoxide.nu|the init calls cd'
 )
 
+# ── the PWD-append roster (00-delivery/corrections/dirstack-append-order-gate
+# R2) ────────────────────────────────────────────────────────────────────────
+# THE DIRSTACK SURVIVES BY APPEND ORDER. An error in a PWD closure aborts the
+# remainder of that closure and every closure appended AFTER it, on every fire
+# (measured: pwd-closure-blast-radius M1/M2, and config.nu's own `try`
+# paragraph). The dirstack keeps recording today only because its append is
+# the FIRST one — with a throwing closure ahead of it, dirs.txt is never
+# created at all (M4, and DO.7 below), and with the byte-identical closure
+# appended last it records every move (M5, and DO.8).
+#
+# WHY A ROSTER AND NOT `-eq 2`. The failure mode is a closure ADDED ahead of
+# the dirstack, and a check that compares only the two appends it already
+# knows about stays green while exactly that lands. Set equality against a
+# roster declared HERE makes an arrival red and names it; a bare count cannot
+# see an arrival that replaces a departure, and deriving the count from
+# config.nu is `n == n`. Same shape and same reason as CONFIG_ALIASES above,
+# tests/shell-zoxide.sh's owned_ids_ok, and armed-count-tripwires' four
+# rewrites. DO.4 is the counterfactual that shows the order check alone
+# CANNOT see a third append arriving ahead of the auto-list.
+#
+# Rows are "<code token unique to that closure's body>@@<owner>", IN THE ORDER
+# THE APPENDS MUST APPEAR. THE SEPARATOR IS `@@`, NOT `|`: the auto-list's own
+# token contains a pipe, and `cut -d'|' -f1` truncates it to `try { la `.
+# Measured — the prototype did exactly that before the separator was changed.
+PWD_APPENDS=(
+  '_dirstack_push $after@@04-shell/01 — the dirstack push, and it MUST BE FIRST'
+  'try { la | print }@@04-shell/06 — the auto-list'
+)
+PWD_APPEND='$env.config.hooks.env_change.PWD = ('
+
 SCRATCH="$(gates_tmpdir)"
 # Real path: `$nu.home-dir` resolves symlinks and $TMPDIR here is /var/folders,
 # a symlink to /private/var/folders. Without this every PATH and PWD comparison
@@ -429,6 +459,51 @@ textual_order_ok() {
   return 0
 }
 
+# The PWD-append block tags of $1, in file order, one per line: for each block
+# opening with PWD_APPEND at column 1, the PWD_APPENDS token its CODE
+# contains, or `<unowned append at line N>`. Blocks end at the first bare `)`
+# at column 1, the shape tests/shell-listing.sh's block_end already uses on
+# this file. BOTH HELPERS READ CODE ONLY — the comment strip is what stops a
+# comment inside a block from tagging it, the same defusal line_of_code exists
+# for at gates/lib.sh:98-183.
+pwd_append_tags() {
+  local f="$1" starts s e code row tok tag
+  starts="$(awk -v s="$PWD_APPEND" 'index($0,s)==1 {print NR}' "$f")"
+  for s in $starts; do
+    e="$(awk -v n="$s" 'NR>=n && $0==")" {print NR; exit}' "$f")"
+    [ -n "$e" ] || e="$s"
+    code="$(sed -n "${s},${e}p" "$f" | $GREP -vE '^[[:space:]]*#')"
+    tag=""
+    for row in "${PWD_APPENDS[@]}"; do
+      tok="${row%%@@*}"
+      if printf '%s\n' "$code" | $GREP -qF "$tok"; then tag="$tok"; break; fi
+    done
+    [ -n "$tag" ] || tag="<unowned append at line $s>"
+    printf '%s\n' "$tag"
+  done
+}
+
+# Ordered-list equality against PWD_APPENDS. Prints the tags on success and
+# OUT OF ORDER / MISSING / UNEXPECTED on failure — chk_ok discards output, so
+# the caller captures it into the label the way alias_roster_ok's callers do.
+pwd_appends_ok() {
+  local f="$1" got want missing extra
+  got="$(pwd_append_tags "$f")"
+  want="$(printf '%s\n' "${PWD_APPENDS[@]}" | sed 's/@@.*//')"
+  if [ "$got" = "$want" ]; then
+    printf '%s' "$(printf '%s' "$got" | paste -sd/ -)"
+    return 0
+  fi
+  if [ "$(printf '%s\n' "$got" | sort)" = "$(printf '%s\n' "$want" | sort)" ]; then
+    printf 'OUT OF ORDER [%s]' "$(printf '%s' "$got" | paste -sd/ -)"
+    return 1
+  fi
+  missing="$(comm -23 <(printf '%s\n' "$want" | sort) <(printf '%s\n' "$got" | sort) | paste -sd, -)"
+  extra="$(comm -13 <(printf '%s\n' "$want" | sort) <(printf '%s\n' "$got" | sort) | paste -sd, -)"
+  printf 'MISSING [%s]; UNEXPECTED [%s]' "$missing" "$extra"
+  return 1
+}
+
 stage_tree() {
   echo "── stage --tree: the managed files as text"
   guard_begin "tree"
@@ -568,6 +643,84 @@ stage_tree() {
   hook_ln="$(line_of "$CONFIG_NU" '$env.config.hooks.env_change.PWD = (')"
   chk_ok "tree: S3.9 dirstack.nu is sourced (line $src_ln) before mkcd is defined (line $mkcd_ln) and before the PWD append (line $hook_ln)" \
          test "$src_ln" -gt 0 -a "$src_ln" -lt "$mkcd_ln" -a "$mkcd_ln" -lt "$hook_ln"
+
+  # DO.1 – DO.4 — 00-delivery/corrections/dirstack-append-order-gate R1/R2/R3.
+  # The order the dirstack survives by, made a checked artefact. See the
+  # PWD_APPENDS roster near the top of this file for why a roster and not a
+  # count, and DO.5 in the `why` stage for config.nu's own sentence.
+  #
+  # line_of_code, NOT line_of and NOT line_of_decl: both targets are INDENTED
+  # inside their closures, so line_of_decl's column-1 anchor returns 0 on
+  # each, and substring line_of answers the PROSE quote of `try { la | print }`
+  # in the auto-list paragraph (403 today) rather than the code (499). Measured
+  # 2026-08-24. gates/lib.sh:98-183 records the whole trap.
+  local push_ln try_ln do_diag
+  push_ln="$(line_of_code "$CONFIG_NU" '_dirstack_push $after')"
+  try_ln="$(line_of_code "$CONFIG_NU" 'try { la | print }')"
+  chk_ok "tree: DO.1 the dirstack append (line $push_ln) is above the auto-list append (line $try_ln)" \
+         test "$push_ln" -gt 0 -a "$try_ln" -gt 0 -a "$push_ln" -lt "$try_ln"
+  if do_diag="$(pwd_appends_ok "$CONFIG_NU")"; then
+    chk "tree: DO.2 config.nu's PWD appends are exactly the roster, in order [$do_diag]" 0
+  else
+    chk "tree: DO.2 config.nu's PWD appends are exactly the roster, in order [$do_diag]" 1
+  fi
+
+  # DO.3 — counterfactual: the dirstack block moved to EOF. Same bytes, same
+  # line count, only the position changed — which is the whole claim.
+  local ds_s ds_e CFD cfd_push cfd_try cfd_diag
+  ds_s="$(awk -v s="$PWD_APPEND" 'index($0,s)==1 {print NR; exit}' "$CONFIG_NU")"
+  ds_e="$(awk -v n="$ds_s" 'NR>=n && $0==")" {print NR; exit}' "$CONFIG_NU")"
+  CFD="$SCRATCH/cf-dirstack-appended-last.nu"
+  { sed "${ds_s},${ds_e}d" "$CONFIG_NU"; sed -n "${ds_s},${ds_e}p" "$CONFIG_NU"; } > "$CFD"
+  cfd_push="$(line_of_code "$CFD" '_dirstack_push $after')"
+  cfd_try="$(line_of_code "$CFD" 'try { la | print }')"
+  echo "      DO.3 copy: block $ds_s-$ds_e moved to EOF; push=$cfd_push try=$cfd_try (was $push_ln/$try_ln)"
+  chk_ok "tree: DO.3 the counterfactual copy has the same line count as config.nu" \
+         test "$(wc -l < "$CFD")" -eq "$(wc -l < "$CONFIG_NU")"
+  chk_ok "tree: DO.3 …and still exactly two PWD appends" \
+         test "$($GREP -cF "$PWD_APPEND" "$CFD")" -eq 2
+  chk_ok "tree: DO.3 …with the push now BELOW the auto-list ($cfd_push > $cfd_try)" \
+         test "$cfd_push" -gt "$cfd_try"
+  chk_fail "tree: DO.3 …so the DO.1 order predicate FAILS on it" \
+           test "$cfd_push" -lt "$cfd_try"
+  cfd_diag="$(pwd_appends_ok "$CFD" || true)"
+  chk_fail "tree: DO.3 …and the roster check FAILS on it [$cfd_diag]" \
+           pwd_appends_ok "$CFD"
+  chk_ok "tree: DO.3 …diagnosing it as OUT OF ORDER, not as a missing member" \
+         test -n "$(printf '%s' "$cfd_diag" | $GREP -oF 'OUT OF ORDER')"
+
+  # DO.4 — counterfactual: a THIRD append arriving ahead of the dirstack, which
+  # is the hazard R2 exists for. The block is written to a file and inserted
+  # with `sed … r`, NEVER with `awk -v`: measured 2026-08-24, `awk -v
+  # x="$MULTILINE"` dies with `awk: newline in string` and silently writes a
+  # config carrying ZERO appends, which would go red for the wrong reason.
+  local EXTRA_T CFT cft_push cft_try cft_diag
+  EXTRA_T="$SCRATCH/cf-third-append.nu"
+  cat > "$EXTRA_T" <<'NUEOF'
+$env.config.hooks.env_change.PWD = (
+    $env.config.hooks.env_change.PWD
+    | append {|before, after|
+        if $before != null and $after != $before and $nu.is-interactive {
+            null
+        }
+    }
+)
+NUEOF
+  CFT="$SCRATCH/cf-three-appends.nu"
+  sed -e "/^# ── HOOKS ──\$/r $EXTRA_T" "$CONFIG_NU" > "$CFT"
+  cft_push="$(line_of_code "$CFT" '_dirstack_push $after')"
+  cft_try="$(line_of_code "$CFT" 'try { la | print }')"
+  cft_diag="$(pwd_appends_ok "$CFT" || true)"
+  echo "      DO.4 copy: $($GREP -cF "$PWD_APPEND" "$CFT") appends; push=$cft_push try=$cft_try; diag=$cft_diag"
+  chk_fail "tree: DO.4 a third append ahead of the dirstack FAILS the roster check" \
+           pwd_appends_ok "$CFT"
+  chk_ok "tree: DO.4 …and the diagnosis NAMES the arrival [$cft_diag]" \
+         test -n "$(printf '%s' "$cft_diag" | $GREP -oF 'UNEXPECTED [<unowned append at line')"
+  # THE BOX THAT PROVES R2 WAS NEEDED. The order check alone stays GREEN while
+  # exactly the hazard lands: the push is still above the auto-list, and a
+  # third closure that can abort them both now runs first.
+  chk_ok "tree: DO.4 …while the DO.1 order predicate still HOLDS on it ($cft_push < $cft_try), which is why R2 is a roster" \
+         test "$cft_push" -lt "$cft_try"
 
   # S4.12 — `let ans` nowhere. nushell 0.115 made `ans` a builtin variable name
   # and the collision broke this machine's login shell.
@@ -783,6 +936,15 @@ stage_tree() {
          test "$($GREP -cF '                try { la | print }' "$CONFIG_NU")" -eq 1 \
               -a "$($GREP -cF 'if ($env._NAV? | default "" | is-empty) and (term size).columns > 0 {' "$CONFIG_NU")" -eq 1 \
               -a "$($GREP -cF 'if (which stty | is-not-empty) { ^stty sane e> /dev/null }' "$CONFIG_NU")" -eq 1
+
+  # DO.5 — 00-delivery/corrections/dirstack-append-order-gate R5. A checked
+  # artefact whose own file does not mention the check invites someone to
+  # reorder and be surprised by a gate they did not know existed. Read from
+  # CFG_TXT, the normalised prose, so a rewrap does not silently defuse it.
+  chk_ok "why: DO.5 config.nu says the dirstack append must stay first" \
+         has . "$CFG_TXT" 'THE DIRSTACK APPEND MUST STAY FIRST'
+  chk_ok "why: DO.5 …and names the check that asserts it" \
+         has . "$CFG_TXT" 'DO.1'
 
   # WG.1 – WG.7 — 00-delivery/corrections/autolist-width-guard-reason R1/R2.
   # PB.2 – PB.6 gate the `try` paragraph; these gate the bullet above it, the
@@ -1119,6 +1281,100 @@ STUB
          $GREP -qF 'Command `stty` not found' "$MSR/pty.out"
   chk_fail "hermetic: ST.4 …and the statements after it never ran" \
            test -f "$MSR/home/stty-tail.txt"
+  MACHINE_CFG="$SAVED_CFG"
+
+  # ── DO.6 – DO.9 — 00-delivery/corrections/dirstack-append-order-gate R4:
+  # the consequence of the append order, hermetically. Same error, opposite
+  # outcome, decided only by position. Lifted from pwd-closure-blast-radius
+  # M4/M5 and re-run in THIS gate's harness (mk_machine + nu_pty), 2.0 s wall
+  # for all three machines.
+  #
+  # THE EXTRA CLOSURE COMES FROM A FILE, NEVER FROM `awk -v`. Measured
+  # 2026-08-24: `awk -v x="$MULTILINE"` dies with `awk: newline in string` and
+  # writes a config carrying ZERO PWD appends — the machine then proves
+  # nothing and dirs.txt is absent for the wrong reason. `sed … r` inserts
+  # AFTER the anchor line, which is what puts the block ahead of the dirstack.
+  #
+  # The three guards are copied from the dirstack closure verbatim:
+  # `$before != null` is what makes the STARTUP fire skip, so two cds give two
+  # error boxes and not three. `^definitely-not-a-binary` resolves nowhere, so
+  # no PATH narrowing is needed here and none should be added — ST.1–ST.4
+  # above narrow $env.PATH because `stty` is a REAL binary env.nu puts back,
+  # a different problem. The body is also load-bearing for the ARITHMETIC:
+  # re-run with `error make {msg: "boom-ordering-probe"}` the outcomes are the
+  # same (AHEAD absent, AFTER both moves, control both moves) but the box
+  # count is 0, not 2. Do not carry a count across bodies.
+  local EXTRA="$SCRATCH/pwd-thrower.nu"
+  cat > "$EXTRA" <<'NUEOF'
+$env.config.hooks.env_change.PWD = (
+    $env.config.hooks.env_change.PWD
+    | append {|before, after|
+        if $before != null and $after != $before and $nu.is-interactive {
+            ^definitely-not-a-binary e> /dev/null
+        }
+    }
+)
+NUEOF
+  local CAH="$SCRATCH/cfg-thrower-ahead.nu" CAF="$SCRATCH/cfg-thrower-after.nu"
+  sed -e "/^# ── HOOKS ──\$/r $EXTRA" "$CONFIG_NU" > "$CAH"
+  { cat "$CONFIG_NU"; cat "$EXTRA"; } > "$CAF"
+
+  # DO.6 — the two copies differ ONLY in insertion point. An equal pair of
+  # line numbers means the sed no-opped and both halves below would agree for
+  # a reason that has nothing to do with order.
+  local ah_ln af_ln
+  ah_ln="$(awk '/definitely-not-a-binary/ {print NR; exit}' "$CAH")"
+  af_ln="$(awk '/definitely-not-a-binary/ {print NR; exit}' "$CAF")"
+  echo "      DO.6 ahead: $(wc -l < "$CAH" | tr -d ' ') lines, thrower at $ah_ln; after: $(wc -l < "$CAF" | tr -d ' ') lines, thrower at $af_ln"
+  chk_ok "hermetic: DO.6 the two thrower copies have the same line count and three PWD appends each" \
+         test "$(wc -l < "$CAH")" -eq "$(wc -l < "$CAF")" \
+              -a "$($GREP -cF "$PWD_APPEND" "$CAH")" -eq 3 \
+              -a "$($GREP -cF "$PWD_APPEND" "$CAF")" -eq 3 \
+              -a "$($GREP -cF 'definitely-not-a-binary' "$CAH")" -eq 1 \
+              -a "$($GREP -cF 'definitely-not-a-binary' "$CAF")" -eq 1
+  chk_ok "hermetic: DO.6 …and the thrower sits at a DIFFERENT line in each ($ah_ln ahead vs $af_ln last)" \
+         test "$ah_ln" -gt 0 -a "$af_ln" -gt 0 -a "$ah_ln" -ne "$af_ln"
+
+  local DIRS_REL="home/.local/state/nushell/dirs.txt"
+  # DO.7 — AHEAD of the dirstack push: dirs.txt is never created at all.
+  MACHINE_CFG="$CAH"
+  local MDA="$SCRATCH/m-thrower-ahead"; mk_machine "$MDA"
+  mkdir -p "$MDA/home/s1" "$MDA/home/s2"
+  nu_pty "$MDA" "$PROMPT_ST" "@SEND=cd $MDA/home/s1\r" \
+                "$PROMPT_ST" "@SEND=cd $MDA/home/s2\r" \
+                "$PROMPT_ST" '@SEND=exit\r' | tr -d '\r' > "$MDA/pty.out"
+  echo "      DO.7 AHEAD: external_command boxes=$($GREP -acF 'nu::shell::external_command' "$MDA/pty.out"), name hits=$($GREP -acF 'definitely-not-a-binary' "$MDA/pty.out"), dirs.txt=$(if [ -f "$MDA/$DIRS_REL" ]; then tr '\n' '|' < "$MDA/$DIRS_REL"; else echo '<ABSENT>'; fi)"
+  chk_fail "hermetic: DO.7 with the thrower AHEAD of the dirstack push, dirs.txt is never created" \
+           test -f "$MDA/$DIRS_REL"
+  chk_ok "hermetic: DO.7 …and the machine really fired the thrower (two nu::shell::external_command)" \
+         test "$($GREP -acF 'nu::shell::external_command' "$MDA/pty.out")" -eq 2
+
+  # DO.8 — the BYTE-IDENTICAL closure appended LAST: both moves recorded.
+  MACHINE_CFG="$CAF"
+  local MDF="$SCRATCH/m-thrower-after"; mk_machine "$MDF"
+  mkdir -p "$MDF/home/s1" "$MDF/home/s2"
+  nu_pty "$MDF" "$PROMPT_ST" "@SEND=cd $MDF/home/s1\r" \
+                "$PROMPT_ST" "@SEND=cd $MDF/home/s2\r" \
+                "$PROMPT_ST" '@SEND=exit\r' | tr -d '\r' > "$MDF/pty.out"
+  echo "      DO.8 AFTER: external_command boxes=$($GREP -acF 'nu::shell::external_command' "$MDF/pty.out"), name hits=$($GREP -acF 'definitely-not-a-binary' "$MDF/pty.out"), dirs.txt=$(if [ -f "$MDF/$DIRS_REL" ]; then tr '\n' '|' < "$MDF/$DIRS_REL"; else echo '<ABSENT>'; fi)"
+  chk_ok "hermetic: DO.8 the same closure appended LAST leaves the dirstack recording BOTH moves" \
+         test "$(cat "$MDF/$DIRS_REL" 2>/dev/null)" = "$(printf '%s\n%s' "$MDF/home/s2" "$MDF/home/s1")"
+  chk_ok "hermetic: DO.8 …with the SAME two error boxes — same error, opposite outcome, decided only by position" \
+         test "$($GREP -acF 'nu::shell::external_command' "$MDF/pty.out")" -eq 2
+
+  # DO.9 — the control. Without it DO.8 cannot distinguish "the dirstack
+  # survived the thrower" from "this machine records moves anyway".
+  MACHINE_CFG="$CONFIG_NU"
+  local MDC="$SCRATCH/m-thrower-control"; mk_machine "$MDC"
+  mkdir -p "$MDC/home/s1" "$MDC/home/s2"
+  nu_pty "$MDC" "$PROMPT_ST" "@SEND=cd $MDC/home/s1\r" \
+                "$PROMPT_ST" "@SEND=cd $MDC/home/s2\r" \
+                "$PROMPT_ST" '@SEND=exit\r' | tr -d '\r' > "$MDC/pty.out"
+  echo "      DO.9 CONTROL: external_command boxes=$($GREP -acF 'nu::shell::external_command' "$MDC/pty.out"), dirs.txt=$(if [ -f "$MDC/$DIRS_REL" ]; then tr '\n' '|' < "$MDC/$DIRS_REL"; else echo '<ABSENT>'; fi)"
+  chk_ok "hermetic: DO.9 control: the unmodified config records both moves" \
+         test "$(cat "$MDC/$DIRS_REL" 2>/dev/null)" = "$(printf '%s\n%s' "$MDC/home/s2" "$MDC/home/s1")"
+  chk_ok "hermetic: DO.9 …with ZERO nu::shell::external_command" \
+         test "$($GREP -acF 'nu::shell::external_command' "$MDC/pty.out")" -eq 0
   MACHINE_CFG="$SAVED_CFG"
   # ── S4.27 — the palette ladder (R10), four machines.
   local MP="$SCRATCH/m-palette"; mk_machine "$MP"

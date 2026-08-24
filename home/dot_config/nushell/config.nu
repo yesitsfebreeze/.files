@@ -372,6 +372,7 @@ alias cd = mkcd
 # PWD append. 04-shell/03 appends NOTHING here: its `$env._NAV` guard lives on
 # pre_execution/pre_prompt, because the PWD hook may not fire from
 # pre_execution (its R7); the auto-list closure only reads the marker.
+# THE DIRSTACK APPEND MUST STAY FIRST; tests/nushell-core.sh DO.1 checks it.
 #
 # `$before != null` skips the fire that happens at startup, `$after != $before`
 # skips a non-move, and `$nu.is-interactive` keeps a scripted `nu -c` from
