@@ -37,6 +37,7 @@
 #     without that the descs read back nil and <Tab> shows nvim 0.12's
 #     built-in snippet default.
 #
+# parser-seed: immune (no-buffer-open) — probes fire doautocmd InsertEnter and setfiletype lua, and neither fires BufReadPost/BufNewFile
 # Usage: bash tests/nvim-completion.sh [--tree|--headless]
 
 set -u

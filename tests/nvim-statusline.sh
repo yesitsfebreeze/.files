@@ -315,6 +315,7 @@ chmod +x "$SHIM/git"
 # package.loaded["nvim-treesitter"] stays nil and the render still carries the
 # diff count and the diagnostics. If a future probe here ever uses a plain
 # `:edit`, add the seed back.
+# parser-seed: immune (noautocmd-edit) — every probe opens its file with noautocmd edit, so BufReadPost/BufNewFile never fire
 LOCK_KEYS="$(python3 -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])))))' "$LOCK")"
 need_seed_source() {
   local name

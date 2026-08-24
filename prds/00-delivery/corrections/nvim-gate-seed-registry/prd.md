@@ -1,11 +1,13 @@
 ---
-state: open
+state: done
+claim:
 priority: 25
-est:
+est: 2.5h
+actual:
 mode: afk
 needs:
   - 00-delivery/corrections/lsp-gate-parser-seed
-verify: "bash gates/wave-status.sh --run 4"
+verify: "bash gates/nvim-seed-registry.sh"
 origin: derived
 ---
 
@@ -88,3 +90,57 @@ one whose immunity survives a refactor.
   in [`lsp-gate-parser-seed`](../lsp-gate-parser-seed/prd.md) R5.
 - Repairing `nvim-lsp.sh`, which is that node's.
 - The twenty-four gates that never launch nvim.
+
+## Landed 2026-08-24 — the registry derives the roster, and it is wave 0's
+
+`gates/nvim-seed-registry.sh` is new and registered in `gates/waves.tsv`'s
+**wave 0** cell (the orchestrator's write, on the worker's R5 argument: the
+check spans fifteen files owned by fifteen nodes, `gates/` is where
+cross-cutting derived checks live per the `nushell-module-staging.sh`
+precedent, and landing there buys the `--selftest` arrival contract).
+
+Re-run by the orchestrator rather than taken on the report, 2026-08-24:
+
+- `bash gates/nvim-seed-registry.sh` → rc 0, fifteen gates set-equal to
+  fifteen accounted, and the `treesitter.lua` trigger-set guard green at
+  line 44.
+- `bash gates/nvim-seed-registry.sh --selftest` → rc 0, including
+  `selftest: the real tests/ tree and treesitter plugin spec are untouched by
+  all halves`.
+- `/usr/bin/grep -n '^# parser-seed: immune ('  tests/*.sh` → exactly four
+  markers, at `nvim-colorscheme.sh:67`, `nvim-completion.sh:40`,
+  `nvim-plugin-manager.sh:73`, `nvim-statusline.sh:318`.
+- `bash gates/selftest.sh --one gates/nvim-seed-registry.sh` → rc 0, the
+  arrival contract met including `wrote nothing outside its scratch`.
+- `bash gates/wave-status.sh --validate` → all seven registry checks PASS
+  after the row landed.
+
+**The `[~]` box, kept open honestly:** the wave 3 and wave 4 runs were not
+executed. They measure fifteen other nodes' gates rather than this one's work,
+which is the whole-workspace verify shape the board rejects, and they were
+contended by two concurrent lanes. The lockfile md5
+`477e0befa9a9630ae1fe0449109c45fc` was identical before and after everything
+this lane ran, which is the property those runs were there to protect.
+
+**The roster came out fifteen, not the PRD's eight** — exactly what the node
+was filed to catch. Eleven seeded, four immune; `nvim-treesitter` derives as
+*seeded* rather than as the marker carrier the PRD's table predicted.
+
+**One honesty gap to know about, recorded not fixed.** The gate's own verdict
+is the defensible one — *"has no greppable autocmd-firing open"* — but two of
+the four marker comments state the stronger *"no probe opens a file"*, which
+is a claim about behaviour that a grep cannot establish. The gate does not
+rest on that wording, and the header disclaims it; the markers should be
+reworded to match the next time that file is opened for another reason.
+
+**The node's `verify:` was corrected on this transition**, from `bash
+gates/wave-status.sh --run 4` to `bash gates/nvim-seed-registry.sh`. A verify
+running a whole wave measures the tree's worst neighbour rather than this
+node's work — the board protocol names that as an unclosable box to catch when
+specs land, and it is why the wave-run box above could never have closed
+honestly. The node's own gate is the thing that proves the node.
+
+**A deviation the worker made and recorded:** the `treesitter.lua`
+discriminator is checked as a fixed string via `grep -nF` with its line
+printed, not pinned to line 44, so a comment edit above it cannot fake
+staleness.

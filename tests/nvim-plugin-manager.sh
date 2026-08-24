@@ -70,6 +70,7 @@ mkdir -p "$W"
 # "Plugin blink.cmp is not installed"). checker.enabled=true cannot fire
 # here: every session quits via +qa during startup, before lazy's deferred
 # checker runs, and its writes would be scratch-bound anyway.
+# parser-seed: immune (qa-only) — hermetic stages run +qa/+luafile only, no probe opens a file, so BufReadPost/BufNewFile never fire
 LOCK_KEYS="$(python3 -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])))))' "$LOCK")"
 need_seed_source() {
   local name

@@ -64,6 +64,7 @@
 # fetch, no ls-remote. (Same reason mason.nvim never loads here, and mason is
 # why "the curl log is empty" is the wrong assertion elsewhere — it calls
 # api.mason-registry.dev and api.github.com on every launch that loads it.)
+# parser-seed: immune (qa-only) — no probe opens a file: every stage self-quits via qa!, so BufReadPost/BufNewFile never fire
 #
 # Every value asserted below was measured 2026-08-23 on nvim 0.12.4 against
 # tinted-nvim a1f4cd347a26cec0e55dd992be52e93ba2f3c6a5, in a scratch XDG root
