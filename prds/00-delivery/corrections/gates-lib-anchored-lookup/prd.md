@@ -1,10 +1,13 @@
 ---
-state: open
+state: done
+claim:
 priority: 33
-est:
+est: 0.75h
+actual: 20m
 mode: afk
 footprint:
   - gates/lib.sh
+  - gates/selftest.sh
 verify: "bash gates/selftest.sh"
 origin: derived
 from: 00-delivery/corrections/listing-order-lookup-regression
@@ -90,3 +93,66 @@ So a whole-line count sitting beside a substring lookup protects nothing.
 - The wezterm gates, which are
   [`wezterm-gate-positional-lookups`](../wezterm-gate-positional-lookups/prd.md)'s
   — and note **anchoring will not work there**, every target is indented Lua.
+
+## Closed 2026-08-24 by the orchestrator
+
+`done`, every box `[x]` — one of them amended, see below. `bash
+gates/selftest.sh --selftest` → **35 PASS / 0 FAIL, rc 0**, 6m38s at load 3.31,
+against a measured baseline of **23 PASS / 0 FAIL** at 6m35s. The floor rose
+23 → 35 and the analyst's 6m24s figure reproduced within seconds.
+
+**`actual: 20m` against `est: 0.75h`** — and 13 of those minutes were the two
+mandatory `--selftest` runs, which is exactly how the analyst priced it.
+Estimating the wall clock of the *proof* separately from the work is what made
+that estimate hold.
+
+**The trap is closed and measured.** On `capsule.nu`'s indented
+`^git credential fill` at line 219: substring **219**, `line_of_decl` **0**,
+the `grep -vE | grep -n` pipeline **102**, `line_of_code` **219**. 102 is not a
+line of that file. And the three existing `line_of_decl` copies —
+`gates/lib.sh`, `tests/nushell-core.sh:413`, `tests/shell-listing.sh:100` — all
+answer **204** and are **byte-identical**, so dropping the locals later is
+provably verdict-neutral.
+
+**Two classification findings that invert the intuition:** the section banners
+(`# ── MODULES ──`, 15 of the 42 declaration sites) **are comments**, so
+`line_of_code` answers 0 on them and is the *wrong* helper there despite being
+the more general one. And every `line_of_code` target measured is genuinely
+indented, which is why anchoring cannot defuse it.
+
+**The finding that reframes the whole positional-lookup backlog:** no gate is
+red from this class today, **and none can be without a new comment being
+written**. The managed tree holds exactly **two** live carriers —
+`alias core-ls = ls` (comment 163 vs declaration 204) and `use std/help`
+(comment 572 vs declaration 580) — and both are already defused, the first by
+the local `line_of_decl` in two gates, the second by `-nxF` at
+`shell-help.sh:161`. The 85 target positions behind 51 convertible sites are
+**prophylactic, not repairs**.
+
+**R4 reconciled the PRD's arithmetic instead of inheriting it**: the census
+reproduces at 74 sites and 49 raw calls; the `positions` column does sum to 32,
+while the `fits` column carries numbers in only 2 of 9 rows so it sums to 13 and
+cannot be cross-checked — that is the arithmetic gap, not a wrong total. Eight
+of nine per-gate ranges are stale, `shell-television.sh:199-206` holds **zero**
+lookups today, and `shell-zoxide.sh:452` is not a lookup at all (it is
+`} > "$CF_PWD"`).
+
+**One box was amended rather than ticked**, and the reason is worth keeping:
+`git diff --name-only` over the whole tree measures the board's activity, not a
+node's write set — 19 files were modified by other lanes during this run — and
+`gates/selftest.sh` was **untracked**, so it could never appear in a diff.
+Scope a footprint box to `git diff --name-only -- <footprint paths>`.
+
+**Two files are under version control again** because of that box:
+`gates/selftest.sh` and `gates/manual/wave5.md`, committed as `a654ded`. The
+orchestrator excluded both from tonight's commits while lanes held them — right
+at the time — and did not come back for them, which is how the meta-gate that
+holds every gate to its contract ended up outside git.
+
+**Reported, not fixed:** `tests/shell-television.sh:249` anchors `name: $n` at
+the line **end** only, so a comment ending in `name: tv_remote` still matches;
+`gates/tree-links.sh:89` has no `head -1`, so a second occurrence of its phrase
+makes the downstream `grep -q` malformed (unguarded rather than broken —
+`grep -c` finds 0 carriers today); the `${TMPDIR}` leak is now at **33**
+orphaned dirs, already queued; and `gates/lib.sh:293` trips shellcheck SC1125
+on an em-dash inside a disable directive, pre-existing and cosmetic.

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # gates/lib.sh — the one shared library every gate script sources.
 #
-# Sourced, never executed. It provides seven things, each of which exists
+# Sourced, never executed. It provides eight things, each of which exists
 # because doing it ad hoc has already cost this repo a day:
 #
 #   chk                     the house assertion. Byte-identical in behaviour
@@ -13,6 +13,14 @@
 #                           phrase straddles lines and per-line matching
 #                           produces false negatives. Every prose match in
 #                           every gate goes through it.
+#   line_of_decl /
+#   line_of_code            positional lookup that reads CODE, not prose. A
+#                           bare substring lookup resolves a declaration
+#                           quoted in an earlier comment, and every consumer
+#                           compares one line number against another, so a
+#                           comment's line number silently defuses the
+#                           comparison — in the PASSING direction. Neither is
+#                           named `line_of`, deliberately; see the section.
 #   snapshot_paths /
 #   assert_unchanged        the untouched-file guard. This REPLACES
 #                           `git diff --quiet` and `git status --porcelain`,
@@ -81,6 +89,90 @@ chk_fail() { local l="$1"; shift; if "$@" > /dev/null 2>&1; then chk "$l" 1; els
 #   norm <<<"$text"
 norm() {
   tr '\n\r\t\f\v' '     ' | tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
+}
+
+# ── positional lookup that reads code, not prose ────────────────────────────
+#
+# WHY THIS IS NOT `line_of`. Fourteen scripts under tests/ define their own
+# `line_of() { $GREP -nF -- "$2" … }` AFTER sourcing this file. A lib-level
+# `line_of` would therefore be shadowed in all fourteen and live only in the
+# gates that forget to define one — a same-named helper whose behaviour
+# depends on source order, which is worse than no helper. So the two below
+# carry different names on purpose. Do not add `line_of` here.
+#
+# THE DEFECT, AS A CASE RATHER THAN A RULE.
+# home/dot_config/nushell/config.nu — 855 lines, measured 2026-08-24:
+#
+#     line 163  #   * `alias core-ls = ls` below MUST precede `def ls`. …
+#     line 204  alias core-ls = ls
+#     line 280  def ls [
+#
+#     substring line_of  → 163   the COMMENT
+#     line_of_decl       → 204   the declaration
+#
+# The comment sits above `def ls [` wherever the declaration moves, so a
+# substring lookup makes an order guard permanently true. On the swapped-order
+# counterfactual copy (the real alias deleted and appended at the end):
+#
+#     substring → 163, def ls → 279   ⇒ 163 < 279, order HOLDS, decoration
+#     anchored  → 855, def ls → 279   ⇒ 855 > 279, order BREAKS, as it must
+#
+# The one live instance is tests/shell-listing.sh, whose landed reason comment
+# is at :95-104 with the definitions at :100 and :105.
+#
+# RE-MEASURE BEFORE ASSUMING THE MECHANISM MOVED. This node's PRD cited
+# `shell-listing.sh:108`, `core=161` and a declaration at `202`; on 2026-08-24
+# none of the three reproduced — :108 is inside line_of_2nd_decl, the comment
+# is at 163 and the declaration at 204, and `202` was never one of the landed
+# numbers (shell-listing.sh:95-98 records core=161 defls=277 substring,
+# core=793 anchored). The mechanism survived every re-measurement; the numbers
+# did not. A reader who gets different numbers here has a file that grew, not
+# a mechanism that changed.
+
+# line_of_decl <file> <string> — line number of the FIRST line that STARTS
+# with the string; 0 if absent. Byte-identical to the two landed copies at
+# tests/nushell-core.sh:413 and tests/shell-listing.sh:100, verified to return
+# the same answers for the same inputs — a divergence would mean dropping a
+# local copy later changed that gate's verdict.
+#
+# DO NOT SIMPLIFY THIS BACK to a substring match. `index($0, s) == 1` is the
+# whole mechanism: a comment line starts with `#`, never with a declaration.
+# The anchor is also the INTENT — a target inside a string, a heredoc or a
+# nested block can never satisfy it, so use this where the target is at
+# column 1 and line_of_code where it is legitimately indented.
+line_of_decl() {
+  awk -v s="$2" 'index($0, s) == 1 { print NR; exit }' "$1" \
+    | { read -r n; echo "${n:-0}"; }
+}
+
+# line_of_code <file> <string> — line number of the FIRST non-comment line
+# CONTAINING the string; 0 if absent. For indented targets, where anchoring
+# cannot work.
+#
+# IT MUST KEEP THE FILE'S OWN LINE NUMBERS, AND THE OBVIOUS FORM DOES NOT.
+# Measured 2026-08-24 on home/dot_config/nushell/capsule.nu (601 lines),
+# target `^git credential fill`, a real indented Nushell external call at
+# line 219:
+#
+#     substring line_of                     → 219   correct
+#     line_of_decl (anchored)               → 0     the target is INDENTED
+#     grep -vE '^[[:space:]]*#' | grep -n   → 102   WRONG — renumbered
+#     awk with a comment test               → 219   correct
+#
+# 102 is not a line of that file at all: stripping comments through a pipe
+# renumbers the input, and grep -n then counts the STRIPPED stream. These
+# lookups are only ever compared against other line numbers, so one
+# renumbered answer beside one real answer corrupts the comparison silently.
+# Hence awk with a comment test, and never a pipeline. Do not "simplify" this
+# into a grep -v.
+#
+# It is also the MORE GENERAL of the two: on config.nu it skips the prose
+# quote at 163 and answers 204, the same as line_of_decl. line_of_decl is
+# preferred anyway wherever the target is at column 1, because there the
+# anchor states an intent the comment test cannot.
+line_of_code() {
+  awk -v s="$2" '$0 !~ /^[[:space:]]*#/ && index($0, s) { print NR; exit }' "$1" \
+    | { read -r n; echo "${n:-0}"; }
 }
 
 # ── the untouched-file guard ────────────────────────────────────────────────
