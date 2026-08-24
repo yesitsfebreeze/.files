@@ -64,15 +64,31 @@ already, recorded here because this is where they surfaced.
 are not capabilities and carry no rating; they are the expensive part of the
 knowledge, and every entry below that depends on one names it.
 
-- **`wezterm.GLOBAL` is the only cross-context store.** WezTerm evaluates the
-  config into more than one Lua context and runs event callbacks in whichever
-  is free, so a module-local table reads back `nil` about as often as not. A
-  module-local `slots` table made every reconcile pass re-adopt the current
-  tab order as gospel — exactly the state that has to survive. `GLOBAL`
-  values must stay JSON-shaped (array of integer ids, string keys), and a
-  value read
+- **`wezterm.GLOBAL` is the only store that survives a config reload.**
+  WezTerm evaluates the config into more than one Lua context — measured, 2
+  per evaluation — and **every evaluation makes fresh ones**, so a
+  module-local starts `nil` in each. That, and not context count, is the
+  reason for `GLOBAL`: a module-local `slots` table is wiped by every
+  reload, and every `tinty apply` is a reload because `colors.lua` is on the
+  watch list, leaving each reconcile pass to re-adopt the current tab order
+  as gospel — exactly the state that has to survive. `GLOBAL` values must
+  stay JSON-shaped (array of integer ids, string keys), and a value read
   back out of it is a **copy**: assigning into it does not write through, so
   it is rebuilt as a plain table and reassigned.
+- **The every-other-callback story is refuted, and the rule above does not
+  rest on it.** This entry used to say callbacks run "in whichever is free,
+  so a module-local table reads back `nil` about as often as not". Measured
+  2026-08-24 on `20240203`, against an **instrumented copy of
+  `wezterm.lua` itself** in two isolated `wezterm-gui` processes — 16
+  evaluations, 9 event kinds, **2770 handler fires** — a module-local read
+  back `nil` **5 times**, and every one was the **first** fire of a freshly
+  evaluated context: **0 of 2765 later fires**. Exactly one context served
+  events at any moment and dispatch never returned to an older one. The
+  config's stronger wording, a local `slots` table "read back as nil on
+  every single event", is refuted by the same fixture. The probe writes its
+  log **outside** the config directory: a write inside it re-triggers the
+  reload, and that storm reads exactly like a context pool — which is the
+  most likely origin of the wording being corrected here.
 - **`pane:get_current_working_directory()` does not exist on 20240203.**
   Recorded in the config as verified nil on the status callback's pane, on
   `window:active_pane()` and on the mux pane alike, which raised "attempt to

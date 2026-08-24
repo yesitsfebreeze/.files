@@ -121,14 +121,23 @@ local TAB_COUNT = 9
 -- and then closes its tabs.
 --
 -- Both the closing marks and the slot lists live in wezterm.GLOBAL, NOT in
--- plain module-local tables: WezTerm evaluates this config into more than
--- one Lua context and runs event callbacks in whichever one is free, so a
--- module-local is empty as often as not. A local `slots` table read back as
--- nil on every single event here, which made each pass re-adopt the current
--- tab order as gospel -- exactly the state that has to survive to know WHICH
--- slot died. GLOBAL is the documented cross-context store; values must stay
--- JSON-shaped, so the slot list is a plain array of integer tab ids (holes
--- are derived against the live list each pass, never stored).
+-- plain module-local tables, and the reason is LIFETIME rather than context
+-- count. Every evaluation of this file creates fresh Lua contexts (measured:
+-- 2 per evaluation) and a module-local starts nil in each, so a local slots
+-- table is wiped by every config reload -- and every `tinty apply` is one,
+-- because colors.lua is on the reload watch list further down. An emptied
+-- slot map made each pass re-adopt the current tab order as gospel --
+-- exactly the state that has to survive to know WHICH slot died.
+-- What this comment used to claim, and what does NOT happen: callbacks do
+-- not land "in whichever context is free". Measured 2026-08-24 on 20240203
+-- against an instrumented copy of this file in two isolated GUIs -- 16
+-- evaluations, 9 event kinds, 2770 fires -- exactly one context served
+-- events at a time, dispatch never returned to an older one, and a
+-- module-local read back nil 5 times, every one of them that context's
+-- FIRST fire (0 of 2765 later fires). GLOBAL is still the documented
+-- cross-context store; values must stay JSON-shaped, so the slot list is a
+-- plain array of integer tab ids (holes are derived against the live list
+-- each pass, never stored).
 -- One slot list PER WINDOW, keyed by window id as a string (GLOBAL has to
 -- stay JSON-shaped, so the key cannot be an integer). A single shared list
 -- had two windows reading each other's tab ids as dead slots and refilling
@@ -819,11 +828,13 @@ config.hide_tab_bar_if_only_one_tab = true
 -- measurement is the value, the code route is refused.)
 --
 -- The baselines live in wezterm.GLOBAL for the reason the slot map above
--- records: WezTerm evaluates this config into more than one Lua context and
--- runs callbacks in whichever one is free, so a module-local reads back
--- empty as often as not -- and an empty baseline map re-learns against
--- whatever is running RIGHT NOW, which would record a long-lived TUI as a
--- pane's own program and read that tab as empty for as long as it ran.
+-- records, and it is a LIFETIME reason: a module-local starts nil in every
+-- new Lua context, and every config reload makes new ones (every `tinty
+-- apply` is a reload), so a baseline map parked in a local would be emptied
+-- on each -- and an empty baseline map re-learns against whatever is running
+-- RIGHT NOW, which would record a long-lived TUI as a pane's own program and
+-- read that tab as empty for as long as it ran. Not "whichever context is
+-- free": measured, one context serves at a time -- see the slot map comment.
 -- JSON-shaped, as GLOBAL requires: pane id as a string key, the executable
 -- path as the value.
 local function pane_programs()

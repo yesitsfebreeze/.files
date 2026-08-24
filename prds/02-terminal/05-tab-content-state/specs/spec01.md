@@ -96,13 +96,15 @@ reader would otherwise assume.
 -- os.getenv("SHELL") is nil in a GUI-launched WezTerm.
 --
 -- The baselines live in wezterm.GLOBAL for the reason the slot map above
--- records: WezTerm evaluates this config into more than one Lua context and
--- runs callbacks in whichever one is free, so a module-local reads back
--- empty as often as not -- and an empty baseline map re-learns against
--- whatever is running RIGHT NOW, which would record `htop` as a pane's own
--- program and read that tab as empty for as long as it ran. JSON-shaped, as
--- GLOBAL requires: pane id as a string key, the executable path as the
--- value.
+-- records, and it is a LIFETIME reason: a module-local starts nil in every
+-- new Lua context, and every config reload makes new ones (every `tinty
+-- apply` is a reload), so a baseline map parked in a local would be emptied
+-- on each -- and an empty baseline map re-learns against whatever is running
+-- RIGHT NOW, which would record `htop` as a pane's own program and read that
+-- tab as empty for as long as it ran. Not "whichever context is free":
+-- measured, one context serves at a time -- see the slot map comment.
+-- JSON-shaped, as GLOBAL requires: pane id as a string key, the executable
+-- path as the value.
 local function pane_programs()
     return wezterm.GLOBAL.tab_pane_program or {}
 end

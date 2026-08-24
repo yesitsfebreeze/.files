@@ -53,15 +53,19 @@ been refilled *and repositioned* repeatedly within one session.
 - [x] **B4 — slots are tracked by `tab_id`, never by index**, because indices
       are exactly what shift when a tab dies.
 - [x] **B5 — per-window slot maps in `wezterm.GLOBAL`, with both reasons.**
-      `GLOBAL` because WezTerm evaluates the config into more than one Lua
-      context and runs callbacks in whichever is free, so a module-local
-      reads back `nil` about as often as not — a local `slots` table made
-      every pass re-adopt the current tab order as gospel, destroying the
-      one piece of state that has to survive. **Per window** because a single
-      shared list had two windows reading each other's ids as dead slots and
-      refilling forever. Values stay JSON-shaped (array of integer ids,
-      string keys), and a value read back out is a **copy**, so the map is
-      rebuilt as a plain table and reassigned rather than mutated in place.
+      `GLOBAL` because the map must **survive a config reload**: every
+      evaluation of the config makes fresh Lua contexts and a module-local
+      starts `nil` in each, so a local `slots` table is emptied by every
+      reload — every `tinty apply` is one — and each pass then re-adopts the
+      current tab order as gospel, destroying the one piece of state that has
+      to survive. The reason is desired **lifetime**, not context count:
+      measured 2026-08-24, one context serves every trigger at a time and a
+      module-local read back `nil` 5 times in 2770 fires, always a fresh
+      context's first fire. **Per window** because a single shared list had
+      two windows reading each other's ids as dead slots and refilling
+      forever. Values stay JSON-shaped (array of integer ids, string keys),
+      and a value read back out is a **copy**, so the map is rebuilt as a
+      plain table and reassigned rather than mutated in place.
 - [x] **B6 — `set_slots` drops entries for dead windows**, the only thing
       keeping the map from growing for the life of the session.
 - [x] **B7 — a re-entrancy guard, with its failure.** `spawn_tab` and

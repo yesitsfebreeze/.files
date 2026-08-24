@@ -64,16 +64,24 @@ extension.
 - [x] **R4** — **Slots are tracked by `tab_id`, never by index**, because
       indices are exactly what shift when a tab dies.
 - [x] **R5** — **Per-window slot maps in `wezterm.GLOBAL`, with both
-      reasons.** `wezterm.GLOBAL` because WezTerm evaluates the config into
-      more than one Lua context and runs callbacks in whichever is free, so a
-      module-local table reads back `nil` about as often as not — a local
-      `slots` table made every pass re-adopt the current tab order as gospel,
-      destroying the one piece of state that has to survive. **Per window**
-      because a single shared list had two windows reading each other's ids
-      as dead slots and refilling forever. Values stay JSON-shaped (an array
-      of integer ids under string keys), and a value read back out is a
-      **copy** — assigning into it does not write through — so the map is
-      rebuilt as a plain table and reassigned rather than mutated in place.
+      reasons.** `wezterm.GLOBAL` because the map must **survive a config
+      reload**, which is a lifetime reason rather than a context-count one.
+      Every evaluation of the config creates fresh Lua contexts (measured: 2
+      per evaluation) and a module-local starts `nil` in each, so a local
+      `slots` table is emptied by every reload — and every `tinty apply` is
+      one, because `colors.lua` is on the reload watch list — leaving each
+      pass to re-adopt the current tab order as gospel and destroying the one
+      piece of state that has to survive. Measured 2026-08-24 on `20240203`
+      against an instrumented copy of the live config in two isolated GUIs:
+      exactly one context serves events at a time, dispatch never returns to
+      an older one, and a module-local read back `nil` **5 times in 2770
+      fires**, every one of them a freshly evaluated context's first fire.
+      **Per window** because a single shared list had two windows reading
+      each other's ids as dead slots and refilling forever. Values stay
+      JSON-shaped (an array of integer ids under string keys), and a value
+      read back out is a **copy** — assigning into it does not write through
+      — so the map is rebuilt as a plain table and reassigned rather than
+      mutated in place.
 - [x] **R6** — **`set_slots` drops entries for dead windows**, which is the
       only thing keeping the map from growing for the life of the session.
 - [x] **R7** — **A re-entrancy guard, with the failure it prevents.**

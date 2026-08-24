@@ -334,8 +334,13 @@ stage_static() {
   # for: the read copy is never assigned into.
   chk_ok "static: nothing assigns into the read copy — no known[...] = write (R6)" \
          test "$($GREP -cE 'known\[[^]]*\] *=' "$BLOCK" || true)" -eq 0
-  # And no module-local table holds the baselines, which is the multi-context
-  # rule the slot map above records.
+  # And no module-local table holds the baselines, which is the LIFETIME rule
+  # the slot map above records: every evaluation of the config makes fresh Lua
+  # contexts and a module-local starts nil in each, so a baseline parked in a
+  # local would be emptied by every reload -- and every `tinty apply` is one.
+  # Measured 2026-08-24: 5 nil reads in 2770 fires, all of them a fresh
+  # context's FIRST fire -- not the every-other-callback story this comment
+  # used to name.
   chk_ok "static: no module-local baseline table — every table literal in the block is function-scoped (R6)" \
          test "$($GREP -cE '^local [a-z_]+ = \{' "$BLOCK" || true)" -eq 0
 
