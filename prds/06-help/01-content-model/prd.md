@@ -914,3 +914,23 @@ the live wallpaper prompt exactly as `Ctrl+Shift+T`'s does off `SpawnTab`;
 `capsule clean`'s gesture cannot be written honestly until corrected; and
 `capabilities-terminal.md:208-209` claims copy mode keeps searches that do not
 exist.
+
+## Added 2026-08-24 by the orchestrator — a stale count in this node's README
+
+`home/dot_config/nushell/help/README.md` says "all 84 carry a `source:`"
+(`:320`), and the same 84 appears at `:58` and `:192`. **The corpus is 92
+today**, re-measured twice on 2026-08-24 by two independent lanes: 92 entries,
+all ids unique, no tab or newline in any `id`/`title`/`topic`, no missing
+`topic` or `source`, 59 carrying a `why`, and 27 in `--mode nvim`.
+
+Routed here rather than filed as a node, because this node owns that file and
+the tripwire is live. Two lanes reported it tonight
+([`06-help/03-browser`](../03-browser/prd.md) twice, from analyst and
+implementer) and neither could touch it: it is in no one's footprint.
+
+The fix worth making is not the number. **Three of this corpus's own checks
+now count live and assert shape instead of freezing a total** — the browser's
+gate counts the corpus rather than asserting 92, and says so in a comment. A
+README that hard-codes 84 in three places is the same defect the board has
+corrected four times today in four different documents. When someone next opens
+that file, the numbers should become a reference to the check that counts them.

@@ -48,3 +48,24 @@ know in advance. FAIL: any step that needed a tool the container did not have,
 a path only this Mac has, or a piece of knowledge that lives in nobody's
 README. macOS-only steps are expected to be skipped in a Linux container;
 record which ones, because on a fresh *Mac* they must all run.
+- [ ] **H.5** — the reading test, and the only check that measures whether this
+      whole epic worked. Start a **fresh** agent session that knows nothing
+      about this repo. Give it the output of `help` and nothing else, plus an
+      ordinary task that needs a search and a file-find — "find where X is
+      configured", say.
+      PASS: it reaches for the tools this environment installs — `rg` for
+      search, `fd` for find, `tv` for picking — and names no tool that is not
+      installed. `fzf` counts as a failure anywhere except inside `zi`/`cdi`,
+      which are the one sanctioned exception.
+      FAIL: it reaches for `grep`, `find`, `fzf`, or any tool this environment
+      does not provide.
+      Why a human sets it up: the subject is an agent's behaviour on first
+      contact, so the session has to be uncontaminated — anyone who has read
+      this repo cannot be the subject, and neither can a session that was told
+      what the right answer is. That is also why the PASS line names the tools
+      rather than describing them: a grader who has to interpret is a grader
+      who can be argued with.
+      Evidence already on file: the orchestrator ran this on 2026-08-24 with a
+      deliberately uninformed agent. The result is recorded in
+      [`06-help/05-agent-interface`](../../prds/06-help/05-agent-interface/prd.md)'s
+      closing note. It is evidence for whoever ticks this box, not a tick.

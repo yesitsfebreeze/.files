@@ -105,3 +105,21 @@ readiness needs its children **covered**. The parent closes on its schema
 boxes, `04-drift-check` then becomes ready, and this node follows. It would
 deadlock only if the parent were reopened — if that happens, drop this edge
 and close R5 against a hand-run resolution instead.
+
+## Added 2026-08-24 by the orchestrator — the browser's own reason is missing
+
+`shell.nuon`'s `help --fuzzy` entry carries **no `why` at all**, so the single
+most non-obvious fact about the manual browser is undocumented: the channel is
+named **`manual`, not `help`**, because `help` is a clap **subcommand** of
+`tv` — `tv help` prints tv's usage at rc 0 and never opens the channel. The
+accepted cost is that typing "help" in the `Ctrl-Space` remote will never match
+it, since `_finder_pick_channel` matches channel names only.
+
+Found by the independent reader of the `tv channel` entry while reviewing
+[`06-help/03-browser`](../../03-browser/prd.md)'s revision — it declined to put
+the fact in the entry it was reviewing, which was right: a reader may not
+become the author. R1 of that node carries the measurement.
+
+This node's R4 already owns the CLI surface, so the entry belongs here rather
+than in a new node. Write it as a `why` on `help --fuzzy`, and remember the
+review ritual applies: whoever writes it cannot also vouch for it.

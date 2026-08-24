@@ -192,7 +192,7 @@
         topic: "find"
         mode: "shell"
         also: ["finder", "Ctrl-Space / F1"]
-        why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call) and `nu-history`, plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
+        why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `manual` (the manual's own fuzzy browser), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
         verify: [{kind: "prose"}]
         source: "prds/04-shell/04-television/prd.md"
     }
@@ -353,7 +353,7 @@
         use: "`cc` launches Claude Code with permission prompts skipped, in the directory you are in. Arguments pass straight through."
         topic: "agents"
         mode: "shell"
-        also: ["cr [...args]", "zc <query>"]
+        also: ["cr [...args]", "zc <query>", "credentials in a capsule"]
         why: "With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it."
         verify: [{kind: "command", name: "cc"}]
         source: "prds/04-shell/08-claude-launchers/prd.md"
