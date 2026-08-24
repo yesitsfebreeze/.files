@@ -21,11 +21,30 @@ behaviors the PRDs described as working are in fact broken upstream
 [`04-corrections-backlog`](prds/00-delivery/corrections/prd.md)
 before trusting any PRD you did not just check yourself.
 
-**Current state: planning only, on a board.** The repo holds the rated
-inventories and the PRD tree, and no configuration has been implemented yet —
-so "gate a commit" style requirements in the PRDs describe the intended end
-state, not something running today. The PRD tree was converted to board node
-form on 2026-08-20 so work can actually be claimed; see the next section.
+**Current state: the port is mostly built.** Corrected 2026-08-24 — this
+paragraph said "planning only … no configuration has been implemented yet",
+which was true when written and has been false for a while. Measured on
+2026-08-24: **50 of 65 requested nodes are `done` (94% by est)**, and the
+chezmoi source under `home/` carries the shipped WezTerm, Neovim, nushell,
+television and capsule configuration, with a gate per node under `tests/` and
+`gates/`. The editor epic is complete. Run
+`python3 .claude/skills/pearde/view/plan.py plan` for today's number rather
+than trusting this sentence — a count in prose is a reading of the day it was
+taken, and this board has corrected six of them in six documents on
+2026-08-24 alone.
+
+What is **not** built, so nobody reads the above as "finished": `help --check`
+is a **parse error today** — `06-help/04-drift-check` is still `open` — so the
+`help --check` sentence further down this file describes the intended end
+state, not something running now. `01-capsule/04-recent-workspaces` is
+`blocked` on five human checks in `gates/manual/wave4.md`, and two taste
+verdicts on prettier and StyLua wait there too. `just cutover` has not run,
+so `chezmoi source-path` still answers with the pre-rebuild repo rather than
+this one — ask it, per the live-sources rule below, rather than assuming a
+path.
+
+The PRD tree was converted to board node form on 2026-08-20 so work can
+actually be claimed; see the next section.
 
 ## Where things live
 
@@ -37,7 +56,7 @@ schedule, its history — lives in the PRD itself; there is no side file.
 |---|---|
 | `prds/` | The board — a tree of `<node>/prd.md` files. The path is the id and the parent link |
 | `prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
-| `.claude/skills/prd/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what |
+| `.claude/skills/pearde/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what. A symlink: the skill lives in its own repo (`~/dev/infra/pearde`) and is not vendored here |
 | `prds/README.md` | Index, build order, and the canonical exclusion list |
 | `docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
 | `docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
@@ -49,13 +68,29 @@ schedule, its history — lives in the PRD itself; there is no side file.
 
 The mi-era planning machinery (`.mi/gantt/plan.json`, its ledger, the
 `delivery-gantt.md` fold, and the mi skills) is retired: its task data —
-sizes, dependencies, footprints, manual verification steps — was folded into the PRD
-frontmatter and bodies, and the files were removed. Git history has them.
+sizes, dependencies, footprints, manual verification steps — was folded
+into the PRD frontmatter and bodies, and the files were removed. Git
+history has them.
 
 Live sources to read when specifying (never edit them as part of PRD work):
 `~/.config/nushell/*.nu`, `~/.config/nvim/`, `~/.config/television/`,
-`~/.config/wezterm/`, `~/.files/`, and the chezmoi source at
-`~/.local/share/chezmoi`.
+`~/.config/wezterm/`, and the legacy tree at `~/.files/` — a plain directory,
+not a git repo (measured 2026-08-24), holding the zsh-era material
+`docs/capabilities.md` rates.
+
+**Find the chezmoi source by running `chezmoi source-path`. Never by literal
+path.** It printed `/Users/feb/dev/.files/home` on 2026-08-24 — a reading of
+that day, not a constant, because `just cutover` rewrites `sourceDir` and the
+answer moves. Two traps live in that answer. `~/dev/.files` is **not**
+`~/.files`: two different trees one path segment apart, and only the first is
+the chezmoi source. And `~/.local/share/chezmoi` still exists but is **not**
+the source — it is a stale June clone (HEAD `a2544e4`, a git *ancestor* of the
+live `8e99f58`) whose readings produced findings L-12, L-13 and M-21, and per
+Decision 4(a) no document may cite it as the chezmoi source; the only
+permitted mention is as the stale clone, labelled as such. The full record is
+in `docs/capabilities-provisioning.md`. Decision 4 also makes the deployed
+`~/.config` tree canonical: read a source tree to explain how a file got where
+it is, not to decide what it says.
 
 ## The PRD tree
 
@@ -188,8 +223,14 @@ Real, recorded so nobody mistakes them for finished work:
 ## How to write a PRD
 
 The board protocol, states, and worker briefs are defined in
-`.claude/skills/prd/README.md`; the frontmatter template is
-`PRD_TEMPLATE.md` beside it. Feature PRDs are short and testable. Structure:
+`.claude/skills/pearde/README.md`; the frontmatter template is
+`.claude/skills/pearde/references/templates/prd.md`, and a spec's is
+`spec.md` beside it. **Both paths were corrected 2026-08-24**: this section
+pointed at `.claude/skills/prd/README.md` and a `PRD_TEMPLATE.md` beside it,
+and neither has existed since the mi-era skills were retired — the contract
+was directing every agent at a missing file.
+
+Feature PRDs are short and testable. Structure:
 
 ```markdown
 ---
