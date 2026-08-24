@@ -15,6 +15,13 @@ vim.filetype.add({
 
 require("config.keymaps")
 
+-- 14-shift-select gets its own module rather than riding in the general
+-- keymap file: that file's gate forbids shift-select machinery and autocmds
+-- per call site. It loads after the general maps and before the plugin
+-- manager, keeping I1's order. (Prose here names no module: a sibling gate
+-- greps this file for a module name to prove its own require was stripped.)
+require("config.shift-select")
+
 require("config.autocmds")
 
 require("config.lazy")
