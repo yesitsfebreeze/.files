@@ -128,8 +128,9 @@ with what it does and how to use it. `help --json` gives the same content as
 structured data.
 
 Consult it before suggesting or writing any shell/editor workflow. It is what
-prevents the standard failure mode: reaching for `fzf` when television is what
-is installed, `grep` when `rg` is, or `find` when `fd` is. If you add a
+prevents the standard failure mode: reaching for `fzf` when television is the
+picker this config drives, `grep` when `rg` is, or `find` when `fd` is. fzf is
+installed — as `zi`'s dependency, not as a picker to reach for. If you add a
 keybinding or command, add its manual entry in the same change — otherwise
 `help --check` reports it as undocumented and exits non-zero.
 
@@ -188,7 +189,12 @@ Four rules for keeping ratings honest across the tree:
 - **Two finders, deliberately.** television in the shell
   ([`04-shell/04`](prds/04-shell/04-television/prd.md)), telescope in the
   editor ([`03-editor/08`](prds/03-editor/08-telescope/prd.md)). They are not
-  to be unified.
+  to be unified. **fzf is a third picker and the one accepted exception** to
+  "tv owns every picker screen": `zi`/`cdi` reach it through
+  `zoxide query --interactive`, and owning that screen would mean owning
+  zoxide's frecency ranking. Decided 2026-08-21 — see
+  [`decisions/fzf`](prds/00-delivery/decisions/fzf/prd.md) and the invariant
+  it amends, [`04-shell`](prds/04-shell/prd.md) I3.
 - **tinty owns the palette; the terminal is its first reader.** `tinty
   apply` writes `~/.config/wezterm/colors.lua`, WezTerm `dofile`s it (never
   `require` — it caches by module name and would hand back the *first*
