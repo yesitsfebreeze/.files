@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 claim: 
 priority: 12
 est:
@@ -9,6 +9,8 @@ needs:
 verify: "nu tests/help-content-model.nu"
 origin: derived
 from: 00-delivery/corrections/capsule-creds-refresh-wording
+complexity: 32
+blast-radius: low
 ---
 
 # Three claims about capsule credentials that the code does not support
