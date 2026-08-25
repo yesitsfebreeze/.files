@@ -108,6 +108,10 @@ chk() {
 GREP=/usr/bin/grep                     # safety rule 1
 SRC="$REPO/home/dot_config/wezterm/wezterm.lua"
 NUSHELL_SRC="$REPO/home/dot_config/nushell"
+# The PRD this node's gate implements. Guarded for the SAME three phrases as
+# the .lua file below — see the phrase loop in stage_static for why the
+# requirement needs the guard more than the comment does.
+PRD_SRC="$REPO/prds/02-terminal/06-launchd-path/prd.md"
 
 WEZTERM="$(command -v wezterm || true)"
 MUXSRV="$(command -v wezterm-mux-server || true)"
@@ -156,6 +160,31 @@ squash() { tr -d ' \t\n\r'; }
 
 # grep for $2 in file $1, both squashed.
 squash_q() { squash < "$1" | $GREP -qF "$(printf '%s' "$2" | squash)"; }
+
+# prd_claims <file> <phrase> — 0 when <file> ASSERTS the retired claim.
+#
+# Two mechanisms, both measured necessary on this file (2026-08-24):
+#
+#   NORMALISED, NEVER A RAW GREP. prds/ wraps at ~78 columns, so a returned
+#   claim straddles two lines and grep -qF misses it — measured on a scratch
+#   copy of the PRD with the phrase wrapped after `window`: raw 0 hits,
+#   normalised 1. A raw matcher passes on a red file forever. Same collapse
+#   as gates/lib.sh norm(), which every prose match in this repo uses.
+#
+#   A QUOTED MENTION IS NOT A CLAIM. The PRD's own correction record at
+#   :60-62 writes the retired wording in quotation marks as the wording it
+#   RETIRES. Normalised counts for the three phrases there are 0/1/0; after
+#   the three quoting forms are stripped, 0/0/0. A guard red on its own
+#   retirement record cannot land.
+#
+# The phrases must stay free of sed metacharacters (/ \ &) for the strip
+# below; the three at :292 are plain words and spaces.
+prd_claims() {
+  local f="$1" p="$2"
+  norm < "$f" \
+    | sed -e "s/\"$p\"//g" -e "s/\`$p\`//g" -e "s/'$p'//g" \
+    | $GREP -qF -- "$p"
+}
 
 # First line number of a fixed string in $1, or 0.
 line_of() {
@@ -294,6 +323,50 @@ stage_static() {
              $GREP -qF -- "$phrase" "$SRC"
   done
 
+  # The SAME guard, same list, over the PRD that SPECIFIES this comment —
+  # not just the comment itself. That asymmetry (the hand-edited file
+  # guarded, the requirement that specifies it free to say the opposite) is
+  # this node's whole reason to exist. prd_claims is normalised (a returned
+  # claim wrapping across two lines defeats a raw grep -qF — measured on this
+  # exact PRD) and strips the three quoting forms first, because the PRD's
+  # own correction record at :60-62 QUOTES the retired wording as the wording
+  # it retires, and a guard red on its own retirement record cannot land.
+  for phrase in 'dies on the spot' 'dies immediately' 'window dies'; do
+    chk_fail "static: the node PRD asserts no '$phrase' claim (R1, R2)" \
+             prd_claims "$PRD_SRC" "$phrase"
+  done
+  # The non-vacuity control: the mention/use strip must be doing work, not
+  # passing vacuously because it ate everything. The PRD quotes 'dies
+  # immediately' exactly once, at its own correction record — normalised
+  # count 1 before the strip, 0 after (both measured 2026-08-24).
+  n="$(norm < "$PRD_SRC" | $GREP -oF -- 'dies immediately' | wc -l | tr -d ' ')"
+  chk_ok "static: the node PRD does QUOTE 'dies immediately' exactly once, at its correction record — the mention/use strip is doing work, not passing vacuously (got $n)" \
+         test "$n" -eq 1
+
+  # R4 ruling: are the node's two spec files (spec01-launch-environment.md,
+  # spec02-launchd-path-gate.md) owed the same guard? NO, and nothing is
+  # owed to the sweep either.
+  #   - Both files ARE the retirement record itself: spec01's finding 1 is
+  #     what corrected the claim; spec02's body IS the phrase list this gate
+  #     implements. Normalised occurrence counts, 2026-08-24 — spec01
+  #     1/1/1, spec02 1/1/3.
+  #   - The mention/use strip does NOT rescue them: prd_claims fires for P1
+  #     and P3 on spec01 and for P3 on spec02, because they write the phrase
+  #     inside a longer quoted span or in running prose, not one of the
+  #     three exact quoting forms this strip handles.
+  #   - They are already held by gates/retired-phrases.sh's board-wide sweep
+  #     as explicit tier-2 exemptions — five (phrase, path) rows across the
+  #     two files, asserted as set equality, so the sweep reports both a new
+  #     occurrence AND a vanished one. Strictly stronger than a chk_fail
+  #     here. So: with the sweep, where it already is. This node adds
+  #     nothing for the spec files.
+  #   - The one hole this node DOES close: the sweep's allow-list unit is a
+  #     (phrase, path) PAIR, and 'dies immediately' is exempt at
+  #     prds/02-terminal/06-launchd-path/prd.md. A NEW, unquoted, asserted
+  #     'dies immediately' in that same PRD therefore passes the sweep
+  #     silently — the pair is already on the allow-list. The two chk_fail
+  #     checks above are what catches it. That is this node's whole value.
+
   # R4's corrected reason, in the F6 comment: `sh -lc` is a LOGIN shell, so
   # path_helper recovers Homebrew by itself and what the prefix earns is
   # ~/.local/bin (tinty), ~/.cargo/bin and /opt/homebrew/sbin.
@@ -351,6 +424,31 @@ stage_static() {
   sed "${uifl}d;${uendl}d" "$SRC" > "$H/uncond.lua"
   chk_fail "static: the unconditional-is_mac copy FAILS the shape check (the resolved value is identical on macOS — only a static check sees this)" \
            shape_ok "$H/uncond.lua"
+
+  # 3. prd_claims counterfactuals (PRD R3, R2's third acceptance box) — never
+  #    on the real PRD, always on a mutated copy under $H/prd/.
+  local Hp="$H/prd"
+  mkdir -p "$Hp"
+  local i=0
+  for phrase in 'dies on the spot' 'dies immediately' 'window dies'; do
+    i=$((i + 1))
+    cp "$PRD_SRC" "$Hp/cf$i.md"
+    printf '\nWithout the launchd PATH seeding the GUI %s, so the latch matters.\n' \
+           "$phrase" >> "$Hp/cf$i.md"
+    chk_ok "static: CF-$i ('$phrase') — an unquoted claim planted in a PRD copy IS caught by prd_claims" \
+           prd_claims "$Hp/cf$i.md" "$phrase"
+  done
+
+  # CF-4: the wrap-across-lines pair. This repo wraps prose at ~78 columns,
+  # so a returned claim can straddle two lines — a raw grep -qF is blind to
+  # it, and prd_claims (built on norm, which collapses newlines to spaces)
+  # is not. Both halves run against the SAME planted copy.
+  cp "$PRD_SRC" "$Hp/cf4.md"
+  printf '\n…the GUI window\ndies, so the latch matters.\n' >> "$Hp/cf4.md"
+  chk_fail "static: CF-4 — a raw grep -qF for 'window dies' is BLIND to the same phrase wrapped across two lines" \
+           $GREP -qF -- 'window dies' "$Hp/cf4.md"
+  chk_ok "static: CF-4 — prd_claims (normalised) CATCHES the same wrapped plant" \
+         prd_claims "$Hp/cf4.md" 'window dies'
 }
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -736,8 +834,20 @@ stage_spawn() {
   pl="$($GREP -n 'config\.set_environment_variables\.PATH =' "$SRC" | head -1 | cut -d: -f1)"
   endl="$(awk -v s="$pl" 'NR > s && /^end$/ { print NR; exit }' "$SRC")"
   sed "$((pl - 1)),${endl}d" "$SRC" > "$M3/cfg.lua"
-  chk_fail "spawn/cf2: the copy no longer seeds PATH" \
-           $GREP -qF 'config.set_environment_variables.PATH' "$M3/cfg.lua"
+  # Counted over CODE, not raw. wezterm.lua:1194 is a COMMENT quoting this
+  # exact target, and it survives the slice — a raw grep -qF here reports the
+  # block still present and the counterfactual fails for a prose line.
+  # Measured 2026-08-24: raw 2 / code 1 on the real file, raw 1 / code 0 on
+  # the sliced copy. The control below is what keeps this falsifiable: if the
+  # real file ever stops seeding PATH in code, this goes red instead of the
+  # counterfactual passing for the wrong reason.
+  local seed_real seed_cut
+  seed_real="$(code_count "$SRC" 'config.set_environment_variables.PATH')"
+  seed_cut="$(code_count "$M3/cfg.lua" 'config.set_environment_variables.PATH')"
+  chk_ok "spawn/cf2: control — the REAL file seeds PATH in code exactly once (got $seed_real)" \
+         test "$seed_real" -eq 1
+  chk_ok "spawn/cf2: the copy no longer seeds PATH in code (got $seed_cut; the raw grep still matches the comment at wezterm.lua:1194)" \
+         test "$seed_cut" -eq 0
   mux_start "$M3" "$M3/cfg.lua"
   if mux_wait "$M3"; then
     sed 's/^/      /' "$M3/list.txt"
@@ -950,7 +1060,7 @@ echo "wezterm-launchd-path gate — repo: $REPO"
 CACHE_EXISTED_BEFORE=0; [ -e "$LIVE_CACHE" ] && CACHE_EXISTED_BEFORE=1
 APPSUP_EXISTED_BEFORE=0; [ -e "$LIVE_APPSUP" ] && APPSUP_EXISTED_BEFORE=1
 snapshot_paths "$LIVE_WEZ" "$LIVE_NU_DIR/config.nu" "$LIVE_NU_DIR/env.nu" \
-               "$LIVE_NU_DIR/history.sqlite3"
+               "$LIVE_NU_DIR/history.sqlite3" "$PRD_SRC"
 
 case "${1:-}" in
   --static) stage_static ;;
@@ -964,7 +1074,7 @@ esac
 
 echo
 echo "── epilogue: the live machine is untouched"
-assert_unchanged "the live wezterm.lua and nushell config.nu/env.nu/history.sqlite3 are byte-identical"
+assert_unchanged "the live wezterm.lua and nushell config.nu/env.nu/history.sqlite3, and the node PRD, are byte-identical"
 if [ "$CACHE_EXISTED_BEFORE" -eq 0 ]; then
   chk_ok "~/.cache/nushell does not exist (a real one appearing means an isolation leak)" \
          test ! -e "$LIVE_CACHE"

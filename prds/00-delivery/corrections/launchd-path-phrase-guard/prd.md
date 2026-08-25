@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 priority: 16
 est:
 mode: afk
@@ -8,6 +8,9 @@ footprint:
 verify: "bash tests/wezterm-launchd-path.sh"
 origin: derived
 from: 00-delivery/corrections/gui-dies-claim-carriers
+claim: 
+complexity: 22
+blast-radius: low
 ---
 
 # The wording guard covers the config and not the PRD that specs it
