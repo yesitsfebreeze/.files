@@ -1,6 +1,6 @@
 ---
-state: claimed
-claim: implementer-1 2026-08-24T13:39Z
+state: done
+claim: 
 priority: 26
 est: 4.25h
 mode: afk
@@ -8,6 +8,10 @@ needs:
   - 00-delivery/corrections/listing-order-lookup-regression
 verify: "bash gates/wave-status.sh --run 4"
 origin: derived
+complexity: 55
+blast-radius: high
+commit: 1d4f92f
+actual: 2026-08-24T14:10Z
 ---
 
 # The highest-exposure file on the board is read positionally, with no guard

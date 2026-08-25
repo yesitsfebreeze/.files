@@ -1,6 +1,6 @@
 ---
-state: claimed
-claim: implementer-2 2026-08-24T13:52Z
+state: done
+claim: 
 priority: 23
 est:
 mode: afk
@@ -15,6 +15,7 @@ origin: derived
 from: 04-shell/04-television
 complexity: 20
 blast-radius: mid
+commit: fe830f2
 ---
 
 # `git-log`'s decoder reads field 1, and `--graph` does not put the hash there

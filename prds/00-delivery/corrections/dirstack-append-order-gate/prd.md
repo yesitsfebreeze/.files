@@ -1,5 +1,5 @@
 ---
-state: claimed
+state: done
 priority: 21
 est:
 mode: afk
@@ -11,9 +11,10 @@ footprint:
 verify: "bash tests/nushell-core.sh"
 origin: derived
 from: 00-delivery/corrections/pwd-closure-blast-radius
-claim: implementer-3 2026-08-24T13:52Z
+claim: 
 complexity: 40
 blast-radius: low
+commit: 3f7d14e
 ---
 
 # The dirstack survives by append order, and nothing checks the order

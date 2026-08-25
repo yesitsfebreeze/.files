@@ -1,5 +1,5 @@
 ---
-state: claimed
+state: done
 priority: 20
 est:
 mode: afk
@@ -7,9 +7,10 @@ needs:
   - 00-delivery/corrections/wezterm-repairing-latch-claim
 verify: "bash tests/wezterm-tab-content-state.sh"
 origin: derived
-claim: implementer-6 2026-08-24T17:49Z
+claim: 
 complexity: 30
 blast-radius: low
+commit: 8b1072d
 ---
 
 # Seven carriers say a module-local "reads back nil about as often as not" — unmeasured

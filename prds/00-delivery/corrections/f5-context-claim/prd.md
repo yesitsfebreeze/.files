@@ -1,5 +1,5 @@
 ---
-state: specced
+state: done
 priority: 20
 est:
 mode: afk
@@ -14,6 +14,7 @@ from: 02-terminal/03-f5-jump-mode
 claim: 
 complexity: 26
 blast-radius: low
+commit: d9425ce
 ---
 
 # The F5 painter's "different Lua context" reason is unmeasured, and its sibling just fell

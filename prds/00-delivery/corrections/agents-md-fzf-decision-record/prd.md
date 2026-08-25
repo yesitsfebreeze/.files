@@ -1,5 +1,5 @@
 ---
-state: claimed
+state: done
 priority: 20
 est:
 mode: afk
@@ -8,9 +8,10 @@ footprint:
   - AGENTS.md
 origin: derived
 from: 00-delivery/corrections/mi-rooted-verify-commands
-claim: implementer-5 2026-08-24T17:49Z
+claim: 
 complexity: 18
 blast-radius: mid
+commit: 872d7b0
 ---
 
 # The fzf decision record `decisions/fzf` wrote into `AGENTS.md` is not there
