@@ -24,7 +24,7 @@
         topic: "edit"
         mode: "nvim:normal"
         why: "The map and the option have to be decided together or the key is dead, and live bug L-6 decided it the other way round: keep `hlsearch = false` and drop the map. So this documents a binding the rebuild is not meant to carry over."
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<Esc>"}]
+        verify: [{kind: "prose"}]
         source: "prds/03-editor/02-keymaps/prd.md"
     }
     {

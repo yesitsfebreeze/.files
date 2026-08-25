@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 8
 est:
 mode: afk
+claim: 
+complexity: 4
+blast-radius: low
 needs:
   - 03-editor/02-keymaps
   - 04-shell/04-television
