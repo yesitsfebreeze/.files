@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 9
 est:
 mode: afk
+claim: 
+complexity: 4
+blast-radius: low
 needs:
   - 06-help/02-help-command
   - 03-editor/09-lsp

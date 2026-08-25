@@ -318,8 +318,8 @@
         also: ["Neovim's own LSP keys", "<leader>rn and <leader>ca"]
         why: "These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`."
         verify: [
-            {kind: "nvim-map", mode: "n", lhs: "gd", scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "gI", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "gd", desc: "LSP: Goto definition", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "gI", desc: "LSP: Goto implementation", scope: "buffer"}
         ]
         source: "prds/03-editor/09-lsp/prd.md"
     }
@@ -331,8 +331,8 @@
         mode: "nvim:normal"
         also: ["Neovim's own LSP keys", "gd and gI"]
         verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>rn", scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>ca", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>rn", desc: "LSP: Rename", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>ca", desc: "LSP: Code action", scope: "buffer"}
         ]
         source: "prds/03-editor/09-lsp/prd.md"
     }
