@@ -387,6 +387,97 @@ nu_pty_e() {
     -- "$NU" --no-history --config "$MACHINE_CFG" --env-config "$MACHINE_ENV" -e "$cmds"
 }
 
+# ── the pty ceiling, and the three findings a pty capture can hold ──────────
+# 00-delivery/corrections/nushell-core-s430-stall R3/R5.
+#
+# nu_pty/nu_pty_e above hand the runner a LITERAL 40, and PT.5 in --tree keeps
+# it literal. The standing ruling prds/memos/a-headless-gate-red-may-be-load-
+# not-code.md forbids widening a budget to buy green, so a ceiling that can be
+# raised from outside those two functions is itself the defect. The probe
+# helper below is the one exception, and it takes its ceiling as an argument,
+# in the open, so PT.5 can tell it apart from the real call sites.
+pty_at() {  # pty_at <ceiling-seconds> <runner-args>…  — the PT.4 probe ONLY.
+  local ceiling="$1"; shift
+  "$PYTHON" "$PTY" "$ceiling" "$@"
+}
+
+# The load average, the shape tests/nvim-shift-select.sh:280 already uses as
+# ss_load(). Every timing failure owes one, per the memo above.
+nc_load() { uptime | sed 's/.*load average[s]*: //'; }
+
+# pwd_class <raw-capture-file> <ceiling> — classify a RAW pty capture into
+# exactly one of three findings, and never fold two of them together:
+#
+#   PWDIS:<dir>    the shell answered.
+#   TIMEOUT:<n>s   the runner hit its ceiling and SIGKILLed the child. The
+#                  runner writes <NUPTY-TIMEOUT> after the buffer (see
+#                  write_pty_runner above); tests/shell-quicklist.sh:1077,1092
+#                  is this repo's precedent for asserting on that marker from a
+#                  raw capture, and it is followed here, not re-derived.
+#   NOANSWER       the child exited without ever printing PWDIS:, and without a
+#                  timeout — the shape a parse error or an early exit makes. A
+#                  third finding, folded into neither of the first two.
+#
+# WHY THIS EXISTS, as a case rather than a rule. The four S4.30 sites used to
+# pipe the capture through `$GREP -o 'PWDIS:.*' | head -1`, which throws the
+# timeout marker away. On 2026-08-24 a full run went past 6m40s and reported
+#
+#     FAIL  hermetic: S4.30 end-to-end: … NEXT shell opens (got )
+#
+# — an empty parenthesis that reads as "the shell opened somewhere
+# unexpected". The evidence was already produced and already discarded. A
+# timeout and a wrong answer are different findings. Measured 2026-08-24 by
+# driving the extracted runner: `python3 nupty.py 2 -- /bin/sh -c 'sleep 30'`
+# emits <NUPTY-TIMEOUT> and the runner itself still exits 0, so the marker was
+# always there to read.
+#
+# TIMEOUT WINS over a PWDIS: line that arrived before the kill: a session the
+# runner had to kill did not run to completion, so its buffer is not an answer.
+# On a green run no marker is present and the classification is byte-identical
+# to what the old filter printed, which is what keeps R5 (S4.30's conclusion
+# about R7) unchanged.
+pwd_class() {
+  local raw="$1" ceiling="$2" line
+  if [ -n "$($GREP -oF 'NUPTY-TIMEOUT' "$raw" 2>/dev/null)" ]; then
+    printf 'TIMEOUT:%ss' "$ceiling"; return 0
+  fi
+  line="$(tr -d '\r' < "$raw" 2>/dev/null | $GREP -o 'PWDIS:.*' | head -1)"
+  if [ -n "$line" ]; then printf '%s' "$line"; return 0; fi
+  printf 'NOANSWER'
+}
+
+# The same, plus the load average on the timeout branch. The load line goes to
+# STDERR because every caller reads this function's stdout as the
+# classification itself.
+pwd_class_v() {
+  local cls; cls="$(pwd_class "$1" "$2")"
+  case "$cls" in TIMEOUT:*) echo "      $cls — pty ceiling hit; load average: $(nc_load)" >&2 ;; esac
+  printf '%s' "$cls"
+}
+
+# pty_ceiling_of <file> <function-name> — the ceiling the named function hands
+# the runner, read as TEXT so a counterfactual COPY can be asked the same
+# question: the literal when it is a bare integer, VAR(<token>) when it is
+# anything else (a variable, an environment override, an expansion), ABSENT
+# when the function makes no runner call at all.
+#
+# The header match is an anchored PREFIX, not an equality: pty_at() carries a
+# trailing usage comment on its `{` line, and an equality test read it as
+# ABSENT — measured 2026-08-24, the first red this guard produced.
+pty_ceiling_of() {
+  local f="$1" fn="$2" arg
+  arg="$(awk -v fn="$fn" '
+      index($0, fn "() {") == 1 { inside = 1; next }
+      inside && /^}/  { inside = 0 }
+      inside          { print }
+    ' "$f" | $GREP -oE '"\$PYTHON" "\$PTY" [^ ]+' | head -1 | awk '{ print $3 }')"
+  [ -n "$arg" ] || { printf 'ABSENT'; return 0; }
+  case "$arg" in
+    ''|*[!0-9]*) printf 'VAR(%s)' "$arg" ;;
+    *)           printf '%s' "$arg" ;;
+  esac
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # stage --tree (spec04 S4.9 – S4.18)
 # ════════════════════════════════════════════════════════════════════════════
@@ -409,8 +500,8 @@ anchors_ok() {
 # The funnel-binds contract, likewise runnable against a broken copy.
 funnel_binds() {
   local f="$1" alias_ln zox_ln
-  alias_ln="$(line_of "$f" 'alias cd = mkcd')"
-  zox_ln="$(line_of "$f" 'source ~/.cache/nushell/init/zoxide.nu')"
+  alias_ln="$(line_of_decl "$f" 'alias cd = mkcd')"
+  zox_ln="$(line_of_decl "$f" 'source ~/.cache/nushell/init/zoxide.nu')"
   [ "$alias_ln" -gt 0 ] && [ "$zox_ln" -gt 0 ] && [ "$alias_ln" -lt "$zox_ln" ]
 }
 
@@ -571,7 +662,7 @@ stage_tree() {
   # catches the silent failure: with the alias after the zoxide source the jump
   # still lands and prints nothing, and invariant I1 is quietly dead.
   if funnel_binds "$CONFIG_NU"; then
-    chk "tree: S4.11 alias cd = mkcd (line $(line_of "$CONFIG_NU" 'alias cd = mkcd')) is parsed before the zoxide init source (line $(line_of "$CONFIG_NU" 'source ~/.cache/nushell/init/zoxide.nu'))" 0
+    chk "tree: S4.11 alias cd = mkcd (line $(line_of_decl "$CONFIG_NU" 'alias cd = mkcd')) is parsed before the zoxide init source (line $(line_of_decl "$CONFIG_NU" 'source ~/.cache/nushell/init/zoxide.nu'))" 0
   else
     chk "tree: S4.11 alias cd = mkcd is parsed before the zoxide init source" 1
   fi
@@ -586,6 +677,15 @@ stage_tree() {
   else
     chk "tree: S4.11 counterfactual alias-after-zoxide FAILS the funnel check" 0
   fi
+  # …and a decoy comment quoting the target, prepended to the same reversed
+  # copy, must not resurrect a false pass: the anchored lookup only reads
+  # code that STARTS with the target, and a comment always starts with `#`.
+  local CFB="$SCRATCH/cf-funnel-decoy.nu"
+  { printf '# see `alias cd = mkcd` below, which must run before the zoxide init\n'; cat "$REVERSED"; } > "$CFB"
+  chk_ok "tree: S4.11 decoy-comment counterfactual copy still holds exactly one real alias cd = mkcd" \
+         test "$($GREP -cxF 'alias cd = mkcd' "$CFB")" -eq 1
+  chk_fail "tree: S4.11 decoy-comment counterfactual (comment above, real alias after zoxide) FAILS the funnel check" \
+           funnel_binds "$CFB"
 
   # CP.8 / CP.9 — R4. The roster, then the orderings, each with a
   # counterfactual, because a guard with no failing counterfactual is
@@ -638,11 +738,34 @@ stage_tree() {
 
   # S3.9 — the module is sourced before BOTH of its callers are parsed.
   local src_ln mkcd_ln hook_ln
-  src_ln="$(line_of "$CONFIG_NU" 'source ~/.config/nushell/dirstack.nu')"
-  mkcd_ln="$(line_of "$CONFIG_NU" 'def --env mkcd')"
-  hook_ln="$(line_of "$CONFIG_NU" '$env.config.hooks.env_change.PWD = (')"
+  src_ln="$(line_of_decl "$CONFIG_NU" 'source ~/.config/nushell/dirstack.nu')"
+  mkcd_ln="$(line_of_decl "$CONFIG_NU" 'def --env mkcd')"
+  hook_ln="$(line_of_decl "$CONFIG_NU" '$env.config.hooks.env_change.PWD = (')"
   chk_ok "tree: S3.9 dirstack.nu is sourced (line $src_ln) before mkcd is defined (line $mkcd_ln) and before the PWD append (line $hook_ln)" \
          test "$src_ln" -gt 0 -a "$src_ln" -lt "$mkcd_ln" -a "$mkcd_ln" -lt "$hook_ln"
+  # …and a decoy comment quoting the target must not resurrect a false pass.
+  # The real source line is deleted and reinserted directly after mkcd's
+  # closing `}`, `seen`-guarded so the reinsertion lands on THAT `}` and not
+  # the first bare `}` in the whole file (config.nu has five earlier ones,
+  # all above mkcd, which an unguarded rule would land on and silently fail
+  # to counterfactualize — measured while building this fixture).
+  local BASE3="$SCRATCH/cf-s39-moved.nu"
+  awk '
+    /^source ~\/\.config\/nushell\/dirstack\.nu$/ { seen=1; next }
+    { print }
+    seen && /^}$/ && !done { print "source ~/.config/nushell/dirstack.nu"; done=1 }
+  ' "$CONFIG_NU" > "$BASE3"
+  local CFS="$SCRATCH/cf-s39-decoy.nu"
+  { printf '# see `source ~/.config/nushell/dirstack.nu` below, which the funnel needs before mkcd\n'; cat "$BASE3"; } > "$CFS"
+  chk_ok "tree: S3.9 decoy-comment counterfactual copy still holds exactly one real dirstack.nu source line" \
+         test "$($GREP -cxF 'source ~/.config/nushell/dirstack.nu' "$CFS")" -eq 1
+  local cf_src_ln cf_mkcd_ln cf_hook_ln
+  cf_src_ln="$(line_of_decl "$CFS" 'source ~/.config/nushell/dirstack.nu')"
+  cf_mkcd_ln="$(line_of_decl "$CFS" 'def --env mkcd')"
+  cf_hook_ln="$(line_of_decl "$CFS" '$env.config.hooks.env_change.PWD = (')"
+  echo "      S3.9 decoy copy: src=$cf_src_ln mkcd=$cf_mkcd_ln hook=$cf_hook_ln (was $src_ln/$mkcd_ln/$hook_ln)"
+  chk_fail "tree: S3.9 decoy-comment counterfactual (source moved after mkcd) FAILS the order check" \
+           test "$cf_src_ln" -gt 0 -a "$cf_src_ln" -lt "$cf_mkcd_ln" -a "$cf_mkcd_ln" -lt "$cf_hook_ln"
 
   # DO.1 – DO.4 — 00-delivery/corrections/dirstack-append-order-gate R1/R2/R3.
   # The order the dirstack survives by, made a checked artefact. See the
@@ -744,11 +867,31 @@ NUEOF
   chk "tree: S4.13 config.nu sources exactly the paths the generator writes" "$ok"
   # …and in the order spec03 S3.15 fixes.
   local ls_ln lz_ln lt_ln
-  ls_ln="$(line_of "$CONFIG_NU" "source ~/$gen_rel/starship.nu")"
-  lz_ln="$(line_of "$CONFIG_NU" "source ~/$gen_rel/zoxide.nu")"
-  lt_ln="$(line_of "$CONFIG_NU" "source ~/$gen_rel/television.nu")"
+  ls_ln="$(line_of_decl "$CONFIG_NU" "source ~/$gen_rel/starship.nu")"
+  lz_ln="$(line_of_decl "$CONFIG_NU" "source ~/$gen_rel/zoxide.nu")"
+  lt_ln="$(line_of_decl "$CONFIG_NU" "source ~/$gen_rel/television.nu")"
   chk_ok "tree: S4.13 the three sources are in starship, zoxide, television order ($ls_ln < $lz_ln < $lt_ln)" \
          test "$ls_ln" -lt "$lz_ln" -a "$lz_ln" -lt "$lt_ln"
+  # …and a decoy comment quoting the starship target must not resurrect a
+  # false pass. The real starship source line is deleted and reinserted
+  # directly after the zoxide source line (breaking the required order),
+  # with the decoy prepended at the top of the file.
+  local BASE4="$SCRATCH/cf-s413-moved.nu" CFL="$SCRATCH/cf-s413-decoy.nu"
+  awk -v s="source ~/$gen_rel/starship.nu" -v z="source ~/$gen_rel/zoxide.nu" '
+    index($0,s)==1 { next }
+    { print }
+    index($0,z)==1 { print s }
+  ' "$CONFIG_NU" > "$BASE4"
+  { printf '# see `source ~/%s/starship.nu` below, which must run before zoxide and television\n' "$gen_rel"; cat "$BASE4"; } > "$CFL"
+  chk_ok "tree: S4.13 decoy-comment counterfactual copy still holds exactly one real starship source line" \
+         test "$($GREP -cxF "source ~/$gen_rel/starship.nu" "$CFL")" -eq 1
+  local cf_ls_ln cf_lz_ln cf_lt_ln
+  cf_ls_ln="$(line_of_decl "$CFL" "source ~/$gen_rel/starship.nu")"
+  cf_lz_ln="$(line_of_decl "$CFL" "source ~/$gen_rel/zoxide.nu")"
+  cf_lt_ln="$(line_of_decl "$CFL" "source ~/$gen_rel/television.nu")"
+  echo "      S4.13 decoy copy: starship=$cf_ls_ln zoxide=$cf_lz_ln television=$cf_lt_ln (was $ls_ln/$lz_ln/$lt_ln)"
+  chk_fail "tree: S4.13 decoy-comment counterfactual (starship moved after zoxide) FAILS the order check" \
+           test "$cf_ls_ln" -lt "$cf_lz_ln" -a "$cf_lz_ln" -lt "$cf_lt_ln"
 
   # S4.14 — no superseded live path survives.
   local old bad=0
@@ -1019,6 +1162,82 @@ NUEOF
          test -n "$(cat "$SHELL_NUON" | norm | $GREP -oF 'verify: [{kind: "alias", name: "cd"}]')"
   chk_ok "tree: S4.18 this gate left shell.nuon byte-identical" \
          test "$nuon_before" = "$(sha_file "$SHELL_NUON")"
+
+  # ── PT.1 – PT.7 — 00-delivery/corrections/nushell-core-s430-stall R3/R5.
+  # A timeout and a wrong directory stop being the same finding. Each
+  # fabricated capture below is classified, and the check that CONSUMES it is
+  # then shown to go red with different text — which is the whole point: the
+  # observed failure printed `(got )` and read as a directory bug.
+  local PTR="$SCRATCH/pt"; mkdir -p "$PTR"
+  local pt_want="PWDIS:/machine/target" pt_cls
+
+  printf 'nushell banner\n<NUPTY-TIMEOUT>\n' > "$PTR/timeout.raw"
+  pt_cls="$(pwd_class "$PTR/timeout.raw" 40)"
+  chk_ok "tree: PT.1 a capture holding <NUPTY-TIMEOUT> and NO PWDIS line classifies as a timeout (got $pt_cls)" \
+         test "$pt_cls" = "TIMEOUT:40s"
+  chk_fail "tree: PT.1 counterfactual a timed-out capture FAILS the start-dir check, naming the timeout instead of an empty (got ) — (got $pt_cls)" \
+           test "$pt_cls" = "$pt_want"
+
+  printf 'PWDIS:/machine/somewhere-else\r\n' > "$PTR/wrongdir.raw"
+  pt_cls="$(pwd_class "$PTR/wrongdir.raw" 40)"
+  chk_ok "tree: PT.2 a capture naming the WRONG directory classifies as that directory (got $pt_cls)" \
+         test "$pt_cls" = "PWDIS:/machine/somewhere-else"
+  chk_fail "tree: PT.2 counterfactual a wrong-directory capture FAILS the start-dir check with the directory in the label (got $pt_cls)" \
+           test "$pt_cls" = "$pt_want"
+
+  printf 'Error: nu::parser::sourced_file_not_found\n' > "$PTR/noanswer.raw"
+  pt_cls="$(pwd_class "$PTR/noanswer.raw" 40)"
+  chk_ok "tree: PT.3 a capture with neither marker nor PWDIS classifies NOANSWER — a third finding (got $pt_cls)" \
+         test "$pt_cls" = "NOANSWER"
+  chk_fail "tree: PT.3 counterfactual a no-answer capture FAILS the start-dir check, distinct from both above (got $pt_cls)" \
+           test "$pt_cls" = "$pt_want"
+
+  # PT.4 — the LIVE half. A real runner call against a command that never
+  # prints, at a 2 s ceiling: the counterfactual must not cost this gate 40 s
+  # of wall, which is exactly why pty_at takes its ceiling as an argument and
+  # why PT.5 below keeps the two real helpers at a literal 40.
+  if [ -n "$PYTHON" ]; then
+    write_pty_runner
+    local pt_t0 pt_t1
+    pt_t0="$(date +%s)"
+    pty_at 2 -- /bin/sh -c 'sleep 30' > "$PTR/live.raw" 2>&1
+    pt_t1="$(date +%s)"
+    pt_cls="$(pwd_class_v "$PTR/live.raw" 2)"
+    echo "      PT.4 live forced-timeout probe: $((pt_t1 - pt_t0))s wall, raw=$(wc -c < "$PTR/live.raw" | tr -d ' ') bytes, class=$pt_cls"
+    chk_ok "tree: PT.4 a LIVE runner call at a 2 s ceiling against a never-printing command classifies as a timeout (got $pt_cls)" \
+           test "$pt_cls" = "TIMEOUT:2s"
+    chk_ok "tree: PT.4 …and the marker really is in the raw bytes the old filter threw away" \
+           test -n "$($GREP -oF 'NUPTY-TIMEOUT' "$PTR/live.raw")"
+    chk_ok "tree: PT.4 …at $((pt_t1 - pt_t0))s of wall, not the 40 s the real helpers budget (a probe over 5 s is the probe's bug, not the machine's)" \
+           test "$((pt_t1 - pt_t0))" -le 5
+  else
+    chk "tree: PT.4 precondition: python3 is on PATH (the live forced-timeout probe needs it)" 1
+  fi
+
+  # PT.5 — and the ceiling stays 40. pty_at opens a door the memo closes, so
+  # it is closed here rather than in a reader's memory: widening the budget to
+  # buy green now goes red at the site that forbids it.
+  chk_ok "tree: PT.5 nu_pty hands the runner a LITERAL 40 (reads $(pty_ceiling_of "$SELF" nu_pty))" \
+         test "$(pty_ceiling_of "$SELF" nu_pty)" = "40"
+  chk_ok "tree: PT.5 nu_pty_e hands the runner a LITERAL 40 (reads $(pty_ceiling_of "$SELF" nu_pty_e))" \
+         test "$(pty_ceiling_of "$SELF" nu_pty_e)" = "40"
+  chk_ok "tree: PT.5 …and the guard can tell a literal from a variable at all: pty_at reads $(pty_ceiling_of "$SELF" pty_at)" \
+         test "$(pty_ceiling_of "$SELF" pty_at)" = 'VAR("$ceiling")'
+
+  local PT_WIDE="$SCRATCH/cf-wide-ceiling.sh" PT_VAR="$SCRATCH/cf-var-ceiling.sh"
+  sed 's|"\$PYTHON" "\$PTY" 40 "\$@" \\|"$PYTHON" "$PTY" 90 "$@" \\|' "$SELF" > "$PT_WIDE"
+  chk_ok "tree: PT.6 counterfactual copy really did widen both ceilings to 90" \
+         test "$(pty_ceiling_of "$PT_WIDE" nu_pty)" = "90" -a "$(pty_ceiling_of "$PT_WIDE" nu_pty_e)" = "90"
+  chk_fail "tree: PT.6 counterfactual nu_pty at a widened 90 s ceiling FAILS the literal-40 check (reads $(pty_ceiling_of "$PT_WIDE" nu_pty))" \
+           test "$(pty_ceiling_of "$PT_WIDE" nu_pty)" = "40"
+  chk_fail "tree: PT.6 …and so does nu_pty_e (reads $(pty_ceiling_of "$PT_WIDE" nu_pty_e))" \
+           test "$(pty_ceiling_of "$PT_WIDE" nu_pty_e)" = "40"
+
+  sed 's|"\$PYTHON" "\$PTY" 40 "\$@" \\|"$PYTHON" "$PTY" "${NUPTY_CEILING:-40}" "$@" \\|' "$SELF" > "$PT_VAR"
+  chk_fail "tree: PT.7 counterfactual an ENVIRONMENT-OVERRIDABLE ceiling FAILS the literal-40 check too — nu_pty reads $(pty_ceiling_of "$PT_VAR" nu_pty)" \
+           test "$(pty_ceiling_of "$PT_VAR" nu_pty)" = "40"
+  chk_fail "tree: PT.7 …and nu_pty_e reads $(pty_ceiling_of "$PT_VAR" nu_pty_e)" \
+           test "$(pty_ceiling_of "$PT_VAR" nu_pty_e)" = "40"
 
   guard_end
 }
@@ -1473,15 +1692,24 @@ NUEOF
   chk_ok "hermetic: S4.29 _dirstack_list returns [] when the file is absent (got $out)" test "$out" = "[]"
 
   # ── S4.30 — the start dir (R7), three machines.
+  # Each site keeps its RAW pty bytes in a file under its own machine (the way
+  # tests/shell-quicklist.sh keeps ctrlq.raw) and classifies them, so a run
+  # that hit the runner's ceiling says TIMEOUT and prints its load average
+  # instead of printing `(got )` and reading as a wrong directory. What the
+  # checks CONCLUDE about R7 is unchanged: on a green run the classification
+  # is the same `PWDIS:<dir>` string the old filter produced. PT.1 – PT.4 in
+  # --tree are the counterfactuals that prove the three findings stay apart.
   local MS1="$SCRATCH/m-start-hit"; mk_machine "$MS1"; mkdir -p "$MS1/home/.local/state/nushell" "$MS1/target"
   printf '%s\n' "$MS1/target" > "$MS1/home/.local/state/nushell/startdir.txt"
-  out="$(cd "$MS1" && nu_pty_e "$MS1" 'print $"PWDIS:($env.PWD)"; exit' | tr -d '\r' | $GREP -o 'PWDIS:.*' | head -1)"
+  ( cd "$MS1" && nu_pty_e "$MS1" 'print $"PWDIS:($env.PWD)"; exit' > "$MS1/start.raw" 2>&1 )
+  out="$(pwd_class_v "$MS1/start.raw" 40)"
   chk_ok "hermetic: S4.30 startdir.txt holding an existing dir is where the shell opens (got $out)" \
          test "$out" = "PWDIS:$MS1/target"
 
   local MS2="$SCRATCH/m-start-dead"; mk_machine "$MS2"; mkdir -p "$MS2/home/.local/state/nushell"
   printf '%s\n' "$MS2/deleted-since" > "$MS2/home/.local/state/nushell/startdir.txt"
-  out="$(cd "$MS2" && nu_pty_e "$MS2" 'print $"PWDIS:($env.PWD)"; exit' | tr -d '\r' | $GREP -o 'PWDIS:.*' | head -1)"
+  ( cd "$MS2" && nu_pty_e "$MS2" 'print $"PWDIS:($env.PWD)"; exit' > "$MS2/start.raw" 2>&1 )
+  out="$(pwd_class_v "$MS2/start.raw" 40)"
   chk_ok "hermetic: S4.30 a startdir.txt pointing at a deleted path falls back to <HOME>/dev (got $out)" \
          test "$out" = "PWDIS:$MS2/home/dev"
 
@@ -1490,13 +1718,15 @@ NUEOF
   # `mkcd` writes startdir.txt, env.nu reads it — with nothing seeded between.
   local MS4="$SCRATCH/m-start-e2e"; mk_machine "$MS4"; mkdir -p "$MS4/home/landed"
   ( cd "$MS4/elsewhere" && nu_c "$MS4" "cd $MS4/home/landed" > /dev/null 2>&1 )
-  out="$(cd "$MS4/elsewhere" && nu_pty_e "$MS4" 'print $"PWDIS:($env.PWD)"; exit' | tr -d '\r' | $GREP -o 'PWDIS:.*' | head -1)"
+  ( cd "$MS4/elsewhere" && nu_pty_e "$MS4" 'print $"PWDIS:($env.PWD)"; exit' > "$MS4/start.raw" 2>&1 )
+  out="$(pwd_class_v "$MS4/start.raw" 40)"
   chk_ok "hermetic: S4.30 end-to-end: a move in one shell is where the NEXT shell opens (got $out)" \
          test "$out" = "PWDIS:$MS4/home/landed"
 
   local MS3="$SCRATCH/m-start-none"; mk_machine "$MS3"
   chk_ok "hermetic: S4.30 precondition: <HOME>/dev does not exist yet" test ! -e "$MS3/home/dev"
-  out="$(cd "$MS3" && nu_pty_e "$MS3" 'print $"PWDIS:($env.PWD)"; exit' | tr -d '\r' | $GREP -o 'PWDIS:.*' | head -1)"
+  ( cd "$MS3" && nu_pty_e "$MS3" 'print $"PWDIS:($env.PWD)"; exit' > "$MS3/start.raw" 2>&1 )
+  out="$(pwd_class_v "$MS3/start.raw" 40)"
   chk_ok "hermetic: S4.30 with startdir.txt absent the shell opens in <HOME>/dev (got $out)" \
          test "$out" = "PWDIS:$MS3/home/dev"
   chk_ok "hermetic: S4.30 …and <HOME>/dev was created" test -d "$MS3/home/dev"

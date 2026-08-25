@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 19
 est:
 mode: afk
+claim: 
+complexity: 30
+blast-radius: low
 needs:
   - 00-delivery/corrections/listing-order-lookup-regression
 footprint:
