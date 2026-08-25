@@ -409,8 +409,17 @@ PROMPT='@WAIT=\x1b[?2004h'
 stage_tree() {
   echo "── stage --tree: the managed config.nu as text ($CONFIG_NU)"
 
-  # T1 — parse order: core-ls captured before the shadow, the shadow before
-  # la, la before the auto-list append that names it.
+  # T1 — not one uniform "parse order": nushell PREDECLARES a block's defs,
+  # so def ls < def la < the auto-list append is a stability contract, not
+  # a hazard — both orders parse and run with zero nu::parser errors
+  # (measured; matches config-nu-parse-claims and config.nu's own LISTING
+  # comment). The one link that IS load-bearing today is alias core-ls <
+  # def ls: an alias binds TEXTUALLY, not by predeclaration, and def ls's
+  # body calls core-ls — reorder them and the first `ls` fails loudly with
+  # `Command core-ls not found` (measured here too, and by config.nu).
+  # Had the auto-list closure named an alias instead of the la def, that
+  # link would be load-bearing the same way — it doesn't today, so the
+  # chain is kept as a stability contract past that one real link.
   if order_ok "$CONFIG_NU"; then
     # The anchored four, not line_of: this diagnostic itself used to print 161,
     # so the one line a reader would use to spot the defusal was reporting the

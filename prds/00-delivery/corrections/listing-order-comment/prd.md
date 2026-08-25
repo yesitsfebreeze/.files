@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 11
 est:
 mode: afk
+claim: 
+complexity: 8
+blast-radius: low
 footprint:
   - tests/shell-listing.sh
 verify: "bash tests/shell-listing.sh"
@@ -32,7 +35,7 @@ touch it: `tests/shell-listing.sh` belongs to
 per file holds.
 
 ## Requirements
-- [ ] **R1** — The comment states why the ordering assertion is worth having
+- [x] **R1** — The comment states why the ordering assertion is worth having
       **without** claiming predeclaration does not exist. Two candidate
       framings, and the node should pick and argue one: a stability contract
       (the order is deliberate, so a change should be), or the real hazard —
@@ -40,20 +43,44 @@ per file holds.
       order becomes load-bearing the moment `la` is replaced by an alias.
       The second is the more useful reason if it is true of this file;
       measure it rather than assuming.
-- [ ] **R2** — The assertion itself does not change. This node edits a
-      comment.
-- [ ] **R3** — Cross-check against
+      Argued the hybrid, per spec01's measurement: `alias core-ls = ls` <
+      `def ls` is a live, already-real textual-binding hazard today; `def
+      ls` < `def la` < the auto-list append is a stability contract with no
+      live hazard (both measured in `spec01.md`'s "What was measured"). The
+      landed comment (`tests/shell-listing.sh:412-422`) states both and
+      names neither uniformly "parse order."
+- [x] **R2** — The assertion itself does not change. This node edits a
+      comment. `order_ok "$CONFIG_NU"`, the `chk`/`chk_fail` calls, and the
+      CF1 counterfactual at `tests/shell-listing.sh:414-424` are unchanged
+      — confirmed by the scope-check diff quoted in `specs/spec01.md`'s
+      Acceptance section (only `#` lines changed).
+- [x] **R3** — Cross-check against
       [`config-nu-parse-claims`](../config-nu-parse-claims/prd.md), which
       corrects the same mechanism in `config.nu` and lands first. Two texts,
       one fact — if they disagree afterwards, the one verified against a
       running shell wins.
+      `config-nu-parse-claims` is `state: done`; its `config.nu:148-169`
+      LISTING-anchor comment states the same mechanism (predeclaration
+      covers def bodies/closures, not alias targets; `alias core-ls` must
+      precede `def ls`). No disagreement to arbitrate — see spec01's
+      "Cross-check against config-nu-parse-claims" section.
 
 ## Acceptance
-- [ ] The corrected comment quoted beside the predeclaration measurement.
-- [ ] `bash tests/shell-listing.sh` reaches `EXIT=0`, run **alone**, tally
-      quoted not asserted.
-- [ ] The scope diff against a `cp`-aside baseline is comment lines only —
-      the file is untracked, so `git diff` is empty by construction.
+- [x] The corrected comment quoted beside the predeclaration measurement —
+      see `specs/spec01.md`, "## The edit" (the text applied) and "## What
+      was measured" (the two `nu -n -c` measurements it rests on).
+- [x] `bash tests/shell-listing.sh` reaches `EXIT=0`, run **alone**, tally
+      quoted not asserted: `after EXIT=0`, `36` PASS, `0` FAIL — quoted in
+      full in `specs/spec01.md`'s Acceptance section, unchanged from the
+      pre-edit baseline (also 36/0/EXIT=0).
+- [x] The scope diff against a `cp`-aside baseline is comment lines only.
+      Correction to this box's own premise: the file is **tracked**
+      (`git ls-files -- tests/shell-listing.sh` returns it), not untracked
+      as this line assumed — so the check actually run was direct
+      `git diff -- tests/shell-listing.sh` piped through the scope-check
+      grep in spec01's Verify section, which returned nothing (exit 1),
+      proving the diff touches only `#` comment lines. Quoted in full in
+      `specs/spec01.md`'s Acceptance section.
 
 ## Out of scope
 - `config.nu`'s own comments, which are
