@@ -88,7 +88,7 @@ word, with **neither** subject token present.
 > a label-only renamed container never reaches either command. The
 > imitator seam (a `capsule-*` container labelled with an *empty*
 > `capsule.dir`) is recorded on
-> [`capsule-rm-guard-attribution`](../../00-delivery/corrections/capsule-rm-guard-attribution/prd.md)
+> [`capsule-rm-guard-attribution`](../capsule-rm-guard-attribution/prd.md)
 > and is **not** closed by this node.
 
 Subject (which containers the command touches) is unchanged from the
@@ -121,8 +121,8 @@ match.
 
 ### Imitator seam (cross-referenced, not restated)
 
-Defined at [`capsule-rm-guard-attribution/prd.md`](../../00-delivery/corrections/capsule-rm-guard-attribution/prd.md) lines 84–96, and re-recorded
-in [`specs/spec01-capsule-cli.md`](../../01-capsule/01-container-lifecycle/specs/spec01-capsule-cli.md) lines 117–126. A deliberate `capsule-*` container with an EMPTY `capsule.dir` label: `clean` removes
+Defined at [`capsule-rm-guard-attribution/prd.md`](../capsule-rm-guard-attribution/prd.md) lines 84–96, and re-recorded
+in [`specs/spec01-capsule-cli.md`](../../../01-capsule/01-container-lifecycle/specs/spec01-capsule-cli.md) lines 117–126. A deliberate `capsule-*` container with an EMPTY `capsule.dir` label: `clean` removes
 it (`_capsule_owned` only checks label-presence, not value), `--rebuild`
 refuses it (step 6's refusal checks the label's value). Not closed here.
 
