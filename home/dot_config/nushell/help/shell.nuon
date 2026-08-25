@@ -38,7 +38,7 @@
     {
         cmd: "cdi"
         title: "Pick a directory from zoxide interactively"
-        use: "Alias for `zi` — the same picker under the name muscle memory reaches for."
+        use: "Alias for `zi` — the same fzf picker, not television, under the name muscle memory reaches for."
         topic: "navigate"
         mode: "shell"
         also: ["zi"]
@@ -392,10 +392,10 @@
     {
         cmd: "idioms"
         title: "Search with rg, find with fd, pick with tv"
-        use: "Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`) — the single exception is `zi`, which opens fzf, and it is the only place fzf belongs. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given."
+        use: "Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`) — the single exception is `zi`/`cdi`, which open fzf, and it is the only place fzf belongs. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given."
         topic: "agents"
         mode: "shell"
-        also: ["grep", "tv channel", "cd <path>"]
+        also: ["grep", "tv channel", "cd <path>", "zi", "cdi"]
         why: "Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing."
         verify: [{kind: "prose"}]
         source: "prds/06-help/05-agent-interface/prd.md"

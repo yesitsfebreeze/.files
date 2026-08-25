@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 8
+complexity: 8
+blast-radius: low
 est:
 mode: afk
+claim: 
 needs:
   - 04-shell/04-television
 verify: "nu tests/help-content-model.nu"
