@@ -42,6 +42,28 @@ config under one root.
       for. The reason is the expensive knowledge; the pipeline was only the
       shape it happened to take.
 
+- [ ] **R7** — **Seed mason's registry during the install, not on launch.**
+      `install.sh` runs `:MasonUpdate` once, after §1–§4 have put the tools on
+      PATH and before anything depends on a language server being
+      installable. This exists because
+      [`offline-launch-eats-first-save`](../../00-delivery/corrections/offline-launch-eats-first-save/prd.md)
+      turns mason's launch-time registry refresh **off** — the refresh threw
+      out of a libuv callback and discarded the first buffer write of an
+      offline session (measured 2026-08-24: 6 of 6 runs, file md5 and mtime
+      unchanged, nvim exiting 0). With the refresh off nothing creates the
+      catalogue, so on an empty `<data>/mason` `ensure_installed` has no
+      server names to resolve; measured online the same day, the shipped
+      config downloads a 536 KB `registry.json` that the fixed one does not.
+
+      This is R6's contract applied to one more tool — install before use, in
+      the run that installed it. The trade, its measurements and the roads not
+      taken are recorded in
+      [`mason-refresh-off-trades-auto-bootstrap`](../../memos/mason-refresh-off-trades-auto-bootstrap.md).
+
+      A check that only counts network attempts does **not** prove this: zero
+      attempts also describes a mason that is entirely broken. Pair it with a
+      probe that drives the count above zero in the same root.
+
 **Allocation.** This document held more than one contract and was split. Each
 requirement is owned by exactly one node:
 
@@ -60,6 +82,11 @@ requirement is owned by exactly one node:
       [`repo-skeleton`](repo-skeleton/prd.md) R5).
 - [ ] Editing one tool's config touches exactly one path under
       `home/dot_config/`.
+- [ ] On a scratch target with an empty `<data>/mason`, `install.sh` leaves a
+      seeded registry — `require("mason-registry").has_package("pyright")` is
+      true — without a human launching `nvim` first, and E.7 in
+      [`gates/manual/wave4.md`](../../../gates/manual/wave4.md) is re-run
+      after it.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

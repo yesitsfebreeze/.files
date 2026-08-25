@@ -14,7 +14,11 @@
 #               five-package root, the four aliases against core's eight
 #               keys, the didChangeConfiguration round trip, and eight
 #               counterfactuals.
-#   (no arg)    both.
+#   --race      00-delivery/corrections/offline-launch-eats-first-save: the
+#               offline launch that discards the first save. Three arms — the
+#               ENOTCONN mechanism in isolation (ASSERTED), the shipped file's
+#               race (MEASURED, never asserted), and the fix (ASSERTED).
+#   (no arg)    all three.
 #
 # No --network stage: restore-reproducibility for this node's three
 # lockfile rows lives in tests/nvim-plugin-manager.sh --network's
@@ -48,15 +52,26 @@
 #     dereference it. `cp -R` must target a NONEXISTENT destination: into
 #     an existing directory it nests the source inside it.
 #
-#   * "NO NETWORK CALLS" IS THE WRONG ASSERTION.
-#     `mason-lspconfig.setup()` calls `mason-registry.refresh()`, which
-#     reaches api.mason-registry.dev and api.github.com on every launch
-#     that loads this plugin file — four attempts per run, curl and wget
-#     against both endpoints. So curl and wget are refusing shims (exit 66)
-#     and git is a logging passthrough (blink runs local `rev-parse` and
-#     `describe`). The assertion is that every network binary on PATH is
-#     poisoned, that the run STILL enables the servers and attaches lua_ls
-#     and exits 0, and that the log holds no clone/fetch/ls-remote and no
+#   * NO NETWORK CALLS AT LAUNCH — AND THAT IS NOW THE ASSERTION.
+#     Corrected 2026-08-24. This block used to read "NO NETWORK CALLS IS THE
+#     WRONG ASSERTION", and it was right when written: `mason-lspconfig.setup()`
+#     called `mason-registry.refresh()` on every launch that loads this plugin
+#     file and reached api.mason-registry.dev and api.github.com four times per
+#     run, curl and wget against both endpoints. lsp.lua now sets
+#     `registry_cache = { refresh = false }`
+#     (00-delivery/corrections/offline-launch-eats-first-save), mason spawns no
+#     fetch at launch at all, and `refresh_attempts` is ZERO.
+#
+#     A ZERO-ATTEMPT ASSERTION DOES NOT STAND ALONE — it passes just as well on
+#     a mason that is entirely broken. It is PAIRED with a `:MasonUpdate` probe
+#     in the same offline root that drives the count ABOVE zero, and that pair
+#     is the discriminating check. curl and wget stay refusing shims (exit 66)
+#     and git stays a logging passthrough (blink runs local `rev-parse` and
+#     `describe`): the assertion is that every network binary on PATH is
+#     poisoned, that the launch STILL enables the servers and attaches lua_ls
+#     and exits 0 having touched the network zero times, that an EXPLICIT
+#     `:MasonUpdate` in the same root still reaches both endpoints and is
+#     refused, and that the log holds no clone/fetch/ls-remote and no
 #     package-download URL.
 #
 #   * NO INSTALL CAN HAPPEN BY ACCIDENT. `mason-lspconfig`'s `setup()`
@@ -74,7 +89,7 @@
 #     workspace/didChangeConfiguration notification becomes readable; the
 #     tree stage asserts that lsp.lua itself never touches the level.
 #
-# Usage: bash tests/nvim-lsp.sh [--tree|--headless]
+# Usage: bash tests/nvim-lsp.sh [--tree|--headless|--race]
 
 set -u
 
@@ -303,7 +318,7 @@ nv_watch() {
 # caught every invocation.
 f_repo()   { /usr/bin/grep -qF '"neovim/nvim-lspconfig"' "$1"; }
 f_event()  { /usr/bin/grep -qE 'event = \{ "BufReadPre", "BufNewFile" \}' "$1"; }
-f_mason()  { /usr/bin/grep -qF '{ "mason-org/mason.nvim", opts = {} }' "$1"; }
+f_mason()  { /usr/bin/grep -qF '{ "mason-org/mason.nvim", opts = { registry_cache = { refresh = false } } }' "$1"; }
 f_mlsp()   { /usr/bin/grep -qF '"mason-org/mason-lspconfig.nvim"' "$1"; }
 f_blink()  { /usr/bin/grep -qF '"saghen/blink.cmp"' "$1"; }
 f_star()   {
@@ -364,8 +379,10 @@ if mode == "deps":
                  '"saghen/blink.cmp"'):
         if want not in b:
             fail("dependencies block is missing " + want)
-    if "opts = {}" not in b:
-        fail("mason.nvim carries no opts = {}")
+    if "registry_cache = { refresh = false }" not in b:
+        fail("mason.nvim carries no registry_cache = { refresh = false } — the "
+             "offline-launch fix; see 00-delivery/corrections/"
+             "offline-launch-eats-first-save")
 
 elif mode == "ensure":
     # R2: ensure_installed is exactly the five, in order.
@@ -486,6 +503,12 @@ selftests() {
   chk_fail "selftest: a copy adding vim.keymap.set(\"n\", \"grn\", …) goes red under R5's negative half" \
     f_nocore "$T/grn.lua"
 
+  sed 's/opts = { registry_cache = { refresh = false } }/opts = {}/' "$LSP" > "$T/regcache.lua"
+  chk_fail "selftest: a copy with registry_cache stripped back to opts = {} goes red (the offline-launch fix)" \
+    f_mason "$T/regcache.lua"
+  chk_fail "selftest: …and the dependencies-block parser goes red on the same copy" \
+    f_deps "$T/regcache.lua"
+
   sed 's|^\( *\)vim.diagnostic.config({|\1vim.lsp.log.set_level(vim.lsp.log.levels.DEBUG)\n&|' \
     "$LSP" > "$T/setlvl.lua"
   chk_fail "selftest: a copy adding vim.lsp.log.set_level(DEBUG) goes red" \
@@ -498,7 +521,8 @@ stage_tree() {
 
   chk_ok "tree: names neovim/nvim-lspconfig (R1)"                      f_repo "$LSP"
   chk_ok "tree: lazy on BufReadPre + BufNewFile (R1)"                  f_event "$LSP"
-  chk_ok "tree: mason-org/mason.nvim with opts = {} (R1)"              f_mason "$LSP"
+  chk_ok "tree: mason-org/mason.nvim with registry_cache = { refresh = false } (R1 + the offline-launch fix)" \
+    f_mason "$LSP"
   chk_ok "tree: mason-org/mason-lspconfig.nvim (R1)"                   f_mlsp "$LSP"
   chk_ok "tree: saghen/blink.cmp (R1)"                                 f_blink "$LSP"
   chk_ok "tree: all three are inside one dependencies block (R1)"      f_deps "$LSP"
@@ -596,9 +620,11 @@ for _, k in ipairs({ "gd", "gI", " rn", " ca", "K", "grn", "gra", "grr", "gri", 
   put("map[" .. k .. "]", mp(k))
 end
 
--- Hermeticity: mason-registry.refresh() is async and its four attempts land
--- over the first launch. Poll the shim log so the count is deterministic
--- rather than a race with qa!.
+-- Hermeticity: with registry_cache.refresh = false, mason spawns NO fetch at
+-- launch, so this counts to ZERO. The old version waited up to 30 s for four
+-- attempts to land; with none coming that wait could only ever burn its full
+-- budget, so it is a fixed GRACE WINDOW instead — long enough for a late
+-- attempt to reach the shim log if one were ever spawned.
 local log = vim.env.PROBE_NETLOG
 local function attempts()
   local n, f = 0, io.open(log, "r")
@@ -607,7 +633,7 @@ local function attempts()
   f:close()
   return n
 end
-put("refresh_settled", vim.wait(30000, function() return attempts() >= 4 end, 250))
+vim.wait(750, function() return false end)
 put("refresh_attempts", attempts())
 vim.cmd("qa!")
 LUA
@@ -653,8 +679,42 @@ LUA
   ok "R5: gO is core's global document symbol, not ours"            'map[gO]=0|vim.lsp.buf.document_symbol()'
   okp "R5: ]d is core's global next-diagnostic, not ours"           '^map\[\]d\]=0|Jump to the next diagnostic'
   okp "R5: [d is core's global prev-diagnostic, not ours"           '^map\[\[d\]=0|Jump to the previous diagnostic'
-  ok "hermeticity: all four mason refresh attempts landed"          'refresh_settled=true'
-  ok "hermeticity: the count is four (curl+wget against both endpoints)" 'refresh_attempts=4'
+  ok "hermeticity + the offline-launch fix: ZERO mason network attempts at launch — registry_cache.refresh = false spawns no fetch, so there is no promise left to reject into a save" \
+    'refresh_attempts=0'
+
+  # ── the pair that makes refresh_attempts=0 a discriminating check ────────
+  # Zero attempts also describes a mason that is entirely broken. So the SAME
+  # root is asked for an EXPLICIT refresh and the count must rise above zero:
+  # the disable is scoped to the automatic refresh, not to mason's networking.
+  local UE="$W/u.err" P1U="$W/masonupdate.lua"
+  cat > "$P1U" <<'LUA'
+local function put(k, v) io.stderr:write(k .. "=" .. tostring(v) .. "\n") end
+local log = vim.env.PROBE_NETLOG
+local function attempts()
+  local n, f = 0, io.open(log, "r")
+  if not f then return 0 end
+  for line in f:lines() do if line:find("mason.nvim v", 1, true) then n = n + 1 end end
+  f:close()
+  return n
+end
+vim.cmd("edit " .. vim.fn.fnameescape(vim.env.PROBE_FILE))
+local before = attempts()
+put("before", before)
+put("has_command", vim.fn.exists(":MasonUpdate") == 2)
+pcall(vim.cmd, "MasonUpdate")
+put("settled", vim.wait(30000, function() return attempts() > before end, 100))
+put("after", attempts())
+put("delta_positive", attempts() > before)
+vim.cmd("qa!")
+LUA
+  code="$(nv_watch "$H" 60 "$UE" "+luafile $P1U")"
+  [ "$code" = "0" ]
+  chk "headless: :MasonUpdate probe exits 0, no TIMEOUT (got: $code)" $?
+  OUT="$(cat "$UE")"
+  printf '%s\n' "$OUT" | sed 's/^/      /'
+  ok "R2: :MasonUpdate exists as a command — the deliberate refresh is still there" 'has_command=true'
+  ok "R2 + the offline-launch fix: an EXPLICIT :MasonUpdate drives the network-attempt count ABOVE zero in the same offline root — the disable is scoped to the AUTOMATIC refresh, not to mason's networking" \
+    'delta_positive=true'
 
   # ── the poisoned-PATH assertion, part 1 ──────────────────────────────────
   local nb bad=""
@@ -668,13 +728,15 @@ LUA
   chk "hermeticity: the curl shim refuses (exit 66) — the run cannot have fetched anything" $?
 
   # ── part 2: every refresh failed and the editor still works ──────────────
-  # Already proven above: refresh_attempts=4 with a refusing curl/wget, and
-  # client=lua_ls with the run at exit 0. This is the fact that matters — a
-  # machine with no network still gets a working editor.
+  # Already proven above: refresh_attempts=0 at LAUNCH, a rising count under an
+  # explicit :MasonUpdate, and client=lua_ls with the run at exit 0. This is the
+  # fact that matters — a machine with no network still gets a working editor.
+  # The endpoints below are the :MasonUpdate probe's calls, not the launch's:
+  # since 2026-08-24 a launch makes none.
   /usr/bin/grep -q 'api.mason-registry.dev' "$NETLOG"
-  chk "hermeticity: a refresh attempt hit api.mason-registry.dev and was refused" $?
+  chk "hermeticity: the :MasonUpdate refresh hit api.mason-registry.dev and was refused" $?
   /usr/bin/grep -q 'api.github.com' "$NETLOG"
-  chk "hermeticity: a refresh attempt hit api.github.com and was refused" $?
+  chk "hermeticity: the :MasonUpdate refresh hit api.github.com and was refused" $?
 
   # ── R4 end to end: the setting reaches the server ────────────────────────
   # The probe raises the log level; lsp.lua never does (the --tree stage
@@ -936,12 +998,342 @@ LUA
   /usr/bin/grep -oE 'https://[A-Za-z0-9./_-]+' "$NETLOG" | LC_ALL=C sort -u | sed 's/^/        /'
 }
 
+# ── stage: --race ───────────────────────────────────────────────────────────
+# 00-delivery/corrections/offline-launch-eats-first-save, R1 and R4.
+#
+# WHAT THIS STAGE ASSERTS, AND WHAT IT ONLY RECORDS. Rescoped by the
+# orchestrator on 2026-08-24 after the first implementation measured the
+# prescribed reproduction and could not produce it. The original spec asked
+# this stage to assert "the shipped arm aborts at least once in N". That is an
+# assertion that a RACE REPRODUCES: red on a fast machine, green on a slow
+# one, failing for reasons that have nothing to do with the code it guards.
+# This board already carries one node filed over that shape
+# (nushell-core-s430-stall), so the gate asserts what is deterministic and
+# MEASURES what is not — the shape tests/nvim-formatting.sh's race control
+# already uses.
+#
+#   arm 1  ASSERTED   the mechanism, in isolation: uv.shutdown on the stdin
+#                     pipe of a REAPED child fails with ENOTCONN, and returns
+#                     nil against a child still alive.
+#   arm 2  ASSERTED   the SHIPPED file — which now carries the fix: zero
+#                     aborts, zero network attempts, the write on disk.
+#   arm 3  MEASURED   the fix REVERTED on a copy (registry_cache stripped back
+#                     to opts = {}). The race. Its abort count is counted and
+#                     never asserted; its NETWORK-ATTEMPT count is asserted,
+#                     because that half is deterministic and is what the fix
+#                     actually changes.
+#
+# THE MECHANISM, as measured 2026-08-24 (nvim 0.12.4, mason.nvim v2.3.1,
+# 2a6940a). mason-lspconfig.setup() calls mason-registry.refresh() on every
+# launch that loads this plugin file. The fetch's on_spawn handler —
+# mason-core/fetch.lua:134, wrapped in a.scope — shuts down the stdin pipe of
+# the curl it just spawned. If that curl has ALREADY EXITED when libuv gets to
+# the request, uv.shutdown fails with ENOTCONN, and a.scope's callback
+# re-raises it with error(err, 0) (mason-core/async/init.lua:121). That error
+# runs inside a libuv callback, so it propagates out of WHATEVER BLOCKING CALL
+# IS PUMPING THE LOOP at that instant. A BufWritePre consumer that pumps the
+# loop therefore loses its write — the buffer is not written and the file
+# stays byte-identical. Traceback as recorded on the correction:
+#
+#   E5113: Lua chunk: … BufWritePre Autocommands for "*": Vim(append):Lua
+#   callback: ENOTCONN
+#     .../mason.nvim/lua/mason-core/async/init.lua:121: in function 'callback'
+#     .../mason.nvim/lua/mason-core/async/init.lua:99:  in function 'cb'
+#     .../mason.nvim/lua/mason-core/async/init.lua:25:  in function 'reject'
+#     [C]: in function 'wait'
+#     .../conform.nvim/lua/conform/runner.lua:709: in function 'format_lines_sync'
+#
+# THREE VERDICTS, EACH WITH ITS FIXTURE — measured 2026-08-24, and they are
+# why this stage has the shape it has:
+#
+#   * "the shipped arm aborts 6/6 seeded and 3/4 cold" — does NOT reproduce on
+#     a FAITHFUL fixture (lsp_stage <root> min scratch root, this gate's
+#     refusing curl AND wget shims at the head of PATH, a probe-local
+#     BufWritePre victim doing only vim.wait(1500, …)). ZERO aborts in 60
+#     launches across six configurations: the staged stage itself,
+#     file-in-argv instead of :edit, a sweep of the write's offset over
+#     0/4/8/…/50 ms, a root with no <data>/mason at all, and the same under
+#     twelve CPU hogs.
+#
+#     THE VARIABLE IS `wget`, AND IT IS NOT THE VICTIM. Established
+#     2026-08-24 by a byte-for-byte copy of the earlier probe's shim
+#     directory, one file added:
+#
+#         shim dir                                          aborts
+#         curl shim, NO wget anywhere on PATH               4/5
+#         the same dir + a wget shim                        0/5
+#
+#     mason's fetch is curl():or_else(wget):or_else(…). With no wget BINARY
+#     the fallback fails AT SPAWN instead of spawning one, and the curl stdin
+#     shutdown lands in exactly the starved window the timeline below
+#     describes. The BufWritePre victim was never the variable: both the
+#     probe-local one and the conform one give ~4/5 without wget and 0/5 with
+#     it, and a fake stylua on PATH makes no difference either (4/4 with,
+#     4/4 without).
+#
+#     SO THE STATUS OF "AN OFFLINE LAUNCH EATS THE FIRST SAVE ON A REAL
+#     MACHINE" IS `unmeasured` — not reproduced, and NOT refuted. wget is
+#     installed on this machine at /opt/homebrew/bin/wget, so a shim set that
+#     omits it is missing a binary the machine actually has; every earlier
+#     measurement of this abort on this board, including the 2026-08-23
+#     discovery that filed the correction, was taken in that condition. The
+#     60 clean launches above are evidence that the abort does not fire under
+#     FAITHFUL shims. They are not evidence that it cannot fire.
+#
+#     WHICH MEANS: arm 2 reading 0/N is the fixture being right, not the gate
+#     being broken. DO NOT "fix" this stage by deleting the wget shim and
+#     calling the race reproduced — that would re-measure the same artefact
+#     and re-file the same wrong reason.
+#
+#   * "the root cause is uv.shutdown -> ENOTCONN, re-raised by a.scope" —
+#     REPRODUCED AS A MECHANISM (arm 1 below, 3/3 against its 3/3 control on a
+#     live peer), but REFUTED AS REACHABLE
+#     THROUGH A vim.wait VICTIM (fixture: the staged root above, with
+#     vim.loop.shutdown patched — mason resolves it lazily through
+#     mason-core/async/uv.lua's __index, so the patch takes). Every shutdown
+#     inside the mason path came back err=nil. The timeline says why:
+#
+#         spawn_ms=17 curl / shutdown_req_ms=17 / shutdown_cb_ms=17 err=nil
+#
+#     WHILE THE LOOP IS BEING PUMPED, libuv completes the shutdown inside a
+#     millisecond — long before a shim process can start and exit — so the
+#     peer is still alive and there is no error to raise. The bug needs a
+#     SYNCHRONOUS STALL between mason's uv.spawn and the loop's next poll,
+#     which a plugin load or a long autocmd supplies on a real launch and a
+#     pumping vim.wait never does. That is the whole reason the shipped arm
+#     is a race rather than a behaviour.
+#
+#   * "registry_cache.refresh = false spawns no fetch at all" — REPRODUCED
+#     (fixture: a cf_stage copy of lsp.lua on the same staged root). Zero
+#     `mason.nvim v` lines in the shim log over eleven launches, against forty
+#     over ten launches of the shipped file.
+
+# mason_hits — lines in the shim log carrying mason's own User-Agent
+# ("mason.nvim %s (+https://github.com/mason-org/mason.nvim)",
+# mason-core/fetch.lua:11). The --headless stage counts the same marker. A
+# DELTA is taken per run rather than truncating the log, because the
+# no-argument run asserts on that log's contents in the stage before this.
+mason_hits() {
+  local n
+  n="$(/usr/bin/grep -cF 'mason.nvim v' "$NETLOG" 2> /dev/null)"
+  printf '%s' "${n:-0}"
+}
+
+RA_ABORTS=0; RA_IDVIOL=0; RA_EXITVIOL=0; RA_NEWMISS=0; RA_HITS=0
+
+stage_race() {
+  echo "── stage --race: the offline launch that discards the first save ────"
+  need_seed_source
+
+  local N=10
+  local RS="$W/race-shipped" RC="$W/race-reverted" RE="$W/race.err"
+  # THE MUTATION IS A REVERT, since spec02 landed the fix in the shipped file:
+  # it strips registry_cache back to the old `opts = {}`. cf_stage returns
+  # non-zero when the sed changed nothing, so a mutation that mutates nothing
+  # is a staging FAILURE, never a silent pass.
+  local MUT='s|opts = { registry_cache = { refresh = false } } }|opts = {} }|'
+
+  # ── arm 1, ASSERTED: the mechanism, in isolation ────────────────────────
+  # -u NONE, no config, no mason: just libuv and the one question the whole
+  # correction turns on — does uv.shutdown fail when the peer is already gone?
+  #
+  # THE PEER IS KILLED AND REAPED FIRST, deliberately, and this is the second
+  # version of this arm. The first raced a curl shim's exit against libuv's
+  # shutdown across a 0-14 ms starvation sweep. That sweep reported ENOTCONN
+  # 8/8 run by hand and nil 8/8 run through nv_watch, on the same file, the
+  # same shim and the same environment — measured three times each way,
+  # 2026-08-24. An arm whose result depends on the process context it runs in
+  # cannot be the asserted one. So the child is SIGKILLed and its exit
+  # callback is awaited before the shutdown is requested: the peer is provably
+  # dead, and the answer stops being a race.
+  #
+  # THE CONTROL IS THE HALF THAT MAKES IT A MEASUREMENT: the same pipe, the
+  # same call, against a child that is STILL ALIVE. Without it "shutdown
+  # reports ENOTCONN" could equally mean "shutdown always reports ENOTCONN on
+  # this platform", and the arm would prove nothing.
+  echo "── arm 1 (ASSERTED): the mechanism — uv.shutdown on a dead peer ─────"
+  local M="$W/mechanism.lua" ME="$W/mechanism.err" code OUT
+  cat > "$M" <<'LUA'
+local uv = vim.uv
+local out = {}
+local function spawn_sleep()
+  local stdin = uv.new_pipe(false)
+  local exited = false
+  local h = uv.spawn("/bin/sleep", { stdio = { stdin, nil, nil }, args = { "30" } },
+                     function() exited = true end)
+  return stdin, h, function() return exited end
+end
+-- DEAD PEER: kill and REAP before the shutdown is requested.
+for _ = 1, 3 do
+  local stdin, h, has_exited = spawn_sleep()
+  uv.process_kill(h, "sigkill")
+  local reaped = vim.wait(5000, has_exited, 5)
+  local done, err = false, "<no callback>"
+  uv.shutdown(stdin, function(e) err = e; done = true end)
+  vim.wait(5000, function() return done end, 5)
+  out[#out + 1] = ("dead_peer reaped=%s err=%s"):format(tostring(reaped), tostring(err))
+end
+-- LIVE PEER: the control.
+for _ = 1, 3 do
+  local stdin, h = spawn_sleep()
+  local done, err = false, "<no callback>"
+  uv.shutdown(stdin, function(e) err = e; done = true end)
+  vim.wait(5000, function() return done end, 5)
+  out[#out + 1] = ("live_peer err=%s"):format(tostring(err))
+  pcall(uv.process_kill, h, "sigkill")
+end
+for _, l in ipairs(out) do io.stderr:write(l .. "\n") end
+vim.cmd("qa!")
+LUA
+  mkdir -p "$W/mech"
+  code="$(nv_watch "$W/mech" 60 "$ME" -u NONE -i NONE "+luafile $M")"
+  [ "$code" = "0" ]
+  chk "race/arm1: the mechanism probe exits 0, no TIMEOUT (got: $code)" $?
+  OUT="$(cat "$ME")"
+  printf '%s\n' "$OUT" | sed 's/^/      /'
+  [ "$(printf '%s\n' "$OUT" | /usr/bin/grep -cxF 'dead_peer reaped=true err=ENOTCONN')" = "3" ]
+  chk "race/arm1: uv.shutdown on the stdin pipe of a REAPED child fails with ENOTCONN (3/3) — this is the error a.scope re-raises out of the pumping call" $?
+  [ "$(printf '%s\n' "$OUT" | /usr/bin/grep -cxF 'live_peer err=nil')" = "3" ]
+  chk "race/arm1 CONTROL: the same shutdown against a child still ALIVE returns err=nil (3/3) — the failure is the dead peer, not the platform" $?
+
+  # ── the two staged roots ────────────────────────────────────────────────
+  lsp_stage "$RS" min
+  cmp -s "$LSP" "$RS/config/nvim/lua/plugins/lsp.lua"
+  chk "race staging: the shipped arm's lsp.lua is byte-identical to the repo's — this arm is the config as it ships, fix included" $?
+  /usr/bin/grep -qF 'registry_cache = { refresh = false }' "$RS/config/nvim/lua/plugins/lsp.lua"
+  chk "race staging: …and the shipped file carries the fix" $?
+
+  cf_stage "$RC" "$MUT" min
+  chk "race staging: the revert arm's lsp.lua had the fix STRIPPED (a sed that changed NOTHING is a staging failure)" $?
+  ! /usr/bin/grep -qF 'registry_cache = { refresh = false }' "$RC/config/nvim/lua/plugins/lsp.lua" \
+    && /usr/bin/grep -qF '{ "mason-org/mason.nvim", opts = {} }' "$RC/config/nvim/lua/plugins/lsp.lua"
+  chk "race staging: …and the copy is back to the pre-fix { \"mason-org/mason.nvim\", opts = {} }" $?
+
+  # The probe. The victim pumps the loop and does nothing else; the write is
+  # NOT deferred (a defer would be a drain by another name) and NOT drained —
+  # tests/nvim-formatting.sh's pre.lua drains on purpose so its probes measure
+  # conform; this one measures the race. Only the quit is deferred, so the run
+  # ends at exit 0 whether or not the write aborted.
+  local P="$W/race.lua"
+  cat > "$P" <<'LUA'
+local function put(k, v) io.stderr:write(k .. "=" .. tostring(v) .. "\n") end
+
+-- The victim: a BufWritePre consumer that ONLY pumps the loop. Probe-local by
+-- design — conform is the victim in the traceback, but conform.lua belongs to
+-- 03-editor/07-formatting and a check needing its formatter binaries would
+-- measure that node's wiring instead of this one. This needs no plugin, no
+-- binary and no filetype, and it is the direct statement of R2: ANY consumer
+-- that pumps the loop inherits the bug.
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = vim.api.nvim_create_augroup("probe_victim", { clear = true }),
+  callback = function() vim.wait(1500, function() return false end) end,
+})
+
+-- The safety quit, registered FIRST: if an abort ever escapes the pcall
+-- below, the run must still end at exit 0 rather than as a 60 s watchdog
+-- TIMEOUT that would read as a different failure.
+vim.defer_fn(function() vim.cmd("qa!") end, 10000)
+
+vim.cmd("edit " .. vim.fn.fnameescape(vim.env.PROBE_FILE))
+vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+  "-- RACE PROBE WROTE THIS",
+  "return 42",
+})
+local ok, err = pcall(function() vim.cmd("silent write") end)
+put("write_ok", ok)
+if not ok then put("write_err", err) end
+put("modified", vim.bo.modified)
+vim.defer_fn(function() vim.cmd("qa!") end, 100)
+LUA
+
+  # race_arm <root> <label> — N identical runs. Sets RA_*; prints the file's
+  # identity before and after each run, which is the "discarded, not merely
+  # failed" evidence R1 asks for.
+  race_arm() {
+    local root="$1" label="$2"
+    local f="$root/work/a.lua"
+    local i code before after h0 h1 ab id nw
+    RA_ABORTS=0; RA_IDVIOL=0; RA_EXITVIOL=0; RA_NEWMISS=0; RA_HITS=0
+    for i in $(seq 1 "$N"); do
+      printf 'local x = 1\nreturn x\n' > "$f"
+      # macOS stat gives mtime in whole seconds, so a fixture written in the
+      # same second as the probe's write is indistinguishable by mtime and the
+      # identity check would read "unchanged" for the wrong reason. Back-date
+      # it: now mtime discriminates.
+      touch -t 202001010000 "$f"
+      before="md5=$(md5 -q "$f") size+mtime=$(stat -f '%z %m' "$f")"
+      h0="$(mason_hits)"
+      code="$(nv_watch "$root" 60 "$RE" "+luafile $P")"
+      h1="$(mason_hits)"
+      RA_HITS=$(( RA_HITS + h1 - h0 ))
+      after="md5=$(md5 -q "$f") size+mtime=$(stat -f '%z %m' "$f")"
+      ab=no; /usr/bin/grep -q 'ENOTCONN' "$RE" && ab=yes
+      id=no; [ "$before" = "$after" ] && id=yes
+      nw=no; /usr/bin/grep -q 'RACE PROBE WROTE THIS' "$f" && nw=yes
+      [ "$ab" = yes ] && RA_ABORTS=$(( RA_ABORTS + 1 ))
+      [ "$ab" = yes ] && [ "$id" != yes ] && RA_IDVIOL=$(( RA_IDVIOL + 1 ))
+      [ "$ab" = yes ] && [ "$code" != "0" ] && RA_EXITVIOL=$(( RA_EXITVIOL + 1 ))
+      [ "$ab" = no ] && [ "$nw" != yes ] && RA_NEWMISS=$(( RA_NEWMISS + 1 ))
+      printf 'MEASURED   %s run %2d: ENOTCONN=%-3s exit=%-7s new-content-on-disk=%-3s\n' \
+        "$label" "$i" "$ab" "$code" "$nw"
+      printf 'MEASURED     before: %s\n' "$before"
+      printf 'MEASURED     after : %s   byte-identical=%s\n' "$after" "$id"
+    done
+  }
+
+  # ── arm 2, ASSERTED: the shipped file, which now carries the fix ────────
+  echo "── arm 2 (ASSERTED): the shipped file, offline, with the fix in it ──"
+  local S_AB S_NEW S_HITS
+  race_arm "$RS" shipped
+  S_AB="$RA_ABORTS"; S_NEW="$RA_NEWMISS"; S_HITS="$RA_HITS"
+  echo "MEASURED   shipped (registry_cache.refresh = false): $S_AB/$N ENOTCONN aborts, $S_HITS mason network attempts"
+  [ "$S_AB" -eq 0 ]
+  chk "race/R4 + PRD acceptance 1: the SHIPPED file is 0/$N — a cold offline launch writes the first save, no ENOTCONN (got $S_AB/$N)" $?
+  [ "$S_NEW" -eq 0 ]
+  chk "race/R4 + PRD acceptance 1: …and the buffer's new content is on disk after every run, md5 size and mtime all changed ($S_NEW of $N missing it)" $?
+  [ "$S_HITS" -eq 0 ]
+  chk "race/R2: the shipped file attempts the network ZERO times at launch — no fetch is spawned, so there is no promise left to reject (got $S_HITS)" $?
+
+  # ── arm 3, MEASURED: the fix reverted — the counterfactual ──────────────
+  # The mutation's DETERMINISTIC half is asserted (the revert brings the
+  # network attempts back); its RACE half is counted and printed. See the
+  # header: with a faithful shim set the abort is not reachable, and asserting
+  # that it reproduces would be asserting that a race fires.
+  echo "── arm 3 (MEASURED + one assertion): the fix REVERTED on a copy ─────"
+  local C_AB C_HITS
+  race_arm "$RC" reverted
+  C_AB="$RA_ABORTS"; C_HITS="$RA_HITS"
+  echo "MEASURED   reverted (opts = {}): $C_AB/$N ENOTCONN aborts, $C_HITS mason network attempts"
+  if [ "$C_AB" -gt 0 ]; then
+    # Only reachable when the race DID reproduce. A check that passes because
+    # there was nothing to check is worse than no check, so these run only
+    # when there is something to check.
+    [ "$RA_IDVIOL" -eq 0 ]
+    chk "race/R1: every aborted reverted run left the file BYTE-IDENTICAL — the write was DISCARDED, not merely failed ($RA_IDVIOL of $C_AB changed it)" $?
+    [ "$RA_EXITVIOL" -eq 0 ]
+    chk "race/R1: …and the probe process still exited 0 on every aborted run ($RA_EXITVIOL of $C_AB did not)" $?
+  else
+    echo "MEASURED   the race did NOT reproduce this run — expected, and NOT a regression."
+    echo "MEASURED   0/N here is the FIXTURE BEING FAITHFUL. The variable is wget: mason's"
+    echo "MEASURED   fetch is curl():or_else(wget), and with no wget binary on PATH the"
+    echo "MEASURED   fallback fails AT SPAWN and the curl stdin shutdown lands in the"
+    echo "MEASURED   starved window (4/5 aborts without a wget shim, 0/5 with one, same"
+    echo "MEASURED   dir otherwise). wget IS installed on this machine, so this stage shims"
+    echo "MEASURED   it. Do NOT delete that shim to make this arm go red — it would"
+    echo "MEASURED   re-measure an artefact. The real-machine abort is \`unmeasured\`."
+    echo "MEASURED   0 aborts in 60 launches across six configurations, 2026-08-24."
+  fi
+  [ "$C_HITS" -gt 0 ]
+  chk "race/R4 COUNTERFACTUAL: reverting the one line brings the network attempts BACK — $C_HITS over $N launches, against $S_HITS on the shipped file. The fix is what does it" $?
+}
+
 # ── driver ──────────────────────────────────────────────────────────────────
 case "${1:---all}" in
   --tree)     selftests; echo; stage_tree ;;
   --headless) selftests; echo; stage_headless ;;
-  --all)      selftests; echo; stage_tree; echo; stage_headless ;;
-  *) echo "usage: bash tests/nvim-lsp.sh [--tree|--headless]"; exit 2 ;;
+  --race)     stage_race ;;
+  --all)      selftests; echo; stage_tree; echo; stage_headless; echo; stage_race ;;
+  *) echo "usage: bash tests/nvim-lsp.sh [--tree|--headless|--race]"; exit 2 ;;
 esac
 
 echo
