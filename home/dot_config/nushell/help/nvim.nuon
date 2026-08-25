@@ -28,6 +28,15 @@
         source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
+        key: "q"
+        title: "Close a utility buffer"
+        use: "Press `q` in a help, quickfix, man, lspinfo, checkhealth or startuptime buffer to close it — one key across all six. The buffer is also marked unlisted the moment it opens, so it never turns up under `<S-h>`/`<S-l>` or `:bnext` either."
+        topic: "edit"
+        mode: "nvim:normal"
+        verify: [{kind: "nvim-map", mode: "n", lhs: "q", desc: null, scope: "buffer"}]
+        source: "prds/03-editor/03-autocmds/prd.md"
+    }
+    {
         key: "<C-h> <C-j> <C-k> <C-l>"
         title: "Move between windows"
         use: "Control plus a vim direction letter moves the cursor to the window that way — no `<C-w>` prefix."
@@ -221,12 +230,25 @@
         source: "prds/03-editor/05-completion/prd.md"
     }
     {
+        key: "<BS> and <CR> (autopairs)"
+        title: "Delete a bracket pair, and let Enter fall through to it"
+        use: "`<BS>` next to an auto-inserted closing bracket or quote deletes both characters as one press, the same key as anywhere else. `<CR>` right after an opening bracket splits it onto three lines with the cursor indented in between — `{` then Enter gives `{`, a blank indented line, `}` — but only when no completion menu is showing; with one open, `<CR>` accepts the highlighted item instead, exactly as the entry above describes."
+        topic: "edit"
+        mode: "nvim:insert"
+        why: "Both keys look like they belong entirely to completion, and only one does. blink.cmp maps `<CR>` to `{\"accept\", \"fallback\"}`: `fallback` means \"run whatever `<CR>` did before blink.cmp claimed it\", and because autopairs sets up first in load order, that prior mapping is autopairs' own bracket-expand handler — so the expand survives, but only through blink.cmp's fallback chain, and only while no menu is open. `<BS>` has no such chain: it is the one map autopairs sets that nothing else claims, so its default wins outright."
+        verify: [
+            {kind: "nvim-map", mode: "i", lhs: "<BS>", desc: "autopairs delete", scope: "buffer"}
+            {kind: "nvim-map", mode: "i", lhs: "<CR>", desc: "blink.cmp: Accept", scope: "buffer"}
+        ]
+        source: "prds/03-editor/12-small-plugins/prd.md"
+    }
+    {
         key: "<leader>e"
         title: "Open the current directory as a buffer"
         use: "Press `<leader>e` in any buffer: oil opens on the directory of the current file, dotfiles included. It is a normal buffer — rename a line, delete a line, add a line, then `:w` and the filesystem matches."
         topic: "edit"
         mode: "nvim:normal"
-        why: "Open it with the key, not with `:e some/dir`. The plugin is lazy on that key, so its file-explorer hijack is not installed until the first time you press it — and netrw is disabled, so before that press `:e` on a directory reaches neither one."
+        why: "`<leader>e` is the fast path, not the only one: oil loads eagerly (`lazy = false`) so its `default_file_explorer` hijack is installed at startup, and `:e some/dir` reaches it with no key pressed. Netrw is disabled either way, so nothing else could claim the directory instead."
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>e", desc: "Open file explorer"}]
         source: "prds/03-editor/06-explorer/prd.md"
     }
@@ -303,7 +325,7 @@
         topic: "find"
         mode: "nvim:normal"
         also: ["<leader>fg"]
-        why: "`prose` because these live inside telescope's own mapping table rather than in Neovim's keymap list — there is no `lhs` to introspect, even though the keys are real."
+        why: "`prose` because these maps are buffer-local to telescope's own prompt buffer, created only while a picker is open and gone once it closes — `maparg` can see them (a live picker really does return an `lhs`, with `buffer = 1`), but nothing static can, so no `nvim --headless` probe outside a running picker has anything to check against."
         verify: [{kind: "prose"}]
         source: "prds/03-editor/08-telescope/prd.md"
     }
@@ -345,14 +367,14 @@
         also: ["gd and gI", "<leader>rn and <leader>ca"]
         why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that plugin- and core-provided maps are allowlisted out of the drift check rather than documented."
         verify: [
-            {kind: "nvim-map", mode: "n", lhs: "K", desc: null, scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "grn", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "gra", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "grr", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "gri", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "gO", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "]d", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "[d", desc: null}
+            {kind: "nvim-map", mode: "n", lhs: "K", desc: "vim.lsp.buf.hover()", scope: "buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "grn", desc: "vim.lsp.buf.rename()"}
+            {kind: "nvim-map", mode: "n", lhs: "gra", desc: "vim.lsp.buf.code_action()"}
+            {kind: "nvim-map", mode: "n", lhs: "grr", desc: "vim.lsp.buf.references()"}
+            {kind: "nvim-map", mode: "n", lhs: "gri", desc: "vim.lsp.buf.implementation()"}
+            {kind: "nvim-map", mode: "n", lhs: "gO", desc: "vim.lsp.buf.document_symbol()"}
+            {kind: "nvim-map", mode: "n", lhs: "]d", desc: "Jump to the next diagnostic in the current buffer"}
+            {kind: "nvim-map", mode: "n", lhs: "[d", desc: "Jump to the previous diagnostic in the current buffer"}
         ]
         source: "prds/03-editor/09-lsp/prd.md"
     }

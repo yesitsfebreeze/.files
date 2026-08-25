@@ -1,8 +1,11 @@
 ---
-state: open
+state: done
 priority: 9
 est:
 mode: afk
+claim: 
+complexity: 21
+blast-radius: low
 needs:
   - 03-editor/03-autocmds
   - 03-editor/06-explorer
@@ -34,24 +37,30 @@ instead of reaching across the lane. The `05-completion` precedent is the
 same. This node is where it lands.
 
 ## Requirements
-- [ ] **R1** — `nvim.nuon` carries an entry for the utility-buffer `q`,
+- [x] **R1** — `nvim.nuon` carries an entry for the utility-buffer `q`,
       naming the filetypes it closes, sourced at
       [`03-editor/03-autocmds`](../../../03-editor/03-autocmds/prd.md). The
       filetype list is read from what E.4 actually landed in
       `home/dot_config/nvim/lua/config/autocmds.lua`, not from this PRD.
-- [ ] **R2** — The entry's `use-review.nuon` row is digested by the gate's
+      Landed: spec01, `nu tests/help-content-model.nu` -> `ok`.
+- [x] **R2** — The entry's `use-review.nuon` row is digested by the gate's
       own helper, with a reader-reviewer distinct from the author, per the
       corpus's review ritual — the same shape as
       [`cdi-manual-source`](../cdi-manual-source/prd.md) R2.
-- [ ] **R3** — **Census the rest of the editor's bindings while here, and
+      Landed: spec01, digest `b27fb92d6a81d7cf` as reported by the gate.
+- [x] **R3** — **Census the rest of the editor's bindings while here, and
       report rather than fix.** This node exists because one binding was
       missed; the question worth answering is how many others are. Compare
       every keymap E.2, E.4 and E.14 land against `nvim.nuon`'s entries and
       list the gaps. Any gap outside this node's one entry is a reported
       finding and its own correction — widening here would hide how large
       the drift is.
+      Landed: spec01's census table, quoted verbatim in the DONE report. One
+      other gap found (shift-select.lua's four visual-mode arrow-key
+      collapse maps have no `verify` target, only prose) — reported, not
+      fixed, per Out of scope.
 
-- [ ] **R4** — The telescope entry's stated reason is corrected. E.9's
+- [x] **R4** — The telescope entry's stated reason is corrected. E.9's
       analyst measured (2026-08-23) that
       `<Tab> <S-Tab> <CR> (telescope)` justifies its
       `verify: [{kind: "prose"}]` with *"there is no `lhs` to introspect"* —
@@ -66,7 +75,7 @@ same. This node is where it lands.
       Folded in here rather than filed separately: same file, same lane,
       same review ritual, and one sentence does not earn its own node.
 
-- [ ] **R5** — The `<leader>e` entry's `why` is brought in line with what
+- [x] **R5** — The `<leader>e` entry's `why` is brought in line with what
       E.10 lands. E.10's analyst measured (2026-08-23) that it still
       describes the pre-correction shape — "the plugin is lazy on that key,
       so its file-explorer hijack is not installed until the first time you
@@ -75,7 +84,9 @@ same. This node is where it lands.
       loads eagerly, `lazy = false`), so the `why` documents a behaviour the
       rebuild does not have. No gate catches it:
       `tests/help-content-model.nu:200` checks key presence only.
-- [ ] **R6** — The `Neovim's own LSP keys` entry stops claiming the eight
+      Landed: spec03, `lazy = false` confirmed at `explorer.lua:38`, headless
+      `:e <cwd>` measurement re-run and confirmed `filetype=oil`.
+- [x] **R6** — The `Neovim's own LSP keys` entry stops claiming the eight
       core maps carry no `desc`. E.7's implementer measured that they do
       (`vim.lsp.buf.rename()`, `Jump to the next diagnostic in the current
       buffer`, and so on), while the entry marks all eight `desc: null` with
@@ -83,16 +94,25 @@ same. This node is where it lands.
       existence-only, so this never goes red — it is inaccurate prose rather
       than a drift failure, which is exactly why it needs a node to catch
       it.
+      Landed: spec04, all eight `desc` strings independently re-measured
+      against `$VIMRUNTIME` and matched.
 
 ## Acceptance
-- [ ] `nu tests/help-content-model.nu` passes with the new entry and its
-      review row, output quoted.
-- [ ] The census in R3 is in the report as a table: every editor keymap in
-      the deployed config, and whether `nvim.nuon` documents it.
+- [x] `nu tests/help-content-model.nu` passes with the new entry and its
+      review row, output quoted:
+      ```
+      help content model: 96 entries across 4 files, 9 topics, 16 prose-only
+      ...
+      ok
+      ```
+- [x] The census in R3 is in the report as a table: every editor keymap in
+      the deployed config, and whether `nvim.nuon` documents it. See spec01's
+      census table, quoted verbatim in the DONE report.
 - [ ] Once [`06-help/04-drift-check`](../../../06-help/04-drift-check/prd.md)
       exists, `help --check` reports the utility-buffer `q` as documented.
       Until then, say so rather than ticking this against a check that does
-      not run yet.
+      not run yet. `06-help/04-drift-check` is still `state: open` as of this
+      implementation — left unticked per this box's own instruction.
 
 ## Out of scope
 - Fixing any other gap the R3 census finds. Report them; each is its own
