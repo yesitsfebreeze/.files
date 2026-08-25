@@ -78,7 +78,9 @@ the editor-style selection behavior — and sheds eye candy and dead lineage.
       registers an autocmd.
 
 - [ ] **I8** — **One file per plugin under `lua/plugins/`.** Each plugin
-      spec lives in a file named for the plugin; there is no catch-all.
+      spec lives in a file named for the **concern it delivers**, not the
+      plugin itself — a concern name survives replacing the plugin behind
+      it. There is no catch-all.
       The live config has one — `lua/plugins/editor.lua`, holding five
       unrelated specs (gitsigns, which-key, nvim-autopairs, conform,
       vim-table-mode) — and three nodes of this epic write to it:

@@ -1,12 +1,15 @@
 ---
-state: open
+state: done
 priority: 13
 est:
 mode: afk
+claim: 
 needs:
 verify: "bash gates/tree-links.sh"
 origin: derived
 from: 03-editor
+complexity: 12
+blast-radius: low
 ---
 
 # Epic invariant I8 says "named for the plugin"; every landed file is named
