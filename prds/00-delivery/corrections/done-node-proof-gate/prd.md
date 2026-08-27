@@ -1,5 +1,5 @@
 ---
-state: question
+state: deferred
 priority: 14
 est:
 mode: afk
@@ -9,6 +9,8 @@ verify: ""
 origin: derived
 from: 00-delivery/corrections/mi-rooted-verify-commands
 claim: 
+complexity: 55
+blast-radius: mid
 ---
 
 # Gate the property the board actually cares about: a `done` node's proof runs
@@ -223,3 +225,40 @@ known MISS recorded in its header and was registered once the MISS closed. The
 red list above goes in the header so nobody reads the deferral as an oversight.
 The trigger becomes a number this node can watch — reds at zero — rather than
 another node's list.
+
+## Answers
+
+Answered 2026-08-25 by the user, all four as recommended.
+
+Q1: **(a) for the 20, (b) for the 2 structural ones.** File 20 standing-proof
+nodes; `w0-4-s2-corrections` and `homebrew-bootstrap` get a written reason
+instead. This node's Out of scope ("Fixing any node's proof") still holds —
+the 20 are filed as their own nodes, not fixed here.
+
+Q2: **Its own node, filed before this gate registers.** The 14 hollow-proof
+carriers (12 link-walker, 1 whole-workspace, 1 report-not-gate) are not this
+node's to fix.
+
+Q3: **(c) scratch worktree over `HEAD`, (b) INDETERMINATE as the fallback**
+if the worktree approach proves impractical.
+
+Q4: **Build it, run it, register only once green**, per the
+`gates/nushell-module-staging.sh` precedent. The red list goes in the gate's
+own header.
+
+## Deferred — the tripwire, 2026-08-25
+
+The analyst returned SPECCED (`specs/spec01.md` the R1 gate,
+`specs/spec02.md` the R4 advisory check; complexity 55, blast-radius mid) —
+both real and both already on disk. It also proposed ~21 further derived
+PRDs for Q1/Q2 (19 standing-proof repoints + 2 policy nodes), which triggered
+the board's derived-work tripwire: recounted at 12 `origin: derived` in-flight
+against 12 `origin: requested` in-flight, exactly equal, and the 21 proposed
+would have pushed derived to 33.
+
+Put to the user; answer: **defer the whole derived tree, including this
+node's own two specs**, rather than implement the gate now and file the
+follow-ups piecemeal. Nothing in the 21-node list was filed. This node stays
+`deferred` — parked, not scheduled — until the user reopens it. The two specs
+on disk are real work and are not lost; `retry` (or hand-dispatch) picks them
+up as-is.

@@ -14,6 +14,7 @@ origin: derived
 from: 03-editor/07-formatting
 complexity: 45
 blast-radius: mid
+commit: a4d790d
 ---
 
 # An offline launch discards the first save

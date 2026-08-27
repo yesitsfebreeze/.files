@@ -10,6 +10,7 @@ origin: derived
 from: 03-editor
 complexity: 12
 blast-radius: low
+commit: c53d294
 ---
 
 # Epic invariant I8 says "named for the plugin"; every landed file is named

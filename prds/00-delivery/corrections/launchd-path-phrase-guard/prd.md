@@ -11,6 +11,7 @@ from: 00-delivery/corrections/gui-dies-claim-carriers
 claim: 
 complexity: 22
 blast-radius: low
+commit: f9d6177
 ---
 
 # The wording guard covers the config and not the PRD that specs it

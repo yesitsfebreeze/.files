@@ -560,6 +560,7 @@ source ~/.cache/nushell/init/television.nu
 # EXTERNALS at parse.
 source ~/.config/nushell/pass.nu
 source ~/.config/nushell/claude.nu
+source ~/.config/nushell/litellm.nu
 source ~/.config/nushell/recents.nu
 source ~/.config/nushell/zoxide.nu
 source ~/.config/nushell/history.nu

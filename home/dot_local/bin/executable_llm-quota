@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""llm-quota — what's left to spend, per provider.
+
+  llm-quota                     show the table
+  llm-quota --json              machine-readable (the nu module reads this)
+  llm-quota refresh             re-fetch every provider that exposes a balance API
+  llm-quota set <prov> <remaining> [--limit N] [--unit credits|tokens|requests]
+
+Only OpenRouter publishes a balance (/api/v1/credits). Zenmux returns 404 on
+every documented balance path, and opencode-zen exposes none, so those are
+recorded by hand — `set` is how you tell this file what the dashboard said.
+A manual figure is a reading, not a live number: its age is shown so a stale
+one is never mistaken for current.
+"""
+import json, os, subprocess, sys, urllib.request
+from datetime import datetime, timezone
+
+STATE = os.path.expanduser("~/.local/state/litellm/quota.json")
+AUTH = os.path.expanduser("~/.pi/agent/auth.json")
+PROVIDERS = ["zenmux", "opencode", "opencode-go", "openrouter", "ollama"]
+
+
+def load():
+    try:
+        return json.load(open(STATE))
+    except Exception:
+        return {}
+
+
+def save(d):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    json.dump(d, open(STATE, "w"), indent=2, sort_keys=True)
+
+
+def key(prov):
+    try:
+        e = json.load(open(AUTH)).get(prov) or {}
+    except Exception:
+        return ""
+    return e.get("key") or e.get("access") or ""
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def refresh(state):
+    """Fetch what can be fetched. Never overwrite a manual entry with a failure."""
+    # OpenRouter: total_credits minus total_usage is the real remaining balance.
+    try:
+        r = urllib.request.Request("https://openrouter.ai/api/v1/credits",
+                                   headers={"Authorization": "Bearer " + key("openrouter")})
+        d = json.load(urllib.request.urlopen(r, timeout=20))["data"]
+        total, used = float(d["total_credits"]), float(d["total_usage"])
+        state["openrouter"] = {"remaining": round(total - used, 4), "limit": total,
+                               "unit": "credits", "source": "auto", "updated": now()}
+    except Exception as e:
+        print(f"llm-quota: openrouter refresh failed: {e}", file=sys.stderr)
+
+    # Ollama is local: free and unmetered as long as the daemon answers.
+    try:
+        urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=4)
+        state["ollama"] = {"remaining": None, "limit": None, "unit": "free",
+                           "source": "auto", "updated": now()}
+    except Exception:
+        state["ollama"] = {"remaining": 0, "limit": None, "unit": "free",
+                           "source": "auto", "updated": now(), "note": "daemon down"}
+    return state
+
+
+def reachable(prov):
+    """Does the credential actually authenticate right now?"""
+    bases = {"zenmux": "https://zenmux.ai/api/v1",
+             "opencode": "https://opencode.ai/zen/v1",
+             "opencode-go": "https://opencode.ai/zen/go/v1",
+             "openrouter": "https://openrouter.ai/api/v1"}
+    if prov not in bases:
+        return None
+    try:
+        r = urllib.request.Request(bases[prov] + "/models",
+                                   headers={"Authorization": "Bearer " + key(prov)})
+        urllib.request.urlopen(r, timeout=15)
+        return True
+    except Exception:
+        return False
+
+
+def age(ts):
+    try:
+        delta = datetime.now(timezone.utc) - datetime.fromisoformat(ts)
+    except Exception:
+        return "?"
+    s = int(delta.total_seconds())
+    if s < 3600:
+        return f"{s // 60}m ago"
+    if s < 86400:
+        return f"{s // 3600}h ago"
+    return f"{s // 86400}d ago"
+
+
+def table(state, checked):
+    w = max(len(p) for p in PROVIDERS) + 2
+    print(f"{'provider':<{w}}{'remaining':>13}  {'limit':>9}  {'source':<7}{'updated':<10}auth")
+    print("-" * (w + 46))
+    for p in PROVIDERS:
+        e = state.get(p, {})
+        rem, lim = e.get("remaining"), e.get("limit")
+        unit = e.get("unit", "")
+        rs = "free" if unit == "free" and rem is None else (
+            "—" if rem is None else f"{rem:,.2f}" if isinstance(rem, float) else f"{rem:,}")
+        ls = "—" if lim is None else f"{lim:,.0f}"
+        ok = checked.get(p)
+        auth = "—" if ok is None else ("ok" if ok else "FAIL")
+        flag = "  ⚠" if (isinstance(rem, (int, float)) and rem <= 0) or ok is False else ""
+        print(f"{p:<{w}}{rs:>13}  {ls:>9}  {e.get('source','—'):<7}"
+              f"{age(e['updated']) if e.get('updated') else '—':<10}{auth}{flag}")
+    note = [p for p in PROVIDERS if state.get(p, {}).get("note")]
+    for p in note:
+        print(f"  note: {p} — {state[p]['note']}")
+
+
+def main():
+    a = sys.argv[1:]
+    state = load()
+
+    if a and a[0] == "set":
+        if len(a) < 3:
+            sys.exit("usage: llm-quota set <provider> <remaining> [--limit N] [--unit U]")
+        prov, rem = a[1], a[2]
+        rest = a[3:]
+        e = {"remaining": float(rem) if "." in rem else int(rem),
+             "limit": state.get(prov, {}).get("limit"),
+             "unit": state.get(prov, {}).get("unit", "credits"),
+             "source": "manual", "updated": now()}
+        for i, tok in enumerate(rest):
+            if tok == "--limit" and i + 1 < len(rest):
+                e["limit"] = float(rest[i + 1])
+            if tok == "--unit" and i + 1 < len(rest):
+                e["unit"] = rest[i + 1]
+        state[prov] = e
+        save(state)
+        print(f"llm-quota: {prov} = {e['remaining']} {e['unit']} (manual)")
+        return
+
+    if a and a[0] == "refresh":
+        state = refresh(state)
+        save(state)
+
+    checked = {}
+    if "--json" not in a:
+        for p in PROVIDERS:
+            checked[p] = reachable(p)
+
+    if "--json" in a:
+        print(json.dumps(state, indent=2, sort_keys=True))
+        return
+    table(state, checked)
+
+
+if __name__ == "__main__":
+    main()

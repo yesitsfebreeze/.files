@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# litellm-up — start the local LiteLLM proxy (foreground).
+set -euo pipefail
+. "$(dirname "$(command -v litellm-env)")/litellm-env"
+
+: "${OPENROUTER_API_KEY:?no openrouter credential in ~/.pi/agent/auth.json}"
+exec litellm --config "$HOME/.config/litellm/config.yaml" --port "$LITELLM_PORT" "$@"

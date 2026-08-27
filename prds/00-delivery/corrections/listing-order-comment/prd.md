@@ -10,6 +10,7 @@ footprint:
   - tests/shell-listing.sh
 verify: "bash tests/shell-listing.sh"
 origin: derived
+commit: 11987ac
 ---
 
 # `shell-listing.sh:104` justifies a good assertion with a false reason

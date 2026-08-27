@@ -6,6 +6,7 @@ mode: afk
 claim: 
 complexity: 4
 blast-radius: low
+commit: 2ea96e3
 needs:
   - 03-editor/02-keymaps
   - 04-shell/04-television

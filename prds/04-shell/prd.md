@@ -1,6 +1,6 @@
 ---
-state: open
-claim: 
+state: analyzing
+claim: analyst-04-shell-epic 2026-08-25T06:33Z
 priority: 0
 est: 0h
 kind: epic
@@ -34,11 +34,17 @@ These are what make the pieces compose; every child PRD leans on them:
       start dir, the dirstack, and recents update no matter how you move.
 - [ ] **I2** — **The PWD hook is the single reaction point.** Auto-list and
       dirstack push live there, not scattered per-navigation-command.
-- [ ] **I3** — **tv owns every picker screen, with exactly one named
-      exception.** No hand-coded TUIs; new pickers are new cable channels
-      plus a typed decode. The exception is **fzf**, reached only through
-      `zoxide query --interactive` behind `zi`/`cdi`
-      ([03-zoxide](03-zoxide/prd.md) R2). Zoxide ships its own interactive
+- [ ] **I3** — **tv owns every picker screen, with exactly two named
+      exceptions.** No hand-coded TUIs; new pickers are new cable channels
+      plus a typed decode. Both exceptions are **fzf**. The first is reached
+      only through `zoxide query --interactive` behind `zi`/`cdi`
+      ([03-zoxide](03-zoxide/prd.md) R2). The second is `cll`'s model picker
+      ([10-litellm-launcher](10-litellm-launcher/prd.md) R2), decided
+      2026-08-25 and recorded in
+      [`decisions/fzf-model-picker`](../00-delivery/decisions/fzf-model-picker/prd.md)
+      — a catalogue of ~80 models across six providers needs group headers, a
+      per-row provider column and dim secondary text in one screen, and fzf's
+      `--ansi`/`--with-nth`/`--nth` do that where `input list` has no ANSI. Zoxide ships its own interactive
       mode, and replacing it with a tv channel would mean reimplementing its
       frecency ranking and its `--exclude $PWD` semantics to own one picker
       screen — so fzf stays in the required package set

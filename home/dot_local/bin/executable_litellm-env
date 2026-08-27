@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# litellm-env — resolve LiteLLM secrets without storing a second copy of them.
+#
+# Provider keys come from pi's credential store (~/.pi/agent/auth.json), which is
+# already the machine-local source of truth. The proxy's own master key is
+# generated on first use into ~/.local/state/litellm/master.key.
+#
+# Nothing here is committable, and nothing here duplicates a secret.
+# Usage: `. litellm-env` (sourced), or `litellm-env` to print the master key.
+set -euo pipefail
+
+LITELLM_PORT="${LITELLM_PORT:-4000}"
+LITELLM_BASE="http://127.0.0.1:${LITELLM_PORT}"
+_auth="$HOME/.pi/agent/auth.json"
+_state="$HOME/.local/state/litellm"
+_master_file="$_state/master.key"
+
+if [ ! -f "$_master_file" ]; then
+  mkdir -p "$_state"
+  ( umask 077; python3 -c 'import secrets; print("sk-litellm-"+secrets.token_urlsafe(24))' > "$_master_file" )
+fi
+LITELLM_MASTER_KEY="$(cat "$_master_file")"
+
+if [ -f "$_auth" ]; then
+  # `access` for OAuth-style entries, `key` for plain API keys.
+  eval "$(python3 - "$_auth" <<'PY'
+import json, sys, shlex
+try:
+    a = json.load(open(sys.argv[1]))
+except Exception:
+    a = {}
+def get(name):
+    e = a.get(name) or {}
+    return e.get("key") or e.get("access") or ""
+for var, prov in (("OPENROUTER_API_KEY", "openrouter"), ("ZENMUX_API_KEY", "zenmux"),
+                  ("OPENCODE_API_KEY", "opencode"), ("OPENCODE_GO_API_KEY", "opencode-go")):
+    v = get(prov)
+    if v:
+        print(f"export {var}={shlex.quote(v)}")
+PY
+)"
+fi
+
+# Ollama needs a non-empty key to satisfy the OpenAI client; it ignores the value.
+export OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}" ZENMUX_API_KEY="${ZENMUX_API_KEY:-}"
+export OPENCODE_API_KEY="${OPENCODE_API_KEY:-}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-}"
+export LITELLM_MASTER_KEY LITELLM_PORT LITELLM_BASE
+
+# Executed rather than sourced: print the master key (for scripting).
+# `${BASH_SOURCE[0]:-}` — sourcing from a non-bash shell leaves it unset, and
+# `set -u` would abort the caller's shell rather than fall through.
+if [ "${BASH_SOURCE[0]:-}" = "${0}" ]; then
+  echo "$LITELLM_MASTER_KEY"
+fi

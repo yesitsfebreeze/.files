@@ -11,6 +11,7 @@ origin: derived
 from: 00-delivery/corrections/capsule-creds-refresh-wording
 complexity: 32
 blast-radius: low
+commit: eea4528
 ---
 
 # Three claims about capsule credentials that the code does not support

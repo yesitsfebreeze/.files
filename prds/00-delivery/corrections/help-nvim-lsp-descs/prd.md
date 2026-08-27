@@ -6,6 +6,7 @@ mode: afk
 claim: 
 complexity: 4
 blast-radius: low
+commit: 0cb9017
 needs:
   - 06-help/02-help-command
   - 03-editor/09-lsp

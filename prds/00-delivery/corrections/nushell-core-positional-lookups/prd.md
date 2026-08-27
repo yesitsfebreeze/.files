@@ -12,6 +12,7 @@ footprint:
   - tests/nushell-core.sh
 verify: "bash tests/nushell-core.sh"
 origin: derived
+commit: 022091e
 ---
 
 # `tests/nushell-core.sh` is only half anchored

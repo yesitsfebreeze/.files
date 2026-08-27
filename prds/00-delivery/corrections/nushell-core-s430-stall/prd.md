@@ -1,5 +1,5 @@
 ---
-state: analyzing
+state: failed
 priority: 17
 est:
 mode: afk
@@ -9,7 +9,9 @@ footprint:
 verify: "bash tests/nushell-core.sh"
 origin: derived
 from: 04-shell/01-core-config
-claim: analyst-nushell-core-s430-stall 2026-08-24T18:04Z
+claim: 
+complexity: 34
+blast-radius: low
 ---
 
 # `S4.30` went red once in a 6m40s run and never again — a flaky proof is not a proof
@@ -75,3 +77,21 @@ does not get to close by raising the ceiling.
 ## Out of scope
 - The pty runner's 40 s ceiling as a number to tune. See R4.
 - Every other `S4.*` check.
+
+## Failure
+
+Swept 2026-08-25 by the orchestrator: `state: claimed`, `claim: implementer-7
+2026-08-24T18:15Z`, no live worker, spec02's acceptance boxes all still `[ ]`.
+No `## Report` was left behind, so there is no record of how far the run got
+before it stopped.
+
+**spec01 is real and verified**, and was committed at `022091e` when an
+unrelated PRD (`nushell-core-positional-lookups`) landed and shared the same
+file: `tests/nushell-core.sh --tree` is green including all seven `PT.*`
+checks (`PT.1`–`PT.7`), `bash tests/nushell-core.sh` alone is `0 FAIL` /
+`EXIT=0`. **spec02 — the load campaign — was never attempted**: no load
+fixture output, no verdict written into the gate's header, none of its eight
+acceptance boxes closed.
+
+Retry picks up at spec02 only; do not redo spec01's work or re-verify it
+beyond the tree check above.

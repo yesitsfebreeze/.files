@@ -13,6 +13,7 @@ from: 00-delivery/verification-gates
 claim: 
 complexity: 45
 blast-radius: mid
+commit: 590f489
 ---
 
 # 119 broken links sit in Tier B, permanently un-gated and permanently wrong

@@ -6,6 +6,7 @@ mode: afk
 claim: 
 complexity: 21
 blast-radius: low
+commit: 7db0342
 needs:
   - 03-editor/03-autocmds
   - 03-editor/06-explorer
