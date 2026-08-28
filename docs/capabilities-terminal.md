@@ -419,6 +419,19 @@ knowledge, and every entry below that depends on one names it.
 - 1
 ----
 ## F5 jump-select  SIMPLIFY
+
+**Split by decision, 2026-08-21 (user).** This entry rates *both* halves — the
+digit tab-select and the self-painted pane-letter overlay — at C 9 / U 8. The
+overlay was dropped; only the digit half was ported. The node that carries it,
+[`02-terminal/03-f5-jump-mode`](../prds/02-terminal/03-f5-jump-mode/prd.md),
+therefore reads **C 6 / U 8**: complexity falls because the overlay was the
+expensive half, usefulness does not move because the inventory itself called
+the surviving half "a handful of lines [carrying] most of the value". The
+`SIMPLIFY` marker above is **withdrawn by that same answer**, with the numbers
+here left unmoved so this entry keeps recording what the legacy capability
+actually cost. The C/U below are the pre-decision reading; the node's are the
+shipped one. Per the split-entry rule in `AGENTS.md`.
+
 - One mode that arms tab switching and pane switching at the same time, with
   one keypress resolving either: a digit `1`–`9` activates that tab, a letter
   activates the pane at that position, every key ends the mode. Implemented as

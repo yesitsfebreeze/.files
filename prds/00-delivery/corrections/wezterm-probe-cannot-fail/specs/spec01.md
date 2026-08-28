@@ -128,3 +128,31 @@ bash gates/wezterm-config-fields.sh --selftest
 bash gates/selftest.sh --one gates/wezterm-config-fields.sh
 bash gates/wave-status.sh --matrix
 ```
+
+## Amendment 2026-08-28 — the counterexample marker, added at the orchestrator's edit
+
+Applying spec02's wording to `prds/02-terminal/prd.md` turned this gate **red**,
+and the red was a false positive: the `named` harvest reads `config.<field>`
+out of the epic's prose, and spec02's box quotes the two deliberately invalid
+field names the `--selftest` mutations use. The gate went red against the very
+paragraph describing its own red.
+
+The analyst could not have seen this — the wording was never applied while the
+gate was being built, because an epic's body is the orchestrator's edit.
+
+Fixed in `harvest_fields`: a line carrying the literal `NOT-A-FIELD` is
+dropped before the match. **Per line, never per file** — exempting a document
+would blind the check to a real `config.<field>` written further down it. The
+`--selftest` mutations deliberately do not carry the marker, which is what
+keeps the gate's own red biting.
+
+Proven, all three legs:
+
+- `bash gates/wezterm-config-fields.sh` → rc 0, 16 fields harvested, 0
+  rejected. The two counterexamples no longer reach the probe.
+- `bash gates/wezterm-config-fields.sh --selftest` → rc 0, with **RED 1 and
+  RED 2 both still biting** and each naming its field.
+- The marker cannot over-reach: a marked line followed by
+  `config.definitely_bogus_field_zz` on the next line still goes red — `17
+  probed, 1 rejected`.
+

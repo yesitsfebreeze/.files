@@ -1,12 +1,12 @@
 ---
-state: open
+state: done
 claim: 
 priority: 0
 est: 0h
 kind: epic
 mode: afk
 needs:
-verify: ""
+verify: "sh -c 'n=$(grep -L \"^state: done\" prds/02-terminal/*/prd.md | wc -l | tr -d \" \"); echo \"children not done: $n\"; test \"$n\" -eq 0' && bash gates/wezterm-config-fields.sh"
 ---
 
 # Epic: Terminal (WezTerm)
@@ -93,7 +93,13 @@ with it. `show-keys` is not an error channel at all: on a config that
 stdout lines and **zero** on stderr, so it serves only as a read-back
 control. And the `__newindex` error is a Lua error that aborts the chunk, so
 a probe carrying several bad fields reports only the **first** — one field
-per probe. This invariant was bought by a measurement that was filed wrong
+per probe. One consequence for anyone documenting a WezTerm check: the
+`named` harvest reads `config.<field>` out of this epic's prose, so a document
+quoting an invalid field name as an example is read as a claim — it turned the
+gate red against the very paragraph describing its own red on 2026-08-28. A
+line carrying the literal `NOT-A-FIELD` is exempt, per line and never per
+file, and the gate's mutations deliberately do not carry it so its own red
+still bites. This invariant was bought by a measurement that was filed wrong
 and refuted the same day; the record is in
 [`wezterm-probe-cannot-fail`](../00-delivery/corrections/wezterm-probe-cannot-fail/prd.md).
 
@@ -106,7 +112,7 @@ transitions. Two pass outright. The second was under-specified — it named a
 command and no predicate — and now closes on a gate proven by its own red.
 The first is the one still open, on a contract gap put to the user.
 
-- [ ] Every child's header cites an entry of
+- [x] Every child's header cites an entry of
       [`capabilities-terminal.md`](../../docs/capabilities-terminal.md) by
       name, or `net-new`, with `C`/`U` numbers matching that entry.
 
@@ -118,29 +124,34 @@ The first is the one still open, on a contract gap put to the user.
       `03-f5-jump-mode` reads **C 6** against
       `docs/capabilities-terminal.md:475` reading **C 9**.
 
-      **This box was ticked on 2026-08-28 and then unticked the same day.** The
-      first pass ticked it on the grounds that the divergence is deliberate and
-      well explained — the node's own `**Rating note.**` states it, names the
-      answer that caused it (2026-08-21, user: digits only, the pane-letter
-      overlay dropped) and says why `U` does not move. A skeptic pointed out
-      that this is the same move as ticking the probe box below because the
-      nineteen fields are *probably* fine, which the same pass had correctly
-      refused to make. The line's predicate is "numbers matching that entry".
-      They do not match. A well-argued violation is still a violation, and
-      `AGENTS.md`'s rating rule is unconditional.
+      **Ticked, unticked, and ticked again on 2026-08-28 — the third time on
+      a rule rather than on an argument.** `03-f5-jump-mode` reads **C 6**
+      against `docs/capabilities-terminal.md` reading **C 9**, because the
+      2026-08-21 answer (digits only; the self-painted pane-letter overlay
+      dropped) removed half of what that entry rated.
 
-      **The real gap is in the contract, not in this node.** `AGENTS.md` has a
-      rule for a PRD that *merges* several inventory entries, and none for one
-      that *splits* one entry after a scope answer removed half of it — which
-      is exactly what `03-f5-jump-mode` did. Until that rule exists, this box
-      has no honest tick available: amending the line to permit a stated
-      divergence would be writing the criterion around the result. Put to the
-      user 2026-08-28.
+      The first tick rested on the divergence being well explained in the
+      node. A skeptic rejected that: the line's predicate is "numbers matching
+      that entry", they do not match, and a well-argued violation is still a
+      violation — the same move this epic had correctly refused one box below.
+      So it was unticked, and the gap put to the user, because the gap was in
+      the contract: `AGENTS.md` had a rule for a PRD that *merges* several
+      inventory entries and none for one that *splits* one.
 
-      A second, smaller drift found in the same pass: the rating note says the
-      entry's `SIMPLIFY` marker is "withdrawn", but nothing in
-      `docs/capabilities-terminal.md` records that. A reader arriving from the
-      inventory still sees `SIMPLIFY` and `C 9`; only the node knows otherwise.
+      The user added the split-entry rule on 2026-08-28. It permits diverging
+      numbers on three conditions — a rating note naming the decision, a
+      statement of which number moved and which did not, and **the inventory
+      entry updated to point at the split**. All three now hold: the node's
+      `**Rating note.**` carries the first two, and the entry carries a
+      `**Split by decision, 2026-08-21 (user).**` paragraph naming the node,
+      the withdrawn `SIMPLIFY` marker and why its own numbers stay put. The
+      box ticks on the rule being satisfied, not on the reasoning being good.
+
+      That third condition also closed a real drift found in the same pass:
+      the rating note claimed the `SIMPLIFY` marker was "withdrawn" and
+      nothing in the inventory recorded it, so a reader arriving from the
+      inventory saw `SIMPLIFY` and `C 9` with only the node knowing otherwise.
+      It is recorded there now.
 
 - [x] No child names, and the shipped `wezterm.lua` does not set, a WezTerm
       config field the installed build rejects at config-load time. The
@@ -159,8 +170,8 @@ The first is the one still open, on a contract gap put to the user.
 
       Proven by its own red, per `G.1`.
       `bash gates/wezterm-config-fields.sh --selftest` appends
-      `config.no_such_wezterm_field = true` to a `scratch_tree` copy of
-      `wezterm.lua`, and writes `config.not_a_real_wezterm_field` into a
+      `config.no_such_wezterm_field = true` to a `scratch_tree` copy of  NOT-A-FIELD
+      `wezterm.lua`, and writes `config.not_a_real_wezterm_field` into a  NOT-A-FIELD
       copied child. Each turns the gate rc 1, naming the field, with
       ``ERROR … `is not a valid Config field` `` on stderr; removing the one
       line restores rc 0. The same run shows the superseded plain-table
@@ -240,3 +251,30 @@ membership is by existence — a child is a subdirectory holding its own
 `prd.md` — so a maintained list beside it is a second copy that goes stale
 silently (laws.md law 4: "membership by existence, not by a maintained
 list"). `find . -name prd.md` is the index.
+
+## Closed 2026-08-28 — all four acceptance boxes run, two of them twice
+
+Transitioned by the orchestrator under
+[`epic-invariants-prose`](../00-delivery/finish-line/epic-invariants-prose/prd.md)
+R4, which requires an epic's own acceptance to be verified before it
+transitions. All seven children were already `done`; what held this epic was
+its own four boxes, and this is the round that ran them.
+
+Two closed on the first reading — the three-place child count, and the
+no-hardcoded-palette rule. The other two each closed on a second pass after
+the first was wrong, and both failures are worth keeping:
+
+- **The config-field probe** was reported as a check that *could not fail*.
+  That was a false measurement, made with a bare `return { ... }` probe table
+  and refuted the same day: `wezterm.config_builder()` — which is what ships —
+  does reject an unknown field. The box now closes on
+  `gates/wezterm-config-fields.sh`, a gate proven by its own red, and **I5**
+  records the constraint so nobody re-derives it. See
+  [`wezterm-probe-cannot-fail`](../00-delivery/corrections/wezterm-probe-cannot-fail/prd.md).
+- **The child-rating box** was ticked on a well-argued divergence, then
+  unticked, because a well-argued violation is still a violation. The gap was
+  in the contract rather than in the node, and the user closed it with the
+  split-entry rating rule on 2026-08-28. It ticks on that rule now.
+
+`verify:` runs the epic's own claim — every child `done` — and then the gate
+that closes its second box. Both were run at transition.

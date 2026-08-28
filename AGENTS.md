@@ -166,6 +166,19 @@ Four rules for keeping ratings honest across the tree:
 - **A PRD that merges several entries** carries the dominant entry's rating
   and lists every source with its own numbers (see
   [`01-capsule/01`](prds/01-capsule/01-container-lifecycle/prd.md)).
+- **A PRD that splits one entry** — where a recorded scope decision removed
+  part of what the inventory rated — may carry numbers differing from its
+  source, on three conditions: the node holds a **rating note** naming the
+  decision, its date and who made it; the note says which number moved and
+  which did not; and the **inventory entry is updated to point at the split**,
+  so a reader arriving from the inventory is not left with the pre-decision
+  numbers and a stale verdict marker. Without the third, the divergence is
+  invisible from the side people actually read first. The worked case is
+  [`02-terminal/03-f5-jump-mode`](prds/02-terminal/03-f5-jump-mode/prd.md):
+  the 2026-08-21 answer took the digit half and dropped the self-painted
+  pane-letter overlay, so `C` falls 9 → 6 and `U` does not move. Added
+  2026-08-28 — the rules covered merging and not splitting, which left
+  `02-terminal`'s acceptance with no honest tick available.
 - **Net-new capabilities** have no inventory entry. Rate them in the PRD
   header and write `net-new` where other PRDs name their source.
 - **Meta-epics are exempt.** [`00-delivery`](prds/00-delivery/prd.md)

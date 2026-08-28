@@ -167,10 +167,25 @@ wz_field_rejected() {
   wz_load_stderr "$p" | grep -qF '`'"$f"'` is not a valid Config field'
 }
 
+# COUNTEREXAMPLE MARKER. A document that explains this gate has to quote the
+# invalid field names it mutates with, and the harvest cannot tell a quoted
+# counterexample from a claim — it went red on 2026-08-28 against the very
+# prose describing its own red, which is a false positive, not a finding.
+#
+# A line carrying the literal NOT-A-FIELD is exempt from the harvest, and only
+# that line. It is deliberately per-line and not per-file: exempting a whole
+# document would blind the check to a real `config.<field>` written three
+# paragraphs below the explanation. The selftest's mutations never carry the
+# marker, which is what keeps RED 2 biting — see --selftest.
+CE_MARKER='NOT-A-FIELD'
+
 # harvest_fields <dir> — the `config.<field>` tokens the tree names, one per
-# line, sorted and deduped, filenames removed.
+# line, sorted and deduped, filenames removed. Lines marked as documented
+# counterexamples are dropped before the match, never after: a marked line's
+# tokens must not reach the probe at all.
 harvest_fields() {
-  grep -rhoE 'config\.[a-z_][a-z0-9_]*' "$1" 2> /dev/null \
+  grep -rh --include='*' -v -e "$CE_MARKER" -r "$1" 2> /dev/null \
+    | grep -ohE 'config\.[a-z_][a-z0-9_]*' \
     | sed 's/^config\.//' | LC_ALL=C sort -u | grep -vE "$NOT_A_FIELD"
 }
 
