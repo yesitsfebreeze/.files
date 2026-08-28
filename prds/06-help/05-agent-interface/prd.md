@@ -4,6 +4,7 @@ claim:
 priority: 8
 est: 1.25h
 task: H.5
+commit: 235e179
 mode: afk
 needs:
   - 06-help/03-browser

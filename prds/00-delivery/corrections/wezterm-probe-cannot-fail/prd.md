@@ -10,6 +10,7 @@ from: 02-terminal
 claim:
 complexity: 25
 blast-radius: low
+commit: 9198108
 ---
 
 # `02-terminal`'s config-field probe names a command but no predicate
