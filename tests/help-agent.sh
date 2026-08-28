@@ -144,7 +144,7 @@ HOST_ONLY=' (host-only — the terminal is outside a capsule)'
 # not stand alone: `modules_fresh` compares it against config.nu's own `source`
 # lines in the SAME run, and is asserted at the top of both stages. The list
 # can be wrong for exactly as long as one gate run.
-MODULES="dirstack.nu pass.nu claude.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu theme.nu"
+MODULES="dirstack.nu pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu theme.nu"
 modules_fresh() {
   local want got
   want="$(printf '%s\n' $MODULES | LC_ALL=C sort | tr '\n' ' ')"

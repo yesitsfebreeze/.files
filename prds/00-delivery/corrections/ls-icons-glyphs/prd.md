@@ -1,15 +1,16 @@
 ---
-state: specced
+state: done
 priority: 10
-est:
+est: 1.6h
 mode: afk
 claim: 
 complexity: 75
 blast-radius: high
 needs:
   - 04-shell/06-listing
-verify: ""
+verify: "bash tests/shell-listing.sh && nu tests/help-content-model.nu"
 origin: derived
+commit: pending
 ---
 
 # The live LS_ICONS glyphs are empty strings
@@ -26,22 +27,28 @@ sees. Restoring real glyphs is a correction against the live source, not a
 port.
 
 ## Requirements
-- [ ] **R1** — Decide the glyph set: restore real Nerd Font glyphs for the
+- [x] **R1** — Decide the glyph set: restore real Nerd Font glyphs for the
       mapped extensions plus the dir/generic fallbacks, or record that the
       empty map is accepted and strip the dead column. Either way the
       decision lands in `home/dot_config/nushell/config.nu`'s LISTING
       section with a comment carrying this finding.
-- [ ] **R2** — The manual entry for `ls` in
+- [x] **R2** — The manual entry for `ls` in
       `home/dot_config/nushell/help/shell.nuon` matches the decided
       behavior (icons shown, or no icon column), with its review row
       re-digested only if `use`/`source` text changes.
-- [ ] **R3** — `tests/shell-listing.sh`'s icon-related checks assert the
+- [x] **R3** — `tests/shell-listing.sh`'s icon-related checks assert the
       decided behavior rather than "column exists".
 
 ## Acceptance
-- [ ] `ls` in a mixed directory shows the decided outcome (visible glyphs,
+- [x] `ls` in a mixed directory shows the decided outcome (visible glyphs,
       or no icon column) under the pinned nu; quoted in the closing report.
-- [ ] `bash tests/shell-listing.sh` exits 0 after the change.
+      Measured 2026-08-28 by `tests/shell-listing.sh` H11 against a real
+      nushell 0.114.1 in a scratch HOME: `canary42.md` renders `U+F48A`,
+      the extensionless `.hid7` renders `U+F0F6` (`LS_ICON_DEFAULT`), and
+      the dirs `big` and `node_modules` render the empty string, unchanged.
+- [x] `bash tests/shell-listing.sh` exits 0 after the change.
+      40 PASS / 0 FAIL, `EXIT=0` (2026-08-28) — was 36 checks before this
+      node added T6 and H11.
 
 ## Out of scope
 - Any other listing behavior; S.3 is done and green.
@@ -126,3 +133,61 @@ surface vs. a clean removal), which is exactly what QUESTION is for.
 
 Answered 2026-08-25 by the user: **A — restore real glyphs, sourced from
 `nvim-web-devicons`'s table rather than hand-typed.**
+
+## Report
+
+Landed 2026-08-28. All three specs executed; the glyphs came out of the
+vendored table by script and no glyph byte was typed by hand at any point.
+
+**spec01 — the map.** `gen_ls_icons.py`, run verbatim as the spec wrote it,
+printed `82 keys, 1 fell back to the generic glyph: ['tar']` — the count and
+the unmatched list the spec predicted, so neither the key set nor the pinned
+plugin had drifted. `--check` then printed `VERIFY PASS (82 keys checked)`.
+The spec's required cross-check ran too: the regex reader and a real
+headless-nvim `require` of the same module each parsed **494 entries** and
+agreed on every one, `only-in-regex=[] only-in-nvim=[] byte-mismatches=[]`,
+with `md` = `U+F48A` and the default = `U+F0F6` in both. `tar` is confirmed
+absent from devicons and carries the default glyph's bytes.
+
+**spec03 — the checks.** `T6` (no empty `LS_ICONS` value) and `H11` (byte
+equality against the live vendored table) landed with their counterfactuals.
+The negative control the spec demands was run: with `config.nu` reverted to
+the empty map, `T6` FAILS and `H11` FAILS on exactly the two file rows —
+`canary42.md: got '' expected ''`, `.hid7: got '' expected ''` —
+while the two dir rows still PASS, which is what proves the check
+distinguishes a real glyph from an empty string rather than exercising a
+code path.
+
+**spec02 — the manual entry, and where it deviated.** The reviewer was a
+session that wrote none of the text and read it against the landed
+`config.nu` rather than against the spec. It vouched with caveats, and two
+of those caveats were defects in **the spec's own proposed wording**, caught
+before landing rather than shipped:
+
+- nushell's `type` column is `file`/`dir`/`symlink` and `decorate-ls`
+  branches only on `dir`, so a symlink to a directory takes the `else` arm
+  and *does* get a glyph. "directories show no icon" would have mispredicted
+  it.
+- extensionless and unmapped files (`README`, `.gitignore`, `foo.xyz`)
+  resolve to `LS_ICON_DEFAULT`, which "an icon for its extension" did not
+  cover.
+
+The shipped sentence says "every row except a directory carries a Nerd Font
+icon — one for its extension, or a generic one where the extension is
+unknown or unmapped; directory rows show none", which is true of all three
+row types. **This changes spec02's precomputed digests**, and that is a
+deviation worth naming rather than hiding: the spec's `da50263294cce00a` /
+`0dff5fa49207b027` were correct arithmetic for a sentence that would have
+been wrong. The landed digests are `13ae167d1147be22` (use-review) and
+`438166c8bc599946` (why-review), both read off the gate rather than computed
+by hand, and both review rows carry the reading.
+
+The reviewer also found two warts in `config.nu` introduced by spec01's own
+patcher, both fixed: the new header comment said `tar` "falls back to
+`LS_ICON_DEFAULT`" when in fact it carries an explicit `tar:` key holding
+the same bytes — identical output, different mechanism — and
+`const LS_ICON_DEFAULT` had been inserted between the `core-ls` comment and
+the `alias core-ls = ls` it describes, orphaning the comment.
+
+**Gates.** `bash tests/shell-listing.sh` 40 PASS / 0 FAIL, `EXIT=0`;
+`nu tests/help-content-model.nu` `ok`, exit 0.

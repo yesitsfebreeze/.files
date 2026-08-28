@@ -94,8 +94,25 @@ module_line() {
 # `.config/nushell` directory. This deliberately excludes tests/
 # deploy-skeleton.sh, managed-config.sh and theme-switcher.sh, whose
 # `--config` flags belong to chezmoi and which stage no module.
+# A gate is in scope when it stages a module into a scratch .config/nushell
+# AND hands nu a `--config`, because the whole reason this grid exists is that
+# an unstaged module kills config.nu at PARSE. A gate that only ever runs
+# `nu --no-config-file` never parses config.nu and so cannot die that way;
+# holding it to the grid would demand it stage twelve modules it never loads.
+#
+# Measured 2026-08-28 across all eleven module-staging gates, and the split is
+# total rather than marginal: ten pass `--config` and never `--no-config-file`;
+# tests/shell-litellm.sh is the only one the other way round (two
+# `--no-config-file`, zero `--config`) — it sources litellm.nu directly and
+# passes 41/41 with none of the other modules present, which is the behavioural
+# proof that its twelve MISSes were the predicate's error and not the gate's.
+# Every one of GATE_FLOOR's eight still matches, so the floor check below is
+# unweakened by this clause.
 gate_files() {
-  $GREP -lE 'cp +"[^"]+" +"[^"]*/\.config/nushell/[^"]*\.nu"' "$1"/tests/*.sh
+  $GREP -lE 'cp +"[^"]+" +"[^"]*/\.config/nushell/[^"]*\.nu"' "$1"/tests/*.sh \
+    | while IFS= read -r f; do
+        $GREP -q -- '--config ' "$f" && printf '%s\n' "$f"
+      done
 }
 
 # ── the staging predicate ───────────────────────────────────────────────────

@@ -53,6 +53,8 @@ NUSHELL_SRC="$REPO/home/dot_config/nushell"
 CONFIG_NU="${SHELL_LISTING_CONFIG:-$NUSHELL_SRC/config.nu}"
 ENV_NU="$NUSHELL_SRC/env.nu"
 DIRSTACK_NU="$NUSHELL_SRC/dirstack.nu"
+DEVICONS_LOCK="$REPO/home/dot_config/nvim/lazy-lock.json"
+DEVICONS_LIVE="$HOME/.local/share/nvim/lazy/nvim-web-devicons/lua"
 
 NU="$(command -v nu || true)"
 PYTHON="$(command -v python3 || true)"
@@ -142,6 +144,42 @@ order_ok() {
 
 # The du correction: banned spelling absent; ONE spawn line carrying -sk and
 # piping through complete with no discarded stderr; × 1024 present.
+# LS_ICONS carries no empty glyph value. Correction for
+# prds/00-delivery/corrections/ls-icons-glyphs — this is the exact
+# regression it exists to catch (an empty map with no parse error, no diff
+# anyone caught). Text-only: does not need the vendored nvim-web-devicons
+# present, unlike H11 below.
+icons_nonempty_ok() {
+  local f="$1"
+  "$PYTHON" - "$f" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r'const LS_ICONS = \{(.*?)\n\}', src, re.S)
+if not m:
+    sys.exit(1)
+kv = re.findall(r'(?:"([\w]+)"|(\b[a-zA-Z_][\w]*))\s*:\s*"([^"]*)"', m.group(1))
+if not kv:
+    sys.exit(1)
+sys.exit(1 if any(v == "" for _, _, v in kv) else 0)
+PY
+}
+
+# lazy-lock.json parses and pins nvim-web-devicons at a 40-hex commit —
+# same shape as the check tests/nvim-colorscheme.sh runs for tinted-nvim.
+devicons_pin_ok() {
+  "$PYTHON" - "$1" <<'PY'
+import json, re, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(1)
+e = d.get("nvim-web-devicons")
+if not isinstance(e, dict):
+    sys.exit(1)
+sys.exit(0 if re.fullmatch(r"[0-9a-f]{40}", e.get("commit", "") or "") else 1)
+PY
+}
+
 du_ok() {
   local f="$1" spawn
   [ "$($GREP -c "$DU_BAD" "$f")" -eq 0 ] || return 1
@@ -208,6 +246,43 @@ two_appends_ok() {
 # columns and nushell then prints "Couldn't fit table into 0 columns!"
 # instead of any listing, so every table assertion here would fail for a
 # reason that has nothing to do with the thing under test.
+# The H11 content checker, written out so a glyph byte never round-trips
+# through bash string interpolation — it runs as ONE process, reading the
+# vendored nvim-web-devicons table itself. Correction for
+# prds/00-delivery/corrections/ls-icons-glyphs (spec03).
+write_check_h11() {
+  cat > "$SCRATCH/check_h11.py" <<'PY'
+import json, re, sys
+
+def load_expected(d):
+    ext = open(f"{d}/nvim-web-devicons/default/icons_by_file_extension.lua", encoding="utf-8").read()
+    md = re.search(r'\["md"\]\s*=\s*\{\s*icon\s*=\s*"([^"]*)"', ext).group(1)
+    default_src = open(f"{d}/nvim-web-devicons.lua", encoding="utf-8").read()
+    default = re.search(r'local default_icon = \{\s*icon = "([^"]*)"', default_src).group(1)
+    return md, default
+
+out_path, devicons_dir = sys.argv[1], sys.argv[2]
+rows = json.load(open(out_path, encoding="utf-8"))
+by_name = {r["name"].split("/")[-1]: r for r in rows}
+md_glyph, default_glyph = load_expected(devicons_dir)
+
+checks = [
+    ("canary42.md", md_glyph, "md extension glyph"),
+    (".hid7", default_glyph, "generic default glyph (no extension)"),
+    ("big", "", "dir: no vendored folder glyph exists"),
+    ("node_modules", "", "dir: no vendored folder glyph exists"),
+]
+ok = True
+for name, expected, why in checks:
+    row = by_name.get(name)
+    got = row.get("icon") if row else "<absent>"
+    if got != expected:
+        print(f"FAIL {name}: got {got!r} expected {expected!r} ({why})")
+        ok = False
+sys.exit(0 if ok else 1)
+PY
+}
+
 write_pty_runner() {
   cat > "$PTY" <<'PYEOF'
 """Run a command under a real pty, typing scripted input at MARKERS.
@@ -358,6 +433,7 @@ mk_machine() {
   cp "$NUSHELL_SRC/pass.nu" "$M/home/.config/nushell/pass.nu"
   cp "$NUSHELL_SRC/theme.nu" "$M/home/.config/nushell/theme.nu"  # 04-shell/09: config.nu sources theme.nu at THEME
   cp "$NUSHELL_SRC/claude.nu" "$M/home/.config/nushell/claude.nu"  # 04-shell/08: config.nu sources claude.nu at MODULES
+  cp "$NUSHELL_SRC/litellm.nu" "$M/home/.config/nushell/litellm.nu"  # 04-shell/10: config.nu sources litellm.nu at MODULES, below claude.nu
   cp "$NUSHELL_SRC/recents.nu" "$M/home/.config/nushell/recents.nu"  # 04-shell/07: config.nu sources recents.nu at MODULES, above zoxide.nu
   cp "$NUSHELL_SRC/zoxide.nu" "$M/home/.config/nushell/zoxide.nu"  # 04-shell/03: config.nu sources zoxide.nu at MODULES
   cp "$NUSHELL_SRC/history.nu" "$M/home/.config/nushell/history.nu"  # 04-shell/05: config.nu sources history.nu at MODULES
@@ -477,6 +553,19 @@ stage_tree() {
     /^# ── FUNNEL ──$/  {print "# ── LISTING ──"}
   ' "$CONFIG_NU" > "$CF5"
   chk_fail "tree: T5 counterfactual LISTING-below-FUNNEL FAILS the anchor check" anchors_ok "$CF5"
+
+  # T6 — no LS_ICONS value is empty. Correction for
+  # prds/00-delivery/corrections/ls-icons-glyphs: this is the exact
+  # regression the correction exists to catch.
+  chk_ok "tree: T6 no LS_ICONS value is empty" icons_nonempty_ok "$CONFIG_NU"
+  local CF6="$SCRATCH/cf-empty-icon.nu"
+  "$PYTHON" -c "
+import re
+src = open('$CONFIG_NU', encoding='utf-8').read()
+new_src = re.sub(r'(rs:\s*)\"[^\"]*\"', r'\1\"\"', src, count=1)
+open('$CF6', 'w', encoding='utf-8').write(new_src)
+"
+  chk_fail "tree: T6 counterfactual one-blanked-glyph (rs) FAILS the icons check" icons_nonempty_ok "$CF6"
 }
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -492,6 +581,7 @@ stage_hermetic() {
          test "$("$NU" --version)" = "0.114.1"
 
   write_pty_runner
+  write_check_h11
 
   local M="$SCRATCH/m-base" out err plain_big
   mk_machine "$M"
@@ -632,6 +722,25 @@ STUB
   mk_machine "$MQ"
   out="$(nu_c "$MQ" 'cd /tmp' 2>&1)"
   chk_ok "hermetic: H10 nu -c 'cd /tmp' prints nothing (got ${#out} bytes)" test -z "$out"
+
+  # H11 — real glyph content, cross-checked against this repo's own pinned
+  # nvim-web-devicons vendored on THIS machine, never a value hand-typed
+  # into this test. Correction for
+  # prds/00-delivery/corrections/ls-icons-glyphs.
+  if [ ! -d "$DEVICONS_LIVE" ]; then
+    echo "PROBE-ERROR: $DEVICONS_LIVE is absent — ASSUMPTION MISSING, the check source is the live nvim-web-devicons clone" >&2
+    exit 127
+  fi
+  chk_ok "hermetic: H11 precondition: lazy-lock.json pins nvim-web-devicons at 40 hex chars" \
+         devicons_pin_ok "$DEVICONS_LOCK"
+
+  nu_c "$M" 'ls -a ~/fix | select name icon type | to json -r' > "$SCRATCH/h11_out.json"
+  if "$PYTHON" "$SCRATCH/check_h11.py" "$SCRATCH/h11_out.json" "$DEVICONS_LIVE"; then
+    chk "hermetic: H11 canary42.md/.hid7/dir icons match nvim-web-devicons byte-for-byte" 0
+  else
+    chk "hermetic: H11 canary42.md/.hid7/dir icons match nvim-web-devicons byte-for-byte" 1
+    "$PYTHON" "$SCRATCH/check_h11.py" "$SCRATCH/h11_out.json" "$DEVICONS_LIVE" 2>&1 | sed 's/^/      /'
+  fi
 }
 
 # ════════════════════════════════════════════════════════════════════════════

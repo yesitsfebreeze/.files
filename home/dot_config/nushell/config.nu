@@ -176,27 +176,52 @@ def cf [file: path] {
 # The builtin `ls` already returns a structured table (name/type/size/
 # modified); the shadow below adds an `icon` column from this extension→glyph
 # map and a `sort-by type modified` — dirs grouped, newest last, freshest
-# rows nearest the prompt. The map is carried VERBATIM from the live config
-# (its values were intended as Nerd Font private-use glyphs, which retyping
-# corrupts silently — hence verbatim, never retyped by hand). Measured
-# 2026-08-22, hexdump over every revision of the live repo: the value
-# strings are EMPTY — no private-use byte has ever been in that file — so
-# the icon column currently renders empty. Restoring real glyphs is a
-# correction against the live source, not something to invent here.
+# rows nearest the prompt.
+#
+# THE GLYPHS ARE MACHINE-COPIED FROM nvim-web-devicons, NEVER HAND-TYPED.
+# Measured 2026-08-22, hexdump over every revision of the live repo's
+# config.nu: the map's values were EMPTY in every version that ever existed —
+# despite an earlier comment here claiming the map was carried "verbatim"
+# from a live source, that source itself had nothing to carry. Corrected
+# 2026-08-25 (prds/00-delivery/corrections/ls-icons-glyphs/): every value
+# below was read straight out of this repo's own pinned dependency —
+# nvim-web-devicons, commit 2ae6958d (home/dot_config/nvim/lazy-lock.json) —
+# by a script (ls-icons-glyphs/specs/spec01.md) that copies the exact UTF-8
+# bytes of each `icon` field, never retypes one, cross-checked against a
+# second, independently-implemented reader (a real headless-nvim `require`
+# of the same module) before this file was written. `tar` has no entry in
+# that table (checked, genuinely absent), so the generator wrote it the same
+# glyph `LS_ICON_DEFAULT` holds. Note it is an explicit `tar:` key below
+# carrying those bytes, NOT a fallback at lookup time — identical output,
+# different mechanism, and the distinction matters to anyone regenerating
+# this map. An extension with no key at all is the one that falls back.
+#
+# DIRECTORIES CARRY NO ICON — checked and deliberate, not the empty-map bug
+# recurring. Neither nvim-web-devicons (extension/filename/OS/DE/WM tables
+# only) nor oil.nvim, the explorer this repo uses
+# (oil/util.lua:get_icon_provider, `conf.directory or ""`, no built-in
+# folder glyph), vendors a directory glyph anywhere in this repo's
+# dependency tree. Hand-picking one from elsewhere would reintroduce the
+# exact retyping risk this correction removes, so the `if type == "dir"`
+# branch below stays literal `""` until a vendored source for one exists.
 const LS_ICONS = {
-    rs: "", js: "", mjs: "", cjs: "", ts: "", tsx: "", jsx: "",
-    py: "", go: "", lua: "", rb: "", php: "", java: "", c: "", h: "",
-    cpp: "", hpp: "", cc: "", cs: "", swift: "", kt: "", scala: "", clj: "",
-    ex: "", exs: "", vim: "",
-    json: "", jsonc: "", toml: "", yaml: "", yml: "", ini: "", conf: "", cfg: "",
-    md: "", markdown: "", txt: "", pdf: "", log: "", sql: "", csv: "",
-    sh: "", bash: "", zsh: "", fish: "", nu: "", ps1: "",
-    html: "", htm: "", css: "", scss: "", sass: "", vue: "", svelte: "",
-    png: "", jpg: "", jpeg: "", gif: "", bmp: "", svg: "", webp: "", ico: "",
-    mp3: "", wav: "", flac: "", ogg: "", mp4: "", mkv: "", mov: "", webm: "",
-    zip: "", tar: "", gz: "", xz: "", zst: "", bz2: "", "7z": "", rar: "",
-    lock: "", db: "", sqlite: "", sqlite3: "",
+    rs: "", js: "", mjs: "", cjs: "", ts: "", tsx: "", jsx: "",
+    py: "", go: "", lua: "", rb: "", php: "", java: "", c: "", h: "",
+    cpp: "", hpp: "", cc: "", cs: "󰌛", swift: "", kt: "", scala: "", clj: "",
+    ex: "", exs: "", vim: "",
+    json: "", jsonc: "", toml: "", yaml: "", yml: "", ini: "", conf: "", cfg: "",
+    md: "", markdown: "", txt: "󰈙", pdf: "", log: "󰌱", sql: "", csv: "",
+    sh: "", bash: "", zsh: "", fish: "", nu: "", ps1: "󰨊",
+    html: "", htm: "", css: "", scss: "", sass: "", vue: "", svelte: "",
+    png: "", jpg: "", jpeg: "", gif: "", bmp: "", svg: "󰜡", webp: "", ico: "",
+    mp3: "", wav: "", flac: "", ogg: "", mp4: "", mkv: "", mov: "", webm: "",
+    zip: "", tar: "", gz: "", xz: "", zst: "", bz2: "", "7z": "", rar: "",
+    lock: "", db: "", sqlite: "", sqlite3: "",
 }
+
+# The glyph any extension this map has no key for resolves to — devicons'
+# own `default_icon`, machine-copied by the same generator.
+const LS_ICON_DEFAULT = ""
 
 # Capture the builtin under a second name BEFORE `ls` is shadowed below.
 # Alias targets bind at parse time, so `core-ls` stays bound to the builtin
@@ -263,7 +288,7 @@ def decorate-ls [du: bool]: table -> table {
         } else {
             $LS_ICONS
             | get --optional ($row.name | path parse | get extension | str lowercase)
-            | default ""
+            | default $LS_ICON_DEFAULT
         }
     }
     | move icon --before name

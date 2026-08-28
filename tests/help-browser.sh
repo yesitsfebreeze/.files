@@ -514,7 +514,7 @@ PYEOF
 mk_machine() {
   local M="$1" p m
   mkdir -p "$M/home/.config/nushell" "$M/home/.cache/nushell/init" "$M/bin" "$M/home/dev"
-  for m in dirstack pass theme claude recents zoxide history capsule finder quicklist copymode help; do
+  for m in dirstack pass theme claude litellm recents zoxide history capsule finder quicklist copymode help; do
     cp "$NUSHELL_SRC/$m.nu" "$M/home/.config/nushell/$m.nu"
   done
   cp -R "$CORPUS_DIR" "$M/home/.config/nushell/help"
@@ -660,7 +660,19 @@ stage_hermetic() {
          test "$pv" = "$id"
 
   # ── _help_preview's fields, and the core-help-under-nu -n trap ───────────
-  out="$(nu_n "$M" 'source ~/.config/nushell/help.nu; _help_preview 54' 2>/dev/null)"
+  # The index is DERIVED from $rows by the entry's id, never written as a
+  # literal. It was `54` until 2026-08-28, when 04-shell/10-litellm-launcher
+  # added manual entries ahead of it and slid the shift-select entry to a new
+  # position: the check then previewed a different entry and failed while
+  # nothing it tests had changed. Same defect class as the positional lookups
+  # corrected in gates/lib.sh and tests/nushell-core.sh — an index into a
+  # growing corpus is a contract with the corpus's length, which no document
+  # promised.
+  local WHYIDX
+  WHYIDX="$(awk -F'\t' '$2=="<S-Up> <S-Down> <S-Left> <S-Right>"{print $4; exit}' "$rows")"
+  chk_ok "hermetic: the why-carrying entry's index is derivable from _help_rows (got [$WHYIDX])" \
+         test -n "$WHYIDX"
+  out="$(nu_n "$M" "source ~/.config/nushell/help.nu; _help_preview $WHYIDX" 2>/dev/null)"
   chk_ok "hermetic: _help_preview on a why-carrying entry renders title, use, why:, also: and source: (R2's four fields plus the PRD)" \
          test -n "$(printf '%s' "$out" | $GREP -oF 'Select text with shift')" \
               -a -n "$(printf '%s' "$out" | $GREP -oE '^why: ')" \

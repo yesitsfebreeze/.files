@@ -98,7 +98,7 @@ PRD_PATH="prds/06-help/02-help-command/prd.md"
 # stages every one of them: a `source` of a missing file is a PARSE error
 # that takes the whole shell down, so a missing name here reads as a defect
 # in help.nu.
-MODULES="pass.nu claude.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu"
+MODULES="pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu"
 
 # The six gates that stage config.nu's sourced modules into a hermetic HOME.
 # help.nu's arrival puts a line in each; this gate is what keeps them there.

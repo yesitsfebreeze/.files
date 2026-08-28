@@ -111,7 +111,7 @@
     {
         cmd: "ls"
         title: "List a directory as structured, decorated data"
-        use: "Plain `ls`. Rows are sorted by type then modified time, so directories group together and the freshest thing sits nearest the prompt, and each row carries an icon. It is still a nushell table: `ls | where size > 1mb | sort-by modified` works."
+        use: "Plain `ls`. Rows are sorted by type then modified time, so directories group together and the freshest thing sits nearest the prompt, and every row except a directory carries a Nerd Font icon — one for its extension, or a generic one where the extension is unknown or unmapped; directory rows show none. It is still a nushell table: `ls | where size > 1mb | sort-by modified` works."
         topic: "navigate"
         mode: "shell"
         also: ["l / ll / la", "ls -D"]

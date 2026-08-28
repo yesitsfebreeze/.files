@@ -562,7 +562,7 @@ stage_tree() {
 mk_machine() {
   local M="$1" p m
   mkdir -p "$M/home/.config/nushell" "$M/home/.cache/nushell/init" "$M/bin"
-  for m in dirstack pass theme claude recents zoxide history capsule finder quicklist copymode help; do
+  for m in dirstack pass theme claude litellm recents zoxide history capsule finder quicklist copymode help; do
     cp "$NUSHELL_SRC/$m.nu" "$M/home/.config/nushell/$m.nu"
   done
   printf '# stub starship init\n' > "$M/home/.cache/nushell/init/starship.nu"
