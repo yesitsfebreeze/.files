@@ -1,5 +1,5 @@
 ---
-state: open
+state: claimed
 priority: 13
 est:
 mode: afk
@@ -7,7 +7,9 @@ needs:
 verify: "bash gates/selftest.sh"
 origin: derived
 from: 00-delivery/verification-gates
-claim: 
+claim: impl-tree-links 2026-08-28T14:45Z
+complexity: 35
+blast-radius: mid
 ---
 
 # `tree-links.sh --selftest` pins a count that has drifted, so `G.1`'s own verify is red
