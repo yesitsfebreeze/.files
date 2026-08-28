@@ -317,6 +317,15 @@ Rules that keep this tree useful:
   the [corrections backlog](prds/00-delivery/corrections/prd.md).
 - **Cross-link, don't duplicate.** Relative links between PRDs; each fact
   lives in exactly one file.
+- **`from: tbd` is a value, not a blank.** A derived PRD names the PRD whose
+  work surfaced it. Where that genuinely cannot be established — the work
+  predates the board, or the trail is gone — write `from: tbd` rather than
+  leaving the field empty or guessing a plausible path. Empty reads as "nobody
+  filled this in" and a guess reads as a fact; `tbd` says "this was looked for
+  and not found", which is the true statement, and a checker can tell the three
+  apart. Say in the node's body what the real origin was. Settled 2026-08-28;
+  the worked case is [`00-delivery/corrections`](prds/00-delivery/corrections/prd.md),
+  surfaced by the four-agent audit that ran before the tree was board-shaped.
 - **Record exclusions where they'd be looked for.** A `DO NOT PORT` decision
   belongs in the epic's Non-goals and the README's exclusion list, not just
   in the inventory.

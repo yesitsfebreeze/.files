@@ -7,21 +7,24 @@ mode: afk
 needs:
 verify: ""
 origin: derived
-from:
+from: tbd
 ---
 
 # Corrections backlog
 
 Parent: [Delivery epic](../prd.md) · net-new
 
-**`from:` is deliberately empty, not forgotten.** Repaired 2026-08-28 under
+**`from:` is `tbd`, which here is a value and not a blank.** Repaired 2026-08-28 under
 [`doctor-debt-live-nodes`](../finish-line/doctor-debt-live-nodes/prd.md) R1,
 whose rule is to derive the field from the node's own text or its commit and
 never from a guess. This backlog was surfaced by the four-agent audit of
 2026-08-20, which ran *before* the PRD tree was converted to board form on that
 same date — so there is no board node whose work surfaced it, and any path
-written here would be invented. The origin is the audit, and it is named in
-the Purpose below where a reader will find it.
+written here would be invented. `tbd` is the sentinel the user chose on
+2026-08-28 for exactly this case: it is non-empty, so a checker can tell it
+apart from a field nobody filled in, and it names no PRD, so it asserts
+nothing false. The real origin is the audit, named in the Purpose below where
+a reader will find it.
 
 Purpose: Findings from the four-agent audit of 2026-08-20, which checked every
 PRD and inventory against the live configs. These are Wave 0: they change what

@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 priority: 6
 est: 1.5h
 mode: afk
@@ -46,20 +46,25 @@ fact — the exact failure this board has corrected eight times.
       else.
 
 ## Acceptance
-- [ ] No not-`done` PRD carries `origin: derived` with an empty `from:`.
+- [x] No not-`done` PRD carries `origin: derived` with an empty `from:`.
 
-      **Open, and it contradicts this node's own R1.** Exactly one live node
-      qualifies — `00-delivery/corrections` — and R1 says in as many words: "if
-      it cannot be established, say so in the node rather than filling the
-      field." Its origin is the four-agent audit of 2026-08-20, which ran
-      before the tree was board-shaped, so no board node surfaced it. R1 is
-      satisfied; this box, read literally, is not, and the only way to tick it
-      is to write a path that is a guess — the exact failure R1 exists to
-      prevent.
+      **Settled by the user on 2026-08-28, and the contradiction it exposed is
+      worth keeping.** This box and this node's own R1 disagreed: R1 says an
+      unestablishable `from:` is left empty with the reason written down, and
+      this box says no live derived node may have an empty one. Exactly one
+      node hit it — `00-delivery/corrections`, surfaced by the four-agent audit
+      of 2026-08-20, which ran before the tree was board-shaped.
 
-      Not ticked, and the box was not amended to fit the result. The two
-      sections of this node disagree and a person should settle which is
-      wrong. Put to the user 2026-08-28.
+      It was left open rather than ticked on the argument, and the box was
+      **not** amended to fit the result. The user's answer took neither side:
+      the field carries the sentinel **`tbd`**. Non-empty, so a checker
+      distinguishes it from a field nobody filled; naming no PRD, so it asserts
+      nothing false. The convention is now in `AGENTS.md` beside the rating
+      rules, so the next author meets it rather than re-deriving it.
+
+      `grep -c "^from: tbd" prds/00-delivery/corrections/prd.md` → 1, and no
+      live derived node carries an empty `from:`.
+
 - [x] `doctor`'s `questions` row names no not-`done` PRD.
 
       Measured 2026-08-28 after the repair: the row names **15** PRDs, and

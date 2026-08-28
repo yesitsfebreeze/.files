@@ -1,9 +1,11 @@
 ---
-state: open
+state: claimed
 priority: 8
 est: 2h
 mode: afk
-claim:
+claim: impl-derived-tools 2026-08-28T14:15Z
+complexity: 22
+blast-radius: low
 needs:
 verify: "bash tests/help-agent.sh"
 origin: requested
@@ -47,31 +49,88 @@ what made the pair unschedulable; depending on a commit that already exists is
 what is actually true.
 
 ## Requirements
-- [ ] **R1** — The overview's `idioms` line carries the tool names, extracted
-      from the `idioms` entry's own corpus content at render time. No tool
-      name is typed into a renderer.
-- [ ] **R2** — The extraction is **specified**, not incidental: what field it
-      reads and what shape it pulls out, so a corpus edit changes the overview
-      predictably rather than by accident.
-- [ ] **R3** — Extraction that finds nothing degrades to today's behaviour —
-      the bare title, still a working pointer — and never renders a truncated
-      or empty tool list.
-- [ ] **R4** — R8 of [02](../../../06-help/02-help-command/prd.md) still
-      holds: this runs on the plain `help` path, so it must not spawn anything
-      or read a file the hot path does not already read. Measure the cost.
-- [ ] **R5** — The H.5 reading test is **re-run** against a fresh uninformed
-      agent, and the finding is whether it still reaches for a tool the text
-      does not name. A change made because a reading test failed is not proven
-      by anything except that reading test passing.
+
+**R1–R3 were rewritten on 2026-08-28**, after the user's answer to Q1. They
+described a render-time extraction that the build measured to be both
+unnecessary and harmful: unnecessary because the corpus title has named the
+tools since `0f9f635`, harmful because no corpus field can feed a specified
+extraction — `use` backticks `grep` and `find` exactly as it backticks `rg`
+and `fd`, so a derived line would tell an agent this environment has the tools
+it deliberately does not. The superseded text is kept at the bottom of this
+node. What replaces it is the check, because the fix shipped four days before
+this node was filed and **nothing held it there**.
+
+- [x] **R1** — The overview's `idioms` line names the tools, and no tool name
+      is typed into a renderer. **Already true as shipped**, and now asserted:
+      the line reads `Search with rg, find with fd, pick with tv`
+      (`home/dot_config/nushell/help/shell.nuon:394`, landed `0f9f635`
+      2026-08-24, the H.5 grader's decision). The title is corpus content, so
+      there is still exactly one source and the renderer types nothing.
+- [x] **R2** — The property is **specified and checked**, which is what R2
+      always wanted and what the extraction was only a means to. The
+      `idioms` overview line must name at least `INFORM_MIN=3` of the bare
+      backticked words that entry's own `use` names, both sides read from the
+      staged corpus through the published `help --json`. Today: `NAMES 4 of
+      the 8` (`rg fd find tv`). A floor, not a string match — a different
+      wording naming `rg fd zi` also passes.
+- [x] **R3** — Neither `_help_curated` nor `_help_overview` may **type** one
+      of those words. Checked against the two `def` bodies specifically, not
+      the file: `help.nu` overall contains `find` 9× and `tv` 13×, all in
+      comments, and both bodies are clean of all eight.
+- [x] **R4** — `02`'s R8 holds: **no renderer changed**, so the plain `help`
+      path is byte-identical and spawns nothing new. The earlier build
+      measured bare `help` at 4.8–6.5 ms over five runs, with
+      `_help_overview` already binding `let corpus = (_help_corpus)` once.
+      Satisfied by construction under the answer taken.
+- [x] **R5** — The reading test was re-run and it **already passed**: H.5's
+      post-`0f9f635` re-run is on file in `gates/manual/wave6.md:51-78`,
+      recorded as evidence rather than as a tick. The 2026-08-28 drill that
+      created this node re-asked a question the grader had answered four days
+      earlier, against a render that no longer existed. What was missing was
+      never the re-run; it was a gate, and R2 is now that gate.
 
 ## Acceptance
-- [ ] `help`'s overview names the tools the `idioms` entry names, and
+- [x] `help`'s overview names the tools the `idioms` entry names, and
       `grep`-ing the renderers for `rg`/`fd`/`tv` as literals finds nothing.
-- [ ] Editing the `idioms` entry's content changes the overview with no
+
+      Both asserted mechanically now, as INFORMING and the render-literal
+      check, rather than read once by a human.
+
+- [x] Editing the `idioms` entry's content changes the overview with no
       renderer edit.
-- [ ] `bash tests/help-agent.sh` exits 0, tally quoted.
-- [ ] The re-run reading test is recorded verbatim, pass or fail. A fail is a
+
+      Proven by counterfactual rather than by argument: **CF7** strips every
+      backtick from the entry's `use` and the check goes red on empty
+      evidence, with a companion assertion that the rendered `idioms` line is
+      **byte-identical** to the unmutated one — so CF6 and CF7 fail for two
+      different reasons and neither can pass on the other's mechanism.
+
+- [x] `bash tests/help-agent.sh` exits 0, tally quoted.
+
+      **100 PASS / 0 FAIL, EXIT=0**, up from the 90 PASS baseline, stable
+      across two runs. Re-run by the orchestrator.
+
+- [x] The re-run reading test is recorded verbatim, pass or fail. A fail is a
       finding, not a reason to revert quietly.
+
+      `gates/manual/wave6.md:51-78` holds both runs, including the
+      post-`0f9f635` one, and correctly marks them evidence rather than a tick.
+
+**The check's known limit, recorded rather than papered over.** `use` backticks
+a prescription and a prohibition identically, so a title reading "never grep or
+find, and cd carefully" would score 3 and pass. Closing that needs a stoplist
+of tool names inside the gate — which is the same thing that killed the
+extraction, since it would put those names in two places again. The failure
+this check exists for is the measured one, a line reverting to an abstract
+pointer, and it catches that at 0.
+
+**And the hole it closes, which is the reason the node survived at all.**
+Reverting the title in a staged corpus leaves `discovery_ok` **green** — it
+reads the expected title out of the same corpus in the same run, so any title
+matches itself. CF5 catches an id renamed away; nothing caught the line ceasing
+to inform. CF6 now asserts both halves: INFORMING goes red *and* `discovery_ok`
+stays green, so if a later edit makes DISCOVERY title-sensitive that line turns
+red instead of the two silently overlapping.
 
 ## Out of scope
 - The rest of the `For agents:` block, which the test found working.
@@ -240,3 +299,25 @@ structure, and where?
       three of the backticked bare words its own `use` names, which is red at
       0 on the reverted title, green at 3 today, and types no tool name
       anywhere.
+
+## Superseded requirements — the render-time extraction, kept as the record
+
+Written when this node was filed and replaced on 2026-08-28 by the user's
+answer to Q1. Kept because a node that quietly rewrites its own contract
+teaches nothing.
+
+- **R1** — The overview's `idioms` line carries the tool names, extracted from
+  the `idioms` entry's own corpus content at render time. No tool name is
+  typed into a renderer.
+- **R2** — The extraction is **specified**, not incidental: what field it reads
+  and what shape it pulls out, so a corpus edit changes the overview
+  predictably rather than by accident.
+- **R3** — Extraction that finds nothing degrades to today's behaviour — the
+  bare title, still a working pointer — and never renders a truncated or empty
+  tool list.
+
+Why they went: the title had already named the tools since `0f9f635`, so R1's
+testable clauses held before the node existed; and the build measured that no
+corpus field can feed R2 — `use`, `also`, `verify` and `title` yield the wrong
+set or nothing, and `use` in particular backticks `grep` and `find` exactly as
+it backticks `rg` and `fd`. R3 was moot once R1 was.
