@@ -6,6 +6,7 @@ mode: afk
 claim:
 complexity: 22
 blast-radius: low
+commit: b3613ab
 needs:
 verify: "bash tests/help-agent.sh"
 origin: requested

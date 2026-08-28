@@ -12,6 +12,7 @@ from: 04-shell/01-core-config
 claim:
 complexity: 34
 blast-radius: low
+commit: 43925ac
 ---
 
 # `S4.30` went red once in a 6m40s run and never again — a flaky proof is not a proof
