@@ -1,6 +1,6 @@
 ---
-state: analyzing
-claim: analyst-03-editor-epic 2026-08-25T06:33Z
+state: open
+claim: 
 priority: 0
 est: 0h
 kind: epic
