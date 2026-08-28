@@ -147,6 +147,35 @@ Still owed by the orchestrator: the `gates/waves.tsv` wave-4 row `external bash 
 
 Two deliberate deviations, both accepted: the hermetic PATH follows `capsule-lifecycle.sh`'s shape, because `/opt/homebrew/bin` holds the real `tv` and the real `docker` and made the spec's own precondition unachievable; and two counts skip comment lines, since the picker's header quotes its own `^tv --source-command` call.
 
-## Answers
+## An earlier exchange — kept, but it is not a round
 
-we should have a picker, bit i dont know hat your question is here
+**The heading here used to be `## Answers`, and that was the defect.** The
+board's rule is that a heading with nothing behind it is deleted rather than
+filled: there was no `## Questions` above this, the round was never recorded,
+and writing one now would be inventing a fork nobody put. So the section stays
+for what it holds and stops claiming to be an answer.
+
+**The reply is kept verbatim.**
+
+> we should have a picker, bit i dont know hat your question is here
+
+What the user said is a remark about the question, not an answer to it — the
+round it belonged to was never recorded here, so a later reader met an answer
+with nothing above it and no way to tell what was settled. Per the board's own
+rule, a reply saying the question was wrong changes the round rather than
+being written down as a decision.
+
+**What is settled:** there is a picker, and it is built. R1 is `[x]`, the
+implementation landed, and `bash tests/capsule-recents.sh` passes against a
+recording `tv` shim. Nothing about the picker's existence was ever in doubt,
+which is why the question read as confusing.
+
+**What is not settled is not a question for the user at all** — it is five
+things only a human at a GUI WezTerm can see, and they are listed in
+`## Blocked` below and written into `gates/manual/wave4.md` as the C.4 rows.
+That is why this node is `blocked` and not `question`: it waits on an
+observation, not on a decision.
+
+Repaired 2026-08-28 under
+[`doctor-debt-live-nodes`](../../00-delivery/finish-line/doctor-debt-live-nodes/prd.md)
+R2 and R3.
