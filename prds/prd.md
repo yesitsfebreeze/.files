@@ -18,14 +18,17 @@ work surface and the schedule: each node's frontmatter (`est`, `deps`,
 contract.
 
 ## Requirements
+
 - [ ] **I1** — Every epic child is covered before this node closes.
-- [ ] **I2** — One writer per file. Two nodes never name the same path in the
-      same wave; the check is in
-      [`parallelization`](00-delivery/parallelization/prd.md).
-- [ ] **I3** — Every node that adds a binding, command or alias writes its own
-      `help` entry in the same change, so
-      [`06-help/04-drift-check`](06-help/04-drift-check/prd.md) can prove
-      completeness.
+
+**I2** — One writer per file. Two nodes never name the same path in the
+same wave; the check is in
+[`parallelization`](00-delivery/parallelization/prd.md).
+
+**I3** — Every node that adds a binding, command or alias writes its own
+`help` entry in the same change, so
+[`06-help/04-drift-check`](06-help/04-drift-check/prd.md) can prove
+completeness.
 
 ## Acceptance
 - [ ] A clone of this repo applied to a machine that has never seen it produces

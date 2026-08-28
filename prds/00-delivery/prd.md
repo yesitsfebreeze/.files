@@ -32,26 +32,30 @@ on an **automated** verification, not a claim.
 
 **Execution invariants**
 
-- [ ] **I1** — **A task is one PRD, or a slice of one.** Task IDs are PRD
-      paths (`04-shell/03`), so there is never ambiguity about the spec for a
-      task.
-- [ ] **I2** — **One writer per file.** Tasks are assigned so that no two
-      concurrent agents write the same file. Where that's impossible
-      (`config.nu` is touched by most shell tasks), the tasks are serialized
-      into one track rather than isolated in worktrees — a merge of two
-      hand-edited config files costs more than the parallelism saves.
-- [ ] **I3** — **Definition of done is executable.** "Done" means its
-      acceptance criteria were run, not read. See
-      [03](verification-gates/prd.md).
-- [ ] **I4** — **Documentation is part of the task, not a phase.** Every task
-      that adds a keybinding or command writes its `help` entry in the same
-      change ([`06-help/01`](../06-help/01-content-model/prd.md)). The manual is
-      therefore complete when the build is, and `help --check` can be the
-      final gate.
-- [ ] **I5** — **Correct the spec, don't work around it.** An agent that finds
-      the PRD wrong stops and files the correction into
-      [04](corrections/prd.md); it does not implement the wrong thing
-      or silently improvise a different one.
+**I1** — **A task is one PRD, or a slice of one.** Task IDs are PRD
+paths (`04-shell/03`), so there is never ambiguity about the spec for a
+task.
+
+**I2** — **One writer per file.** Tasks are assigned so that no two
+concurrent agents write the same file. Where that's impossible
+(`config.nu` is touched by most shell tasks), the tasks are serialized
+into one track rather than isolated in worktrees — a merge of two
+hand-edited config files costs more than the parallelism saves.
+
+**I3** — **Definition of done is executable.** "Done" means its
+acceptance criteria were run, not read. See
+[03](verification-gates/prd.md).
+
+**I4** — **Documentation is part of the task, not a phase.** Every task
+that adds a keybinding or command writes its `help` entry in the same
+change ([`06-help/01`](../06-help/01-content-model/prd.md)). The manual is
+therefore complete when the build is, and `help --check` can be the
+final gate.
+
+**I5** — **Correct the spec, don't work around it.** An agent that finds
+the PRD wrong stops and files the correction into
+[04](corrections/prd.md); it does not implement the wrong thing
+or silently improvise a different one.
 
 ## Acceptance
 - [ ] A fresh macOS machine reaches the full daily driver from a clone plus

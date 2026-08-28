@@ -30,25 +30,29 @@ request, and verifiable against the live config so it cannot silently rot.
 
 **Architecture invariants**
 
-- [ ] **I1** — **One content source, many renderers.** Human tables, fuzzy
-      browser, JSON, and markdown all read the same data. A binding is
-      described exactly once.
-- [ ] **I2** — **Delegate, never shadow.** Anything that isn't ours goes to
-      the tool that owns it — builtin `help` for nu commands, `:help` for
-      Neovim.
-- [ ] **I3** — **Checkable or absent.** Every documented binding must be
-      verifiable against live introspection, or explicitly marked prose-only.
-- [ ] **I4** — **Non-TTY output is plain.** No pager, no colors, no TUI when
-      stdout isn't a terminal — agents capture stdout, and [tv needs a
-      TTY](../04-shell/04-television/prd.md).
-- [ ] **I5** — **A `desc` exemption is declared, never inferred.** Neovim
-      introspection is uneven (finding 2), so the drift check must be told
-      which missing descriptions are intentional rather than inferring it. It
-      is told per verify target, by a three-state `desc` field on `nvim-map`
-      targets — enforced in `tests/help-content-model.nu`, whose
-      `VERIFY_KINDS` entry reads `nvim-map: {req: ["mode" "lhs"], opt:
-      ["desc" "scope"], nullable: ["desc"]}`, and met by a writer in
-      `home/dot_config/nushell/help/README.md`:
+**I1** — **One content source, many renderers.** Human tables, fuzzy
+browser, JSON, and markdown all read the same data. A binding is
+described exactly once.
+
+**I2** — **Delegate, never shadow.** Anything that isn't ours goes to
+the tool that owns it — builtin `help` for nu commands, `:help` for
+Neovim.
+
+**I3** — **Checkable or absent.** Every documented binding must be
+verifiable against live introspection, or explicitly marked prose-only.
+
+**I4** — **Non-TTY output is plain.** No pager, no colors, no TUI when
+stdout isn't a terminal — agents capture stdout, and [tv needs a
+TTY](../04-shell/04-television/prd.md).
+
+**I5** — **A `desc` exemption is declared, never inferred.** Neovim
+introspection is uneven (finding 2), so the drift check must be told
+which missing descriptions are intentional rather than inferring it. It
+is told per verify target, by a three-state `desc` field on `nvim-map`
+targets — enforced in `tests/help-content-model.nu`, whose
+`VERIFY_KINDS` entry reads `nvim-map: {req: ["mode" "lhs"], opt:
+["desc" "scope"], nullable: ["desc"]}`, and met by a writer in
+`home/dot_config/nushell/help/README.md`:
 
   | state | meaning to the drift check |
   |---|---|

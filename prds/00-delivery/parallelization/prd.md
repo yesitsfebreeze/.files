@@ -68,7 +68,7 @@ how the deleted table came to be wrong.
 | system | answers | source of truth | enforced by |
 |---|---|---|---|
 | gate waves 0–6 | when does a wave's gate arm | [`gates/waves.tsv`](../../../gates/waves.tsv) rows | `bash gates/wave-status.sh --validate` |
-| plan waves | what may be dispatched concurrently now | every node's `needs:` + `footprint:` | `python3 .claude/skills/pearde/view/plan.py plan` |
+| plan waves | what may be dispatched concurrently now | every node's `needs:` + `footprint:` | `python3 ~/dev/infra/pearde/resources/board/plan.py plan` |
 
 They do not have to agree, and today they do not: measured 2026-08-24, the
 registry carries 7 gate-wave rows over 70 tasks while the planner computes 7

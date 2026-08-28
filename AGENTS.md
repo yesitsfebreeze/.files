@@ -28,7 +28,7 @@ which was true when written and has been false for a while. Measured on
 chezmoi source under `home/` carries the shipped WezTerm, Neovim, nushell,
 television and capsule configuration, with a gate per node under `tests/` and
 `gates/`. The editor epic is complete. Run
-`python3 .claude/skills/pearde/view/plan.py plan` for today's number rather
+`python3 ~/dev/infra/pearde/resources/board/plan.py plan` for today's number rather
 than trusting this sentence — a count in prose is a reading of the day it was
 taken, and this board has corrected six of them in six documents on
 2026-08-24 alone.
@@ -307,9 +307,18 @@ Rules that keep this tree useful:
 - **Record exclusions where they'd be looked for.** A `DO NOT PORT` decision
   belongs in the epic's Non-goals and the README's exclusion list, not just
   in the inventory.
-- **Epics own the invariants.** Shared architecture (e.g. "`mkcd` is the
-  single navigation funnel", "tv owns every picker screen") goes in the
-  epic's `prd.md`, and children reference it rather than restating it.
+- **Epics own the invariants, and an invariant is prose, not a box.** Shared
+  architecture (e.g. "`mkcd` is the single navigation funnel", "tv owns every
+  picker screen") goes in the epic's `prd.md`, and children reference it rather
+  than restating it. Write it as `**I<n>** — …` in prose and keep the number,
+  because other documents cite invariants by number. It is deliberately not a
+  `- [ ]` box: an invariant is the architecture the children are built
+  *inside*, not work anybody performs, so no run could ever close one — and
+  when they were boxes they held eight epics and the board root `open`
+  indefinitely, which is what the conversion on 2026-08-28 corrected. The
+  "everything testable is a box" rule above governs requirements and
+  acceptance; an invariant is not a testable claim, it is the frame the tests
+  are written in.
 - **Prefer built-ins over plugins.** Where the platform already does it
   (Neovim 0.10+ `gc` commenting, 0.11 LSP maps), document the built-in
   instead of adding a dependency.

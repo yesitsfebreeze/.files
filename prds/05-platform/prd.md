@@ -42,25 +42,28 @@ one list in one script.
 
 **Architecture invariants**
 
-- [ ] **I1** — **Apply-time, not launch-time.** Anything that costs
-      milliseconds at shell start is generated during `chezmoi apply` instead.
-      The shell only `source`s.
-- [ ] **I2** — **Idempotent by construction.** Every step is `command
-      -v`-guarded, so re-running is safe and cheap. (*Narrowed 2026-08-21:
-      the guard list used to name two chezmoi script-stage mechanisms
-      alongside `command -v`; `8fe3a71` deleted both, and the guard is what
-      survives — it is also exactly what `install.sh` relies on.*)
-- [ ] **I3** — **Tools are data.** ***Withdrawn 2026-08-21*** (user decision)
-      — this asserted that the package set lives in a chezmoi data file and
-      the installer is a renderer over it. Commit `8fe3a71` (2026-08-19)
-      deleted the data file and the renderer; rebuilding them would be
-      porting a capability its owner had just removed by hand. Marked
-      withdrawn in place rather than deleted, because I1–I4 are cited by
-      number — including by this epic's own acceptance boxes — and a
-      vanished I3 reads as a numbering error.
-- [ ] **I4** — **Never fail the whole apply.** One unavailable package warns
-      and continues; a partial machine beats an aborted one. With I3 gone
-      this is the invariant the epic most depends on.
+**I1** — **Apply-time, not launch-time.** Anything that costs
+milliseconds at shell start is generated during `chezmoi apply` instead.
+The shell only `source`s.
+
+**I2** — **Idempotent by construction.** Every step is `command
+-v`-guarded, so re-running is safe and cheap. (*Narrowed 2026-08-21:
+the guard list used to name two chezmoi script-stage mechanisms
+alongside `command -v`; `8fe3a71` deleted both, and the guard is what
+survives — it is also exactly what `install.sh` relies on.*)
+
+**I3** — **Tools are data.** ***Withdrawn 2026-08-21*** (user decision)
+— this asserted that the package set lives in a chezmoi data file and
+the installer is a renderer over it. Commit `8fe3a71` (2026-08-19)
+deleted the data file and the renderer; rebuilding them would be
+porting a capability its owner had just removed by hand. Marked
+withdrawn in place rather than deleted, because I1–I4 are cited by
+number — including by this epic's own acceptance boxes — and a
+vanished I3 reads as a numbering error.
+
+**I4** — **Never fail the whole apply.** One unavailable package warns
+and continues; a partial machine beats an aborted one. With I3 gone
+this is the invariant the epic most depends on.
 
 ## Acceptance
 

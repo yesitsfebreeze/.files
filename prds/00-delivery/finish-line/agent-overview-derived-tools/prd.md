@@ -1,10 +1,10 @@
 ---
-state: open
+state: analyzing
 priority: 8
 est: 2h
 mode: afk
+claim: analyst-derived-tools 2026-08-28T12:30Z
 needs:
-  - 06-help/05-agent-interface
 verify: "bash tests/help-agent.sh"
 origin: requested
 from: 00-delivery/finish-line
@@ -32,6 +32,19 @@ the duplication the render exists to prevent, and the drift six documents on
 this board hit in one week. Keeping it pointer-only accepts a measured
 near-miss. The third way: **derive** the names from the corpus at render time,
 so the block informs and there is still exactly one source.
+
+**Dependency note, 2026-08-28.** `needs:` used to name
+[`06-help/05-agent-interface`](../../../06-help/05-agent-interface/prd.md) and
+no longer does, because the two together formed a cycle the scheduler refuses:
+that node is `blocked` on *this* one — its last acceptance box is the reading
+test, and Answer 5 routes the fix here — while this node needed it `done`.
+
+The dependency was never on that node's **state**. It is on its **code**, and
+that shipped: the render spine landed at `51396f0` and every one of spec01's
+sixteen acceptance boxes closed at `235e179`. `_help_curated` exists to be
+modified. Depending on a state that cannot arrive until this node lands is
+what made the pair unschedulable; depending on a commit that already exists is
+what is actually true.
 
 ## Requirements
 - [ ] **R1** — The overview's `idioms` line carries the tool names, extracted
