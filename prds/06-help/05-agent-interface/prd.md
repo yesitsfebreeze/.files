@@ -1,5 +1,5 @@
 ---
-state: open
+state: blocked
 claim:
 priority: 8
 est: 1.25h
@@ -7,6 +7,7 @@ task: H.5
 mode: afk
 needs:
   - 06-help/03-browser
+  - 00-delivery/finish-line/agent-overview-derived-tools
 verify: "bash tests/help-agent.sh"
 ---
 
@@ -289,3 +290,64 @@ This settles the fourth acceptance box, so **the H.5 grade is no longer what
 blocks this node**; the derived-tools node is. The two deviations recorded
 above stand unchanged, and R1–R6 stay `[x]` — the interface itself was never
 the thing in question.
+
+## Implementer run, 2026-08-28 — spec01 re-measured end to end
+
+The spec's sixteen acceptance boxes are now `[x]` in
+[`specs/spec01-json-and-markdown-renders.md`](specs/spec01-json-and-markdown-renders.md),
+each with the output it was closed against. Nothing in the code needed
+changing: `help.nu`'s `_help_norm` / `_help_json` / `_help_md`, the two flags
+and their validation, the shared `_help_curated` render and the `For agents:`
+block, and the one `also` value on `shell.nuon`'s `cc [...args]` entry were
+all present and green. The three verify commands:
+
+```
+bash tests/help-agent.sh          90 PASS, 0 FAIL, EXIT 0
+nu tests/help-content-model.nu    ok — 96 entries across 4 files, 9 topics
+bash tests/shell-help.sh          CHECKS: 93 run, 93 passed, 0 failed
+```
+
+**The counts in R1, R2 and the first acceptance box are readings of
+2026-08-24 and have moved, which is exactly what those checks are built to
+survive.** Re-measured today on a scratch `HOME` with no `config.nu`: the
+corpus is **96** entries, not 92, and `help --md` is **1183** lines, not
+1137. Everything the numbers were evidence *for* still holds, and holds
+because nothing is frozen — `.entries | length` still equals
+`help --all | length` (96 = 96) and `[.entries[].id]` still equals
+`help --all | get key` element for element; `.topics | length` is still 9 and
+equals `topics.nuon`'s row count computed in the same run; the host-only
+marker still lands on exactly the 16 `mode: "terminal"` entries; and every one
+of the 96 entries carries the same single eleven-key tuple in the documented
+order (`distinct key tuples: 1`). The earlier readings are left where they
+stand rather than overwritten: they were true when taken, and the point of
+this paragraph is that a count in prose is a reading of its day.
+
+Two things a later reader should not have to rediscover.
+
+**The `--delegate` rc-0 half of the missing-corpus box is provable, and the
+PRD's deviation 1 is `reproduced`.** Fixture: the same scratch `HOME` with
+`help/` renamed to `help-gone/`. Under bare `nu -n` with no `config.nu`,
+`help --delegate ls` exits 1 at ``Command `core-help` not found`` and names no
+corpus path — the escape hatch is corpus-free, which is the property the gate
+asserts. Bind the alias the way `config.nu` binds it (`alias core-help =
+help`) and the same command with the corpus still gone exits **rc 0**,
+printing nushell's own `ls` help. So the deviation is a property of the gate's
+deliberately config-free staging, not of the code.
+
+**`help --md` does contain the string `std/help`, twice, and that is not the
+tail the spec forbids.** Both hits are the `help` entry's own corpus `use` and
+`why` prose at `manual.md:1093` and `:1095`, describing the delegation. The
+render shells out nowhere: `core-help` occurs in `help.nu` at lines 24, 27,
+38, 484, 534, 645, 657, 708, 773 and 782, while `_help_norm` spans 359-375,
+`_help_json` 388-390 and `_help_md` 421-456 — not one occurrence falls inside
+any of the three.
+
+One wording slip, in the spec and not in the code: section 5's prose says
+"Four counterfactuals" and then lists five. Five is what is specified and five
+is what `tests/help-agent.sh` runs; the spec's box is ticked against five.
+
+The second acceptance box above is untouched. It is the H.5 reading, owed to
+`gates/manual/wave6.md` (the orchestrator's file), and the `## Answers`
+section routes the change behind it to
+[`agent-overview-derived-tools`](../../00-delivery/finish-line/agent-overview-derived-tools/prd.md) —
+neither is this run's to close.

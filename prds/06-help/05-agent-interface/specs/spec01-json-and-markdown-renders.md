@@ -333,48 +333,177 @@ gate and the subject, then repair and hash again:
 
 ## Acceptance
 
-- [ ] `help --json` emits one document that `from json` and `python3
+- [x] `help --json` emits one document that `from json` and `python3
       -c 'json.load(...)'` both parse, with `topics` and `entries` at the top
       level.
-- [ ] Every entry in `help --json` carries **exactly** the eleven keys
+
+      Checked 2026-08-28 in a scratch `HOME` (`help.nu` + the `help/` corpus,
+      **no** `config.nu`), `nu -n`: `help --json | from json | columns` →
+      `topics` / `entries`, rc 0, and `python3 -c json.load` →
+      `py ok, top keys: ['entries', 'topics'] topics 9 entries 96`.
+- [x] Every entry in `help --json` carries **exactly** the eleven keys
       `id key cmd title use topic mode also why verify source` — no entry has
       a twelfth and none is missing one.
-- [ ] `[.entries[].id]` from `help --json` equals `help --all | get key`
+
+      Checked: over the 96 entries there is exactly **one** distinct key
+      tuple — `distinct key tuples: 1`, `96 entries -> ['id', 'key', 'cmd',
+      'title', 'use', 'topic', 'mode', 'also', 'why', 'verify', 'source']` —
+      and `order matches documented list: True`. No twelfth key on any entry,
+      none missing.
+- [x] `[.entries[].id]` from `help --json` equals `help --all | get key`
       element for element, and `.entries | length` equals
       `help --all | length`.
-- [ ] `.topics | length` equals the staged `topics.nuon` row count, computed
+
+      Checked: `help --all length: 96 json entries: 96` and
+      `element-for-element equal: True`.
+- [x] `.topics | length` equals the staged `topics.nuon` row count, computed
       in the same run — no number frozen in the test.
-- [ ] The entry whose id contains an apostrophe appears in `help --json`
+
+      Checked, computed in the same run rather than frozen:
+      `topics.nuon rows: 9`, ids `['navigate', 'find', 'history', 'edit',
+      'git', 'containers', 'terminal', 'agents', 'config']`, and
+      `every entry.topic in topics: True`. (`tests/help-agent.sh` asserts the
+      same equality against the corpus it stages, so the 9 is never a
+      literal.)
+- [x] The entry whose id contains an apostrophe appears in `help --json`
       with non-empty `use`, `why` and `source`.
-- [ ] `help --md` renders one `## ` heading per non-empty topic in spine
+
+      Checked: `apostrophe id: "Neovim's own LSP keys"` with non-empty
+      `use` and `why` and `source prds/03-editor/09-lsp/prd.md`. An agent
+      reading the JSON never sends that id back through a shell.
+- [x] `help --md` renders one `## ` heading per non-empty topic in spine
       order, one `### <id>` per entry, and the host-only marker on exactly
       the `mode: "terminal"` entries.
-- [ ] `help --json --mode nvim` and `help --md --mode nvim` return only
+
+      Checked on the staged corpus: 1183 lines, `## ` → **9** in
+      `topics.nuon` spine order (navigate, find, history, edit, git,
+      containers, terminal, agents, config), `### ` → **96** = the entry
+      count, and the host-only marker `host-only — the terminal is outside a
+      capsule` on **16** lines against **16** `mode == "terminal"` entries in
+      the same run. The two `std/help` hits in the document are the `help`
+      entry's own corpus `use`/`why` prose, not a render tail — the render
+      shells out nowhere.
+- [x] `help --json --mode nvim` and `help --md --mode nvim` return only
       `nvim*` entries; `--mode tmux` exits non-zero on both.
-- [ ] `help --json ctrl-r`, `help --md ctrl-r` and `help --json --md` each
+
+      Checked: `--json --mode nvim` → 29 entries, modes
+      `['nvim:insert', 'nvim:normal', 'nvim:visual']`, `all nvim*: True`;
+      `--md --mode nvim` → 29 `### ` under **2** `## ` (find, edit) — the
+      seven topics the filter empties are skipped whole rather than left as
+      bare headings. `--mode tmux` on both → rc 1,
+      `help: --mode takes shell, nvim, terminal or container, not tmux`.
+- [x] `help --json ctrl-r`, `help --md ctrl-r` and `help --json --md` each
       exit non-zero with a message naming the offending flag.
-- [ ] `help --json`, `help --md` and bare `help` contain no `0x1b` byte
+
+      Checked, each rc 1 and each naming the flag: `help: --json renders the
+      whole manual and takes no query — got 'ctrl-r'`; the same sentence
+      with `--md`; and `help: --json and --md are exclusive — each renders the
+      whole manual, so there is nothing to combine; run them separately`.
+- [x] `help --json`, `help --md` and bare `help` contain no `0x1b` byte
       under capture.
-- [ ] Both renders run under `nu -n` with only `help.nu` sourced — no
+
+      Checked by byte, not by eye — first `0x1b` index over the captured
+      bytes: `out.json -1` (94518 bytes), `manual.md -1` (56965 bytes),
+      `bare.txt -1` (1462 bytes). R3 verified rather than assumed.
+- [x] Both renders run under `nu -n` with only `help.nu` sourced — no
       `config.nu`, no `core-help` named anywhere in `_help_norm`,
       `_help_json` or `_help_md`.
-- [ ] With the corpus renamed away, `help --json` and `help --md` raise a
+
+      Checked: every run above is `env -i HOME=$S … nu -n -c 'source
+      ~/.config/nushell/help.nu; …'` with **no `config.nu` in the scratch
+      tree** — that absence is the assertion, because a render needing
+      `config.nu` is a render naming the alias only `config.nu` binds. And by
+      line: `core-help` occurs in `help.nu` at 24, 27, 38, 484, 534, 645, 657,
+      708, 773, 782, while `_help_norm` is 359-375, `_help_json` 388-390 and
+      `_help_md` 421-456 — no occurrence falls inside any of the three.
+- [x] With the corpus renamed away, `help --json` and `help --md` raise a
       message naming `chezmoi apply` while `help --delegate ls` exits 0.
-- [ ] `_help_overview`'s Go-deeper line names `help --json` and `help --md`,
+
+      Checked with `help/` renamed to `help-gone/`: both rc 1 with
+      `help: the manual's corpus directory <path> is missing — run `chezmoi
+      apply`…`. The `--delegate` half needs `core-help` **bound**, which is
+      the accepted deviation 1 in the PRD: under bare `nu -n` (no `config.nu`)
+      `help --delegate ls` dies at `Command `core-help` not found` naming no
+      corpus path — the escape hatch is corpus-free — and with the alias
+      bound the way `config.nu` binds it, the same command with the corpus
+      still gone exits **rc 0** and prints nushell's own `ls` help ("List
+      the filenames, sizes, and modification times of items in a
+      directory.").
+- [x] `_help_overview`'s Go-deeper line names `help --json` and `help --md`,
       and `tests/shell-help.sh:539`'s exact substring is still present.
-- [ ] Bare `help` — no flag, no argument — names `help --json`, `help --md`
+
+      Checked both ways. `help.nu:278` is `"Go deeper: help <topic> ·
+      help <query> · help <entry> · help --all · help --fuzzy · help --json
+      · help --md"` — the two flags **appended**, nothing inserted; and
+      `grep -oF 'help <topic> · help <query> · help <entry> · help --all ·
+      help --fuzzy'` over the rendered bare `help` still returns that exact
+      substring intact, which is what `tests/shell-help.sh:539` asserts.
+- [x] Bare `help` — no flag, no argument — names `help --json`, `help --md`
       and `idioms`, each with that entry's corpus `title`, alongside the four
       first keys and the nine topics.
-- [ ] `home/dot_config/nushell/help/shell.nuon`'s `cc [...args]` entry lists
+
+      Checked on the rendered output: the `For agents:` block reads
+
+          For agents:
+            help --json — Read this manual as structured data
+            help --md — Write this manual out as markdown
+            idioms — Search with rg, find with fd, pick with tv
+
+      each line `id — <corpus title>` with no prose of the render's own, and
+      the same output still carries the nine topic lines with their counts and
+      the four `First keys:` ids (`Ctrl-Space / F1`, `F5 <digit>`, `Ctrl-R`,
+      `<leader>ff and <leader><space>`).
+- [x] `home/dot_config/nushell/help/shell.nuon`'s `cc [...args]` entry lists
       `credentials in a capsule` in `also`, and `nu
       tests/help-content-model.nu` exits 0 (baseline today: `ok`, 92 entries
       / 9 topics).
-- [ ] `bash tests/shell-help.sh` exits 0 with no fewer checks than its
+
+      Checked: `shell.nuon:356` — `also: ["cr [...args]", "zc <query>",
+      "credentials in a capsule"]` on the `cmd: "cc [...args]"` entry at
+      :351, and the rendered JSON agrees
+      (`cc [...args] | topic agents | also ['cr [...args]', 'zc <query>',
+      'credentials in a capsule']`). `nu tests/help-content-model.nu` →
+      `ok`, `96 entries across 4 files, 9 topics, 16 prose-only` — the
+      also-target
+      resolves and no digest moved, so no review was rewritten. (The 92 in
+      this spec's baseline table is the 2026-08-24 reading; the corpus has
+      since grown to 96 and every check above is computed, not frozen.)
+- [x] `bash tests/shell-help.sh` exits 0 with no fewer checks than its
       baseline of 93 (`CHECKS: 93 run, 93 passed, 0 failed`, measured
       2026-08-24 before this node), and its stale "seven flag comments"
       count is gone rather than bumped.
-- [ ] All five counterfactuals in `tests/help-agent.sh` print a **differing**
+
+      Checked: `CHECKS: 93 run, 93 passed, 0 failed`, `EXIT=0`. And the
+      stale count is **gone rather than bumped** —
+      `tests/shell-help.sh:207-223` now reads "the only trailing-`#` lines in
+      the file are the flag comments in that signature" with a paragraph
+      headed `THE NUMBER IS GONE ON PURPOSE, not bumped`; `grep -n seven`
+      finds it only inside that explanation, never in the claim
+      `strip_comments` rests on.
+- [x] All five counterfactuals in `tests/help-agent.sh` print a **differing**
       `sha … -> …` pair on one line and FAIL the named check before repair.
+
+      Checked in `bash tests/help-agent.sh --hermetic`, each pair on one
+      line and each pair differing:
+
+          CF use-renamed-to-usage        sha db54c04f19cd -> cf0ea4ca2e3f
+          CF md-calls-core-help          sha db54c04f19cd -> b43bae555bb8
+          CF go-deeper-drops-help--json  sha db54c04f19cd -> 295521200761
+          CF cc-also-drops-credentials   sha 39d95caa5b31 -> 2f20251483f3
+          CF corpus-renames-idioms       sha 39d95caa5b31 -> 68e0652cd04b
+
+      each followed by the named check going red before repair
+      (`norm_keys_ok`, `no_core_help_ok`, `go_deeper_ok`, `cc_also_ok`, and
+      the discovery check naming `idioms`), two of them with the mutated copy
+      also *run* rather than only grepped, and each repair restoring the
+      original sha (`repaired: sha db54c04f19cd (want db54c04f19cd)` /
+      `39d95caa5b31`). CF5 mutates the **corpus**, and its own line records
+      the silence it proves: `the For agents: block silently lost a line — 2
+      remain under it (was 3)`.
+
+      One wording slip in this spec, not in the code: section 5's prose says
+      "Four counterfactuals" and then lists five. Five is what is specified
+      and five is what the gate runs.
 
 ## Verify and Proof
 
