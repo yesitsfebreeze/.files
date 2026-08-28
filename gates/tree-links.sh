@@ -29,6 +29,34 @@ report_a() { python3 "$PY" --root "$1" --tier a --quiet-b 2>/dev/null; }
 count_all()  { python3 "$PY" --root "$1" --count-only "${@:2}"; }
 report_all() { python3 "$PY" --root "$1" 2>/dev/null; }
 
+# The two tallies the report prints, PARSED out of it rather than pinned as a
+# literal.  Two assertions below used to grep for a frozen exempt count —
+# nine links in four files, spelled in words here so that a grep for a
+# pinned count finds none; by 2026-08-28 the real tree read 13 in 5 —
+# every one of the four extra a legitimate marker a lane had added — so the
+# selftest exited 1, gates/selftest.sh exited 1, and `just gate-selftest`
+# (the first half of 00-delivery/verification-gates' own verify) failed on a
+# gate that was itself green.  A count frozen in a script is a fact with an
+# expiry date, and this board has expired six of them.
+#
+# Both print two space-separated fields, or `MISSING MISSING` when the line
+# is not there at all — never an empty string, because an empty string
+# compares equal to another empty string and would make the differentials
+# below pass vacuously.
+exempt_tally() {
+  local t
+  t="$(report_all "$1" | sed -n \
+    's/^      exempt \([0-9][0-9]*\) links in \([0-9][0-9]*\) files (target-file-vantage)$/\1 \2/p')"
+  printf '%s' "${t:-MISSING MISSING}"
+}
+# -> "<checked> <files>" from the `checked N links in M files, K broken` line.
+checked_tally() {
+  local t
+  t="$(report_all "$1" | sed -n \
+    's/^      checked \([0-9][0-9]*\) links in \([0-9][0-9]*\) files, .*$/\1 \2/p')"
+  printf '%s' "${t:-MISSING MISSING}"
+}
+
 selftest() {
   local T S base
   T="$(gates_tmpdir)"; S="$T/tree"
@@ -206,23 +234,85 @@ selftest() {
   cp "$T/spec.orig" "$S2/$spec"
   chk_ok "fail-closed: the copy is green again before the prd.md marker goes in" \
     python3 "$PY" --root "$S2"
-  printf '\n<!-- tree-links: target-file-vantage — a reason long enough to pass the length rule -->\n' \
-    >> "$S2/prds/00-delivery/verification-gates/prd.md"
-  echo "      MUTATION: planted a well-formed marker in a prd.md, where it is not honoured"
+  # The tally BEFORE the marker exists.  This is the whole correction: the
+  # assertion below used to pin the exempt count as a literal (nine links
+  # in four files), which said the right thing only for as long as nobody
+  # added a marker.
+  # What it was always reaching for is a differential — a marker that is not
+  # honoured must move the tally by zero — and no legitimate exemption
+  # anywhere else in the tree can break that.
+  local ex_before ex_after
+  ex_before="$(exempt_tally "$S2")"
+  chk_ok "fail-closed: the pre-marker exempt tally parses (got '$ex_before')" \
+    grep -qE '^[0-9]+ [0-9]+$' <(printf '%s\n' "$ex_before")
+  chk_ok "fail-closed: and is not vacuously zero — there are exemptions to move" \
+    grep -qvE '^0 0$' <(printf '%s\n' "$ex_before")
+  # The marker is followed by a BAIT LINK, and that is load-bearing.  An
+  # earlier version of this plant appended the marker alone, at the end of
+  # the file — where its region runs to EOF over no links at all, so an
+  # honoured marker would have exempted nothing and the assertion below could
+  # not move whatever the walker did.  Measured 2026-08-28 by defeating the
+  # `outside specs/` guard in tree-links.py: the tally read 13 5 -> 13 5 and
+  # this check passed through the fault.  With the bait link inside the
+  # region, honouring the marker exempts it, the tally moves, and the check
+  # goes red — which is the only reason it is evidence of anything.
+  {
+    printf '\n<!-- tree-links: target-file-vantage — a reason long enough to pass the length rule -->\n'
+    printf '\n[bait: the marker would hide this link if it were honoured](./no-such-vantage-bait.md)\n'
+  } >> "$S2/prds/00-delivery/verification-gates/prd.md"
+  echo "      MUTATION: planted a well-formed marker + a bait link in a prd.md, where the marker is not honoured"
+  ex_after="$(exempt_tally "$S2")"
   chk_ok "fail-closed: the same marker in a prd.md is an ERROR, not an exemption" \
     grep -q '^ERROR prds/00-delivery/verification-gates/prd.md:.*outside specs/' \
       <(report_all "$S2")
   chk_fail "fail-closed: a marker in a prd.md turns the gate red" \
     python3 "$PY" --root "$S2"
-  chk_ok "fail-closed: the prd.md marker exempts nothing — the exempt count stays 9" \
-    grep -q '^      exempt 9 links in 4 files (target-file-vantage)$' <(report_all "$S2")
+  chk_ok "fail-closed: the prd.md marker exempts nothing — the tally is unmoved ('$ex_before' -> '$ex_after')" \
+    test "$ex_after" = "$ex_before"
 
   # 10. Green again — the real tree, unmutated, over the merged set.
   chk_ok "green: the real tree exits 0 over the merged set (specs/** included)" \
     python3 "$PY"
-  chk_ok "green: the real tree's exemptions are exactly 9 links in 4 files" \
-    grep -q '^      exempt 9 links in 4 files (target-file-vantage)$' \
-      <(python3 "$PY" 2>/dev/null)
+
+  # 11. The real tree's exemptions, DERIVED rather than pinned.
+  #     This check used to read "are exactly 9 links in 4 files", grepped as a
+  #     literal.  The number was true when written and false by 2026-08-28
+  #     (13 in 5), and every one of the four extra was a legitimate marker a
+  #     lane had added — so the assertion punished correct work and took
+  #     `just gate-selftest` down with it.
+  #
+  #     The property underneath it is that the exempt line accounts for
+  #     exactly the links the markers hide, and nothing else.  Prove that as
+  #     a differential on a third copy: rename every directive so it is no
+  #     longer honoured (it becomes an unknown-directive ERROR, which exempts
+  #     nothing), then demand the exempt tally falls to zero and every link
+  #     that was exempt reappears in the checked count.  An exemption that
+  #     swallowed a link it should not would show up as a mismatch here; a
+  #     new legitimate marker moves both sides together and cannot.
+  local S3 real_tally copy_tally off_tally chk_on chk_off ex_links f
+  S3="$T/derive"
+  scratch_tree "$S3"
+  echo "      MUTATION HOST 3: $S3 (a third scratch_tree copy, for the derived tally)"
+  real_tally="$(exempt_tally "$REPO_ROOT")"
+  copy_tally="$(exempt_tally "$S3")"
+  chk_ok "derived: the real tree's exempt tally parses (got '$real_tally' links/files)" \
+    grep -qE '^[0-9]+ [0-9]+$' <(printf '%s\n' "$real_tally")
+  chk_ok "derived: it is not vacuously zero — there are exemptions to account for" \
+    grep -qvE '^0 0$' <(printf '%s\n' "$real_tally")
+  chk_ok "derived: the scratch copy carries the same tally ('$copy_tally')" \
+    test "$copy_tally" = "$real_tally"
+  ex_links="${copy_tally%% *}"
+  chk_on="$(checked_tally "$S3")"
+  while IFS= read -r f; do
+    sed -i '' 's/tree-links: target-file-vantage/tree-links: vantage-off-for-selftest/g' "$f"
+  done < <(grep -rl 'tree-links: target-file-vantage' --include='*.md' "$S3")
+  echo "      MUTATION: renamed every target-file-vantage directive in the third copy, so none is honoured"
+  off_tally="$(exempt_tally "$S3")"
+  chk_off="$(checked_tally "$S3")"
+  chk_ok "derived: with no honoured marker the exempt tally is 0 links in 0 files (got '$off_tally')" \
+    test "$off_tally" = "0 0"
+  chk_ok "derived: every exempted link reappears as a checked one (${chk_on%% *} + $ex_links = ${chk_off%% *})" \
+    test "$(( ${chk_on%% *} + ex_links ))" -eq "${chk_off%% *}"
 
   echo "── selftest rc=$rc ──────────────────────────────────────────────────"
   return "$rc"
