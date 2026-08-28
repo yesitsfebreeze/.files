@@ -53,6 +53,28 @@ and hitl nodes are never dispatched concurrently to agents.
    why, and `help` carries an entry saying so, so the manual does not teach an
    invariant the environment does not honour.
 
+## Checklist closure
+
+*Recorded 2026-08-28, moved here from `gates/manual/wave0.md`.*
+
+**D.1c is closed, from the record.** Its gate row's PASS criterion was
+*"recorded in the corrections backlog with a date"*, and its FAIL clause was
+*"an unrecorded verbal answer — the next agent cannot read it"*. Item 3 of
+`## S1 — open decisions for the human` in the
+[corrections backlog](../../corrections/prd.md) carries **Decided 2026-08-21
+(user)**: fzf is an accepted, documented exception to "tv owns every picker
+screen", reached through `zoxide query --interactive` behind `zi`/`cdi`. Both
+acceptance boxes above are already `[x]` against that check, and the exception
+is written down in the two places the answer requires — `04-shell/prd.md` I3
+and the `help` manual.
+
+The row was never a manual check. It sat on `gates/manual/wave0.md`, where a
+tick asserts a human stood at a terminal, so it had no honest way to close
+there. It moved here on 2026-08-28 by
+[`d3-tick-breaks-unticked-rule`](../../corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A, and `gates/manual-coverage.sh` now keeps decision rows off the
+manual checklists mechanically.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.

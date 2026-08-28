@@ -1,13 +1,15 @@
 ---
-state: open
+state: claimed
 priority: 15
 est:
 mode: afk
 needs:
 verify: "bash gates/wave-status.sh --validate"
+complexity: 20
+blast-radius: mid
 origin: derived
 from: 04-shell/10-litellm-launcher
-claim: 
+claim: impl-waves-s10 2026-08-28T13:05Z
 ---
 
 # `S.10`'s gate is committed and registered nowhere, so the registry's own validation is red

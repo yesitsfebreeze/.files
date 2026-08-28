@@ -1,9 +1,11 @@
 # The committed set — the ~20 boxes that unblock nodes
 
 Written 2026-08-28 from the [finish-line](../../prds/00-delivery/finish-line/prd.md)
-drill round, answer 2. Eighty-eight boxes are open across `wave0`–`wave6`.
-**These are the ones the user committed to running.** The rest stay open as
-honest debt: not dropped, not ticked, just not scheduled.
+drill round, answer 2. Eighty-four boxes are open across `wave0`–`wave6`
+(eighty-eight when this file was written; the five decision rows came off the
+checklists later the same day — see below). **These are the ones the user
+committed to running.** The rest stay open as honest debt: not dropped, not
+ticked, just not scheduled.
 
 Run them in `gates/manual/wave4.md` itself — tick the box there, not here.
 This file is the worklist, not a second place for results.
@@ -37,13 +39,17 @@ rather than only a human: the S.4 bare-word rows and E.14 both say
 
 ## Not in the committed set
 
-`wave0` G.1 and D.1b/D.1c/D.1d; all of `wave2`, `wave3`, `wave5`, `wave6`; and
-the S.4 rows in `wave4`. `wave6`'s H.4 rows are additionally gated on
+`wave0` G.1; all of `wave2`, `wave3`, `wave5`, `wave6`; and the S.4 rows in
+`wave4`. `wave6`'s H.4 rows are additionally gated on
 [`06-help/04-drift-check`](../../prds/06-help/04-drift-check/prd.md) shipping,
 which answer 1 of the same round narrowed to two surfaces.
 
-The three `wave0` decision rows (D.1b tinty, D.1c fzf, D.1d wallpaper/opacity)
-all have `done` decision PRDs behind them and look closable from the record —
-but closing a box from the record is exactly what
-[`d3-tick-breaks-unticked-rule`](../../prds/00-delivery/corrections/d3-tick-breaks-unticked-rule/prd.md)
-is open about, so they wait on that node rather than being ticked here.
+**The decision rows are no longer boxes at all.** D.1b (tinty), D.1c (fzf),
+D.1d (wallpaper/opacity), D.2 (odin toolchain) and D.3 (shift-select scope)
+came off `wave0`, `wave2` and `wave4` on 2026-08-28 by
+[`d3-tick-breaks-unticked-rule`](../../prds/00-delivery/corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A. Every one of them is a document to read rather than a screen to
+watch, and each one's closure now lives in its own PRD under
+[`00-delivery/decisions/`](../../prds/00-delivery/decisions/prd.md).
+`gates/manual-coverage.sh` asserts they stay off these pages, so nothing here
+is waiting on that node any more.

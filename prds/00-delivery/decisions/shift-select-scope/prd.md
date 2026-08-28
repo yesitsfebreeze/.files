@@ -42,6 +42,31 @@ would stop matching the inventory. Gates E.14.
    the decision in the PRD as the `## Simplification option` section itself
    instructs, and keep every requirement the full path implies.
 
+## Checklist closure
+
+*Recorded 2026-08-28, moved here from `gates/manual/wave4.md`.*
+
+**D.3 is closed, from the record.** Its gate row's PASS criterion is *"the PRD
+names the chosen path"* — a document to read, not a screen to watch — and
+[`03-editor/14-shift-select`](../../../03-editor/14-shift-select/prd.md) names
+it, under `## Simplification option — DECLINED 2026-08-21`: the full port is
+the path, R1–R8 in full, with the tests. The header stays `C 7 · U 7` and the
+inventory entry is unchanged, which is what the PASS clause requires of the
+branch taken. The FAIL clause — *"the code lands before the choice is written
+down"* — is satisfied in order: the decision is dated 2026-08-21 and the code
+landed 2026-08-24 at `f9cb54b`.
+
+This closure was first written as `- [x]` in `gates/manual/wave4.md` at
+`fd5c471`, and `gates/manual-coverage.sh` was red for four days: a tick on a
+manual checklist asserts a human stood at a terminal, and none did. The
+reasoning was sound and the place was wrong. The row moved here on 2026-08-28
+by [`d3-tick-breaks-unticked-rule`](../../corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A, and the gate now keeps decision rows off those pages mechanically.
+
+**E.14 is not closed by this.** The shift-select collapse under real keyboard
+timing is still an open box in `gates/manual/wave4.md`, and still wants a
+human.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.

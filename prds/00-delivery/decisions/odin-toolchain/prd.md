@@ -35,6 +35,33 @@ anyone deciding. Gates C.1.
    CLI toolbox list does not smuggle the dropped toolchain back in. Record the
    per-project escape hatch so the capability is not lost, only relocated.
 
+## Checklist closure
+
+*Recorded 2026-08-28, moved here from `gates/manual/wave2.md`.*
+
+**D.2 is closed, from the record.** Its gate row's PASS criterion was *"the
+question section names a decision and a date"*, and its FAIL clause was *"the
+image is built while the question is still open"*.
+[`01-capsule/02-dev-image`](../../../01-capsule/02-dev-image/prd.md) carries a
+`## Decisions` section reading **Decided 2026-08-21 (user)**: the Odin
+compiler built from source, and the `pi` agent with its pi-oilrig extensions,
+are dropped from the consolidated image, with the capability relocated to
+per-project images rather than lost. The `## Open questions` section the gate
+row pointed at was resolved into that `## Decisions` section, which is the
+same fact under its settled name.
+
+The row was never a manual check. It sat on `gates/manual/wave2.md`, where a
+tick asserts a human stood at a terminal, so it had no honest way to close
+there. It moved here on 2026-08-28 by
+[`d3-tick-breaks-unticked-rule`](../../corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A — which named D.1b, D.1c, D.1d and D.3, and whose R3 audit found this
+fifth row of the same shape in `wave2.md`. It moved with the other four
+because the gate's new rule is derived from the board rather than from a hand
+list, and one decision row left behind would make it red.
+
+**The two acceptance boxes above are still `- [ ]`,** and this section does
+not close them — that is a separate finding, not this node's to tick.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.

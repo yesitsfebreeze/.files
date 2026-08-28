@@ -2,14 +2,6 @@
 
 Automated half: `just gate 2`.
 
-- [ ] **D.2** — decision: does the Odin-from-source / pi-oilrig toolchain
-      survive into the consolidated image? Answer the `## Open questions`
-      section of
-      [`01-capsule/02`](../../prds/01-capsule/02-dev-image/prd.md) and
-      record the answer there. The PRD's own recommendation is "drop".
-      PASS: the question section names a decision and a date.
-      FAIL: the image is built while the question is still open — the answer
-      changes what goes in it.
 - [ ] **T.1** — the smear of a cursor. Launch WezTerm with the new
       appearance and move the cursor fast through a full screen of text.
       PASS: no ghosting, no trail, the block lands where the keystrokes say.
@@ -37,3 +29,20 @@ Note on the PRD's nine-tab acceptance box: with only T.1 landed,
 `hide_tab_bar_if_only_one_tab = true` hides the bar on a fresh window —
 open a second tab to see the digit-only titles. "Nine tabs titled 1–9"
 completes when T.2 lands in wave 3.
+
+## Decision rows are not boxes on this page
+
+D.2 (does the Odin-from-source / pi-oilrig toolchain survive into the
+consolidated image?) was a box here until 2026-08-28. Its PASS criterion is
+*"the question section names a decision and a date"* — a document to read,
+not a screen to watch — so it is not a manual check, and a tick on this page
+means a human stood at a terminal. Its closure lives in
+[`decisions/odin-toolchain`](../../prds/00-delivery/decisions/odin-toolchain/prd.md),
+where the reasoning sits.
+
+Moved by
+[`d3-tick-breaks-unticked-rule`](../../prds/00-delivery/corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A. That node's R3 audited three decision rows; **D.2 is a fourth it did
+not name**, found by the same sweep and moved with them, because leaving one
+behind would leave the gate's new rule red. `gates/manual-coverage.sh` now
+keeps decision rows off these pages mechanically.

@@ -53,6 +53,25 @@ dispatched concurrently to agents.
    `config.nu` is **kept**, not orphaned. The inventory verdict for tinty in
    `.mi/docs/` moves off `DEFER`.
 
+## Checklist closure
+
+*Recorded 2026-08-28, moved here from `gates/manual/wave0.md`.*
+
+**D.1b is closed, from the record.** Its gate row's PASS criterion was *"the
+answer is recorded in `prds/00-delivery/corrections/prd.md` with a date"* — a
+document to read, not a screen to watch. Open decision 2 in the
+[corrections backlog](../../corrections/prd.md) carries **Decided 2026-08-21
+(user)**: tinty stays and owns the palette, and the T-3 row reads
+`Resolved 2026-08-21 (D.1b)`. Both acceptance boxes above are already `[x]`
+against exactly that check.
+
+The row was never a manual check. It sat on `gates/manual/wave0.md`, where a
+tick asserts a human stood at a terminal, so it had no honest way to close
+there. It moved here on 2026-08-28 by
+[`d3-tick-breaks-unticked-rule`](../../corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A, and `gates/manual-coverage.sh` now keeps decision rows off the
+manual checklists mechanically.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.

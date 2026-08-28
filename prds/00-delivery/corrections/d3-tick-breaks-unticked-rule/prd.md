@@ -1,10 +1,10 @@
 ---
-state: open
+state: done
 priority: 12
 est:
 mode: hitl
-claim: 
-complexity: 18
+claim:
+complexity: 25
 blast-radius: low
 needs:
 verify: "bash gates/manual-coverage.sh"
@@ -65,8 +65,19 @@ red since. Where should that kind of closure live?
   check. Cheapest, and it loses the ships-un-run guarantee that makes a `[x]`
   anywhere in `wave*.md` worth trusting.
 
+## Answers
+
+Answered 2026-08-28 by the user, in one drill round.
+
+**Q1** — **A — move decision rows out of `wave*.md`.** D.3, D.1b, D.1c and
+D.1d are document reads, not terminal observations, and never belonged on a
+*manual* checklist. Their closures live in their decision PRDs, which is where
+the reasoning already sits. This fixes the class rather than the instance: the
+four rows it moves are exactly the four that would otherwise hit this wall one
+at a time. The gate's assertion stays, and stays true.
+
 ## Requirements
-- [ ] **R1** — Decide where a from-the-record closure is recorded, given that
+- [x] **R1** — Decide where a from-the-record closure is recorded, given that
       the checklist cannot hold it without lying to the gate. Three shapes
       exist and one must be chosen: (a) move decision rows like D.3 out of
       `wave*.md` entirely — they are document reads, not terminal
@@ -74,22 +85,39 @@ red since. Where should that kind of closure live?
       (b) give the gate a third marker (e.g. `- [r]`) meaning *closed from the
       record*, so a tick keeps meaning "a human watched it"; (c) accept ticks
       and delete the assertion, losing the ships-un-run guarantee.
-- [ ] **R2** — Whichever is chosen, `bash gates/manual-coverage.sh` exits 0
+- [x] **R2** — Whichever is chosen, `bash gates/manual-coverage.sh` exits 0
       with the assertion still saying something true. Do **not** close this by
       un-ticking D.3 and leaving its closure unrecorded — the reasoning at
       `fd5c471` is sound and must survive wherever it lands.
-- [ ] **R3** — Audit the other three decision rows on the same page shape —
+- [x] **R3** — Audit the other three decision rows on the same page shape —
       **D.1b** (tinty), **D.1c** (fzf) and **D.1d** (wallpaper/opacity) in
       `gates/manual/wave0.md`, all still `[ ]` — whose decision PRDs under
       `00-delivery/decisions/` are all `done`. They are the same class as D.3
       and will hit the same wall the moment anyone tries to close them.
 
 ## Acceptance
-- [ ] `bash gates/manual-coverage.sh` exits 0, tally quoted not asserted.
-- [ ] D.3's closure and its reasoning are still findable from
+- [x] `bash gates/manual-coverage.sh` exits 0, tally quoted not asserted.
+
+      **20 PASS / 0 FAIL, EXIT=0.** Was `FAIL boxes: no checklist box is
+      ticked in the repo (ticked:wave4.md )`, EXIT=1, for four days.
+- [x] D.3's closure and its reasoning are still findable from
       `gates/manual/wave4.md` or from whatever replaces that row.
-- [ ] The three wave0 decision rows are either closed the same way or
+
+      `gates/manual/wave4.md:349` carries `## Decision rows are not boxes on
+      this page`, which states what D.3 decided, that the decision is
+      unchanged, why the row was wrong, and links to
+      `decisions/shift-select-scope` where the closure now lives. It also says
+      in as many words that **E.14 is not closed by this** and still wants a
+      human — the confusion most available to a later reader.
+- [x] The three wave0 decision rows are either closed the same way or
       explicitly recorded as still needing a human.
+
+      All three closed the same way — and the audit found a **fourth**: `D.2`
+      (odin-toolchain) sat in `gates/manual/wave2.md`, same shape, `done`
+      decision PRD behind it, named by neither R1 nor R3. Five rows moved, not
+      four. Leaving it would have made the new gate rule red on its first run,
+      because that rule derives the decision ids from the board rather than
+      from a hand list.
 
 ## Out of scope
 - Re-taking D.3. The shift-select fork was decided 2026-08-21 by the user and

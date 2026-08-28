@@ -29,6 +29,10 @@
 #     matching on wrapped prose is the false-negative machine that has bitten
 #     several lanes.
 #   * wave6.md carries the fresh-machine procedure and the two --help entries.
+#   * No checklist box names a task carried by a node under
+#     prds/00-delivery/decisions/. Those close by being written down with a
+#     date in their own PRD, not by a human at a terminal, so they have no
+#     honest way to close here.
 #   * No checklist box is `[x]` or `[~]`. These are run by a human at gate
 #     time; a pre-ticked box in the repo IS the "silently depends on a human
 #     having looked" failure, written down.
@@ -65,6 +69,19 @@ all_ids() {
         fm && /^task:/ { print $2 }'
 }
 
+# Every `task:` id carried by a node under prds/00-delivery/decisions/ — the
+# decision nodes, whose PASS criteria are all "the answer is recorded, with a
+# date", i.e. a document to read rather than a screen to watch. Derived from
+# the board by existence, never a hand-kept list, for the same reason the
+# anchors above are not a frozen id list.
+decision_ids() {
+  find "$BOARD/00-delivery/decisions" -name prd.md -print0 2>/dev/null | LC_ALL=C sort -z \
+    | xargs -0 awk '
+        FNR == 1 { fm = ($0 == "---") ? 1 : 0; next }
+        fm && /^---$/ { fm = 0 }
+        fm && /^task:/ { print $2 }'
+}
+
 # "<wave-file> <id>" for every checklist box.
 entries() {
   local f
@@ -77,7 +94,7 @@ entries() {
 }
 
 run() {
-  local id files missing="" dupes="" unknown="" ticked check f
+  local id files missing="" dupes="" unknown="" dec="" ticked check f
   echo "manual checklist coverage — $DIR"
 
   for f in 0 1 2 3 4 5 6; do
@@ -126,6 +143,21 @@ run() {
     grep -qF "Do not build an automated fresh-machine gate on this host" <<< "$w6"
   chk_ok "wave6: \`help --check\` exits 0 is an entry" grep -qF 'help --check` exits 0' <<< "$w6"
   chk_ok "wave6: \`ls --help\` still behaves is an entry" grep -qF 'ls --help` still behaves' <<< "$w6"
+
+  # no box is a decision row. A decision closes by being written down with a
+  # date in its own PRD; a box here can only be closed by a human at a
+  # terminal, so a decision row on this page has no honest way to close. D.3
+  # proved it: fd5c471 ticked it from the record — sound reasoning, wrong
+  # place — and this gate was red for four days. The rows moved 2026-08-28
+  # (prds/00-delivery/corrections/d3-tick-breaks-unticked-rule, answer A);
+  # this check is what stops the next one drifting back in.
+  local decisions; decisions="$(decision_ids)"
+  while IFS=$'\t' read -r f id; do
+    [ -n "$id" ] || continue
+    [ -n "$decisions" ] && grep -qxF "$id" <<< "$decisions" && dec="$dec $f:$id"
+  done < <(entries)
+  chk_ok "boxes: no checklist box is a decision row — a decision closes in its own PRD (decisions:${dec:- none})" \
+    test -z "$dec"
 
   # no box is pre-ticked
   ticked="$(grep -lE '^- \[[x~]\]' "$DIR"/wave*.md 2>/dev/null | xargs -r -n1 basename 2>/dev/null | tr '\n' ' ')"
@@ -186,16 +218,23 @@ selftest() {
 
   # 5. a ticked box is red
   C="$T/ticked"; mkdir -p "$C"; cp "$DIR"/wave*.md "$C/"
-  LC_ALL=C sed -i '' -E 's/^- \[ \] \*\*D\.1b\*\*/- [x] **D.1b**/' "$C/wave0.md"
-  echo "      MUTATION: ticked the first box in $C/wave0.md"
+  LC_ALL=C sed -i '' -E 's/^- \[ \] \*\*G\.1\*\*/- [x] **G.1**/' "$C/wave0.md"
+  echo "      MUTATION: ticked the G.1 box in $C/wave0.md"
   chk_fail "a pre-ticked box makes it red" run_q "$C"
 
-  # 6. a missing checklist file is red
+  # 6. a decision row planted back onto a checklist is red
+  C="$T/decision"; mkdir -p "$C"; cp "$DIR"/wave*.md "$C/"
+  printf -- '- [ ] **D.3** — decision: replanted onto a manual checklist.\n' >> "$C/wave5.md"
+  echo "      MUTATION: added a D.3 decision row to $C/wave5.md"
+  chk_fail "a decision row on a checklist makes it red" run_q "$C"
+  chk_ok   "the decision row is named in the output" says "$C" 'decisions: wave5.md:D.3'
+
+  # 7. a missing checklist file is red
   C="$T/gone"; mkdir -p "$C"; cp "$DIR"/wave*.md "$C/"; rm "$C/wave3.md"
   echo "      MUTATION: deleted $C/wave3.md"
   chk_fail "a missing wave checklist makes it red" run_q "$C"
 
-  # 7. it never writes to the real checklists
+  # 8. it never writes to the real checklists
   snapshot_paths "$DIR"
   run_q "$DIR" || true
   assert_unchanged "gates/manual/ is untouched by a full run"

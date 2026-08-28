@@ -47,6 +47,26 @@ dispatched concurrently to agents.
    is recorded in `02-terminal/prd.md` Non-goals and in the `.mi/prds/README.md`
    exclusion list.
 
+## Checklist closure
+
+*Recorded 2026-08-28, moved here from `gates/manual/wave0.md`.*
+
+**D.1d is closed, from the record.** Its gate row's PASS criterion was *"both
+halves recorded with a date; the binding has exactly one owner"*, and its FAIL
+clause was *"the collision survives the decision"*. Both halves are in
+`## Answers` above, dated 2026-08-21: wallpaper cycling and the opacity toggle
+are dropped on the record, confirming the `DO NOT PORT` (C 8 / U 3) verdict,
+and `Ctrl+Shift+B` goes to capsule — with no collision left to resolve,
+because the incumbent is dropped. Both acceptance boxes above are already
+`[x]` against that check.
+
+The row was never a manual check. It sat on `gates/manual/wave0.md`, where a
+tick asserts a human stood at a terminal, so it had no honest way to close
+there. It moved here on 2026-08-28 by
+[`d3-tick-breaks-unticked-rule`](../../corrections/d3-tick-breaks-unticked-rule/prd.md),
+answer A, and `gates/manual-coverage.sh` now keeps decision rows off the
+manual checklists mechanically.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.
