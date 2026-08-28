@@ -53,6 +53,7 @@ DIRSTACK_NU="$NUSHELL_SRC/dirstack.nu"
 PASS_NU="$NUSHELL_SRC/pass.nu"
 THEME_NU="$NUSHELL_SRC/theme.nu"
 CLAUDE_NU="$NUSHELL_SRC/claude.nu"
+LITELLM_NU="$NUSHELL_SRC/litellm.nu"
 SHELL_NUON="$NUSHELL_SRC/help/shell.nuon"
 PRD_PATH="prds/04-shell/08-claude-launchers/prd.md"
 
@@ -327,6 +328,7 @@ mk_machine() {
   cp "$PASS_NU"     "$M/home/.config/nushell/pass.nu"
   cp "$THEME_NU"    "$M/home/.config/nushell/theme.nu"
   cp "$CLAUDE_NU"   "$M/home/.config/nushell/claude.nu"
+  cp "$LITELLM_NU" "$M/home/.config/nushell/litellm.nu"  # 04-shell/10: config.nu sources litellm.nu at MODULES, below claude.nu
   cp "$NUSHELL_SRC/recents.nu" "$M/home/.config/nushell/recents.nu"  # 04-shell/07: config.nu sources recents.nu at MODULES, above zoxide.nu
   cp "$NUSHELL_SRC/zoxide.nu" "$M/home/.config/nushell/zoxide.nu"  # 04-shell/03: config.nu sources zoxide.nu at MODULES
   cp "$NUSHELL_SRC/history.nu" "$M/home/.config/nushell/history.nu"  # 04-shell/05: config.nu sources history.nu at MODULES
