@@ -492,6 +492,120 @@ $FIRST_KEYS"
   return 0
 }
 
+# -- the informing check ----------------------------------------------------
+# WHAT THIS ADDS THAT `discovery_ok` CANNOT, and why the shipped H.5 fix was
+# held by nothing until this existed. `discovery_ok` reads the expected title
+# out of the SAME staged corpus in the same run -- the property that keeps it
+# free of frozen prose, and also the reason ANY title matches itself. Revert
+# the `idioms` title to a pointer that names no tool and the whole overview
+# still passes `discovery_ok`; CF6 asserts that green rather than describing
+# it. CF5 catches an id renamed AWAY. Nothing caught the line ceasing to
+# INFORM -- which is the one thing H.5's reading test actually measured, where
+# an agent picked `idioms` for the right reason and then wrote `rg` into its
+# command list anyway because nothing it had read named a tool.
+#
+# The property, written so a reword cannot silently pass it: the `idioms` line
+# in the overview must NAME AT LEAST THREE of the bare backticked words that
+# entry's own `use` names. Both sides are corpus content, so NO TOOL NAME IS
+# TYPED HERE -- the check stays correct on the day this environment changes
+# which tools it installs, which a hard-coded `rg`/`fd`/`tv` would not.
+#
+# BARE WORDS ONLY. `use` also backticks pipeline fragments (`| where`), which
+# are idioms rather than tool names; counting them would inflate the
+# denominator with words no title could ever match.
+#
+# THREE IS A FLOOR, NOT A COUNT, and it is the one number in this stage that
+# is not computed. Every other number here is read from the staged corpus
+# because a frozen count asserts a date rather than an agreement -- a floor is
+# a different object, and both the numerator and the denominator compared
+# against it are computed and printed. Measured 2026-08-28: 4 of 8 today
+# (`rg`, `fd`, `tv`, and `find`, which the title uses as a verb), 0 of 8 on
+# the pre-`0f9f635` title.
+#
+# AN EMPTY TOOL LIST IS RED, NOT GREEN. If `use` is ever reworded to backtick
+# nothing there is no evidence left to weigh, and a check with nothing to
+# assert has to say so instead of passing -- the vacuous-green failure
+# prds/memos/a-counterfactual-proves-its-own-mutation.md was written about.
+# CF7 proves that red, and proves it fails for a DIFFERENT reason than CF6's.
+#
+# WHAT THIS DELIBERATELY DOES NOT CATCH, so nobody reads it as more than it
+# is. `use` backticks a prescription and a prohibition identically -- it says
+# never `grep`/`find` with each name in its own backticks -- so a title
+# reading "never grep or find, and cd carefully" would score 3 and pass.
+# Separating the two would need a STOPLIST of tool names in this gate, which
+# is the same thing that killed the render-time extraction this node was
+# originally written to build: the moment a tool name is typed here, there are
+# two places those names live again. The failure this check exists for is the
+# measured one -- a line reverting to an abstract pointer that names nothing
+# -- and that it catches at 0.
+INFORM_MIN=3
+INFORM_N=0; INFORM_TOTAL=0; INFORM_HIT=""
+
+# The bare backticked words of one entry's `use`, read from a machine's own
+# staged corpus THROUGH `help --json` rather than by a second .nuon reader --
+# one parser, the published one. The nu code is single-quoted so its backticks
+# and `$` stay literal, and the id is substituted in.
+tool_words() {  # <machine> <entry id>
+  local code
+  code='help --json | from json | get entries | where id == "@ID@" | first | get use | parse --regex "`(?<t>[^`]+)`" | get t | where {|t| $t =~ "^[a-z][a-z0-9_-]*$" } | uniq | str join (char nl)'
+  nu_n "$1" "${code//@ID@/$2}" 2>/dev/null
+}
+
+# Sets INFORM_N / INFORM_TOTAL / INFORM_HIT for the caller's label. A `chk`
+# message may not contain a command substitution --
+# prds/memos/a-chk-message-substitution-resets-the-status-it-reports.md -- so
+# the numbers are carried in globals and the caller uses the if/else form.
+#   $1 overview capture   $2 newline-separated bare tool words
+idioms_informs_ok() {
+  local ov="$1" tools="$2" line tok
+  INFORM_N=0; INFORM_TOTAL=0; INFORM_HIT=""
+  if [ -z "$tools" ]; then
+    echo "      the \`idioms\` entry's \`use\` backticks no bare word — there is nothing to weigh, so this check cannot be green"
+    return 1
+  fi
+  line="$($GREP -m1 '^  idioms — ' "$ov")"
+  if [ -z "$line" ]; then
+    echo "      the overview carries no \`idioms\` line at all"
+    return 1
+  fi
+  while IFS= read -r tok; do
+    [ -n "$tok" ] || continue
+    INFORM_TOTAL=$((INFORM_TOTAL + 1))
+    if printf '%s\n' "$line" | $GREP -qwF -- "$tok"; then
+      INFORM_N=$((INFORM_N + 1)); INFORM_HIT="$INFORM_HIT $tok"
+    fi
+  done <<< "$tools"
+  if [ "$INFORM_N" -lt "$INFORM_MIN" ]; then
+    echo "      the \`idioms\` line names $INFORM_N of the $INFORM_TOTAL bare words its own \`use\` backticks (want >= $INFORM_MIN):$INFORM_HIT"
+    echo "      line: $line"
+    return 1
+  fi
+  return 0
+}
+
+# The same property from the code side: neither render may TYPE one of those
+# words. Scoped to the two def BODIES rather than the whole file, because
+# help.nu's comments discuss `find`, `tv` and `grep` at length and a
+# whole-file grep would assert a prose style instead of a render contract.
+# `def_body` stops at the first column-0 `}`, so a comment ABOVE a def is not
+# its body -- the line tests/help-browser.sh's `preview_pure_ok` draws.
+#   $1 help.nu   $2 newline-separated bare tool words
+renders_type_no_tool_ok() {
+  local f="$1" tools="$2" d tok bad=0
+  if [ -z "$tools" ]; then
+    echo "      no tool words derived — this check would assert nothing"; return 1
+  fi
+  for d in _help_curated _help_overview; do
+    while IFS= read -r tok; do
+      [ -n "$tok" ] || continue
+      if def_body "$f" "$d" | $GREP -qwF -- "$tok"; then
+        echo "      $d types the tool name \`$tok\`"; bad=1
+      fi
+    done <<< "$tools"
+  done
+  return "$bad"
+}
+
 stage_hermetic() {
   echo "── stage --hermetic: a real nushell, a scratch HOME, and NO config.nu"
   guard_begin "hermetic"
@@ -639,6 +753,22 @@ stage_hermetic() {
     chk "hermetic: DISCOVERY — bare \`help\` names the three agent ids, the four first keys and all $topics topics" 1
   fi
 
+  # -- THE INFORMING CHECK: what makes the DISCOVERY green mean something ----
+  # DISCOVERY proves the line is THERE and carries its corpus title. This one
+  # proves the title still says something an agent can act on. Both sides are
+  # corpus content; see the header above `idioms_informs_ok`, and CF6 for the
+  # red that makes this a check rather than a decoration.
+  local TOOLS HITS
+  TOOLS="$(tool_words "$M" idioms)"
+  if idioms_informs_ok "$OV" "$TOOLS"; then
+    HITS="$(printf '%s' "$INFORM_HIT" | sed 's/^ //')"
+    chk "hermetic: INFORMING — the overview's \`idioms\` line NAMES $INFORM_N of the $INFORM_TOTAL bare words that entry's own \`use\` backticks ($HITS), at or above the floor of $INFORM_MIN. H.5 found the \`For agents:\` block ROUTED and did not INFORM; this is the check that holds that fix, and it types no tool name — both sides are read from the staged corpus" 0
+  else
+    chk "hermetic: INFORMING — the overview's \`idioms\` line names at least $INFORM_MIN of the bare words its own \`use\` backticks" 1
+  fi
+  chk_ok "hermetic: …and neither render TYPES one — none of those bare words appears word-bounded in \`_help_curated\` or \`_help_overview\`, so the line informs FROM the corpus and there is still exactly one place those names live" \
+         renders_type_no_tool_ok "$HELP_NU" "$TOOLS"
+
   # ── the corpus renamed away ──────────────────────────────────────────────
   # A missing corpus is a broken deploy and every failure here is LOUD; the
   # escape hatch is what stays reachable.
@@ -780,6 +910,87 @@ PYEOF
          test -n "$($GREP -oxF 'For agents:' "$M5/ov.txt")" \
               -a "$($GREP -c '^  help --json — ' "$M5/ov.txt")" -eq 1
   cf_end "corpus-renames-the-idioms-entry"
+
+  # CF6 -- THE TITLE REVERTS TO A POINTER, which is the mutation that actually
+  # happened, run backwards. `0f9f635` changed the `idioms` title from a
+  # pointer naming no tool to one naming three, because H.5's reading test
+  # found an uninformed agent following the pointer and reaching for `rg`
+  # anyway. Until this counterfactual, nothing held that fix.
+  #
+  # BOTH HALVES ARE ASSERTED, and the second is the finding: the INFORMING
+  # check goes RED, and `discovery_ok` STAYS GREEN on the same reverted
+  # corpus. The green is asserted rather than described so that a future edit
+  # making DISCOVERY title-sensitive shows up as a red on that line instead of
+  # as a silent overlap between two checks.
+  #
+  # The mutation is STRUCTURAL, not textual: it finds the `idioms` entry and
+  # rewrites whatever `title:` follows it. A counterfactual that pinned the
+  # current title would type the tool names into this gate and would have to
+  # be edited every time the title is legitimately reworded.
+  local M6="$SCRATCH/m-cf6"; mk_machine "$M6"
+  local CF6="$M6/home/.config/nushell/help/shell.nuon"
+  "$PY" - "$SHELL_NUON" "$CF6" <<'PYEOF'
+import re, sys
+src, dst = sys.argv[1], sys.argv[2]
+t = open(src).read()
+i = t.index('cmd: "idioms"')
+m = re.compile(r'title: "[^"]*"').search(t, i)
+assert m is not None
+# The pre-0f9f635 wording: a working pointer that names no tool at all.
+out = t[:m.start()] + 'title: "Use the tools this environment actually has"' + t[m.end():]
+assert out != t
+open(dst, 'w').write(out)
+PYEOF
+  cf_begin "corpus-reverts-the-idioms-title-to-a-pointer" "$SHELL_NUON" "$CF6"
+  nu_n "$M6" 'help' > "$M6/ov.txt" 2>/dev/null
+  nu_n "$M6" 'help --json | from json | get entries | each {|e| $"($e.id)(char tab)($e.title)" } | str join (char nl)' > "$M6/titles.tsv" 2>/dev/null
+  local TOOLS6 LINE6; TOOLS6="$(tool_words "$M6" idioms)"
+  LINE6="$($GREP -m1 '^  idioms — ' "$M6/ov.txt")"
+  printf '      CF corpus-reverts-the-idioms-title-to-a-pointer: the line now reads [%s]\n' "$LINE6"
+  chk_fail "hermetic: CF corpus-reverts-the-idioms-title-to-a-pointer FAILS the INFORMING check in tests/help-agent.sh — the \`idioms\` line stops naming any of the bare words its own \`use\` backticks, which is precisely the H.5 finding \`0f9f635\` fixed" \
+           idioms_informs_ok "$M6/ov.txt" "$TOOLS6"
+  chk_ok "hermetic: …and THIS is the hole the INFORMING check closes: the same reverted corpus still PASSES discovery_ok, because that check reads the expected title out of the same corpus in the same run, so any title matches itself. CF5 catches an id renamed away; nothing caught the line ceasing to inform" \
+         discovery_ok "$M6/ov.txt" "$M6/titles.tsv" "$TOPICIDS"
+  cf_end "corpus-reverts-the-idioms-title-to-a-pointer"
+
+  # CF7 -- THE EVIDENCE ITSELF GOES AWAY. CF6 proves the INFORMING check is
+  # red when the TITLE stops naming tools. This one proves the other red: when
+  # `use` stops backticking any bare word there is nothing left to weigh, and
+  # a check with nothing to assert must SAY so rather than pass. That is the
+  # vacuous green prds/memos/a-counterfactual-proves-its-own-mutation.md was
+  # written about, and it is also the shape that would appear if a later
+  # refactor dropped `idioms_informs_ok`'s empty-list guard -- the check would
+  # go on printing PASS while proving nothing, and nothing else here would
+  # notice.
+  #
+  # The second assertion is what separates the two reds: the mutated corpus's
+  # `idioms` LINE is byte-identical to the unmutated one, so this red is the
+  # empty evidence list and not a lost title.
+  local M7="$SCRATCH/m-cf7"; mk_machine "$M7"
+  local CF7="$M7/home/.config/nushell/help/shell.nuon"
+  "$PY" - "$SHELL_NUON" "$CF7" <<'PYEOF'
+import re, sys
+src, dst = sys.argv[1], sys.argv[2]
+t = open(src).read()
+i = t.index('cmd: "idioms"')
+m = re.compile(r'use: "([^"]*)"').search(t, i)
+assert m is not None and '`' in m.group(1)
+out = t[:m.start()] + 'use: "' + m.group(1).replace('`', '') + '"' + t[m.end():]
+assert out != t
+open(dst, 'w').write(out)
+PYEOF
+  cf_begin "corpus-strips-the-backticks-out-of-the-idioms-use" "$SHELL_NUON" "$CF7"
+  nu_n "$M7" 'help' > "$M7/ov.txt" 2>/dev/null
+  local TOOLS7 LINE7 LINE0; TOOLS7="$(tool_words "$M7" idioms)"
+  LINE7="$($GREP -m1 '^  idioms — ' "$M7/ov.txt")"
+  LINE0="$($GREP -m1 '^  idioms — ' "$OV")"
+  printf '      CF corpus-strips-the-backticks-out-of-the-idioms-use: tool_words yields [%s]\n' \
+         "$(printf '%s' "$TOOLS7" | tr '\n' ' ')"
+  chk_fail "hermetic: CF corpus-strips-the-backticks-out-of-the-idioms-use FAILS the INFORMING check in tests/help-agent.sh — with no bare word left in \`use\` there is no evidence to weigh, and a check with nothing to assert has to be RED rather than vacuously green" \
+           idioms_informs_ok "$M7/ov.txt" "$TOOLS7"
+  chk_ok "hermetic: …and that red is the EMPTY EVIDENCE and not a lost title — the mutated corpus's \`idioms\` line is byte-identical to the unmutated one, so the two counterfactuals fail for two different reasons" \
+         test -n "$LINE7" -a "$LINE7" = "$LINE0"
+  cf_end "corpus-strips-the-backticks-out-of-the-idioms-use"
 
   guard_end
 }

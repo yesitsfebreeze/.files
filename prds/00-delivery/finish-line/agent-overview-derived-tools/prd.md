@@ -1,9 +1,9 @@
 ---
-state: claimed
+state: done
 priority: 8
 est: 2h
 mode: afk
-claim: impl-derived-tools 2026-08-28T14:15Z
+claim:
 complexity: 22
 blast-radius: low
 needs:
