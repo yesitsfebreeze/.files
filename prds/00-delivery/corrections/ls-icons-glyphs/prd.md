@@ -10,7 +10,7 @@ needs:
   - 04-shell/06-listing
 verify: "bash tests/shell-listing.sh && nu tests/help-content-model.nu"
 origin: derived
-commit: pending
+commit: 65d2b54
 ---
 
 # The live LS_ICONS glyphs are empty strings
