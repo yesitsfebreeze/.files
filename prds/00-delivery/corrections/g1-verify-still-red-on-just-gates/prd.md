@@ -1,5 +1,5 @@
 ---
-state: open
+state: specced
 priority: 14
 est:
 mode: afk
@@ -7,7 +7,9 @@ needs:
 verify: "just gates"
 origin: derived
 from: 00-delivery/verification-gates
-claim: 
+claim:
+complexity: 40
+blast-radius: mid
 ---
 
 # `G.1` is `done` and `just gates` still exits 1 — five reds, none of them about link walking
@@ -87,3 +89,64 @@ rediscovering a third time.
 - The concurrency artifact in `gates/selftest.sh`'s sha256 window, recorded in
   [`a-concurrent-lane-trips-the-scratch-guard`](../../../memos/a-concurrent-lane-trips-the-scratch-guard.md).
   A red naming a file the gate has no business with is that, not this.
+
+## Analyst pass, 2026-08-28 — R2 answered, and it is the answer that matters
+
+**R2: both `apply:` reds are fixture defects. Nothing overwrites a user's
+television config.** Established by running `bash tests/shell-init.sh --apply`
+from `git worktree` copies at three commits, not by reading the code:
+
+| tree | `S1.10` | `R4 chezmoi managed` |
+|---|---|---|
+| `2714042` — the commit that ADDED this gate | FAIL | PASS |
+| `0b77a71~1` — before the litellm node | FAIL | FAIL |
+| `HEAD` | FAIL | FAIL |
+
+`S1.10` wrote a sentinel into `$S/home/.config/television/config.toml`, called
+it "hand-written", and asserted it byte-identical after an apply — but
+`home/dot_config/television/config.toml` is a **managed source file**, so that
+target is a managed target and `chezmoi apply` restores it *correctly*. The
+check has been red since the day it was written and **could never have been
+green**. The real failure it names — the `run_after` generator's `tv init nu`
+clobbering the file — is untested by it, and is separately proven green
+against the real `tv` by the `--live` stage's `S3.17`.
+
+`R4`'s pattern was the unanchored `(starship|zoxide|television)\.nu` matched
+against all of `chezmoi managed`; the single line it returns is
+`.config/nushell/zoxide.nu`, the zoxide **nushell module** landed legitimately
+by `04-shell/03-zoxide` at `35e0fb4`. A basename collision outside the init
+directory is not what R4 claims — the claim is that nothing under
+`.cache/nushell/init/` is managed.
+
+**Neither red was caused by `0b77a71`.** This node's Purpose implied both piles
+shared that cause; only the `managed-config.sh` half does. Corrected here
+rather than left standing.
+
+**The `create_` finding, which is the live bug on this node.**
+`home/dot_config/litellm/config.yaml` shipped at `0b77a71` as a plain managed
+file while `litellm-gen-config` rewrites the deployed target at run time
+(`04-shell/10` R9), and `rr` is `chezmoi update --force` (`config.nu:119`).
+Measured on a scratch apply: apply → regenerate → `chezmoi status` reports
+`MM .config/litellm/config.yaml` → apply → **the regenerated routes are gone**.
+Renamed to `create_config.yaml` — chezmoi's `create_` attribute, so the
+deployed target keeps its name — the same fixture reports a CLEAN status,
+keeps the regeneration across an apply, and still re-creates the file when it
+is deleted, so a fresh machine still gets a baseline.
+
+Rather than fix the instance, `tests/managed-config.sh:474-492` gains a general
+assertion: **every source file that declares itself generated must carry
+`create_`**, with the predicate read from the file's own first line, because
+the generator writes that header and so it cannot go stale behind a rename.
+
+**Three specs, complexity 30 + 25 + 30.** The analyst was killed twice by
+infrastructure — a stream watchdog, then the machine sleeping — after writing
+all three specs and before returning its verdict. The specs are on disk with
+their boxes open, which is the correct shape for an analyst; `specced` is
+written here by the orchestrator on the files rather than on the report, per
+the rule that a transition is confirmed on disk and never taken on a worker's
+word.
+
+**Still owed, and not to be closed on this pass:** R5's sweep of `0b77a71`'s
+36 files for a third unmaintained gate, and R1's argument for whether
+`dot_local` and `litellm` belong under `home/` at all. Both are named in the
+specs' open boxes; neither has been answered, and neither is assumed.

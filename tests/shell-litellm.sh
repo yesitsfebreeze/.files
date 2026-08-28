@@ -42,7 +42,13 @@ chk() {
 
 NU_MOD="$REPO/home/dot_config/nushell/litellm.nu"
 CONFIG_NU="$REPO/home/dot_config/nushell/config.nu"
-YAML="$REPO/home/dot_config/litellm/config.yaml"
+# `create_` is a chezmoi attribute, not part of the deployed name: the target
+# is ~/.config/litellm/config.yaml either way. It is load-bearing here because
+# litellm-gen-config REWRITES that target at runtime (R9), and without the
+# attribute every `chezmoi apply` — which `rr` runs — reverted the
+# regeneration. Measured 2026-08-28 in
+# prds/00-delivery/corrections/g1-verify-still-red-on-just-gates.
+YAML="$REPO/home/dot_config/litellm/create_config.yaml"
 BIN="$REPO/home/dot_local/bin"
 
 stage_tree() {

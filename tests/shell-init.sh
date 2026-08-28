@@ -333,6 +333,17 @@ stage_apply() {
   # target .gitconfig (from home/dot_gitconfig.tmpl, P.5) is already on disk at
   # the moment the run_after script runs. "Runs after every file target" is
   # exactly that, and nothing about the file NAME can prove it.
+  #
+  # CF_TV_CLOBBER is S3.8's counterfactual knob and nothing else reads it. It
+  # is baked into the stub HERE, in the gate process, rather than tested
+  # inside the stub at run time: cz() wraps every chezmoi call in `env -i`, so
+  # no variable this gate exports survives into a run_after script's child.
+  # Measured 2026-08-28 — the first version of this counterfactual did read it
+  # at run time and reported a green stage while clobbering nothing.
+  local cf_clobber=""
+  if [ -n "${CF_TV_CLOBBER:-}" ]; then
+    cf_clobber="echo '# clobbered-by-counterfactual' >> \"$S/home/.config/television/config.toml\""
+  fi
   cat > "$S/home/.local/bin/tv" <<STUB
 #!/bin/sh
 if [ -e "$S/home/.gitconfig" ]; then
@@ -340,6 +351,7 @@ if [ -e "$S/home/.gitconfig" ]; then
 else
   echo absent > "$S/order.probe"
 fi
+$cf_clobber
 printf '%s\n' '$MARK_TV'
 exit 0
 STUB
@@ -359,12 +371,33 @@ EOF
   chk_ok "apply: the pre-seeded [data] survived init (no prompt, no ambient leak)" \
          grep -q "$GATE_NAME" "$S/chezmoi.toml"
 
-  # S3.8 — the sentinel. `tv init nu` CREATES ~/.config/television/config.toml
-  # (7488 bytes, measured) when none exists and leaves an existing one
-  # byte-identical. This is the generated-clobbers-hand-written failure mode,
-  # and it is one apply-ordering mistake away from being real.
-  printf 'p4-sentinel = true\n' > "$S/home/.config/television/config.toml"
-  local sentinel; sentinel="$(sha_file "$S/home/.config/television/config.toml")"
+  # S3.8 — the generated-clobbers-managed failure mode. `tv init nu` CREATES
+  # ~/.config/television/config.toml (7488 bytes, measured) when none exists,
+  # and the run_after generator calls it on every apply. So the file that must
+  # survive is whatever chezmoi just wrote there.
+  #
+  # CORRECTED 2026-08-28 (g1-verify-still-red-on-just-gates R2). This block
+  # used to write a `p4-sentinel = true` line into that path, call it
+  # "hand-written", and assert it byte-identical after the apply. It could
+  # never pass: home/dot_config/television/config.toml is a MANAGED source
+  # file (added in the same commit, 2714042, that added this gate), so
+  # ~/.config/television/config.toml is a managed target and chezmoi restores
+  # it — correctly — on the first apply. Measured at three trees: 2714042
+  # (the gate's own birth commit), 0b77a71~1 and HEAD, red at all three. The
+  # red was a fixture defect, not a regression: nothing overwrites a user's
+  # television config, and the --live stage's S3.17 proves it against the real
+  # tv.
+  #
+  # What replaces it asserts the thing that CAN break: the run_after script
+  # must leave chezmoi's own output alone. The baseline is therefore the
+  # SOURCE content, captured before the apply, and the counterfactual at the
+  # foot of this file drives it red with a tv stub that appends one line.
+  local tvcfg="$S/home/.config/television/config.toml"
+  local tvsrc="$S/src/dot_config/television/config.toml"
+  rm -f "$tvcfg"
+  chk_ok "apply: precondition: television/config.toml is a managed source file" \
+         test -f "$tvsrc"
+  local tv_want; tv_want="$(sha_file "$tvsrc")"
 
   local a1 rc1
   a1="$(cz "$S" apply --force --verbose 2>&1)"; rc1=$?
@@ -390,9 +423,13 @@ EOF
   chk_ok "apply: television.nu is exactly the stub marker" \
          test "$(sha_file "$D/television.nu")" = "$(sha_string "$MARK_TV")"
 
-  # S3.8
-  chk_ok "apply: S1.10 the hand-written ~/.config/television/config.toml is byte-identical after the apply" \
-         test "$sentinel" = "$(sha_file "$S/home/.config/television/config.toml")"
+  # S3.8 — both directions. chezmoi really did deploy the file (so the
+  # comparison below is against something, not against two <absent>s), and the
+  # run_after generator left it exactly as chezmoi wrote it.
+  chk_ok "apply: chezmoi deployed ~/.config/television/config.toml" \
+         test -f "$tvcfg"
+  chk_ok "apply: S1.10 the generator left ~/.config/television/config.toml exactly as chezmoi wrote it" \
+         test "$tv_want" = "$(sha_file "$tvcfg")"
 
   # S3.6 — second apply, byte-identical (epic I2).
   local s1 z1 t1
@@ -419,8 +456,23 @@ EOF
   mg="$(cz "$S" managed 2>&1)"
   chk_fail "apply: R4 chezmoi status names no path under .cache" \
            grep -q '\.cache' <<<"$st"
-  chk_fail "apply: R4 chezmoi managed lists none of the three generated files" \
-           grep -qE '(starship|zoxide|television)\.nu' <<<"$mg"
+  # The pattern is ANCHORED at $INIT_REL. CORRECTED 2026-08-28
+  # (g1-verify-still-red-on-just-gates R2): it used to be the bare
+  # `(starship|zoxide|television)\.nu`, which matches a managed path ANYWHERE.
+  # `home/dot_config/nushell/zoxide.nu` — the zoxide nushell module, a
+  # legitimate managed file landed by 04-shell/03-zoxide in 35e0fb4 — deploys
+  # to `.config/nushell/zoxide.nu` and tripped it. Measured: at 0b77a71~1 the
+  # only line `chezmoi managed` returned for the old pattern was exactly that
+  # one. A basename collision outside the init directory is not what R4 is
+  # about; the claim is that nothing under .cache/nushell/init/ is managed.
+  chk_fail "apply: R4 chezmoi managed lists none of the three generated files under $INIT_REL/" \
+           grep -qE "(^|/)${INIT_REL}/(starship|zoxide|television)\.nu\$" <<<"$mg"
+  # …and the anchored pattern still MATCHES when one of them really is
+  # managed. Without this the check above would pass on a typo in the pattern
+  # just as happily as on a correct tree — the failure mode a chk_fail has.
+  chk_ok "apply: R4's anchored pattern does match a managed init path (teeth)" \
+         grep -qE "(^|/)${INIT_REL}/(starship|zoxide|television)\.nu\$" \
+         <<<"$INIT_REL/television.nu"
 
   # S3.10 — the documented status deviation. chezmoi reports an always-run
   # script as pending R on EVERY status, forever, by design (spec01 D4), so
@@ -610,6 +662,17 @@ main() {
          stage_apply "$onchange"
       cf "counterfactual: --apply goes red with the final exit 0 changed to exit 1 (a run_after non-zero kills the apply)" \
          stage_apply "$(scratch_gen apply-exit1.sh 's/^exit 0$/exit 1/')"
+      # S3.8's teeth. The generator is UNMUTATED here — the tool it drives is
+      # what misbehaves, appending one line to the deployed television config.
+      # This is the only counterfactual in this file that does not touch the
+      # generator, and it is the one that proves S3.8 is evidence rather than
+      # decoration: the check it replaced (g1-verify-still-red-on-just-gates
+      # R2) could not pass at all, and a check that can only be red measures
+      # nothing either.
+      CF_TV_CLOBBER=1
+      cf "counterfactual: --apply goes red when tv appends to the deployed television config (S3.8)" \
+         stage_apply "$GEN"
+      CF_TV_CLOBBER=""
       ;;
   esac
 
