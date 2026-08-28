@@ -1,18 +1,27 @@
 ---
-state: analyzing
+state: done
 priority: 16
 est:
 mode: afk
 needs:
-verify: ""
+verify: "bash gates/wezterm-config-fields.sh"
 origin: derived
 from: 02-terminal
-claim: analyst-wezterm-probe 2026-08-28T12:05Z
+claim:
+complexity: 25
+blast-radius: low
 ---
 
-# `02-terminal`'s config-field probe cannot fail on the thing it names
+# `02-terminal`'s config-field probe names a command but no predicate
 
 Parent: [Corrections backlog](../prd.md) · net-new
+
+**Corrected 2026-08-28, hours after filing.** This node was filed claiming the
+check *cannot fail*. **That was wrong, it was my error, and the correction is
+the more useful finding.** A skeptic re-ran the measurement, refuted it, and
+the orchestrator reproduced the refutation on the same binary. The original
+wording is kept below the line rather than deleted, because a board that
+files a bad measurement and quietly rewrites it has learned nothing.
 
 Purpose: [`02-terminal`](../../../02-terminal/prd.md)'s second acceptance line
 reads
@@ -22,56 +31,89 @@ reads
 > minimal probe config through
 > `wezterm --config-file <probe> ls-fonts --list-system`.
 
-Measured 2026-08-28 on that exact build, this machine, against a probe
-carrying all nineteen `config.*` fields the epic's children name: **the check
-cannot fail for an unknown field, and its exit code never fails at all.**
+It names a command and no predicate, and **the one obvious predicate does not
+work**: `EXIT=0` comes back from a clean probe, from an unknown config key,
+and from a type error alike. That is what has to be fixed.
 
-Three readings, one probe each:
+**The measurement, corrected.** Everything turns on how the probe table is
+built — which the acceptance line never says:
 
-| probe | result |
-|---|---|
-| all nineteen fields the children name | `EXIT=0`, no error on stderr |
-| the same plus `no_such_wezterm_field = true` | `EXIT=0`, **no error, no warning**, at `ls-fonts` and at `show-keys` |
-| the same with `font_size = "not-a-number"` | `EXIT=0`, but stderr carries `ERROR wezterm_gui > Error converting lua value … Cannot convert `String` to `f64`` |
+| probe form | unknown key `no_such_wezterm_field` | result |
+|---|---|---|
+| plain `return { ... }` | silently ignored | `EXIT=0`, 0 stderr bytes |
+| `wezterm.config_builder()` | **rejected** | `EXIT=0`, **0 stdout lines, 351 stderr bytes** |
 
-So this build **silently ignores an unknown config key** — the exact failure
-the line was written to catch — and signals a *type* error only on stderr,
-never through the exit status. A gate built on this line as written would go
-green on a child naming a field WezTerm has never heard of.
+`config_builder()` installs a validating `__newindex` metamethod; a bare table
+has none. Measured 2026-08-28 at the exact subcommand the line names: a clean
+`config_builder()` probe gives `EXIT=0`, **791 stdout lines, 0 stderr bytes`;
+the same probe plus one bogus key gives `EXIT=0`, **0 stdout lines**, and
 
-The nineteen fields themselves are fine: the first probe loaded clean, so the
-epic's substantive claim holds. What does not hold is the **method**, and a
-check that cannot fail is not evidence.
+```
+ERROR  wezterm_gui > error converting Lua table to Config
+(Config::from_dynamic: `no_such_wezterm_field` is not a valid Config field.)
+```
+
+So there are **two** working discriminators — empty stderr, and non-empty
+stdout — at the command already on record. And `config_builder()` is what the
+real config uses: `home/dot_config/wezterm/wezterm.lua:12` and the deployed
+`~/.config/wezterm/wezterm.lua:8`. A probe that does not use it is not testing
+the thing that ships.
+
+**Why the first measurement was wrong, since that is the transferable part.**
+The contract says to run a cheap claim twice with a different input. It *was*
+run twice — against `ls-fonts` and `show-keys` — but both runs used the same
+plain-table probe. Varying the subcommand while holding the fixture fixed is
+not varying the input. The fixture was the variable that mattered, and it was
+the one held constant.
 
 ## Requirements
-- [ ] **R1** — Rewrite `02-terminal`'s second acceptance line so it names a
-      check that can fail. Two mechanisms are available and neither is the one
-      on record: a stderr grep for `ERROR .* Error converting lua value`
-      (catches wrong *values*, exit code ignored), and a positive-control
-      probe that asserts a known-good field is actually read back — e.g.
-      `wezterm --config-file <probe> show-keys` listing a key the probe
-      defines, which an ignored table would not produce.
-- [ ] **R2** — Whatever replaces it is **proven to bite**: introduce the
-      violation, watch the check fail, quote both runs. The rule this node
-      exists to serve is `G.1`'s — a gate is proven by its own red.
-- [ ] **R3** — State plainly, in the epic, that this build does not reject
-      unknown config keys. It is a constraint on what any WezTerm check can
-      ever assert, it cost a measurement to find, and the next author will
-      otherwise write the same unfalsifiable line.
-- [ ] **R4** — Re-run the corrected check over the nineteen fields and record
-      the verdict, so `02-terminal`'s acceptance closes on evidence rather
-      than on this node's say-so that the first probe was clean.
+- [x] **R1** — Rewrite `02-terminal`'s second acceptance line so it names a
+      **predicate**, not just a command. The mechanism closest to the record
+      and known to work: keep
+      `wezterm --config-file <probe> ls-fonts --list-system`, build the probe
+      with `wezterm.config_builder()` — because that is what ships — and
+      assert **empty stderr**, or equivalently non-empty stdout. State the
+      exit code is not usable, because that is the trap the line fell into.
+- [x] **R2** — The replacement is **proven to bite**: introduce the violation,
+      watch the check fail, quote both runs. `G.1`'s rule — a gate is proven
+      by its own red — and the rule this node's own first draft broke.
+- [x] **R3** — **Withdrawn 2026-08-28.** It said to write "this build does not
+      reject unknown config keys" into the epic as a standing constraint. That
+      claim is false and would have put a measurement error into `02-terminal`
+      in the epic's own voice, permanently, for every future author. The
+      constraint worth recording is the true one, and it belongs with R1: a
+      probe must use `config_builder()` or it validates nothing, and `EXIT=0`
+      never discriminates.
+- [x] **R4** — Run the corrected check over the nineteen `config.*` fields the
+      epic's children name and record the verdict, so `02-terminal`'s
+      acceptance closes on evidence. The fields are expected clean — a plain
+      probe carrying all nineteen loaded without error — but that was measured
+      with the fixture now known to be blind, so it does not count and must be
+      redone under `config_builder()`.
 
 ## Acceptance
-- [ ] The replacement check fails on an introduced violation and passes
-      without it, both quoted.
-- [ ] `02-terminal`'s acceptance line names that check, and the epic can close
+- [x] The replacement check fails on an introduced violation and passes
+      without it, both quoted, with the probe's construction shown.
+- [x] `02-terminal`'s acceptance line names that check, and the epic can close
       on it.
-- [ ] The unknown-key finding is written where a WezTerm author will meet it.
+- [x] The `config_builder()`-vs-bare-table distinction is written where a
+      WezTerm author will meet it — it is the whole difference between a probe
+      that validates and one that does not.
 
 ## Out of scope
 - The other three `02-terminal` acceptance lines. Measured 2026-08-28: the
-  child-header ratings, the three-place child count and the no-hardcoded-hex
-  rule all pass, and the epic's node records how.
-- Changing any `config.*` field the children name. The first probe loaded all
-  nineteen clean; this is about the method, never the fields.
+  three-place child count and the no-hardcoded-hex rule pass; the child-header
+  rating line has its own open question, recorded in the epic.
+- Changing any `config.*` field the children name. This is about the method.
+
+---
+
+## Superseded — the original filing, kept as the record
+
+Filed 2026-08-28 claiming the check "cannot fail on the thing it names", on a
+probe measurement showing an unknown key ignored at `EXIT=0` with empty stderr
+at both `ls-fonts` and `show-keys`. **Refuted the same day.** That probe used
+a plain `return { ... }` table, which installs no validating metamethod, and
+the conclusion was drawn from a fixture that could not have shown rejection
+whatever the build did. The finding it was built on — that the exit code
+discriminates nothing — survives, and is now R1's.

@@ -30,61 +30,169 @@ tab addressing, copy mode and paste one keystroke away.
 These are what make the pieces compose. Every child leans on them by
 reference; none of them restates one.
 
-- [ ] **I1** — **The self-healing nine-tab floor owns tabs and panes.**
-      There is no second multiplexer. The shell-side one was deleted on
-      2026-08-20 and took `DO NOT PORT` in
-      [`README.md`](../README.md)'s exclusion list; open decision 1 of the
-      [corrections backlog](../00-delivery/corrections/prd.md) records the
-      answer where the question was asked. `TAB_COUNT = 9` is a floor, not a
-      target, and a digit is a stable address —
-      [`02-startup-layout`](02-startup-layout/prd.md) owns the mechanism and
-      [`03-f5-jump-mode`](03-f5-jump-mode/prd.md) is what the guarantee is
-      for. Children cite I1 rather than re-arguing it.
-- [ ] **I2** — **tinty owns the palette; WezTerm is its first reader, not
-      its owner.** `tinty apply` writes `~/.config/wezterm/colors.lua`, and
-      WezTerm `dofile`s that file — never `require`, which caches by module
-      name and would hand back the *first* palette on a second apply. Reading
-      it here rather than accepting per-pane escapes is what makes a theme
-      switch global: `config.colors` is WezTerm-wide, so every window, tab
-      and pane retints at once. Nothing below WezTerm hardcodes a hex value,
-      and no PRD in this epic names a scheme — the scheme is user state that
-      tinty rewrites. Any earlier wording that put ownership the other way
-      round is finding T-3, corrected by open decision 2 on 2026-08-21
-      ([`decisions/tinty`](../00-delivery/decisions/tinty/prd.md)).
-- [ ] **I3** — **`PaneSelect` is forbidden, and the reason is the
-      requirement.** A key bound in `config.keys` or in a key table is
-      consumed in the raw-key pass before the modal ever sees it, while an
-      unbound key reaches the modal, which answers only to a complete label,
-      `Escape` and `ctrl+g` and silently eats everything else. Nothing in Lua
-      closes it: `cancel_modal` is reachable from no `KeyAssignment`, and
-      `PaneSelector::perform_assignment` returns false unconditionally
-      (checked in this build's source and in main). This invariant outlives
-      the pane-letter overlay that discovered it — it is what stops a later
-      lane "simplifying" one-key navigation back onto the modal.
-- [ ] **I4** — **The deployed `~/.config/wezterm/` is the artifact every
-      child is written against.** Decided 2026-08-21, open decision 4:
-      `chezmoi source-path` prints `/Users/feb/dev/.files/home`, and
-      `~/.local/share/chezmoi` is a stale June clone whose HEAD is a git
-      *ancestor* of that source. No terminal PRD may cite the stale clone as
-      the chezmoi source; the only permitted mention of it is as the clone
-      that produced wrong findings, labelled as such. Reading a clone instead
-      of the live tree is the failure class that invalidated this epic the
-      first time.
+**I1** — **The self-healing nine-tab floor owns tabs and panes.**
+There is no second multiplexer. The shell-side one was deleted on
+2026-08-20 and took `DO NOT PORT` in
+[`README.md`](../README.md)'s exclusion list; open decision 1 of the
+[corrections backlog](../00-delivery/corrections/prd.md) records the
+answer where the question was asked. `TAB_COUNT = 9` is a floor, not a
+target, and a digit is a stable address —
+[`02-startup-layout`](02-startup-layout/prd.md) owns the mechanism and
+[`03-f5-jump-mode`](03-f5-jump-mode/prd.md) is what the guarantee is
+for. Children cite I1 rather than re-arguing it.
+
+**I2** — **tinty owns the palette; WezTerm is its first reader, not
+its owner.** `tinty apply` writes `~/.config/wezterm/colors.lua`, and
+WezTerm `dofile`s that file — never `require`, which caches by module
+name and would hand back the *first* palette on a second apply. Reading
+it here rather than accepting per-pane escapes is what makes a theme
+switch global: `config.colors` is WezTerm-wide, so every window, tab
+and pane retints at once. Nothing below WezTerm hardcodes a hex value,
+and no PRD in this epic names a scheme — the scheme is user state that
+tinty rewrites. Any earlier wording that put ownership the other way
+round is finding T-3, corrected by open decision 2 on 2026-08-21
+([`decisions/tinty`](../00-delivery/decisions/tinty/prd.md)).
+
+**I3** — **`PaneSelect` is forbidden, and the reason is the
+requirement.** A key bound in `config.keys` or in a key table is
+consumed in the raw-key pass before the modal ever sees it, while an
+unbound key reaches the modal, which answers only to a complete label,
+`Escape` and `ctrl+g` and silently eats everything else. Nothing in Lua
+closes it: `cancel_modal` is reachable from no `KeyAssignment`, and
+`PaneSelector::perform_assignment` returns false unconditionally
+(checked in this build's source and in main). This invariant outlives
+the pane-letter overlay that discovered it — it is what stops a later
+lane "simplifying" one-key navigation back onto the modal.
+
+**I4** — **The deployed `~/.config/wezterm/` is the artifact every
+child is written against.** Decided 2026-08-21, open decision 4:
+`chezmoi source-path` prints `/Users/feb/dev/.files/home`, and
+`~/.local/share/chezmoi` is a stale June clone whose HEAD is a git
+*ancestor* of that source. No terminal PRD may cite the stale clone as
+the chezmoi source; the only permitted mention of it is as the clone
+that produced wrong findings, labelled as such. Reading a clone instead
+of the live tree is the failure class that invalidated this epic the
+first time.
+
+**I5** — **A WezTerm config check goes through `config_builder()` and reads
+stderr; the exit code is not a predicate.** `wezterm.config_builder()`
+installs a validating `__newindex` metamethod that refuses an unknown field
+as it is assigned; a plain `return { ... }` table installs none and drops
+unknown keys silently. The probe's **construction**, not the build, is what
+decides whether a check can fail — and a probe that does not use
+`config_builder()` is not testing what ships
+(`home/dot_config/wezterm/wezterm.lua:12`). Measured 2026-08-28 on
+`20240203-110809-5046fc22` at `ls-fonts --list-system`: a clean
+`config_builder()` probe gives 791 stdout lines and 0 stderr bytes; the same
+probe plus one bogus key gives 0 stdout lines and 350 stderr bytes carrying
+`` `no_such_wezterm_field` is not a valid Config field ``. **Both exit 0** —
+as do a wrong value type, a `--config-file` that does not exist, and the
+whole set again with `config:set_strict_mode(true)`. Two constraints come
+with it. `show-keys` is not an error channel at all: on a config that
+`ls-fonts` rejects with 5 stderr lines, `show-keys --lua` exits 0 with 230
+stdout lines and **zero** on stderr, so it serves only as a read-back
+control. And the `__newindex` error is a Lua error that aborts the chunk, so
+a probe carrying several bad fields reports only the **first** — one field
+per probe. This invariant was bought by a measurement that was filed wrong
+and refuted the same day; the record is in
+[`wezterm-probe-cannot-fail`](../00-delivery/corrections/wezterm-probe-cannot-fail/prd.md).
 
 ## Acceptance
+
+All four run 2026-08-28 by the orchestrator, under
+[`epic-invariants-prose`](../00-delivery/finish-line/epic-invariants-prose/prd.md)
+R4, which requires an epic's own acceptance to be verified before it
+transitions. Two pass outright. The second was under-specified — it named a
+command and no predicate — and now closes on a gate proven by its own red.
+The first is the one still open, on a contract gap put to the user.
+
 - [ ] Every child's header cites an entry of
       [`capabilities-terminal.md`](../../docs/capabilities-terminal.md) by
       name, or `net-new`, with `C`/`U` numbers matching that entry.
-- [ ] No child names a WezTerm config field that the installed build
-      (`20240203-110809-5046fc22`) rejects at config-load time — the check is
-      a minimal probe config through
-      `wezterm --config-file <probe> ls-fonts --list-system`.
-- [ ] The child count agrees in three places: the directories under this
+
+      Seven children checked against the inventory's own trailing `- C` / `- U`
+      pair. Six match exactly: `01-appearance` C5 U9, `02-startup-layout`
+      C10 U7, `04-copy-mode` C4 U9, `06-launchd-path` C2 U10,
+      `07-grid-centering` C8 U6, and `05-tab-content-state` is `net-new` and
+      rated in its own header (C4 U7), which the rating rules permit.
+      `03-f5-jump-mode` reads **C 6** against
+      `docs/capabilities-terminal.md:475` reading **C 9**.
+
+      **This box was ticked on 2026-08-28 and then unticked the same day.** The
+      first pass ticked it on the grounds that the divergence is deliberate and
+      well explained — the node's own `**Rating note.**` states it, names the
+      answer that caused it (2026-08-21, user: digits only, the pane-letter
+      overlay dropped) and says why `U` does not move. A skeptic pointed out
+      that this is the same move as ticking the probe box below because the
+      nineteen fields are *probably* fine, which the same pass had correctly
+      refused to make. The line's predicate is "numbers matching that entry".
+      They do not match. A well-argued violation is still a violation, and
+      `AGENTS.md`'s rating rule is unconditional.
+
+      **The real gap is in the contract, not in this node.** `AGENTS.md` has a
+      rule for a PRD that *merges* several inventory entries, and none for one
+      that *splits* one entry after a scope answer removed half of it — which
+      is exactly what `03-f5-jump-mode` did. Until that rule exists, this box
+      has no honest tick available: amending the line to permit a stated
+      divergence would be writing the criterion around the result. Put to the
+      user 2026-08-28.
+
+      A second, smaller drift found in the same pass: the rating note says the
+      entry's `SIMPLIFY` marker is "withdrawn", but nothing in
+      `docs/capabilities-terminal.md` records that. A reader arriving from the
+      inventory still sees `SIMPLIFY` and `C 9`; only the node knows otherwise.
+
+- [x] No child names, and the shipped `wezterm.lua` does not set, a WezTerm
+      config field the installed build rejects at config-load time. The
+      check is `bash gates/wezterm-config-fields.sh`: probes built with
+      `wezterm.config_builder()` — because that is what ships — driven
+      through `wezterm --config-file <probe> ls-fonts --list-system`, with
+      the verdict read off **empty stderr and non-empty stdout**. The exit
+      code is not a predicate and the gate never reads it; see **I5**.
+
+      Run 2026-08-28 on `wezterm 20240203-110809-5046fc22`: rc 0, 7 PASS /
+      0 FAIL. Sixteen `config.<field>` names harvested from the children,
+      none rejected; the shipped `wezterm.lua` loads with 0 stderr bytes,
+      which validates all 31 of its own `config.<field>` assignments in that
+      one load because it uses `config_builder()` at line 12. The two sets
+      union to 30 distinct fields and nothing in either is rejected.
+
+      Proven by its own red, per `G.1`.
+      `bash gates/wezterm-config-fields.sh --selftest` appends
+      `config.no_such_wezterm_field = true` to a `scratch_tree` copy of
+      `wezterm.lua`, and writes `config.not_a_real_wezterm_field` into a
+      copied child. Each turns the gate rc 1, naming the field, with
+      ``ERROR … `is not a valid Config field` `` on stderr; removing the one
+      line restores rc 0. The same run shows the superseded plain-table
+      probe **green** on the identical violation, so the difference between
+      the two probe constructions stays on the record instead of in a
+      memory.
+
+      The line this replaces named the command without a predicate, and the
+      obvious predicate — the exit status — discriminates nothing. Filed and
+      corrected as
+      [`wezterm-probe-cannot-fail`](../00-delivery/corrections/wezterm-probe-cannot-fail/prd.md),
+      whose own first filing was wrong and is kept there as the record.
+
+- [x] The child count agrees in three places: the directories under this
       epic, the tree in [`README.md`](../README.md), and README's build
       order.
-- [ ] No file under this epic hardcodes a palette hex or names a colour
+
+      Seven in all three: seven directories `01-`–`07-`; seven rows under
+      `02-terminal/` in the README tree; and seven `T.` ids in README's build
+      order — T.1, T.2, T.3, T.4, T.6, T.7, T.8, matching the children's
+      `task:` fields exactly (there is no T.5).
+
+- [x] No file under this epic hardcodes a palette hex or names a colour
       scheme, the single exception being the no-theme-picked fallback
       recorded in [`01-appearance`](01-appearance/prd.md).
+
+      One hex under the epic — `"#1d2021"` in
+      `01-appearance/specs/spec01-wezterm-lua.md:81` — and it appears as
+      **"Do not port that hex"**, a negative reference, not a hardcode. The
+      only named scheme is `Gruvbox dark, hard (base16)`, which is the
+      no-theme-picked fallback this line names as its exception, recorded in
+      `01-appearance` R3.
 
 ## Out of scope
 
