@@ -39,6 +39,32 @@ not a screen to watch — and `03-editor/14-shift-select` does name it
 was correct reasoning. But the checklist is the wrong place to record that,
 because the gate reads a tick there as *"a human ran this"*, and no human did.
 
+## Questions
+
+Filed 2026-08-28. R1 is the fork; it is put here in round form so it can be
+answered rather than read.
+
+### Q1: Where does a closure that was reasoned from the record get written?
+
+`gates/manual-coverage.sh` asserts no `wave*.md` box ships ticked, because a
+tick there means a human stood at a terminal. D.3's closure was sound
+reasoning over a document, but it was written as a tick, and the gate has been
+red since. Where should that kind of closure live?
+
+- **A — move decision rows out of `wave*.md`.** D.3, D.1b, D.1c and D.1d are
+  document reads, not terminal observations, and arguably never belonged on a
+  *manual* checklist at all. Their closures live in their decision PRDs, which
+  is where the reasoning already sits. *Recommended:* it fixes the class
+  rather than the instance, and the four rows it moves are exactly the four
+  that will otherwise hit this wall one at a time.
+- **B — give the gate a third marker.** `- [r]` meaning *closed from the
+  record*, so a tick keeps meaning "a human watched it" and each wave file
+  stays a single complete worklist. One gate change; costs a new convention
+  every future reader has to learn.
+- **C — accept ticks and drop the assertion.** Delete the no-pre-ticked
+  check. Cheapest, and it loses the ships-un-run guarantee that makes a `[x]`
+  anywhere in `wave*.md` worth trusting.
+
 ## Requirements
 - [ ] **R1** — Decide where a from-the-record closure is recorded, given that
       the checklist cannot hold it without lying to the gate. Three shapes

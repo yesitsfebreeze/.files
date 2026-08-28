@@ -1,5 +1,5 @@
 ---
-state: failed
+state: open
 priority: 17
 est:
 mode: afk
@@ -95,3 +95,56 @@ acceptance boxes closed.
 
 Retry picks up at spec02 only; do not redo spec01's work or re-verify it
 beyond the tree check above.
+
+## Questions (answered 2026-08-28)
+
+Board-frontier drill round, 2026-08-28. This node's fork:
+
+### Q1: Is the load campaign worth buying?
+
+spec02 prices 6 full-gate and 6 `--hermetic` runs under a fixture that
+deliberately pegs the machine — 20 CPU spinners and 4 I/O churners, load past
+100 — for ~25 minutes, to chase an empty pty capture seen exactly once. Is
+that bought, or is a stated bound enough?
+
+1. **Close `unmeasured`, with the bound stated** — record the run count and
+   conditions under which it did not appear and stop paying. R2 explicitly
+   allows this verdict, and the spec's own numbers put a pty call an order of
+   magnitude below the 40 s ceiling even at the measured 8.6x slowdown.
+   (recommended)
+2. **Run the full 6+6 campaign** — the only path to `reproduced` or a real
+   bound, at ~25 minutes of an unusable machine.
+3. **Run a reduced campaign** — 2 full plus 2 hermetic under load, ~8 minutes.
+   Weaker evidence than the spec prices, but a real measurement rather than
+   none.
+
+## Answers
+
+Answered 2026-08-28 by the user, in the [finish-line](../../finish-line/prd.md)
+drill round.
+
+**Q1** — **Close it `unmeasured`, with the bound stated. Do not run the
+campaign.** spec02's 6-full + 6-hermetic load campaign is not bought: it costs
+~25 minutes with the machine deliberately at load 100+, and the spec's own
+arithmetic argues against a hit — the `--hermetic` stage makes 22 pty
+invocations inside 13.2 s quiet, so a single call costs well under a second,
+and at the measured 8.6x slowdown that is still an order of magnitude short of
+the 40 s ceiling.
+
+`unmeasured` is a verdict R2 explicitly allows, and the standing memo
+[`a-headless-gate-red-may-be-load-not-code`](../../../memos/a-headless-gate-red-may-be-load-not-code.md)
+is unchanged: a headless red is retried before it is believed, and the ceiling
+is never widened to buy green.
+
+What still has to land for this node to close, because closing is not the same
+as doing nothing: R3's classifier — an empty `nu_pty_e` capture must fail
+saying `TIMEOUT` and naming the load, distinguishable from "the shell opened in
+the wrong directory" — and R1's bound written as a run count with its
+conditions, not as a shrug. spec01 is already landed and green at `022091e`.
+
+Recorded 2026-08-28 alongside this answer: `bash tests/nushell-core.sh
+--hermetic` is **83 PASS / 0 FAIL**, the exact figure this node records as the
+healthy baseline, after the litellm staging regression was repaired at
+`d629da1`. That regression, not a race, explains the reds seen in this suite
+between 2026-08-25 and 2026-08-28 — it is not evidence about S4.30 either way,
+and is noted so a later reader does not mistake it for a reproduction.

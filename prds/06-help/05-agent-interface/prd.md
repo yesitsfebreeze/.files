@@ -1,5 +1,5 @@
 ---
-state: blocked
+state: open
 claim:
 priority: 8
 est: 1.25h
@@ -254,3 +254,38 @@ No `grep`, `find` or `fzf` appears anywhere in its eight steps. The one
 outside-knowledge item it used (`ActivateTab`) it flagged itself as not
 coming from the help text. Graded against the H.5 PASS line this is a pass by
 the letter; the tick in `gates/manual/wave6.md` remains the human's.
+
+## Questions (answered 2026-08-28)
+
+Board-frontier drill round, 2026-08-28. This node's fork — the H.5 grade the
+`## Blocked` section above says needs a person.
+
+### Q1: Should the agent overview name the tools, and if so where do the names live?
+
+The reading test found the block routes and does not inform: the agent picked
+`idioms` for the right reason, then reached for `rg` anyway because nothing in
+the text named it. Naming `rg`/`fd`/`tv` inline fixes that and creates a
+second place those names live — the duplication the render exists to prevent.
+Which cost is paid?
+
+1. **Derive the names from the corpus at render time** — the render reads the
+   `idioms` entry's own content and pulls the tool names out of it. The block
+   informs and there is still exactly one source, so it cannot drift. More
+   work than either alternative. (recommended)
+2. **Name them inline as prose** — write `rg`/`fd`/`tv` into the overview
+   block. Cheap and immediate, and accepts a second copy.
+3. **Keep pointer-only** — close H.5 recording that an agent following the
+   pointer is saved and an agent in a hurry is not, as an accepted limitation.
+
+## Answers
+
+**Q1** — **Derive the names from the corpus at render time.** The work is
+[`agent-overview-derived-tools`](../../00-delivery/finish-line/agent-overview-derived-tools/prd.md),
+which owns R1–R5 including the re-run of the reading test — a change made
+because a reading test failed is not proven by anything except that test
+passing.
+
+This settles the fourth acceptance box, so **the H.5 grade is no longer what
+blocks this node**; the derived-tools node is. The two deviations recorded
+above stand unchanged, and R1–R6 stay `[x]` — the interface itself was never
+the thing in question.

@@ -118,3 +118,43 @@ documentation are both failures.
   decided 2026-08-21) needed no requirement change here for that reason: it
   changes the manual's content, which is
   [01-content-model](../01-content-model/prd.md)'s, not the check's rules.
+
+## Questions (answered 2026-08-28)
+
+Board-frontier drill round, 2026-08-28 — the whole remaining frontier put in
+one round. This node's fork:
+
+### Q1: Does `help --check` ship for three surfaces, or fewer?
+
+This node is 5h and unspecced, `--check` exists nowhere in `help.nu` beyond a
+comment, and it is the only substantial thing left unbuilt on the board. Its
+three surfaces are not equally valuable — how much of it ships now?
+
+1. **Shell + Neovim, defer WezTerm** — build R1 and R2; move R3 to its own
+   deferred node. The terminal check already carries a measured blind spot
+   (`Ctrl+Shift+T` resolves against WezTerm's own `SpawnTab` default, so it
+   passes either way), which makes it the least load-bearing third.
+   (recommended)
+2. **Full three surfaces as specified** — build R1-R8 as written, closing
+   `coverage` cleanly at the cost of the whole 5h.
+3. **Drop it from the minimal base** — record `help --check` as deferred and
+   unblock `coverage` by hand-running its R5 resolution once. The manual stops
+   being self-checking and drift returns silently.
+
+## Answers
+
+Answered 2026-08-28 by the user, in the [finish-line](../../00-delivery/finish-line/prd.md)
+drill round.
+
+**Q1** — **Shell + Neovim only; the WezTerm surface defers.** R1 and R2 ship
+here; **R3 moves to
+[`drift-check-terminal-surface`](../../00-delivery/finish-line/drift-check-terminal-surface/prd.md)**,
+deferred and not cancelled. The terminal was the surface to cut because its
+check already has a measured blind spot — `Ctrl+Shift+T` resolves against
+WezTerm's own `SpawnTab` default, so it passes whether or not a capsule
+binding is ever written.
+
+R4–R8 apply to the two built surfaces. R6's allowlist and R5's prose exemption
+are unchanged. Consequence carried into
+[`coverage`](../01-content-model/coverage/prd.md): its R3 defers with the
+terminal surface, and R5 closes for shell and Neovim only.
