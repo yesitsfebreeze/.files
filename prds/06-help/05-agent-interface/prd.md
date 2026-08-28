@@ -135,6 +135,23 @@ correctly — which finder is installed, how navigation works, what the keys do
       measured — bare `help` now names `idioms` with its corpus title, so the
       "reach for `fzf`" failure has a line in the only output the box allows
       the session to see.
+
+      **Updated 2026-08-28 — what holds this box has changed twice today, and
+      what remains is a person.** It was blocked on
+      [`agent-overview-derived-tools`](../../00-delivery/finish-line/agent-overview-derived-tools/prd.md),
+      per this node's `## Answers`. That node is now `done`: the fix it was
+      going to make had already shipped at `0f9f635`, and what it built instead
+      is the gate that holds the fix there — `tests/help-agent.sh` is 100 PASS
+      and its CF6 proves the hole, since reverting the title leaves
+      `discovery_ok` green while INFORMING goes red.
+
+      So every board dependency is satisfied and the machinery is gated. What
+      is left is the H.5 row itself, and `gates/manual/wave6.md:51-78` says
+      twice that the two runs on file are **evidence, not a tick**: the subject
+      is an agent's behaviour on first contact, so the session has to be
+      uncontaminated, and nobody who has read this repo — including this
+      orchestrator — can be the grader. That is a human's job by construction,
+      not by convention.
 - [x] `help --md > manual.md` produces a document readable top to bottom.
 
       Produced and read: an H1, one line saying `help --json` carries the same
