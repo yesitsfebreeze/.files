@@ -44,6 +44,51 @@
 #      binary a stage needs is already present or stubbed inside the scratch
 #      tree, and the live source tree is manifest-hashed in and out.
 #
+# S4.30's ONE RED — VERDICT: `unmeasured`, WITH THE BOUND.
+# (00-delivery/corrections/nushell-core-s430-stall, R1/R2. Written here and not
+# only in a worker report, because a verdict nobody reads again is not a
+# verdict.)
+#
+#   On 2026-08-24 a full run of this gate went past 6m40s and reported
+#     FAIL  hermetic: S4.30 end-to-end: ... (got )
+#   — an EMPTY pty capture, the shape a killed child leaves — and then hung
+#   inside mk_machine. It has not been seen since.
+#
+#   Bound: not seen again in at least 14 runs that exercise S4.30 (S4.30 lives
+#   in the --hermetic stage, so a full run and a --hermetic run each count as
+#   one), at 1-minute load averages from 4.7 to 106.6:
+#
+#     2026-08-24  quiet, pre-spec01 tree     3 full                 233 PASS/0 FAIL each
+#     2026-08-24  LOAD FIXTURE (below)       1 full + 1 --hermetic  233 / 83 PASS, 0 FAIL
+#     2026-08-24  quiet, spec01 patched      1 full + 1 --hermetic  250 / 83 PASS, 0 FAIL
+#     2026-08-28  quiet, after d629da1       1 --hermetic            83 PASS/0 FAIL
+#     2026-08-28  quiet, load 4.7-6.6        4 full + 2 --hermetic  256 / 83 PASS, 0 FAIL
+#
+#   The load fixture, named so it can be re-run: 20 bare `while :; do :; done`
+#   subshells (2x oversubscription on this 10-core machine) plus 4 I/O churners
+#   each writing a 40 MB file from /dev/urandom, syncing, unlinking, looping;
+#   the load average allowed ~12 s to settle before a run. Under it the full
+#   gate took 172 s at 1-min load 106.6 (8.6x its 20 s quiet) and --hermetic
+#   73.7 s at load 37.8 (5.6x its 13.2 s). BOTH WERE GREEN.
+#
+#   `unmeasured`, not `refuted`: 14 runs without a hit does not prove the race
+#   cannot happen. The arithmetic that stopped the search rather than a proof:
+#   --hermetic makes 22 pty invocations inside 13.2 s of quiet wall, so one
+#   call costs well under a second, and even at the measured 8.6x it stays an
+#   order of magnitude short of the 40 s ceiling. The priced 6-full + 6-hermetic
+#   campaign (~25 min at load 100+) was declined by the user on 2026-08-28 on
+#   exactly that arithmetic.
+#
+#   What DID land instead is PT.1 - PT.7 in --tree: an empty capture can no
+#   longer print as `(got )`. A killed child now reads TIMEOUT:<n>s with the
+#   load average beside it, a wrong directory reads PWDIS:<dir>, and a silent
+#   child reads NOANSWER — three findings, three messages. If this red returns,
+#   it will say which of the three it is.
+#
+#   The ceiling is NOT the fix and is not to be raised: memos/
+#   a-headless-gate-red-may-be-load-not-code. PT.5 fails if nu_pty or nu_pty_e
+#   stops handing the runner a literal 40.
+#
 # Usage: bash tests/nushell-core.sh [--tree|--hermetic|--apply]
 
 set -u

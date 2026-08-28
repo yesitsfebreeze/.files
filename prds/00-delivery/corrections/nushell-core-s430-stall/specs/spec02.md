@@ -93,28 +93,93 @@ load up to N" is the honest sentence.
 
 ## Acceptance
 
-- [ ] The load fixture is quoted verbatim in the report, with the
+**The campaign was declined, 2026-08-28.** The node's
+[Answers](../prd.md) section records the user's decision: *"Close it
+`unmeasured`, with the bound stated. Do not run the campaign."* Six full-gate
+and six `--hermetic` runs at load 100+ were not bought. The three boxes below
+marked **VOID** are the campaign's own; they stay `[ ]` because they were never
+run, and they are not open work — reopening them means re-taking the decision.
+Everything this spec asks for that does **not** require the campaign is closed
+against runs that were actually made.
+
+- [ ] **VOID** — The load fixture is quoted verbatim in the report, with the
       before/after `vm.loadavg` triple for **every** run — not a summary
-      range with the individual readings dropped.
-- [ ] Six full-gate runs under load: wall time and PASS/FAIL tally quoted per
-      run.
-- [ ] Six `--hermetic` runs under load: wall time and PASS/FAIL tally quoted
-      per run. R2's second input.
-- [ ] A verdict of exactly `reproduced` | `refuted` | `unmeasured` is stated,
+      range with the individual readings dropped. *Not run: no campaign. The
+      fixture recipe is nonetheless recorded verbatim in the gate header, so a
+      later reader can re-run it without re-deriving it.*
+- [ ] **VOID** — Six full-gate runs under load: wall time and PASS/FAIL tally
+      quoted per run. *Not run: no campaign. The one full run that was made
+      under this fixture, on 2026-08-24, is carried in the bound: 172 s at
+      1-min load 106.6, 233 PASS / 0 FAIL.*
+- [ ] **VOID** — Six `--hermetic` runs under load: wall time and PASS/FAIL
+      tally quoted per run. R2's second input. *Not run: no campaign. The one
+      `--hermetic` run made under this fixture on 2026-08-24 is carried in the
+      bound: 73.7 s at 1-min load 37.8, 83 PASS / 0 FAIL. R2's "different
+      input" requirement is met by the full-gate/`--hermetic` split across the
+      fourteen runs the bound counts, not by the campaign.*
+- [x] A verdict of exactly `reproduced` | `refuted` | `unmeasured` is stated,
       with the fixture named beside it. Never `exact`. If nothing reproduced,
       the verdict is `unmeasured` with the bound attached — not `refuted`,
-      which would claim the race cannot happen.
-- [ ] The verdict, run count, load range and fixture are landed in the header
-      comment of `tests/nushell-core.sh`, and quoted from the file.
-- [ ] If a run reproduced: its raw pty capture, load reading and wall time are
+      which would claim the race cannot happen. **`unmeasured`**, fixture: the
+      full `tests/nushell-core.sh` gate on this repo's working tree, this
+      machine (10 cores), quiet at 1-min load 4.7–6.6 on 2026-08-28 and under
+      the 20-spinner / 4-churner fixture at load 37.8–106.6 on 2026-08-24. Not
+      `refuted`: fourteen greens do not prove the race cannot happen. Quoted
+      from the file, lines 74-75: `#   \`unmeasured\`, not \`refuted\`: 14 runs
+      without a hit does not prove the race` / `#   cannot happen. The
+      arithmetic that stopped the search rather than a proof:`
+- [x] The verdict, run count, load range and fixture are landed in the header
+      comment of `tests/nushell-core.sh`, and quoted from the file. Landed at
+      `tests/nushell-core.sh:47-90`, between safety rule 6 and the Usage line.
+      Quoted:
+
+      ```
+      # S4.30's ONE RED — VERDICT: `unmeasured`, WITH THE BOUND.
+      #   Bound: not seen again in at least 14 runs that exercise S4.30 (S4.30 lives
+      #   in the --hermetic stage, so a full run and a --hermetic run each count as
+      #   one), at 1-minute load averages from 4.7 to 106.6:
+      #
+      #     2026-08-24  quiet, pre-spec01 tree     3 full                 233 PASS/0 FAIL each
+      #     2026-08-24  LOAD FIXTURE (below)       1 full + 1 --hermetic  233 / 83 PASS, 0 FAIL
+      #     2026-08-24  quiet, spec01 patched      1 full + 1 --hermetic  250 / 83 PASS, 0 FAIL
+      #     2026-08-28  quiet, after d629da1       1 --hermetic            83 PASS/0 FAIL
+      #     2026-08-28  quiet, load 4.7-6.6        4 full + 2 --hermetic  256 / 83 PASS, 0 FAIL
+      ```
+
+      The fixture recipe and the 8.6x / 5.6x slowdowns it produced are in the
+      same block, so the campaign stays re-runnable by whoever buys it later.
+- [x] If a run reproduced: its raw pty capture, load reading and wall time are
       quoted, the remaining runs are abandoned, and the report says the fix is
-      out of this spec's scope. If none did: say so in the same words.
-- [ ] The 40 s ceiling is unchanged. `/usr/bin/grep -n '"\$PTY" 40' tests/nushell-core.sh`
-      still finds `nu_pty` and `nu_pty_e`, quoted.
-- [ ] `bash tests/nushell-core.sh` run alone, quiet, after the campaign:
-      `0 FAIL`, `EXIT=0`, tally quoted not asserted.
-- [ ] The load generator left nothing behind: its scratch directory is gone
+      out of this spec's scope. If none did: say so in the same words. **None
+      did.** No run on record has reproduced the empty capture — not the three
+      quiet re-runs on 2026-08-24, not the two under the load fixture that same
+      day, not the two spec01 runs, not the one recorded on 2026-08-28 in the
+      Answers, and not the six made here (four full at 18/18/22/18 s, two
+      `--hermetic` at 13/12 s, all `EXIT=0`). No raw pty capture to quote,
+      because no `TIMEOUT` classification occurred. The remaining runs were not
+      abandoned on a hit; they were never bought. Had one hit, the fix would
+      have been out of this spec's scope — R4 forbids the ceiling and a race
+      fix is a new specification.
+- [x] The 40 s ceiling is unchanged.
+      `/usr/bin/grep -n '"\$PTY" 40' tests/nushell-core.sh` still finds
+      `nu_pty` and `nu_pty_e`, quoted: `419:  "$PYTHON" "$PTY" 40 "$@" \` and
+      `429:  "$PYTHON" "$PTY" 40 "$@" \` — `nu_pty()` opens at line 417 and
+      `nu_pty_e()` at 427, so both hits are the real call sites. `--tree`'s
+      `PT.5` asserts the same thing from inside the gate: `PASS  tree: PT.5
+      nu_pty hands the runner a LITERAL 40 (reads 40)`.
+- [x] `bash tests/nushell-core.sh` run alone, quiet, after the campaign:
+      `0 FAIL`, `EXIT=0`, tally quoted not asserted. Reading of 2026-08-28 on
+      the finished file: **256 PASS / 0 FAIL**, `EXIT=0`, 18 s wall, 1-min load
+      8.98 before and 8.48 after. Quoted, never asserted — the tally moved from
+      the 233 of 2026-08-24 to 250 when spec01 landed its seventeen `PT` checks
+      and to 256 when `nushell-core-positional-lookups` landed beside it.
+- [x] The load generator left nothing behind: its scratch directory is gone
       and `~/.cache/nushell` does not exist (the gate's own safety rule 3).
+      Vacuous on the generator — none was started, so there is no scratch
+      directory to be gone — and checked on the half that is not vacuous:
+      `test -e ~/.cache/nushell` prints `~/.cache/nushell absent`, and the gate
+      asserts it itself on every run: `PASS  S4.5 ~/.cache/nushell does not
+      exist (a real one appearing means an isolation leak)`.
 
 ## Verify and Proof
 
