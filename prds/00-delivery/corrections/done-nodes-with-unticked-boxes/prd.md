@@ -7,7 +7,6 @@ needs:
 verify: ""
 origin: derived
 from: 07-multiplexer/01-session-and-windows
-claim:
 complexity: 0
 blast-radius:
 ---
@@ -50,6 +49,50 @@ auditing this epic sees 41 unmet requirements under seven closed nodes and
 cannot tell, without re-running four gates, which are record defects and which
 are real gaps. That is precisely the state the corrections family exists to
 prevent, and this epic's acceptance was closed on top of it.
+
+## R4 answered, 2026-08-29 — `02-terminal` is not special, and this node is the wrong shape
+
+Measured with `tests/box-audit.py` (probe code, on disk, read-only; its
+`--selftest` proves the predicate can go red — it flags `04-copy-mode` and
+does **not** flag `06-launchd-path`, so it discriminates rather than merely
+counting):
+
+```
+done nodes scanned:      148
+done nodes with open []:  41      <- NODES, not boxes
+open boxes under done:   178
+```
+
+`02-terminal` is **6 of those 41 nodes and 41 of those 178 boxes** — under a
+quarter. The rest are spread across every epic on the board:
+`00-delivery/verification-gates` (5 open), `zi-cdi-picker-exception` (8 open,
+0 closed), `01-capsule/03-credential-propagation` (3),
+`05-platform/02-package-provisioning/homebrew-bootstrap` (2 open, 0 closed),
+`03-editor/09-lsp`, `03-editor/11-colorscheme`, four
+`w0-4-s2-corrections` children, and more.
+
+**So the framing in this node's title and purpose is wrong.** It was filed as
+an `02-terminal` problem because that is where it was noticed — by another
+session's analyst, looking at one node. R4 existed precisely to test that, and
+it fails: **the closing step is what is broken, board-wide, and this epic is
+one symptom of it.** A node that classifies 41 boxes in one epic would leave
+137 boxes under 35 other `done` nodes untouched and would report itself
+complete.
+
+**The reshape this implies**, and the reason the verdict is REFINE rather than
+SPECCED: the work splits into a thing that stops the bleeding (make `collect`
+refuse, or at least report, a `done` node with an open box — the board already
+has the predicate, in `tests/box-audit.py`) and a thing that drains the
+backlog (classify the 178, which is per-node work and nobody's single sitting).
+Those are different contracts with different footprints, and the first one
+makes the second finite.
+
+**What is not yet established**, and must not be assumed: whether the 178 are
+mostly type (a) — proven elsewhere, tick never carried up — or hide real type
+(b) gaps. `04-copy-mode` looked like the worst case at 16 open / 0 closed and
+turned out to be pure (a): its verify is ALL PASS rc 0 and its specs are 15 of
+16 closed. One node is not a sample. The classification is still owed and is
+still evidence-only.
 
 ## Requirements
 - [ ] **R1** — For each of the 41, decide by **evidence** which of three it
@@ -110,3 +153,11 @@ prevent, and this epic's acceptance was closed on top of it.
 <!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
+
+## Children
+
+| child | contract | needs |
+|---|---|---|
+| `closing-guard-status` | Establish whether a `done` transition can today close a node with an open box, by probe on a scratch board rather than by reading history — then make every path to `done` share one guard, or record why `collect`'s is already sufficient. Carries the `9d3f424` counter-example and the `cmd_unblock` documentation defect; the latter lands in `~/dev/infra/pearde`, so report it rather than editing a tree two other sessions hold. | — |
+| `box-audit-check` | Land `tests/box-audit.py` as a maintained check with its discriminating selftest (it flags `04-copy-mode` and does not flag `06-launchd-path`), and wire it where a run will see it, so the backlog is visible and cannot grow silently again. It must report, never gate, while the count is 41 — a check that starts red on 41 nodes gets switched off, which is the `nushell-module-staging.sh` precedent. | — |
+| `drain-the-backlog` | Classify all 178 open boxes under the 41 `done` nodes as (a) proven elsewhere, (b) genuinely unmet, or (c) obsolete — by evidence, never by reading code, and never touching `state:`. A (b) is a finding and its own node, not an edit here. Sized by the four spot-checks: expect both shapes, and expect nodes with no proof at all. | box-audit-check |
