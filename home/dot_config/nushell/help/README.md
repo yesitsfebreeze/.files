@@ -111,6 +111,7 @@ Measured against a live Neovim (0.12.4), `nvim_get_keymap` does not return the
 | written | returned |
 |---|---|
 | `<leader>ff` | `" ff"` — leader expanded to the actual key |
+| `<space>` | `" "` — and so `<leader><space>` returns two spaces |
 | `<C-h>` | `<C-H>` — the letter is upper-cased |
 | `<A-j>` | `<M-j>` — alt is reported as meta |
 | `<S-h>` | `H` — shift on a letter folds into the letter |
@@ -122,6 +123,13 @@ These files hold the written form, because the manual has to show what you
 press. The drift check must therefore normalize before matching, or every
 control-letter map in the config reads as stale. That failure is silent and
 looks exactly like a real regression.
+
+How much of the resolution these rules carry, measured 2026-08-29 against 61
+global `nvim-map` targets and 217 live maps: raw `lhs` comparison resolves
+**30**, these rules resolve **61**. The `<space>` row was the last one found —
+by `<leader><space>`, which was the single unresolved global target after the
+other six — and it is in the table because a rule that is only in the code is
+a rule the next reader re-discovers by watching a real map read as stale.
 
 One more measured detail: `K` is **not** a global map. Neovim attaches hover
 per buffer on `LspAttach`, while `grn`, `gra`, `grr`, `gri` and `gO` are

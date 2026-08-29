@@ -225,6 +225,7 @@ put("def_lazy", c.defaults.lazy)
 put("def_version", c.defaults.version)
 put("hererocks", c.rocks.hererocks)
 put("colorscheme1", c.install.colorscheme[1])
+put("install_missing", c.install.missing)
 put("disabled", table.concat(c.performance.rtp.disabled_plugins, ","))
 put("lazy_cmd", vim.fn.exists(":Lazy"))
 LUA
@@ -238,6 +239,22 @@ LUA
   ok "R4: defaults.version = false"                  'def_version=false'
   ok "R4: rocks.hererocks = false"                   'hererocks=false'
   ok "R7: install.colorscheme[1] = base16-gruvbox-dark-hard" 'colorscheme1=base16-gruvbox-dark-hard'
+  ok "R6: install.missing = true on an ordinary launch"      'install_missing=true'
+
+  # HELP_CHECK=1 — the drift check's read-only spawn (06-help/04-drift-check).
+  # `help --check` starts this config headless to read nvim_get_keymap, and a
+  # start that installs changes the answer it is being asked for: measured
+  # 2026-08-29, lazy cloned persistence.nvim from the network mid-check
+  # because the lockfile named it and the store did not hold it. Under the
+  # variable, lazy installs nothing and polls nothing — and BOTH directions
+  # are asserted here, because a guard that is always on would silently turn
+  # off the real config's install-on-start.
+  local HE="$W/h.helpcheck.err"
+  HELP_CHECK=1 nv_watch "$H" 10 "$HE" "+luafile $P" +qa > /dev/null
+  hc_ok() { /usr/bin/grep -qxF "$2" "$HE"; chk "$1" $?; }
+  hc_ok "HELP_CHECK=1: install.missing = false (the spawn cannot install)"  'install_missing=false'
+  hc_ok "HELP_CHECK=1: checker.enabled = false (the spawn cannot poll)"     'checker_enabled=false'
+  hc_ok "HELP_CHECK=1: install.colorscheme is otherwise untouched"          'colorscheme1=base16-gruvbox-dark-hard'
   ok "R8: disabled_plugins = exactly the six"        'disabled=gzip,tarPlugin,tohtml,tutor,zipPlugin,netrwPlugin'
   ok "headless: :Lazy is a registered command (exists() == 2)" 'lazy_cmd=2'
 
@@ -306,12 +323,30 @@ LUA
   /usr/bin/grep -q 'No specs found' "$E"
   chk "counterfactual: plugins/ emptied (anchor included) -> 'No specs found' (an empty import module errors)" $?
 
+  # The sed matches `not checking` because that is what the line says since
+  # the HELP_CHECK guard landed; the mutation is the same one either way —
+  # the checker off on an ORDINARY launch.
   R="$W/cf-checker"
   pm_stage "$R" --seed
-  sed -i '' 's/checker = { enabled = true/checker = { enabled = false/' "$R/config/nvim/lua/config/lazy.lua"
+  sed -i '' 's/checker = { enabled = not checking/checker = { enabled = false/' "$R/config/nvim/lua/config/lazy.lua"
+  /usr/bin/grep -qF 'checker = { enabled = false' "$R/config/nvim/lua/config/lazy.lua"
+  chk "counterfactual staging: checker sed'd to a literal false in the COPY" $?
   code="$(nv_watch "$R" 10 "$E" "+luafile $P" +qa)"
   ! /usr/bin/grep -qxF 'checker_enabled=true' "$E"
   chk "counterfactual: checker flipped off -> the checker.enabled check FAILS" $?
+
+  # And the guard itself: with `checking` forced false, HELP_CHECK=1 no longer
+  # turns installing off, which is exactly the state the drift check refuses
+  # to run in. Without this row the guard could be deleted and every check
+  # above would stay green.
+  R="$W/cf-helpcheck"
+  pm_stage "$R" --seed
+  sed -i '' 's/^local checking = .*$/local checking = false/' "$R/config/nvim/lua/config/lazy.lua"
+  /usr/bin/grep -qxF 'local checking = false' "$R/config/nvim/lua/config/lazy.lua"
+  chk "counterfactual staging: HELP_CHECK guard sed'd off in the COPY" $?
+  HELP_CHECK=1 nv_watch "$R" 10 "$E" "+luafile $P" +qa > /dev/null
+  ! /usr/bin/grep -qxF 'install_missing=false' "$E"
+  chk "counterfactual: guard removed -> HELP_CHECK no longer stops installing" $?
 
   R="$W/cf-netrw"
   pm_stage "$R" --seed

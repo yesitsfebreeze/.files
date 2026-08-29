@@ -129,18 +129,64 @@ def _hc_shell_live [] {
 #
 # One headless spawn for the whole check, never one per target: the process is
 # the cost. Every mode the schema admits is dumped in that one run.
+#
+# THE SPAWN OBSERVES, IT NEVER PROVISIONS (R2). A start that installs is a
+# start that changes the answer it is being asked for. Measured 2026-08-29:
+# lazy.nvim git-cloned persistence.nvim from the network in the middle of a
+# check because the lockfile named it and the store did not have it, and the
+# clone chatter on stdout killed the JSON parse. `HELP_CHECK=1` turns
+# lazy's `install.missing` and its update `checker` off
+# (home/dot_config/nvim/lua/config/lazy.lua) — and the dump READS THAT SETTING
+# BACK, so the guard is proven in force on every run instead of assumed.
+#
+# AND EVERY WAY THE DUMP CAN BE DEGRADED RAISES, because a degraded dump is
+# indistinguishable from drift and reads as OUR bug. Four of them, each with
+# its own message: no config at all (Neovim answers with its own 123 defaults
+# — 54 false stales, measured), lazy.nvim not loaded, the install guard not in
+# force, and any declared plugin absent from the store (its maps are simply
+# not there, so every map it provides reads as stale).
 def _hc_nvim_live [] {
     if (which nvim | is-empty) {
         error make {msg: "help --check: nvim is not on PATH — the Neovim surface cannot be introspected"}
     }
+    # THE DUMP GOES TO A FILE, NEVER TO STDOUT. Anything the config or a
+    # plugin prints at startup shares stdout with the payload, and the check
+    # then dies in `from json` on someone else's chatter — which is how the
+    # clone above was found. A file the spawn is handed by env cannot be
+    # written into by a plugin that does not know its name.
+    let dump = (mktemp -t "help-check-nvim-XXXXXX")
     let lua = '
-local o = {}
+local maps = {}
 for _, m in ipairs({"n","v","x","i","o","t","c","s"}) do
   for _, k in ipairs(vim.api.nvim_get_keymap(m)) do
-    o[#o+1] = {mode = m, lhs = k.lhs, desc = k.desc}
+    maps[#maps+1] = {mode = m, lhs = k.lhs, desc = k.desc}
   end
 end
-io.write(vim.json.encode(o))
+-- `missing` is a STRING, not a list: vim.json.encode writes an empty Lua
+-- table as `{}` (an object), which would arrive in nushell as a record and
+-- make `is-empty` mean something different from what it means on a list.
+local missing, installed, install_missing = {}, 0, nil
+local ok, cfg = pcall(require, "lazy.core.config")
+if ok then
+  install_missing = cfg.options.install.missing
+  for name, p in pairs(cfg.plugins) do
+    if (vim.uv or vim.loop).fs_stat(p.dir) then
+      installed = installed + 1
+    else
+      missing[#missing+1] = name
+    end
+  end
+end
+local f = assert(io.open(vim.env.HELP_CHECK_DUMP, "w"))
+f:write(vim.json.encode({
+  maps = maps,
+  n_maps = #maps,
+  lazy = ok,
+  installed = installed,
+  missing = table.concat(missing, " "),
+  install_missing = install_missing,
+}))
+f:close()
 '
     # THE CONFIG MUST BE THERE, AND ITS ABSENCE MUST RAISE. Measured
     # 2026-08-29: with no config on the machine, `nvim --headless` starts
@@ -152,18 +198,45 @@ io.write(vim.json.encode(o))
     if not ($init | path exists) {
         error make {msg: $"help --check: ($init) is missing — the Neovim surface cannot be introspected, and a bare `nvim` would report Neovim's own defaults as drift"}
     }
-    # NO `--clean`. It skips the plugin and site directories, which is the
-    # same silent degradation by a second route: 123 maps instead of 214, and
-    # every plugin-provided map we document reads as stale.
+    # NO `--clean`, AND NO `--noplugin`. Either one skips the plugin and site
+    # directories, which is the same silent degradation by a second route: 123
+    # maps instead of the config's own count, and every plugin-provided map we
+    # document reads as stale. The install guard is an env variable precisely
+    # because the command-line flags that stop plugins loading also stop them
+    # being seen.
     # `complete` captures stdout, stderr and the code together, so nvim's
     # startup chatter never reaches the report. It must wrap the external
     # DIRECTLY — a redirection in between makes it "only works on external
     # commands".
-    let out = (^nvim --headless -c $"lua ($lua)" -c "qa!" | complete)
+    let out = (with-env {HELP_CHECK: "1", HELP_CHECK_DUMP: $dump} {
+        ^nvim --headless -c $"lua ($lua)" -c "qa!" | complete
+    })
     if $out.exit_code != 0 {
-        error make {msg: $"help --check: nvim --headless exited ($out.exit_code)"}
+        rm -f $dump
+        error make {msg: $"help --check: nvim --headless exited ($out.exit_code) — ($out.stderr | str trim)"}
     }
-    $out.stdout | from json
+    if (not ($dump | path exists)) or (($dump | path type) != "file") {
+        error make {msg: "help --check: the headless spawn wrote no keymap dump — nvim started but the check's lua never ran"}
+    }
+    let raw = (open --raw $dump)
+    rm -f $dump
+    if ($raw | str trim | is-empty) {
+        error make {msg: "help --check: the headless spawn wrote an empty keymap dump"}
+    }
+    let j = ($raw | from json)
+    if $j.lazy != true {
+        error make {msg: "help --check: lazy.nvim did not load in the headless spawn — the dump would be Neovim's own defaults, not this configuration"}
+    }
+    if $j.install_missing != false {
+        error make {msg: "help --check: the spawn was allowed to install plugins (lazy `install.missing` is not false) — HELP_CHECK is not being honoured by lua/config/lazy.lua, and a check that provisions cannot be trusted to observe"}
+    }
+    if ($j.missing | is-not-empty) {
+        error make {msg: $"help --check: these plugins are declared but not installed: ($j.missing). Their maps are absent from the dump and would report as stale. Install them first — `nvim --headless \"+Lazy! restore\" +qa` — then re-run the check"}
+    }
+    if $j.n_maps == 0 {
+        error make {msg: "help --check: the headless spawn reported zero global maps, which no working configuration does"}
+    }
+    $j.maps
 }
 
 # ── the allowlist (R6) ──────────────────────────────────────────────────────
@@ -221,7 +294,11 @@ def _hc_resolve [] {
         let want = (_hc_norm_lhs $t.lhs)
         let hit = ($maps | where mode == $t.mode and lhs == $want)
         if ($hit | is-empty) {
-            $findings = ($findings | append {class: "stale", surface: "nvim", kind: "nvim-map", id: $t.id, detail: $"($t.mode) ($t.lhs) -> ($want)"})
+            # The normalized form is QUOTED in the report because leader
+            # normalizes to a space: an unquoted `<leader>w -> " w"` renders as
+            # a stray gap and reads like a formatting bug rather than the key
+            # actually looked up.
+            $findings = ($findings | append {class: "stale", surface: "nvim", kind: "nvim-map", id: $t.id, detail: $"($t.mode) ($t.lhs) -> looked up as '($want)', not in the live dump"})
             continue
         }
         # desc three-state (epic I5): `desc: null` asserts existence only, an
