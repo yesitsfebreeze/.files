@@ -36,9 +36,20 @@ layer does not provide.
 
 ## Blocked on a decision that is not this node's, and not the board's
 
-**Do not add `tmux=tmux` to `PKGS` on the strength of this node alone.**
-Installing a multiplexer on the host is the first irreversible step of a
-change that reverses two invariants: `02-terminal` **I1** ("there is no second
+**Corrected 2026-08-29, and the correction matters because the original
+wording is what this node's `hitl` was priced against.** This paragraph said
+adding the row was "the first irreversible step" of installing a multiplexer
+on the host. **That is wrong, measured:** `PKGS` is consumed at exactly
+`install.sh:291` and `:298`, inside the script's own package step. Adding a
+row installs nothing — it is a declaration a script reads when somebody
+deliberately runs it, and `just cutover` has not run. The Linux lists
+(`APT_PKGS`, `PACMAN_PKGS`, `DNF_PKGS` at :116–:118) are separate strings, so
+a complete declaration is more than one line but no less inert. Found by
+dotfiles-06 and verified here rather than taken on report.
+
+**What actually holds this node is narrower, and it is not blast radius.** It
+is that the board should not extend a direction its own user has not confirmed
+to the session doing the extending. The direction reverses two invariants: `02-terminal` **I1** ("there is no second
 multiplexer") is withdrawn and **I2** loses its second clause, per
 [`tmux-owns-multiplexing-wezterm-keeps-the-chrome`](../../../memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md).
 That memo is `status: decided`, but it was written by a board session on
@@ -50,6 +61,22 @@ daily driver it is has been asked.
 So this node is filed to make the gap visible and to hold the argument, not to
 close it. It implements when either the user confirms the tmux direction, or
 `07-multiplexer` reaches a state where its dependency is unambiguous.
+
+**Corroboration on file, 2026-08-29, and why it is not sufficient here.**
+Session `dotfiles-06` reports putting the direction to the user as a
+three-answer fork and receiving *"Yes, I settled those 14"* — the epic's
+fourteen-answer drill and the I1/I2 reversal, confirmed. It also established
+the gap that made the question necessary: `prds/.transitions.jsonl` shows
+`07-multiplexer` going straight to `open` at 08:50:56 with **no `question`
+transition ever recorded**, so the board never parked on the user and the
+`## Answers` block alone cannot distinguish a session that asked from one that
+did not. That is good evidence and it is recorded here so whoever closes R1
+inherits it. It is not this session's to act on: a peer relaying a user's
+answer is not the user's answer to the session making the edit, and that is a
+rule about who may license a change, not about how large the change is. One
+word from the user in a session that can see it closes R1 — or `dotfiles-06`
+makes the change itself on the direction confirmed to it, which is the same
+outcome with the licence in the right place.
 
 ## Requirements
 - [ ] **R1** — Establish, before any edit, that the tmux direction is settled

@@ -71,7 +71,16 @@ never considered, and it shows up in a diff as a claim someone made.
 
 ## Requirements
 - [ ] **R1** — Implement mention-vs-use so the four clear **without any of
-      them being edited except to declare the mention**. If the chosen
+      them being edited except to declare the mention**. **Three kinds of
+      mention, not one**, and a rule worded around "quoting gate output" misses
+      the third: (i) a report quoting `FAIL RP<n> CARRIER …` verbatim; (ii) a
+      probe note or spec recording the red it hit; (iii) the memo, where the
+      phrase sits inside a sentence about `AGENTS.md`'s **correction** of that
+      wording — a mention of a correction, never of a failure, and it would
+      still be a mention if this gate did not exist. A row-scoped marker covers
+      all three without needing to tell them apart, which is an argument for
+      the marker over any content-sniffing rule. (Third case named by
+      dotfiles-06, whose two files are cases (ii).) If the chosen
       mechanism requires editing another session's files, stop: two of the
       four are `07-multiplexer`'s and are not this board half's to touch. Say
       so and report what those authors would need to add.
