@@ -179,3 +179,78 @@ observation, not on a decision.
 Repaired 2026-08-28 under
 [`doctor-debt-live-nodes`](../../00-delivery/finish-line/doctor-debt-live-nodes/prd.md)
 R2 and R3.
+
+## Questions
+
+Board-frontier drill round, 2026-08-29 — the second such round on this board.
+This node's fork. The `## Blocked` section above names the reason these five
+boxes need a person: *"five things only a human at a GUI WezTerm can see."*
+**That reason was measured this round and it is wrong** — or rather, it is
+true and it is not the blocker.
+
+Measured 2026-08-29, on this machine:
+
+| probe | result |
+|---|---|
+| `grep "key = \"s\"" home/dot_config/wezterm/wezterm.lua` | **:1213**, `SendString("capsule recent\r")` |
+| the same grep against `~/.config/wezterm/*.lua` | **no match** |
+| `wezterm show-keys --lua \| grep -c SpawnCommandInNewTab` | **0** |
+| `command -v capsule` | **nothing** |
+| `ls ~/.cache/capsule/` | **No such file or directory** |
+| `chezmoi source-path` | `/Users/feb/dev/.files/home` — the pre-rebuild repo |
+
+So nobody can press `Ctrl+Shift+S` on this machine and get a picker, human or
+not: the binding is in this repo and is not in the running config, because
+`just cutover` has not run. The five boxes were unrunnable for a reason none
+of them states.
+
+The other half of the measurement is what makes the fork real. `osascript`
+System Events answers `rc=0` — Accessibility is granted — so a *real* GUI
+keystroke can be injected, which is the key path `Ctrl+Shift+S` actually
+travels; `wezterm cli send-text` is not, because it pastes into the pane and
+never reaches the binding layer. `wezterm cli get-text` reads any pane,
+`wezterm start --always-new-process --class <name>` gives an instance that can
+be quit and reopened without touching the session driving it, and Docker is up
+(29.4.0).
+
+### Q1: C.4's real blocker is that the config is not deployed, not that it needs a human. How should the five get run?
+
+1. **Build the harness and run them.** An isolated instance pointed at this
+   repo's config file directly — the `Ctrl+Shift+O` binding already spawns
+   `nu --config <repo> --execute "capsule recent"`, so the nushell half needs
+   no deployment either. Real GUI keys via osascript, the screen read back
+   with `wezterm cli --class <name> get-text`. (recommended)
+2. **Run `just cutover` first, then the user presses the keys.** The boxes are
+   then exactly what they were written to be, with no harness and no caveat.
+3. **Split: close this node on its automated evidence** and move the five to a
+   standing manual node that is nobody's `needs:`.
+
+## Answers
+
+Answered 2026-08-29 by the user, in the board-frontier drill round.
+
+**Q1** — **Build the harness and run them.** All five PASS lines are
+mechanical and readable from `get-text`: a list titled `Recent`, three
+directories newest-first, typing narrows, Enter attaches at `/workspace`, Esc
+leaves a live prompt in the directory picked from, `Ctrl+Shift+T` still a
+plain tab, and a deleted directory gone from `recents.nuon` on the first
+re-open.
+
+**Three conditions the answer carries, so the tick means what it says.**
+
+- **The harness is the grader of record, and the node must say so.** These
+  boxes were written as human checks. Closing them by machine is a change to
+  what they assert, not a discovery that they were always automatable, and the
+  `## Blocked` section's sentence above is amended rather than deleted.
+- **It proves the binding under `--config-file`, not under a deployed tree.**
+  That is a narrower claim than the box's, and the gap is named: `capsule` on
+  `PATH` and the deployed nushell config are supplied by the harness, not by
+  chezmoi. What survives cutover is untested until cutover.
+- **It has side effects on the real machine** — `~/.cache/capsule/recents.nuon`
+  is created and a capsule image is built. Both are the feature's own
+  artifacts and neither exists today.
+
+**`just cutover` is now a visible unmade decision and nothing on the board
+owns it.** Option 2 named it and was not taken, so it is recorded here rather
+than filed: the rebuild's whole point is a machine running this repo, and the
+step that does it has never been scheduled.

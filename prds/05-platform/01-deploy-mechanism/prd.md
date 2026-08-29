@@ -90,3 +90,62 @@ requirement is owned by exactly one node:
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.
+
+## Questions
+
+Board-frontier drill round, 2026-08-29. This node and its sibling
+[`02-package-provisioning`](../02-package-provisioning/prd.md) are the only
+remaining branch of the board not gated behind a human check, and both are
+`open` with every child `done` — so what is left is the requirements and
+acceptance the epic bodies kept for themselves. This node still holds **R7**
+unbuilt, and four of the nine acceptance lines across the two epics name a
+machine neither of us has: *"Fresh clone + `chezmoi apply` on a scratch
+target"*, *"Fresh macOS machine: one `install.sh` run"*.
+
+### Q1: Both epics' acceptance names a fresh macOS machine, and R7 is unbuilt. What ships?
+
+1. **Build R7, then prove what is provable.** Run the idempotence,
+   partial-failure and no-uninstall lines against a scratch `HOME` and a Linux
+   container, and record in the node exactly which macOS-only steps a
+   container could not run. (recommended)
+2. **Hold for a real fresh Mac** or a macOS VM, so the acceptance means what
+   it says at full fidelity.
+3. **Close both epics as rollups** over their `done` children and file the
+   fresh-machine acceptance as its own deferred node.
+
+## Answers
+
+Answered 2026-08-29 by the user, in the board-frontier drill round.
+
+**Q1** — **Build R7, then prove what is provable.**
+
+R7 is the substantive half: `install.sh` runs `:MasonUpdate` once after §1–§4
+have put the tools on `PATH`, so that on an empty `<data>/mason`
+`require("mason-registry").has_package("pyright")` is true without a human
+launching `nvim` first. The reason is the expensive part and is carried from
+[`offline-launch-eats-first-save`](../../00-delivery/corrections/offline-launch-eats-first-save/prd.md):
+mason's launch-time registry refresh is **off**, because it threw out of a
+libuv callback and discarded the first buffer write of an offline session — 6
+of 6 runs on 2026-08-24, file md5 and mtime unchanged, nvim exiting 0. With
+the refresh off nothing creates the catalogue, so `ensure_installed` has no
+server names to resolve.
+
+R7's own trap is written into the requirement and holds: **a check that counts
+network attempts does not prove this**, because zero attempts equally
+describes a mason that is entirely broken. It must be paired with a probe that
+drives the count above zero in the same root.
+
+**What "provable" means here, stated before the run rather than after.** The
+scratch-`HOME`-plus-container path can close idempotence (a second run
+installs nothing and exits 0), the never-abort line (one simulated package
+failure, run completes, exit 0), the no-uninstall non-behavior, and R7 itself.
+It **cannot** close "fresh macOS machine … each resolves on `PATH` afterwards"
+or the Homebrew half of R6, because a Linux container has no `brew` and a
+scratch `HOME` is not a fresh machine. Those lines stay open and say why, and
+the macOS-only steps a container skipped are listed by name — the wave6 manual
+already demands exactly that of H.4's clone-to-prompt run, and the same rule
+applies here.
+
+Sibling: the same answer governs
+[`02-package-provisioning`](../02-package-provisioning/prd.md), whose five
+acceptance lines split the same way.

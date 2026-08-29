@@ -274,7 +274,7 @@ outside-knowledge item it used (`ActivateTab`) it flagged itself as not
 coming from the help text. Graded against the H.5 PASS line this is a pass by
 the letter; the tick in `gates/manual/wave6.md` remains the human's.
 
-## Questions (answered 2026-08-28)
+## Questions (rounds answered 2026-08-28 and 2026-08-29)
 
 Board-frontier drill round, 2026-08-28. This node's fork — the H.5 grade the
 `## Blocked` section above says needs a person.
@@ -296,6 +296,25 @@ Which cost is paid?
 3. **Keep pointer-only** — close H.5 recording that an agent following the
    pointer is saved and an agent in a hurry is not, as an accepted limitation.
 
+### Q2: H.5 blocks six nodes and two uncontaminated sessions have already passed it. Who gets to grade it?
+
+Board-frontier drill round, 2026-08-29. The `## Blocked` section records two
+runs of the reading test, both by sessions that knew nothing about this repo,
+both passing, and both filed with the words *"Evidence, still not a tick."*
+The second ran after commit `0f9f635` changed the `idioms` title, was given
+only the rendered `help` output, prescribed `fd` to locate and `rg` to search,
+credited the idioms line for both, and named no `grep`, `find` or `fzf`
+anywhere. That is the PASS line met verbatim, twice.
+
+1. **Tick on the filed evidence** — record the transcript as the grade, name
+   who set the run up, and close the node. (recommended)
+2. **The user runs a third themselves**, and the two filed runs become
+   corroboration rather than the grade.
+3. **Withdraw H.5 entirely** — a check only an outsider can run is not a gate
+   this board owns; close on the automated surface and accept that the manual
+   ships with no first-contact test.
+
+
 ## Answers
 
 **Q1** — **Derive the names from the corpus at render time.** The work is
@@ -308,6 +327,20 @@ This settles the fourth acceptance box, so **the H.5 grade is no longer what
 blocks this node**; the derived-tools node is. The two deviations recorded
 above stand unchanged, and R1–R6 stay `[x]` — the interface itself was never
 the thing in question.
+
+**Q2** *(answered 2026-08-29)* — **Tick on the filed evidence.** The second
+run is the grade of record: post-`0f9f635`, uncontaminated, given only the
+rendered `help` output, and meeting the PASS line's named tools exactly.
+
+**What the tick does not claim.** The box says *"Why a human sets it up"*, and
+the human who set both runs up was the orchestrator — so the independence
+being relied on is the *subject* session's, never the grader's. That is the
+weaker of the two properties the box was written to get, and it is the one on
+file. It is recorded here rather than smoothed over, because the next reader
+deserves to know which half was proven: an uncontaminated subject, graded
+against a list written in advance precisely so the grade could not be argued
+with.
+
 
 ## Implementer run, 2026-08-28 — spec01 re-measured end to end
 

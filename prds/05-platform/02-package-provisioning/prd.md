@@ -69,3 +69,22 @@ carry it.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.
+
+## The sibling's answer, applied here
+
+**Deliberately not `## Answers`.** No round was put on this node, and a bare
+`## Answers` heading here would be an answer to a question nobody wrote down —
+the defect `pearde questions check` names and the one the board's own rule
+forbids. The fork was put once, on the sibling epic, because *"one round for
+the board, never one per PRD"*: see
+[`01-deploy-mechanism`](../01-deploy-mechanism/prd.md) `## Questions` Q1 and
+its answer.
+
+The answer — **build R7, then prove what is provable** — for this node that means
+the second, third and fourth acceptance lines close against a scratch `HOME`
+plus a Linux container — a second run installing nothing and exiting 0, a
+removed tool staying installed, and one simulated package failure completing
+the run with a warning. The first ("Fresh macOS machine … each resolves on
+`PATH` afterwards") and the fifth (the Neovim 0.11 floor, which the container
+can only prove for its own platform) stay open, with the macOS-only steps
+listed by name rather than assumed.
