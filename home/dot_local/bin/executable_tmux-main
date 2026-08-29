@@ -1,0 +1,46 @@
+#!/bin/sh
+# tmux-main — the one way into this environment's tmux session.
+#
+# prds/07-multiplexer/01-session-and-windows owns this. It exists so the
+# spelling of the attach lives in exactly one place: WezTerm's default_prog
+# (07-multiplexer/08-wezterm-reduction), an ssh login, and anything else that
+# wants the session all say `tmux-main` rather than repeating the flags and
+# drifting apart.
+#
+# `new-session -A -s main` is idempotent by construction: it attaches to
+# `main` if it exists and creates it if it does not. That is what makes the
+# session outlive the terminal — quitting the emulator leaves the server
+# running, and reopening it is the same gesture as opening it the first time.
+#
+# `-c "$HOME"` is Q14, and it is NOT decoration. Measured on tmux 3.7c: a
+# `new-window` with no `-c` inherits the SESSION's working directory, not the
+# active pane's. So the session being created at $HOME is the whole mechanism
+# by which a lazily created window (02-key-tables' `F5 <digit>`) starts at ~.
+# `-c` is read only when the session is CREATED; on an attach it is ignored,
+# which is correct — the session keeps the directory it was born with.
+#
+# POSIX sh, not nushell: this runs before nushell exists in the process tree,
+# and on a remote it may run where nushell is not installed at all.
+set -u
+
+if ! command -v tmux >/dev/null 2>&1; then
+    # No tmux, no multiplexer — but a terminal that opens and immediately
+    # closes is the worst possible failure here (WezTerm's exit_behavior
+    # leaves a pane you cannot type into). Say why, then hand over the shell
+    # so the machine is still usable while somebody installs tmux.
+    echo "tmux-main: tmux is not installed; falling back to a plain shell." >&2
+    echo "tmux-main: install it — tmux is a hard dependency of this config." >&2
+    # The same three obligations tmux.conf's default-command carries, for
+    # the same reasons: resolve nu on PATH, export XDG_CONFIG_HOME BEFORE the
+    # exec (it is a launch-time constant in nushell — see tmux.conf), and
+    # fall back to a shell that exists rather than to nothing.
+    XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+    export XDG_CONFIG_HOME
+    if command -v nu >/dev/null 2>&1; then
+        exec nu --config "$XDG_CONFIG_HOME/nushell/config.nu" \
+                --env-config "$XDG_CONFIG_HOME/nushell/env.nu"
+    fi
+    exec "${SHELL:-/bin/sh}"
+fi
+
+exec tmux new-session -A -s main -c "$HOME" "$@"

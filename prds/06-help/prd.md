@@ -57,7 +57,7 @@ targets — enforced in `tests/help-content-model.nu`, whose
   | state | meaning to the drift check |
   |---|---|
   | field absent | compare the live `desc` against this entry's `title` |
-  | `desc: null` | the live map carries **no** description on purpose — assert existence only, never a mismatch (14 targets do this today) |
+  | `desc: null` | the live map carries **no** description on purpose — assert existence only, never a mismatch (**7** targets do this, measured 2026-08-29; this cell read 14 until then) |
   | `desc: "text"` | the live map's description must equal that string |
 
   Two rules follow, and the second is the one that keeps the first honest:
@@ -69,11 +69,18 @@ targets — enforced in `tests/help-content-model.nu`, whose
   - An **omitted** `desc` means "compare against `title`", so omitting one
     for a map that *does* carry a description live is a defect, not an
     exemption. This clause is what stops I5 being read as a licence to skip
-    the field. It bites today: four `nvim-map` targets recorded in
+    the field. **The four failures this bullet promised do not exist.**
+    Corrected 2026-08-29: it named four `nvim-map` targets from
     `use-review.nuon`'s header (`gd and gI`, `<leader>rn and <leader>ca`)
-    omit `desc` where the live maps set `LSP: …` strings — four drift-check
-    false failures waiting. They belong to the content files and to
-    [04-drift-check](04-drift-check/prd.md), not to this epic.
+    that omit `desc` where the live maps set `LSP: …` strings, and called
+    them "four drift-check false failures waiting". The `04-drift-check`
+    analyst built the check and measured the live corpus: `desc` **absent 0**,
+    **null 7**, **explicit 59**, and **zero** desc mismatches. The record does
+    not say whether the corpus was fixed after this was written or the count
+    was never right. The clause above still binds — an omitted `desc` on a map
+    that carries one live is still a defect — but no child inherits an
+    exception for four targets that are not there. See
+    [`an-invariant-naming-a-defect-must-be-re-measured`](../memos/an-invariant-naming-a-defect-must-be-re-measured-before-a-child-inherits-it.md).
 
   Maps that are not ours at all — Neovim's bundled matchit plugin, eight of
   the twelve — are not an exemption but out of scope, covered by

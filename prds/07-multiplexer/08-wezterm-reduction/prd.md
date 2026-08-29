@@ -42,6 +42,30 @@ needs:
 
 The cutover, in one change (Q8): `default_prog` attaches tmux, `enable_tab_bar = false`, F5 and F6 unbound, and roughly 470 lines go — the `reconcile_tabs` floor, the occupied/empty tint, the F5 table, the derived tab bar and the clock. What stays is the local chrome: font, grid centering, opacity and blur, the launchd PATH seeding, the capsule `SendString` keys. Three tests retire and `wezterm-launchd-path.sh` keeps everything but its `default_prog` assertions. I5 still binds what remains, and `gates/wezterm-config-fields.sh` keeps running. Also lands the cross-cutting edits: I1 and I2 amended in `02-terminal`, the six children marked superseded or amended, and `prds/README.md` and `AGENTS.md` brought in line — the 2026-08-20 shell-side multiplexer stays excluded, for a reason that now needs restating rather than repeating.
 
+## Constraint — the two capsule keys are named, not implied
+
+`Ctrl+Shift+S` and `Ctrl+Shift+O` survive this reduction. They are the capsule
+recents picker, and the prose clause "the capsule `SendString` keys" above is
+not enough to hold them, because what rests on those two keys is specific and
+already `done`:
+
+- [`01-capsule/04-recent-workspaces`](../../01-capsule/04-recent-workspaces/prd.md)
+  R2 and R3, and three of its acceptance boxes.
+- The five C.4 rows in `gates/manual/wave4.md`, ticked on real hardware on
+  2026-08-29.
+- `tests/capsule-recents-gui.sh`, which drives both keys through a real GUI
+  WezTerm (35 run, 35 passed).
+- `tests/capsule-recents.sh --keys`, which asserts the **compiled** WezTerm key
+  table verbatim and goes red the moment either key moves.
+
+So the implementer of this node deletes F5, F6 and the tab machinery and leaves
+those two bindings exactly where they are, and `tests/capsule-recents.sh --keys`
+staying green is a check on this node, not a coincidence. Recorded 2026-08-29
+after the session holding `01-capsule` raised it: the dependency is real and is
+deliberately **not** in this node's `needs:` — `04-recent-workspaces` is already
+`done`, so a `needs:` edge would gate nothing. A named constraint is what a
+finished-but-load-bearing sibling gets instead.
+
 <!-- Three more headings exist, and none of them is a slot to copy down. Each
      is a claim about the state of this PRD, so an empty copy of it is a false
      one: an empty `## Questions` stops the board on nothing, an empty

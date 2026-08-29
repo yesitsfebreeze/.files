@@ -1,5 +1,5 @@
 ---
-state: open
+state: done
 priority: 8
 est:
 mode: hitl
