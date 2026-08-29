@@ -42,7 +42,7 @@ config under one root.
       for. The reason is the expensive knowledge; the pipeline was only the
       shape it happened to take.
 
-- [ ] **R7** — **Seed mason's registry during the install, not on launch.**
+- [x] **R7** — **Seed mason's registry during the install, not on launch.**
       `install.sh` runs `:MasonUpdate` once, after §1–§4 have put the tools on
       PATH and before anything depends on a language server being
       installable. This exists because
@@ -59,6 +59,34 @@ config under one root.
       the run that installed it. The trade, its measurements and the roads not
       taken are recorded in
       [`mason-refresh-off-trades-auto-bootstrap`](../../memos/mason-refresh-off-trades-auto-bootstrap.md).
+
+      **Built 2026-08-29 as `home/run_after_seed-mason-registry.sh`, not as a
+      line in `install.sh`, and the deviation is the finding.** R7's sentence
+      places `:MasonUpdate` "after §1–§4" — and **§4 IS `chezmoi apply`**, so
+      taken literally R7 puts a command after the last line of the script.
+      `tests/provisioning.sh` asserts that line is last (*"shape/fresh: 'DRY
+      chezmoi apply' is the LAST DRY line (epic I1)"*), and writing R7
+      literally turned it red; measured 2026-08-29.
+
+      The epic's **I1** settles it and is why a `run_after` is the right
+      shape rather than a workaround: *"Apply-time, not launch-time. Anything
+      that costs milliseconds at shell start is generated during `chezmoi
+      apply` instead."* A `run_after` IS apply time, it runs inside the same
+      `install.sh` invocation that put the tools on PATH, and
+      `run_after_generate-shell-init.sh` sits beside it doing the same job.
+
+      **Gated on `MASON_SEED`, which `install.sh` exports.** A registry-absent
+      guard alone was not enough: a scratch target has no registry, so the
+      guard opened and a full `Lazy! sync` ran inside `tests/deploy-skeleton.sh`'s
+      apply, which went red with *"apply: no README.md in the target"*. Off by
+      default keeps `rr` — `chezmoi update --force`, a command meant to be
+      cheap — and every gate's scratch apply inert. Both gates green after:
+      `tests/provisioning.sh` 115 PASS / 0 FAIL, `tests/deploy-skeleton.sh`
+      no FAIL.
+
+      **Not yet run against a cold `<data>/mason`.** The seeding path itself
+      is unexecuted — that is the fourth acceptance box below, and it stays
+      open.
 
       A check that only counts network attempts does **not** prove this: zero
       attempts also describes a mason that is entirely broken. Pair it with a

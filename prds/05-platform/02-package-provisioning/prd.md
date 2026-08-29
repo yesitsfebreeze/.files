@@ -60,10 +60,22 @@ carry it.
 - [ ] A second `install.sh` on an already-provisioned machine installs
       nothing and exits 0 — the guards, not a hash gate, are what make it
       cheap to re-run.
-- [ ] Removing a tool from the installer's list does not uninstall it
+- [x] Removing a tool from the installer's list does not uninstall it
       (documented non-behavior, so nobody expects convergence).
-- [ ] Simulating one failed package still completes the run, with a warning:
+
+      Proven by absence, which is the only way a non-behavior can be proven:
+      `grep -inE "uninstall|brew (remove|rm)|apt-get remove|cargo uninstall"
+      install.sh` matches **nothing** (2026-08-29). There is no removal path
+      to reach, so a name dropped from `PKGS` cannot uninstall anything.
+- [x] Simulating one failed package still completes the run, with a warning:
       the script never aborts on a package it could not install, and exits 0.
+
+      `bash tests/provisioning.sh` (2026-08-29, 115 PASS / 0 FAIL):
+      `shape/fail: with INSTALL_DRY_FAIL=install the run still exits 0 (R5)`,
+      `shape/fail: at least one !! warn line (got 27)`, and
+      `shape/fail: still reaches chezmoi apply` — the run is not merely
+      non-fatal, it gets all the way to §4. The `set` line is asserted to
+      carry `u` and `o pipefail` and deliberately NOT `e`.
 - [ ] Neovim floor holds: on a machine whose `nvim` is older than 0.11 (or
       absent), the run leaves a `nvim` on `PATH` at 0.11 or newer.
 
