@@ -111,13 +111,24 @@ prds/
 │   │   ├── homebrew-bootstrap/         run_once homebrew bootstrap
 │   │   └── packages-installer/         packages.yaml + run_onchange installer
 │   └── 03-shell-init-generation/       C3 U9 V6 · Shell-init generation
-└── 06-help/                            `help` — the environment manual
-    ├── 01-content-model/               C4 U9 V5 · Content model
-    │   └── coverage/                   every surface covered; verify targets resolve
-    ├── 02-help-command/                C5 U9 V4 · The `help` command
-    ├── 03-browser/                     C3 U7 V4 · Fuzzy browser
-    ├── 04-drift-check/                 C5 U8 V3 · Drift check
-    └── 05-agent-interface/             C3 U8 V5 · Agent interface
+├── 06-help/                            `help` — the environment manual
+│   ├── 01-content-model/               C4 U9 V5 · Content model
+│   │   └── coverage/                   every surface covered; verify targets resolve
+│   ├── 02-help-command/                C5 U9 V4 · The `help` command
+│   ├── 03-browser/                     C3 U7 V4 · Fuzzy browser
+│   ├── 04-drift-check/                 C5 U8 V3 · Drift check
+│   └── 05-agent-interface/             C3 U8 V5 · Agent interface
+└── 07-multiplexer/                     C7 U9 V2 · tmux — the portable layer
+    ├── 01-session-and-windows/         one `main` session, stable indices, the
+    │                                   terminal-integration floor
+    ├── 02-key-tables/                  F4 split · F5 window/pane · F6 theme
+    ├── 03-status-bar/                  digits, occupied tint, host, cwd, clock
+    ├── 04-palette-delivery/            tinty → OSC + tmux colors.conf
+    ├── 05-copy-and-clipboard/          copy-mode-vi, the c-cycle, OSC 52
+    ├── 06-nvim-session/                something for resurrect to restore
+    ├── 07-persistence/                 resurrect + continuum, cloned by install.sh
+    ├── 08-wezterm-reduction/           the cutover; WezTerm keeps local chrome
+    └── 09-manual-entries/              terminal.nuon on tmux bindings
 ```
 
 ## Build order
@@ -148,6 +159,18 @@ the dependency graph permits, not a preference.
 16. H.1c
 
 Bold is `hitl` — a person answers it; an agent must not.
+
+`07-multiplexer` carries no `task:` ids and is deliberately absent from the
+waves above: those were folded from the retired `.mi/gantt/plan.json`, and
+inventing ids to extend a generated list is how a summary starts lying about
+where it came from. Its order is its own `needs:` graph —
+`01-session-and-windows` first, then `02`–`05` in parallel, `08` after all
+four, with `06`/`07` on their own thread — and
+`python3 ~/dev/infra/pearde/resources/pearde.py plan` is the operational
+answer for the whole board. The epic reverses `02-terminal` **I1** and half of
+**I2**; the argument is in
+[`memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome`](memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md),
+not here.
 
 ## Excluded
 

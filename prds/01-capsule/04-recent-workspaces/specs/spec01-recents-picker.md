@@ -183,13 +183,42 @@ chmod +x "$M/bin/tv"
 echo "--- store after prune:"; cat "$M/home/.cache/capsule/recents.nuon"
 echo "--- tv argv:"; cat "$M/tv.log"
 
-# the guard fires before tv
+# The guard fires before tv.
+#
+# `capsule recent` is EXPECTED to exit non-zero here — that is the assertion.
+# The runner executes these blocks under `set -e -o pipefail` (reproduced
+# 2026-08-29: the same block is rc 0 under plain bash and rc 1 under
+# `bash -e -o pipefail`, which is what `pearde collect` reported), so the
+# expected failure has to be caught rather than left to abort the block. An
+# `if` that fails when the command SUCCEEDS is the honest shape: it says the
+# guard not firing is the defect.
 : > "$M/tv.log"
-/usr/bin/env -i HOME="$M/home" PATH="$M/bin:/opt/homebrew/bin:/usr/bin:/bin" \
-  TVLOG="$M/tv.log" nu -n --no-history -c "source $PWD/$CAP; capsule recent" 2>&1 | head -3
+if /usr/bin/env -i HOME="$M/home" PATH="$M/bin:/opt/homebrew/bin:/usr/bin:/bin" \
+     TVLOG="$M/tv.log" nu -n --no-history \
+     -c "source $PWD/$CAP; capsule recent" > "$M/guard.out" 2>&1
+then
+  echo "GUARD DID NOT FIRE — capsule recent succeeded without a TTY"; false
+fi
+head -3 "$M/guard.out"
 echo "--- tv argv after the guard (must be empty):"; cat "$M/tv.log"
+test ! -s "$M/tv.log"
 
-# C.2's file-wide constraints and its own gate
-/usr/bin/grep -cwE 'cd' "$CAP"; /usr/bin/grep -cF 'just ' "$CAP"
-bash tests/capsule-lifecycle.sh --tree | /usr/bin/grep -c '^FAIL'
+# C.2's file-wide constraints and its own gate.
+#
+# Each count is wrapped in `test`, and that is not decoration. `grep -c`
+# EXITS 1 WHEN THE COUNT IS ZERO — which is the correct answer for all three —
+# so the block used to end on a non-zero status while every assertion in it
+# held, and `pearde collect` refused the node on it (measured 2026-08-29).
+# The exit code was reporting "grep found nothing", not "the check failed".
+# Wrapped, the printed number stays visible and the STATUS says what the block
+# actually decided.
+# `|| true` on every count: the assignment and the substitution INHERIT the
+# pipeline's status under `set -e`, and grep exits 1 on the zero we want.
+cd_n="$(/usr/bin/grep -cwE 'cd' "$CAP" || true)"
+just_n="$(/usr/bin/grep -cF 'just ' "$CAP" || true)"
+fail_n="$(bash tests/capsule-lifecycle.sh --tree | /usr/bin/grep -c '^FAIL' || true)"
+echo "cd count:   $cd_n"
+echo "just count: $just_n"
+echo "FAIL count: $fail_n"
+test "$cd_n" = 0 && test "$just_n" = 0 && test "$fail_n" = 0
 ```

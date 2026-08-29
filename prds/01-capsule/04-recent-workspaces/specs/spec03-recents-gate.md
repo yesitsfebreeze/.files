@@ -148,8 +148,19 @@ C.4 sits.
 ```sh
 cd "$(git rev-parse --show-toplevel)"
 bash tests/capsule-recents.sh; echo "exit=$?"
-bash tests/capsule-recents.sh --tree     | /usr/bin/grep -c '^FAIL'
-bash tests/capsule-recents.sh --keys     | /usr/bin/grep -c '^FAIL'
-bash tests/capsule-recents.sh --hermetic | /usr/bin/grep -c '^FAIL'
+
+# Each FAIL count is printed AND asserted, because `grep -c` EXITS 1 WHEN THE
+# COUNT IS ZERO — which is the answer these three want. The runner executes
+# this block under `set -e -o pipefail` (reproduced 2026-08-29), so a bare
+# `| grep -c '^FAIL'` aborted the block on its own success and `pearde collect`
+# refused the node on it. The number stays visible; the STATUS now says what
+# the block decided rather than what grep happened to find.
+for stage in --tree --keys --hermetic; do
+  # `|| true` because the assignment INHERITS the pipeline's status under
+  # `set -e`, and grep exits 1 on the zero it is looking for.
+  n="$(bash tests/capsule-recents.sh "$stage" | /usr/bin/grep -c '^FAIL' || true)"
+  echo "$stage FAIL count: $n"
+  test "$n" = 0
+done
 bash tests/capsule-lifecycle.sh | tail -2
 ```

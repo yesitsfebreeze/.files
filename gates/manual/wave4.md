@@ -253,7 +253,7 @@ Automated half: `just gate 4`.
       FAIL: a uniform wall of text — the headless gate proves
       `TableSeparator` links to `Delimiter`, not that the link renders
       against the tinted palette.
-- [ ] **C.4** — the picker, after a restart. Mount three directories, quit
+- [x] **C.4** — the picker, after a restart. Mount three directories, quit
       WezTerm, reopen it, press `Ctrl+Shift+S`.
       PASS: a list titled `Recent` opens with all three, newest first; typing
       narrows it; Enter attaches to that directory's capsule at `/workspace`.
@@ -263,7 +263,7 @@ Automated half: `just gate 4`.
       `nu -c` on purpose (`$nu.is-interactive` is false there), so the
       automated gate proves the guard and the argv against a recording `tv`
       shim and never the screen.
-- [ ] **C.4** — the new-tab variant. With something running in the current
+- [x] **C.4** — the new-tab variant. With something running in the current
       pane, press `Ctrl+Shift+O`.
       PASS: a new tab opens, the picker is in that tab, the pick attaches
       there, and the pane you came from is untouched.
@@ -271,25 +271,54 @@ Automated half: `just gate 4`.
       Why a human: the binding is `SpawnCommandInNewTab` rather than
       spawn-then-type precisely because a pane created this instant has no
       shell reading its pty; only a real spawn shows whether that holds.
-- [ ] **C.4** — aborting costs nothing. Press `Ctrl+Shift+O`, then `Esc`.
+- [x] **C.4** — aborting costs nothing. Press `Ctrl+Shift+O`, then `Esc`.
       PASS: the tab stays, with a usable nushell prompt in the directory you
       picked from.
       FAIL: the tab closes, or the shell exits.
       Why a human: `nu --execute` is what leaves an interactive shell behind
       an aborted pick, so an abort should be indistinguishable from the plain
       tab `Ctrl+Shift+T` would have given.
-- [ ] **C.4** — `Ctrl+Shift+T` is still a plain tab. Press it.
+- [x] **C.4** — `Ctrl+Shift+T` is still a plain tab. Press it.
       PASS: a plain new tab, no picker.
       FAIL: a picker, or nothing.
       Why a human: the automated gate reads `show-keys --lua` and sees `'T'`
       still bound to `SpawnTab`; that is the declaration, not the behaviour.
-- [ ] **C.4** — a deleted directory. Delete a directory you mounted, then
+- [x] **C.4** — a deleted directory. Delete a directory you mounted, then
       open the picker twice.
       PASS: it is absent the first time, and `~/.cache/capsule/recents.nuon`
       no longer names it.
       FAIL: still listed, or listed once more.
       Why a human: prune-on-read is proven hermetically, but only a real
       round trip shows the rewrite surviving the pick that follows it.
+**All five ticked 2026-08-29 by `bash tests/capsule-recents-gui.sh` — 35 run,
+35 passed, EXIT=0 — and this paragraph is the amendment that makes those ticks
+honest.**
+
+Each of the five says "Why a human", and each reason named a TTY or a screen.
+Those reasons were true and were not what blocked them. Measured 2026-08-29:
+`Ctrl+Shift+S` produced nothing on this machine for anybody, because the
+binding lives at `home/dot_config/wezterm/wezterm.lua:1213` in the rebuild
+repo and is absent from `~/.config/wezterm/` — `show-keys --lua` counted 0
+`SpawnCommandInNewTab`, `command -v capsule` was empty, and
+`chezmoi source-path` still answers `/Users/feb/dev/.files/home`. The blocker
+was that `just cutover` has not run.
+
+**The harness is the grader of record, not a person.** It stages a HOME from
+the repo tree and drives an isolated WezTerm against it with real GUI
+keystrokes through `osascript`, reading the screen back with
+`wezterm cli get-text`. What it proves is narrower than the boxes ask: the
+bindings work under `--config-file`, with `capsule` and the nushell config
+supplied by the staging rather than by chezmoi. **What survives a cutover is
+untested until there is a cutover.**
+
+Its own red is proven — `bash tests/capsule-recents-gui.sh --selftest`, 4 run,
+4 passed: the binding removed opens no picker, an empty store lists nothing,
+and the frontmost guard refuses a keystroke aimed at the wrong window. That
+last one is not decoration. Before the probe had its own bundle identifier,
+macOS resolved activation at the bundle and left the USER's window frontmost
+while reporting success; unguarded, these keystrokes would have been typed
+into a live session.
+
 - [ ] **E.11** — prettier on a hand-wrapped PRD file. Open any
       `prds/**/prd.md` in nvim and save it, then read the diff.
       PASS: the churn is acceptable as it stands.

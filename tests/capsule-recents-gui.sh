@@ -251,6 +251,34 @@ key_until_tabs() {
   return 1
 }
 
+# type_query <pane> <text> <expect> — put exactly <text> in tv's input bar.
+#
+# NOT key_until: retrying a KEYSTROKE appends. Measured 2026-08-29 — a dropped
+# first `beta` made attempt two search `betabeta`, which matches nothing, so
+# the retry could never reach `1 / 1` and the check went red against a picker
+# that filters correctly. Every attempt therefore CLEARS the bar first, and
+# the assertion is on what the screen shows, never on the key having been sent.
+type_query() {
+  local p="$1" q="$2" want="$3" i
+  for i in 1 2 3 4 5; do
+    key 'repeat 40 times
+      key code 51
+    end repeat' >/dev/null 2>&1
+    sleep 1
+    key "keystroke \"$q\"" >/dev/null 2>&1
+    sleep 2
+    text "$p" | grep -qF "$want" && return 0
+  done
+  return 1
+}
+
+# results_count <pane> — how many fixture paths the results panel is showing.
+# `chk_has beta` cannot tell a narrowed list from an unnarrowed one: beta is on
+# screen either way. This is the discriminating form.
+results_count() {
+  text "$1" | grep -oE '/work/(alpha|beta|gamma)' | sort -u | wc -l | tr -d ' '
+}
+
 prompt_ready() { # settle the pane back to an idle nushell prompt
   wez send-text --pane-id "${1:-0}" --no-paste "clear
 " >/dev/null 2>&1
@@ -288,11 +316,11 @@ c4_1_picker_after_restart() {
   local order; order="$(printf '%s\n' "$scr" | grep -oE '/work/(alpha|beta|gamma)' | sed 's#/work/##' | tr '\n' ' ' | sed 's/ $//')"
   chk "1f: newest first — the store's order, on screen" "gamma beta alpha" "$order"
 
-  key_until 0 "1 / 1" 10 'keystroke "beta"' \
-    || { echo "FAIL  1g: typing did not narrow"; FAIL=$((FAIL+1)); }
+  type_query 0 "beta" "1 / 1" || true
   scr="$(text 0)"
   chk_has "1g: typing 'beta' narrows to one"     "1 / 1"            "$scr"
-  chk_has "1h: the one left is beta"             "/work/beta"       "$scr"
+  chk "1h: exactly one fixture path is left on screen" "1" "$(results_count 0)"
+  chk_has "1h2: and the one left is beta"        "/work/beta"       "$scr"
   chk_hasnt "1i: gamma is gone from the results" "/work/gamma"      "$scr"
 
   # Enter attaches. The capsule prompt is the container's zsh at /workspace.
@@ -434,8 +462,17 @@ c4_5_deleted_directory() {
   key_until_tabs "$(( $(tabs) + 1 ))" 'keystroke "t" using {control down, shift down}' || true
   sleep 2
   local p; p="$(panes | tr ' ' '\n' | tail -1)"
+  prompt_ready "$p"
   key_until "$p" "Recent" 15 'keystroke "s" using {control down, shift down}' || true
   local scr; scr="$(text "$p")"
+
+  # THE PICKER MUST BE OPEN BEFORE ANY ABSENCE IS ASSERTED. Measured
+  # 2026-08-29: when the first open silently failed, `chk_hasnt beta` passed —
+  # on a screen with no picker on it at all. An absence check over a blank
+  # screen is a green that means nothing, and this positive assertion is what
+  # stops the next three from being read as evidence.
+  chk_has "5b2: FIRST open — the picker actually opened" "Recent" "$scr"
+
   chk_hasnt "5c: FIRST open — beta is absent" "/work/beta" "$scr"
   chk_has   "5d: FIRST open — gamma is still there" "/work/gamma" "$scr"
   chk_has   "5e: FIRST open — the count is two" "1 / 2" "$scr"
@@ -444,6 +481,7 @@ c4_5_deleted_directory() {
   key 'key code 53' >/dev/null 2>&1; sleep 2
   key_until "$p" "Recent" 15 'keystroke "s" using {control down, shift down}' || true
   scr="$(text "$p")"
+  chk_has "5f2: SECOND open — the picker actually opened" "Recent" "$scr"
   chk_hasnt "5g: SECOND open — still absent, not listed once more" "/work/beta" "$scr"
   chk_has   "5h: SECOND open — still two" "1 / 2" "$scr"
   key 'key code 53' >/dev/null 2>&1
@@ -509,6 +547,24 @@ PY
   kill_probe
 }
 
+# ── epilogue ────────────────────────────────────────────────────────────────
+# This harness drives a GUI and builds containers on the real machine, so it
+# says out loud what it left behind. The live tree is the thing it must never
+# touch: `just cutover` has not run, and a run that quietly deployed this
+# repo's config would be the most expensive possible side effect.
+epilogue() {
+  echo "── epilogue: the live machine"
+  chk "live: ~/.cache/capsule still absent (the store is the staged one)" "absent" \
+      "$([ -e "$HOME/.cache/capsule" ] && echo present || echo absent)"
+  chk "live: ~/.config/wezterm still carries no capsule binding" "0" \
+      "$(grep -l 'capsule recent' "$HOME"/.config/wezterm/*.lua 2>/dev/null | wc -l | tr -d ' ')"
+  chk "live: chezmoi source-path unmoved — this harness performs no cutover" \
+      "/Users/feb/dev/.files/home" "$(chezmoi source-path 2>/dev/null)"
+  drop_stale_capsules
+  local left; left="$(docker ps -aq 2>/dev/null | wc -l | tr -d ' ')"
+  echo "      containers left by this run: none under the stage ($left total on the host)"
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 main() {
   command -v osascript >/dev/null || die "osascript is required"
@@ -530,6 +586,7 @@ main() {
       c4_4_plain_tab
       c4_5_deleted_directory
       kill_probe
+      epilogue
       ;;
   esac
   echo
