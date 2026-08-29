@@ -13,6 +13,7 @@ time:              # OPTIONAL. See @references/parts/order.md
   est:             # the weight, only when complexity is absent. Not a duration
   actual: 10.92h
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
+commit: 7d48eb2
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
