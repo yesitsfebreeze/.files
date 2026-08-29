@@ -29,6 +29,7 @@ footprint:
   - tests/shell-quicklist.sh
   - tests/shell-television.sh
   - tests/shell-zoxide.sh
+commit: 366bf77
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
