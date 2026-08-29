@@ -1,0 +1,57 @@
+diff --git a/gates/manual/wave6.md b/gates/manual/wave6.md
+index ab3104f..221f481 100644
+--- a/gates/manual/wave6.md
++++ b/gates/manual/wave6.md
+@@ -51 +51 @@ record which ones, because on a fresh *Mac* they must all run.
+-- [ ] **H.5** — the reading test, and the only check that measures whether this
++- [x] **H.5** — the reading test, and the only check that measures whether this
+@@ -78,0 +79,19 @@ record which ones, because on a fresh *Mac* they must all run.
++
++      **Ticked 2026-08-29, on the second run, by user decision in the
++      board-frontier drill round.** The grade of record is the post-`0f9f635`
++      session: uncontaminated, given only the rendered `help` output, it
++      prescribed `fd` to locate and `rg` to search, credited the idioms line
++      for both, and named no `grep`, `find` or `fzf` anywhere. That is this
++      box's PASS line met term for term, which is why the line names the tools
++      rather than describing them.
++
++      **What this tick does not claim, and the next reader should not read
++      into it.** The box says *"Why a human sets it up"*, and the human who
++      set up both filed runs was the orchestrator. So the independence relied
++      on here is the **subject session's**, never the grader's — the weaker of
++      the two properties the box was written to obtain, and the only one on
++      file. The stronger one is still available to anyone who wants it: a
++      third run, set up by someone who has not read this repo, graded against
++      the same list. Recorded rather than smoothed over, because a tick that
++      hides which half it proved is the kind of false record this board exists
++      to refuse.
+diff --git a/prds/.transitions.jsonl b/prds/.transitions.jsonl
+index f791247..a8651f6 100644
+--- a/prds/.transitions.jsonl
++++ b/prds/.transitions.jsonl
+@@ -1,0 +2,2 @@
++{"calls": null, "from": "blocked", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:39", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:42", "to": "claimed", "tokens": null}
+diff --git a/prds/06-help/05-agent-interface/prd.md b/prds/06-help/05-agent-interface/prd.md
+index 38184b3..6e3c05f 100644
+--- a/prds/06-help/05-agent-interface/prd.md
++++ b/prds/06-help/05-agent-interface/prd.md
+@@ -2,2 +2,2 @@
+-state: blocked
+-claim:
++state: claimed
++claim: orchestrator 2026-08-29 08:15
+@@ -128 +128 @@ correctly — which finder is installed, how navigation works, what the keys do
+-- [ ] A fresh agent session, given only the output of `help`, can navigate
++- [x] A fresh agent session, given only the output of `help`, can navigate
+@@ -154,0 +155,10 @@ correctly — which finder is installed, how navigation works, what the keys do
++
++      **Closed 2026-08-29 by user decision, on the filed evidence — see this
++      node's `## Answers` Q2 and the amended H.5 row in
++      [`gates/manual/wave6.md`](../../../gates/manual/wave6.md).** The
++      paragraph above stands as written and is not deleted: it is the correct
++      reading of the box, and the tick is a decision to accept the weaker of
++      the two properties it asks for. What is proven is an uncontaminated
++      **subject**, graded against a tool list fixed in advance. What is not
++      proven is an uncontaminated **grader**, and no run on this board can
++      supply that.

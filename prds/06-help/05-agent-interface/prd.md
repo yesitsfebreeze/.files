@@ -1,15 +1,15 @@
 ---
-state: claimed
-claim: orchestrator 2026-08-29 08:15
+state: done
 priority: 8
 est: 1.25h
 task: H.5
-commit: 235e179
+commit: 4475488
 mode: afk
 needs:
   - 06-help/03-browser
   - 00-delivery/finish-line/agent-overview-derived-tools
 verify: "bash tests/help-agent.sh"
+actual: 0.02h
 ---
 
 # Agent interface
@@ -412,3 +412,277 @@ The second acceptance box above is untouched. It is the H.5 reading, owed to
 section routes the change behind it to
 [`agent-overview-derived-tools`](../../00-delivery/finish-line/agent-overview-derived-tools/prd.md) —
 neither is this run's to close.
+
+## Report
+
+spec01-json-and-markdown-renders: exit 0
+── stage --tree: help.nu and shell.nuon as text
+      guard[tree] watching /Users/feb/.config/chezmoi/chezmoi.toml
+      guard[tree] sha256 in       = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[tree] source-path in  = /Users/feb/dev/.files/home
+PASS  tree: help.nu is a regular file in the managed tree
+PASS  tree: this gate's spelled-out MODULES list still equals config.nu's own `source` lines — the list is spelled out for gates/nushell-module-staging.sh's predicate, so it needs its own freshness check
+PASS  tree: _help_norm publishes exactly the eleven documented keys, in order — id key cmd title use topic mode also why verify source
+PASS  tree: …with every optional corpus field materialised as "" or [], never omitted — a consumer that has to tell absent from empty is reading a dump
+PASS  tree: none of the six new defs names `core-help` — it is an ALIAS from config.nu, so under `nu -n` it binds as an external at parse time, and `--md` would shell out to std/help once per command entry
+PASS  tree: --json and --md are in `def help`'s signature with the house trailing `#` comments
+PASS  tree: every `#` in help.nu OPENS a comment — none sits inside a string, and the only ones with code before them are the parameter comments in `def help`'s signature. This is the structural claim tests/shell-help.sh's `strip_comments` rests on, and it is why _help_md builds its markdown headings with `char hash` instead of writing them
+PASS  tree: ONE spine walk — _help_all_table, _help_json and _help_md each iterate _help_spine/_help_spine_grouped and none re-walks _help_corpus, so --all, --json and --md agree BY CONSTRUCTION rather than by three sorts that happen to match
+PASS  tree: ONE host-only literal (R6) — the sentence appears once, in _help_host_only, and both _help_entry_detail and _help_md call it
+PASS  tree: ONE curated-id render — _help_curated is defined once, called twice from _help_overview, and `get title` lives only inside it, so neither block writes a sentence of its own
+PASS  tree: the overview carries BOTH curated blocks — `For agents:` with help --json/help --md/idioms and 06-help/02's untouched `First keys:` with its four ids
+PASS  tree: the go-deeper line APPENDS `· help --json · help --md` after `help --fuzzy` and leaves 06-help/02's exact substring intact — tests/shell-help.sh:539 asserts it with grep -oF, so inserting inside it turns that gate red
+PASS  tree: the existing clause numbering did not move — 1, then the LETTERED 1a/1b renders, then 2,3 … 10 in order, with the corpus-free `--delegate` return above both renders
+PASS  tree: the validation names every rejected flag — --json/--md exclusive, no query, and drop --all/--fuzzy/--entry/--topic/--delegate
+PASS  tree: shell.nuon's `cc [...args]` entry lists `credentials in a capsule` in `also`, which is the ONE value that makes R4's third bullet true — the entry itself stays in `containers`, where it belongs by reader task
+PASS  tree: …and that `also` target really is a live entry id, so 01-content-model's also-resolution check stays green
+      guard[tree] sha256 out      = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[tree] source-path out = /Users/feb/dev/.files/home
+PASS  tree: LIVE chezmoi.toml unchanged (02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1)
+PASS  tree: LIVE chezmoi source-path unchanged (/Users/feb/dev/.files/home)
+── stage --hermetic: a real nushell, a scratch HOME, and NO config.nu
+      guard[hermetic] watching /Users/feb/.config/chezmoi/chezmoi.toml
+      guard[hermetic] sha256 in       = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[hermetic] source-path in  = /Users/feb/dev/.files/home
+PASS  hermetic: precondition: nu is on PATH
+PASS  hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)
+PASS  hermetic: precondition: this gate's spelled-out MODULES list still equals config.nu's own `source` lines
+PASS  hermetic: precondition: python3 is on PATH — the JSON is parsed by a second implementation, not only by nushell's own `from json`
+PASS  hermetic: the machine holds NO config.nu and NO env.nu — that absence IS the no-`core-help` assertion, because `core-help` is an alias only config.nu binds
+PASS  hermetic: `help --json` exits 0 under a bare `nu -n` with only help.nu sourced (rc=0, stderr 0 bytes)
+PASS  hermetic: …and nushell's own `from json` round-trips it back to a record with `topics` and `entries` at the top level
+PASS  hermetic: …and python3's json.load parses the same bytes — one document, two implementations
+PASS  hermetic: .topics | length equals the staged topics.nuon row count — 9, read in this same run and never pinned
+PASS  hermetic: .entries | length equals the staged corpus entry count — 96, counted over the four surface files in this same run
+PASS  hermetic: …and equals `help --all | length`, which is what makes the PRD's "every entry visible in help --all is present in the JSON" a measurement rather than a hope
+PASS  hermetic: every entry's `topic` is one of the spine's own ids — no entry claims a topic the document does not list
+PASS  hermetic: EVERY entry carries exactly the eleven keys id key cmd title use topic mode also why verify source — no twelfth, none missing (0 entries disagree)
+PASS  hermetic: …and `why`/`also` are PRESENT with the right type on entries that carry neither in the corpus — jq '.entries[].why' never hits a missing key
+PASS  hermetic: …and BOTH shapes really occur, so the defaults are exercised rather than merely declared: 34 entries with an empty `why` and 18 with an empty `also`
+PASS  hermetic: every entry carries a non-empty `key` OR a non-empty `cmd` — both are published because which one an entry has is itself information
+PASS  hermetic: NO corpus row index is published — an index shifts whenever an entry is added, and an unstable handle inside a stable interface is worse than no handle
+PASS  hermetic: [.entries[].id] equals `help --all | get key` element for element, so --json and --all cannot disagree about order
+PASS  hermetic: the id carrying an apostrophe is present (1 such entries) with non-empty `use`, `why` and `source` — 03-browser had to address a row index for this id; here the document is complete instead
+PASS  hermetic: `help --md` exits 0 under the same bare `nu -n` (rc=0, stderr 0 bytes, 1183 lines)
+PASS  hermetic: …opening with an H1 and one line saying `help --json` is the same content, and NO count in it
+PASS  hermetic: …one `## ` heading per topic in spine order, matching the staged spine's own id sequence
+PASS  hermetic: …one `### <id>` per entry, 96 of them, and the id is UNQUOTED and UNBACKTICKED — one live id carries an apostrophe and no id needs fencing to survive markdown
+PASS  hermetic: …and the host-only marker on EXACTLY the `mode: "terminal"` entries — 16 of them, counted from the staged corpus in this run (R6: marked, never hidden)
+PASS  hermetic: …and NO `std/help` tail anywhere in the document — `core-help` is unbound here, and 28 command-kind entries would mean 28 shell-outs
+PASS  hermetic: …every entry's `mode:` and `source:` lines are rendered, one per `### ` heading
+PASS  hermetic: `help --json --mode nvim` narrows to the nvim subset — 29 of 96 entries, every one of them nvim*
+PASS  hermetic: …while `topics` stays the whole spine, so a filtered document still names the topics its entries claim
+PASS  hermetic: `help --md --mode nvim` renders the SAME subset — 29 `### ` headings against --json's 29 entries — and skips every topic the filter emptied (2 of 9 headings remain)
+PASS  hermetic: `help --json --mode tmux` exits non-zero (rc=1) and the message names the four surfaces it does take
+PASS  hermetic: `help --md --mode tmux` exits non-zero (rc=1) and the message names the four surfaces it does take
+PASS  hermetic: `help --json ctrl-r` exits non-zero (rc=1) with a message naming `--json`
+PASS  hermetic: `help --md ctrl-r` exits non-zero (rc=1) with a message naming `--md`
+PASS  hermetic: `help --json --md` exits non-zero (rc=1) with a message naming `--md`
+PASS  hermetic: `help --json --all` exits non-zero (rc=1) with a message naming `--all`
+PASS  hermetic: `help --md --fuzzy` exits non-zero (rc=1) with a message naming `--fuzzy`
+PASS  hermetic: `help --json --entry ls` exits non-zero (rc=1) with a message naming `--entry`
+PASS  hermetic: `help --md --topic find` exits non-zero (rc=1) with a message naming `--topic`
+PASS  hermetic: `help --json --delegate ls` exits non-zero (rc=1) with a message naming `--delegate`
+PASS  hermetic: R3 `help --json` carries no 0x1b byte under capture (first ESC at index -1)
+PASS  hermetic: R3 `help --md` carries no 0x1b byte under capture (first ESC at index -1)
+PASS  hermetic: R3 `help (bare)` carries no 0x1b byte under capture (first ESC at index -1)
+PASS  hermetic: bare `help` exits 0 with an empty stderr (rc=0) — no flag, no argument, which is what AGENTS.md tells an agent to run
+PASS  hermetic: DISCOVERY — bare `help` names `help --json`, `help --md` and `idioms` each with that entry's CORPUS title, the four first keys with theirs, all 9 topics with computed counts, and both new flags appended to the go-deeper line. This is the check this node exists for: before it, an agent that ran `help` once never saw `idioms` at all
+PASS  hermetic: INFORMING — the overview's `idioms` line NAMES 4 of the 8 bare words that entry's own `use` backticks (rg fd find tv), at or above the floor of 3. H.5 found the `For agents:` block ROUTED and did not INFORM; this is the check that holds that fix, and it types no tool name — both sides are read from the staged corpus
+PASS  hermetic: …and neither render TYPES one — none of those bare words appears word-bounded in `_help_curated` or `_help_overview`, so the line informs FROM the corpus and there is still exactly one place those names live
+PASS  hermetic: with the corpus renamed away, `help --json` raises (rc=1) naming the resolved path and `chezmoi apply` — it never renders an empty manual, which is the most expensive wrong answer help can give
+PASS  hermetic: with the corpus renamed away, `help --md` raises (rc=1) naming the resolved path and `chezmoi apply` — it never renders an empty manual, which is the most expensive wrong answer help can give
+PASS  hermetic: …while `help --delegate ls` still returns at clause 1 BEFORE any corpus read — with the corpus gone it fails on the unbound `core-help` alias (rc=1) and names no corpus path, so the escape hatch is corpus-free. Its rc-0 half needs a config.nu and belongs to tests/shell-help.sh
+── counterfactuals: each mutation hashed, red before repair, hashed back
+      CF use-renamed-to-usage: sha db54c04f19cd -> cf0ea4ca2e3f
+PASS  cf: use-renamed-to-usage really changed the copy — a claimed mutation is not a made one
+PASS  hermetic: CF use-renamed-to-usage FAILS norm_keys_ok in tests/help-agent.sh — the eleven-key list is an INTERFACE, and a rename is a breaking change that has to be recorded in the PRD's field list
+PASS  hermetic: …and the RUN agrees rather than the text alone: every one of the 96 entries the mutated copy emits disagrees with the published key set
+      CF use-renamed-to-usage repaired: sha db54c04f19cd (want db54c04f19cd)
+PASS  cf: use-renamed-to-usage repaired — the sha is back
+      CF md-calls-core-help: sha db54c04f19cd -> b43bae555bb8
+PASS  cf: md-calls-core-help really changed the copy — a claimed mutation is not a made one
+PASS  hermetic: CF md-calls-core-help FAILS no_core_help_ok in tests/help-agent.sh — `core-help` is an ALIAS defined in config.nu, so with no config loaded the name binds as an EXTERNAL at parse time
+PASS  hermetic: …and the mutated copy really dies when RUN, which is what makes the text check above proof rather than decoration: `help --md` under `nu -n` exits non-zero on the unbound alias
+      CF md-calls-core-help repaired: sha db54c04f19cd (want db54c04f19cd)
+PASS  cf: md-calls-core-help repaired — the sha is back
+      CF go-deeper-drops-help--json: sha db54c04f19cd -> 295521200761
+PASS  cf: go-deeper-drops-help--json really changed the copy — a claimed mutation is not a made one
+PASS  hermetic: CF go-deeper-drops-help--json FAILS go_deeper_ok in tests/help-agent.sh — the flags are APPENDED to 06-help/02's line, so losing one is visible in the text
+PASS  hermetic: …and the rendered overview FAILS the discovery check too — the mutated copy prints an overview that never names `help --json`
+      CF go-deeper-drops-help--json repaired: sha db54c04f19cd (want db54c04f19cd)
+PASS  cf: go-deeper-drops-help--json repaired — the sha is back
+      CF cc-also-drops-the-credentials-entry: sha 39d95caa5b31 -> 2f20251483f3
+PASS  cf: cc-also-drops-the-credentials-entry really changed the copy — a claimed mutation is not a made one
+PASS  hermetic: CF cc-also-drops-the-credentials-entry FAILS cc_also_ok in tests/help-agent.sh — R4's third bullet is met by exactly this value, and nothing else in the `agents` topic points at what a capsule hands an agent
+PASS  hermetic: …and the rendered document agrees: the mutated corpus's `cc [...args]` entry no longer lists it in `also`
+      CF cc-also-drops-the-credentials-entry repaired: sha 39d95caa5b31 (want 39d95caa5b31)
+PASS  cf: cc-also-drops-the-credentials-entry repaired — the sha is back
+      CF corpus-renames-the-idioms-entry: sha 39d95caa5b31 -> 68e0652cd04b
+PASS  cf: corpus-renames-the-idioms-entry really changed the copy — a claimed mutation is not a made one
+      CF corpus-renames-the-idioms-entry: the For agents: block silently lost a line — 2 remain under it (was 3)
+PASS  hermetic: CF corpus-renames-the-idioms-entry FAILS the discovery check in tests/help-agent.sh, naming `idioms` — the curated render drops an id the corpus does not have, WITHOUT complaint, so renaming the one entry that says `rg`/`fd` over `grep`/`find` would silently take it out of the only output an agent reads
+PASS  hermetic: …and the mutation was otherwise harmless — the mutated corpus still renders a full overview at rc 0, which is exactly why the loss is silent and has to be asserted
+      CF corpus-renames-the-idioms-entry repaired: sha 39d95caa5b31 (want 39d95caa5b31)
+PASS  cf: corpus-renames-the-idioms-entry repaired — the sha is back
+      CF corpus-reverts-the-idioms-title-to-a-pointer: sha 39d95caa5b31 -> 261d783412dc
+PASS  cf: corpus-reverts-the-idioms-title-to-a-pointer really changed the copy — a claimed mutation is not a made one
+      CF corpus-reverts-the-idioms-title-to-a-pointer: the line now reads [  idioms — Use the tools this environment actually has]
+PASS  hermetic: CF corpus-reverts-the-idioms-title-to-a-pointer FAILS the INFORMING check in tests/help-agent.sh — the `idioms` line stops naming any of the bare words its own `use` backticks, which is precisely the H.5 finding `0f9f635` fixed
+PASS  hermetic: …and THIS is the hole the INFORMING check closes: the same reverted corpus still PASSES discovery_ok, because that check reads the expected title out of the same corpus in the same run, so any title matches itself. CF5 catches an id renamed away; nothing caught the line ceasing to inform
+      CF corpus-reverts-the-idioms-title-to-a-pointer repaired: sha 39d95caa5b31 (want 39d95caa5b31)
+PASS  cf: corpus-reverts-the-idioms-title-to-a-pointer repaired — the sha is back
+      CF corpus-strips-the-backticks-out-of-the-idioms-use: sha 39d95caa5b31 -> 7648d7da68d7
+PASS  cf: corpus-strips-the-backticks-out-of-the-idioms-use really changed the copy — a claimed mutation is not a made one
+      CF corpus-strips-the-backticks-out-of-the-idioms-use: tool_words yields []
+PASS  hermetic: CF corpus-strips-the-backticks-out-of-the-idioms-use FAILS the INFORMING check in tests/help-agent.sh — with no bare word left in `use` there is no evidence to weigh, and a check with nothing to assert has to be RED rather than vacuously green
+PASS  hermetic: …and that red is the EMPTY EVIDENCE and not a lost title — the mutated corpus's `idioms` line is byte-identical to the unmutated one, so the two counterfactuals fail for two different reasons
+      CF corpus-strips-the-backticks-out-of-the-idioms-use repaired: sha 39d95caa5b31 (want 39d95caa5b31)
+PASS  cf: corpus-strips-the-backticks-out-of-the-idioms-use repaired — the sha is back
+      guard[hermetic] sha256 out      = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[hermetic] source-path out = /Users/feb/dev/.files/home
+PASS  hermetic: LIVE chezmoi.toml unchanged (02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1)
+PASS  hermetic: LIVE chezmoi source-path unchanged (/Users/feb/dev/.files/home)
+── epilogue: the managed tree and the live machine are untouched
+PASS  the managed files this node touches are byte-identical (help.nu, help/shell.nuon, config.nu)
+PASS  the live ~/.config/nushell listing is unchanged — never edited, only read
+PASS  ~/.cache/nushell does not exist (a real one appearing means an isolation leak)
+EXIT=0
+help content model: 96 entries across 4 files, 9 topics, 16 prose-only
+╭───┬────────────┬─────────╮
+│ # │   topic    │ entries │
+├───┼────────────┼─────────┤
+│ 0 │ navigate   │      12 │
+│ 1 │ find       │      12 │
+│ 2 │ history    │       4 │
+│ 3 │ edit       │      29 │
+│ 4 │ git        │       2 │
+│ 5 │ terminal   │      13 │
+│ 6 │ agents     │       6 │
+│ 7 │ config     │       8 │
+│ 8 │ containers │      10 │
+╰───┴────────────┴─────────╯
+ok
+── stage --tree: the managed files as text
+      guard[tree] watching /Users/feb/.config/chezmoi/chezmoi.toml
+      guard[tree] sha256 in       = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[tree] source-path in  = /Users/feb/dev/.files/home
+PASS  tree: help.nu is a regular file in the managed tree
+PASS  tree: the corpus dir ships beside it with topics.nuon and the four surface files
+PASS  tree: history.nu < 'use std/help' < 'alias core-help = help' < help.nu < PALETTE, each once (use at line 607)
+PASS  tree: counterfactual use-std-help-below-the-shadow FAILS the order check
+PASS  tree: help.nu is defs only — one 'def help [', no config-record write, no keybinding upsert
+PASS  tree: counterfactual config-record-write-appended FAILS the purity check
+PASS  tree: the RENDER path in help.nu spawns nothing — 0 hits for nvim, wezterm, git, tv or chezmoi in either spelling, and no $env.EDITOR, with _help_browse's body excised (R8)
+PASS  tree: _help_browse is the ONLY def in help.nu that names a spawn target — got [_help_browse ]
+PASS  tree: counterfactual git-spawn-inserted FAILS the re-scoped no-spawn check
+PASS  tree: counterfactual git-spawn-inserted FAILS the only-spawner check
+PASS  tree: the spawn-in-a-render-def counterfactual really differs from help.nu (a no-op sed would fake the two checks below)
+PASS  tree: counterfactual tv-call-inside-a-render-def FAILS the re-scoped no-spawn check — the excision does not hide a spawn outside _help_browse
+PASS  tree: counterfactual tv-call-inside-a-render-def FAILS the only-spawner check
+PASS  tree: the corpus is addressed by $nu.home-dir joined with .config/nushell/help — neither launch-time candidate, no repo path, no developer home
+PASS  tree: the pre-fix counterfactual really does differ from help.nu (a no-op sed would fake every check below it)
+PASS  tree: counterfactual pre-fix-$nu.default-config-dir FAILS the corpus-path check
+PASS  tree: counterfactual $nu.config-path-dirname FAILS the corpus-path check
+PASS  tree: counterfactual hardcoded-repo-path FAILS the corpus-path check
+PASS  tree: the mirror holds — config.nu sources ~/.config/nushell/help.nu (checked above, once) and help.nu names the same .config/nushell segments
+PASS  tree: counterfactual .conf-instead-of-.config FAILS the mirror check
+PASS  tree: tests/nushell-core.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: tests/nushell-aliases.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: tests/shell-listing.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: tests/shell-zoxide.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: tests/shell-history.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: tests/shell-claude.sh stages help.nu exactly once (config.nu sources it, so a hermetic run without it dies at parse)
+PASS  tree: counterfactual staging-line-dropped FAILS the staging check
+PASS  tree: shell.nuon carries the 'help' entry naming this PRD as its source
+PASS  tree: the settled-collision rule replaced the 'not settled' caveat (spec02)
+PASS  tree: …and the new why names the three disambiguators
+PASS  tree: this gate left shell.nuon byte-identical
+      guard[tree] sha256 out      = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[tree] source-path out = /Users/feb/dev/.files/home
+PASS  tree: LIVE chezmoi.toml unchanged (02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1)
+PASS  tree: LIVE chezmoi source-path unchanged (/Users/feb/dev/.files/home)
+── stage --hermetic: a real nushell, an isolated HOME, the corpus staged
+      guard[hermetic] watching /Users/feb/.config/chezmoi/chezmoi.toml
+      guard[hermetic] sha256 in       = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[hermetic] source-path in  = /Users/feb/dev/.files/home
+PASS  hermetic: precondition: nu is on PATH
+PASS  hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)
+PASS  hermetic: precondition: python3 is on PATH (the JSON probe parses, never eyeballs)
+      corpus: 9 topics, 96 entries
+PASS  hermetic: the staged corpus is readable and non-empty (9 topics, 96 entries)
+PASS  hermetic: 'help' exits 0 with nothing on stderr (rc=0)
+PASS  hermetic: the overview lists all 9 topic ids with a summary
+PASS  hermetic: the per-topic counts sum to the corpus entry count (96 = 96)
+PASS  hermetic: the overview names the four first keys with their titles
+PASS  hermetic: the overview carries the delegation sentence
+PASS  hermetic: the overview names the ways to go deeper
+PASS  hermetic: nu -c 'help' | complete carries no ESC byte (R7 — got index -1)
+PASS  hermetic: 'help navigate' lists the zoxide suite with the bare-word fallback and all three listing entries
+PASS  hermetic: 'help find | to json' parses as JSON and carries a 'key' column
+PASS  hermetic: "help find | where key =~ 'Ctrl'" composes and finds rows (R2's own example)
+PASS  hermetic: 'help selection' returns the shift-select entries, with a 'topic' column
+PASS  hermetic: 'help select' delegates to std/help, because 'select' is a nushell builtin (clause 8)
+PASS  hermetic: 'help ls' shows the manual's entry
+PASS  hermetic: …and ends with std/help's own output for ls (Usage: and '> ls' in the tail, 43 lines total)
+PASS  hermetic: 'help --entry ls' and 'ls --help' are byte-identical (R10 — indistinguishable at the call site)
+PASS  hermetic: 'help ctrl-r' explains the directory scope and points at Alt-R
+PASS  hermetic: 'help find' reaches OUR topic, not the builtin (a corpus-only entry id is present)
+PASS  hermetic: 'help history' reaches OUR topic, not the builtin
+PASS  hermetic: 'help config' reaches OUR topic, not the builtin
+PASS  hermetic: 'help --delegate find' reaches the builtin's own help instead
+PASS  hermetic: 'help commands | length' is over 400 — longest-match parsing keeps std's subcommand (got 617)
+PASS  hermetic: 'fakecmd --help' prints the external stub's OWN usage (got: FAKECMD-OWN-USAGE: fakecmd [--flag])
+PASS  hermetic: 'help --all --mode nvim' returns rows and every mode starts with nvim (got: nvim:normal,nvim:visual,nvim:insert)
+PASS  hermetic: 'help --all --mode tmux' exits non-zero — the surface list is closed (rc=1)
+PASS  hermetic: 'help "F5 <digit>"' renders the entry and marks it host-only
+PASS  hermetic: 'timeit { help }' is under 100 ms inside the configured shell (got: fast, single sample: 5ms 900µs 458ns)
+PASS  hermetic: 'help qqqxyzzy' exits 0 — clause 10 hands an unknown word to std's own search (rc=0)
+PASS  hermetic: the poison 'tv' on PATH was never invoked across every probe above (got 0 invocations)
+      guard[hermetic] sha256 out      = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[hermetic] source-path out = /Users/feb/dev/.files/home
+PASS  hermetic: LIVE chezmoi.toml unchanged (02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1)
+PASS  hermetic: LIVE chezmoi source-path unchanged (/Users/feb/dev/.files/home)
+── stage --noxdg: the same nushell with NO XDG_CONFIG_HOME exported
+      guard[noxdg] watching /Users/feb/.config/chezmoi/chezmoi.toml
+      guard[noxdg] sha256 in       = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[noxdg] source-path in  = /Users/feb/dev/.files/home
+PASS  noxdg: precondition: nu is on PATH
+      the launch-time constant under this launch = /private/var/folders/_p/tzmzw3m10kg7sg9hc7_mkm7w0000gn/T/gates.yKmJB8/m-noxdg/home/Library/Application Support/nushell
+      the machine's own config dir               = /private/var/folders/_p/tzmzw3m10kg7sg9hc7_mkm7w0000gn/T/gates.yKmJB8/m-noxdg/home/.config/nushell
+PASS  noxdg: the launch-time constant is NOT the machine's .config/nushell — the defect's signature, recorded rather than assumed
+PASS  noxdg: 'help' exits 0 with nothing on stderr under a launch that exports no XDG_CONFIG_HOME (rc=0)
+PASS  noxdg: the export-absent overview is byte-identical to the export-present one (1462 bytes)
+PASS  noxdg: 'help --all | length' equals the staged corpus's own entry count (96 = 96)
+PASS  noxdg: 'help "F5 <digit>"' still marks the terminal entry host-only (R9's marking half)
+PASS  noxdg: the poison 'tv' on PATH was never invoked (got 0 invocations)
+PASS  noxdg: the counterfactual machine really carries the pre-fix resolution (a no-op sed would fake the check below)
+PASS  noxdg: counterfactual pre-fix-resolution FAILS 'help' under this launch (rc=1)
+PASS  noxdg: the alt tree's own corpus really carries the marker (staging check)
+PASS  noxdg: 'nu --config <tree outside .config>/config.nu' renders the MACHINE's corpus, not that tree's (rc=0, 0 marker hits)
+PASS  noxdg: the dirname counterfactual machine really carries that resolution
+PASS  noxdg: counterfactual $nu.config-path-dirname renders the ALT tree's marker — renderer and corpus from different trees (1 hits)
+PASS  noxdg: corpus directory renamed away — 'help' raises with an empty stdout and a message naming the path, chezmoi apply and --delegate (rc=1)
+      Error: nu::shell::error
+      
+        x help: the manual's corpus directory /private/var/folders/_p/
+        | tzmzw3m10kg7sg9hc7_mkm7w0000gn/T/gates.yKmJB8/m-noxdg-loud/home/.config/
+        | nushell/help is missing — run `chezmoi apply`; `help --delegate <name>`
+        | still reaches nushell's own help
+PASS  noxdg: …and the escape hatch is real: 'help --delegate ls' still exits 0 in that state (rc=0)
+PASS  noxdg: topics.nuon replaced by [] — 'help' raises instead of rendering 'Topics:' with nothing under it (rc=1)
+PASS  noxdg: a ZERO-BYTE topics.nuon raises with OUR message, not nushell's incompatible_path_access (rc=1)
+PASS  noxdg: the four surface files replaced by [] — 'help' raises rather than rendering every topic as zero entries (rc=1)
+PASS  noxdg: the no-guard counterfactual machine really differs from help.nu
+PASS  noxdg: counterfactual help.nu-without-the-spine-length-guard renders the EMPTY manual instead — rc 0, empty stderr, 'Topics:' with nothing under it (rc=0)
+      guard[noxdg] sha256 out      = 02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1
+      guard[noxdg] source-path out = /Users/feb/dev/.files/home
+PASS  noxdg: LIVE chezmoi.toml unchanged (02d5d4ee50b5d37955ffe7778938ddee82f4da24cbaf552b4dba3810d3c850a1)
+PASS  noxdg: LIVE chezmoi source-path unchanged (/Users/feb/dev/.files/home)
+── epilogue: the live machine is untouched
+PASS  config.nu, env.nu, help.nu and shell.nuon are byte-identical
+PASS  the whole corpus directory is byte-identical, file by file
+PASS  ~/.cache/nushell does not exist (a real one appearing means an isolation leak)
+PASS  ~/Library/Application Support/nushell does not exist (where an export-absent nu writes when a runner forgets HOME)
+CHECKS: 93 run, 93 passed, 0 failed
+EXIT=0

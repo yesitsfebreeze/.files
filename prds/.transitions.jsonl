@@ -1,1 +1,4 @@
 {"calls": null, "from": null, "prd": "00-delivery/corrections/questions-check-red-only-on-history", "reads": null, "refused": null, "t": "2026-08-29T08:03:51", "to": "open", "tokens": null}
+{"calls": null, "from": "blocked", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:39", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:42", "to": "claimed", "tokens": null}
+{"from": "claimed", "prd": "06-help/05-agent-interface", "t": "2026-08-29 08:15", "to": "done"}

@@ -410,6 +410,15 @@ fi
 # Everything is installed by now, so chezmoi's script stages run with every
 # tool on PATH. chezmoi is in PKGS, so a real run has it here; a dry run
 # installed nothing, which is why the seam still shows the call it would make.
+#
+# MASON_SEED is 01-deploy-mechanism R7, and it is exported rather than passed
+# so this stays the LAST line of the script (the epic's I1, asserted by
+# tests/provisioning.sh as "'DRY chezmoi apply' is the LAST DRY line"). R7's
+# own sentence puts :MasonUpdate "after §1-§4", which is after this line and
+# therefore after the end of install.sh; home/run_after_seed-mason-registry.sh
+# is where it actually runs, invoked by the apply below. Off by default, so a
+# plain apply, an `rr`, and every gate's scratch target stay cheap.
+export MASON_SEED=1
 if have chezmoi || [ -n "$DRY" ]; then
     log "applying configs with chezmoi"
     run chezmoi apply || warn "chezmoi apply failed"

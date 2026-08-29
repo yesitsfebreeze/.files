@@ -22,27 +22,57 @@ next real defect. The drill's own rule says *"an answered round is history and
 is left alone"*, so most of the 29 are the check disagreeing with the
 protocol, not the board being wrong.
 
-The 29 split three ways, and only the first is the board's fault:
+The 29 split five ways, and only the first is the board's fault. **Counted by
+predicate on 2026-08-29, after a first pass that guessed 9/6/14 and was wrong
+on all three** — which is the whole argument for R1's "found by predicate,
+never from a list" and is recorded here rather than quietly corrected:
 
 | shape | count | what it is |
 |---|---|---|
-| `done` + `mode: hitl` | **9** | a closed PRD still labelled as waiting on the user. The label outlived the work |
-| `## Answers` with no `## Questions` above it | **6** | five `decisions/*` nodes and one correction, all `done`, all recording a real answer to a fork that was put in conversation and never written down |
-| a "question" that is a numbered note, or carries no recommended answer | **14** | `docs-inventories` q1–q7, `platform` q3–q4, `stale-mi-paths` q1, `stale-s2-doc-refs`'s two empty headings |
+| `done` + `mode: hitl` | **8** | a closed PRD still labelled as waiting on the user. The label outlived the work |
+| `## Answers` with no `## Questions` above it | **8** | five `decisions/*` and three `corrections/*` nodes, all `done`, each recording a real answer to a fork that was put in conversation and never written down |
+| a heading with nothing under it | **2** | both on `stale-s2-doc-refs` |
+| a "question" that asks nothing — no `?` | **9** | `docs-inventories` q1–q7, `platform` q3–q4 |
+| a question carrying no recommended answer | **2** | `stale-mi-paths` q1, `docs-inventories` q7 |
+
+The counts are a reading of 2026-08-29 and will move; the shapes will not.
+`pearde questions check prds` recomputes them, and R1 and R2 are scoped by the
+shapes, never by these numbers.
 
 ## Requirements
-- [ ] **R1** — **Resetting `mode:` is part of closing a node.** A `done` node
-      does not carry `mode: hitl`; the field says who the *work* needs, and
-      finished work needs nobody. Write the rule where the closing transition
-      is defined, then sweep the nine. The nine are found by predicate, never
-      from the list above — a list in prose is a reading of the day it was
-      taken, and this board has corrected six such counts in one day.
-- [ ] **R2** — **The check skips answered rounds on `done` nodes.** Its own
-      protocol says an answered round is history; the check currently grades
-      history against a rule written for live rounds. Scope R2 to the second
-      and third shapes above: a `done` node with a matching answer for every
+- [ ] **R1** — **Do not sweep the eight, and do not add a mode-reset to the
+      closing transition.** This requirement was written the other way round
+      and is corrected here rather than quietly replaced, because the reversal
+      is the finding.
+
+      `mode:` is a property of the WORK — the template defines it as
+      `afk | hitl (needs the human: naming, taste, money)` — not a position in
+      a queue. On a `done` decision node `hitl` is still the true statement:
+      that work did need a human. Measured 2026-08-29: **`plan.py` never reads
+      `mode:` at all** (no match for `hitl` anywhere in it), and the scan's
+      own "waiting on you" list is computed from `state`, which is why it
+      showed the two `blocked` nodes and none of these eight. Only
+      `questions.py` reads the field, and it reads it as a state:
+      `WAITING = ("question", "hitl", "waiting", "blocked-on-user", "user")`
+      at `questions.py:73`, then `waiting = state.lower() in WAITING or
+      mode.lower() in WAITING` at :206.
+
+      So resetting the eight would delete a true record to make a check
+      green — option 2's failure mode, which R3 exists to refuse, arrived at
+      through the half of the answer that looked mechanical. The shape belongs
+      to R2.
+
+- [ ] **R2** — **The check stops grading history, and stops reading `mode:`
+      as a state.** Two changes, both in `questions.py`:
+
+      (a) A `state: done` node's `mode:` is not evidence of anything waiting.
+      Either drop `"hitl"` from `WAITING` for closed nodes, or stop consulting
+      `mode` when the state is in `CLOSED`. This alone clears 8 of the 29.
+
+      (b) An answered round on a `done` node is history and is left alone —
+      the drill's own words. A closed node with a matching answer for every
       question, or with an `## Answers` section and no live `## Questions`, is
-      not a defect. An `open` node with either is still one.
+      not a defect. An **`open`** node with either still is.
 - [ ] **R3** — **Do not edit the recorded history of closed nodes to satisfy a
       linter.** The six `## Answers`-without-`## Questions` sections hold real
       decisions — fzf, tinty, odin, shift-select-scope, wallpaper-opacity —
@@ -61,12 +91,13 @@ The 29 split three ways, and only the first is the board's fault:
 ## Acceptance
 - [ ] `pearde questions check` on this board reports **0** rows whose subject
       is a `done` node with an answered round — quoted before and after.
-- [ ] No `state: done` node carries `mode: hitl`, found by predicate over
-      `find prds -name prd.md`.
-- [ ] A counterfactual, and it must fail for a different reason than the
-      green: an **`open`** node given an `## Answers` section with no
-      `## Questions` is still reported, so R2 narrowed the check rather than
-      blunting it.
+- [ ] The eight `done` + `mode: hitl` nodes are **unchanged** — md5 quoted
+      before and after. R1 reversed; the fix is R2(a), not an edit here.
+- [ ] Two counterfactuals, failing for two different reasons. (i) An
+      **`open`** node given an `## Answers` section with no `## Questions` is
+      still reported — R2(b) narrowed the check rather than blunting it.
+      (ii) An **`open`** node with `mode: hitl` and no round is still
+      reported — R2(a) exempted closed nodes, not the field.
 - [ ] The six `decisions/*` and `corrections/*` bodies are **byte-identical**
       before and after — md5 quoted — proving R3 held.
 
