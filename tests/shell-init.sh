@@ -286,6 +286,25 @@ stage_gen() {
 # ════════════════════════════════════════════════════════════════════════════
 # Every real invocation goes through here. Six flags, every time, plus the
 # env -i wrapper that pins HOME to the same directory --destination names.
+# always_run_targets <srcdir> — echoes, one per line, the chezmoi TARGET name
+# of every ALWAYS-RUN script directly under <srcdir>: `run_*` that is neither
+# `run_once_*` nor `run_onchange_*`. chezmoi strips the run_/before_/after_
+# attributes from the name it reports, which is why the target name and not
+# the filename is what a status line can be matched against.
+#
+# Factored, and derived from the tree, because the check below used to name
+# ONE script literally. See its comment for what that cost.
+always_run_targets() {
+  local D="$1" f b
+  for f in "$D"/run_*; do
+    [ -e "$f" ] || continue
+    b="$(basename "$f")"
+    case "$b" in run_once_*|run_onchange_*) continue ;; esac
+    b="${b#run_}"; b="${b#before_}"; b="${b#after_}"
+    printf '%s\n' "$b"
+  done
+}
+
 cz() {
   local S="$1"; shift
   /usr/bin/env -i \
@@ -477,14 +496,44 @@ EOF
   # S3.10 — the documented status deviation. chezmoi reports an always-run
   # script as pending R on EVERY status, forever, by design (spec01 D4), so
   # "a second apply reports no changes" can only ever mean "no FILE changes".
-  # Both directions are asserted: nothing but the run script, and the run
-  # script really is there.
-  local st_norun
-  st_norun="$(printf '%s\n' "$st" | grep -v 'generate-shell-init\.sh' | sed '/^[[:space:]]*$/d')"
-  chk_ok "apply: I2 chezmoi status is empty once the always-run script line is removed (got: ${st_norun:0:200})" \
+  #
+  # CORRECTED 2026-08-29 (g1-verify-still-red-on-just-gates R3/R5). This
+  # filtered ONE literal name, `generate-shell-init.sh`, because that was the
+  # only always-run script in home/ the day it was written. `5e7934c`
+  # (2026-08-29, C.4 harness + 05-platform R7) added a second,
+  # `home/run_after_seed-mason-registry.sh`, and this check went red the same
+  # day with `got:  R seed-mason-registry.sh` — a correct chezmoi report of a
+  # correctly-added script, read by the gate as a regression. That is the
+  # THIRD gate on this board left stale by a landing commit, after the wave
+  # registry and the managed surface, and the second one to fail because a
+  # hand-kept name stood in for a property.
+  #
+  # So the set is DERIVED from the source tree by always_run_targets(), and
+  # both directions are asserted against it: the status holds nothing but
+  # always-run script lines, every always-run script really does have one,
+  # and the set is non-empty — without that last one, "nothing but" would be
+  # green on a status that is empty because nothing ran at all.
+  local always; always="$(always_run_targets "$S/src")"
+  local n_always; n_always="$(printf '%s\n' "$always" | grep -c . || true)"
+  chk_ok "apply: precondition: the source holds at least one always-run script (n=$n_always: $(printf '%s ' $always))" \
+         test "${n_always:-0}" -ge 1
+
+  local st_norun="$st" t
+  while IFS= read -r t; do
+    [ -n "$t" ] || continue
+    st_norun="$(printf '%s\n' "$st_norun" | grep -vF "$t" || true)"
+  done <<<"$always"
+  st_norun="$(printf '%s\n' "$st_norun" | sed '/^[[:space:]]*$/d')"
+  chk_ok "apply: I2 chezmoi status is empty once the always-run script lines are removed (got: ${st_norun:0:200})" \
          test -z "$st_norun"
-  chk_ok "apply: and the always-run line IS present and names generate-shell-init.sh (got: ${st:0:200})" \
-         grep -q 'generate-shell-init\.sh' <<<"$st"
+
+  local st_missing=""
+  while IFS= read -r t; do
+    [ -n "$t" ] || continue
+    grep -qF "$t" <<<"$st" || st_missing="$st_missing $t"
+  done <<<"$always"
+  chk_ok "apply: and EVERY always-run script has its own status line (missing:${st_missing:- <none>}; got: ${st:0:200})" \
+         test -z "$st_missing"
 
   # S3.7 — a failing tool does not kill the apply (I4). Counterfactual proof
   # that this box has teeth: a run_after script exiting 3 makes chezmoi print

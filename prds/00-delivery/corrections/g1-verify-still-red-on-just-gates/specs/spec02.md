@@ -42,21 +42,50 @@ the second such name and it follows the same route.
 
 ## Acceptance
 
-- [ ] `HOME_TOP` names `dot_local`, and the comment above it states the PATH
+- [x] `HOME_TOP` names `dot_local`, and the comment above it states the PATH
       argument, names the generator line that makes it true, and says
       explicitly that this is *not* the legacy-root port the check catches.
-- [ ] `DOT_LOCAL_TOP` exists, names `bin` only, and a check reports every
+      — `tests/managed-config.sh:110` reads
+      `HOME_TOP=".chezmoiignore .chezmoi.toml.tmpl dot_config dot_gitconfig.tmpl dot_local"`,
+      and the comment above it cites the generator; the citation was checked
+      against the file rather than taken on the comment's word:
+      `grep -n 'local/bin' home/run_after_generate-shell-init.sh` →
+      `65:export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"`.
+- [x] `DOT_LOCAL_TOP` exists, names `bin` only, and a check reports every
       undeclared entry directly under `home/dot_local/`.
-- [ ] `SURFACE_PENDING` names `litellm`, with a comment saying it is pending
+      — `tests/managed-config.sh:112` `DOT_LOCAL_TOP="bin"`; the check line is
+      `PASS  surface: home/dot_local/ holds only declared subtrees (undeclared: <none>)`.
+- [x] `SURFACE_PENDING` names `litellm`, with a comment saying it is pending
       rather than part of R2's nine, and why that is the epic's call.
-- [ ] The `dot_local` census is a **factored predicate**, not inlined, so the
+      — `tests/managed-config.sh:91` `SURFACE_PENDING="capsule litellm"`, with
+      the note that "growing that list is
+      `05-platform/01-deploy-mechanism/managed-config`'s decision, not this
+      gate's".
+- [x] The `dot_local` census is a **factored predicate**, not inlined, so the
       `--selftest` stage exercises the same code the census runs.
-- [ ] `--selftest` plants `home/dot_local/share/` in a `scratch_tree` copy and
+      — `dot_local_undeclared()` at `tests/managed-config.sh:229`, called from
+      `stage_surface` check 1b and from `stage_selftest`.
+- [x] `--selftest` plants `home/dot_local/share/` in a `scratch_tree` copy and
       the predicate reports it; removing it again reports nothing. Both
       directions, in that order.
-- [ ] `--selftest` asserts the real `home/dot_local/share` was never created.
-- [ ] `bash tests/managed-config.sh` exits 0 and every `surface:` line reads
-      `<none>`.
+      — `bash tests/managed-config.sh --selftest`, EXIT=0:
+      `MUTATION: planted home/dot_local/share/ in the copy` /
+      `PASS  selftest red: an undeclared home/dot_local/share/ is reported (got: share)` /
+      `MUTATION: removed home/dot_local/share/ again (the green counterfactual)` /
+      `PASS  selftest green: the unmutated copy reports no undeclared dot_local subtree`.
+- [x] `--selftest` asserts the real `home/dot_local/share` was never created.
+      — `PASS  selftest: the real home/dot_local/share and litellm/plain.yaml were never created`.
+- [x] `bash tests/managed-config.sh` exits 0 and every `surface:` line reads
+      `<none>`. — **Green on the tree this node owns; one red in the live
+      working tree belongs to another session.** Against a clean `HEAD`
+      archive with this node's footprint overlaid: `EXIT=0`, 67 PASS / 0 FAIL,
+      all eight `surface:` lines `<none>`, ending
+      `PASS — the managed surface is the declared surface, and the live chezmoi config was never touched`.
+      In the live working tree the same run is `EXIT=1` on
+      `FAIL  surface: home/dot_config/ holds only declared tools (undeclared: tmux)`
+      — `home/dot_config/tmux/` is untracked work in flight from the
+      concurrent `dotfiles-ef` session (`prds/07-multiplexer`), outside this
+      node's footprint, and is reported rather than fixed.
 
 ## Verify and Proof
 
