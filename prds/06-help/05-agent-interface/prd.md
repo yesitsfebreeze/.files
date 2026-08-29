@@ -1,6 +1,6 @@
 ---
-state: blocked
-claim:
+state: claimed
+claim: orchestrator 2026-08-29 08:15
 priority: 8
 est: 1.25h
 task: H.5
@@ -125,7 +125,7 @@ correctly — which finder is installed, how navigation works, what the keys do
       `help --all | length`; and `[.entries[].id]` equals `help --all | get
       key` element for element, because all three whole-manual renders iterate
       the one `_help_spine` walk.
-- [ ] A fresh agent session, given only the output of `help`, can navigate
+- [x] A fresh agent session, given only the output of `help`, can navigate
       (bare-word jump), find a file (`Ctrl-Space` or telescope), and start a
       capsule — without inventing a tool that isn't installed.
 
@@ -152,6 +152,16 @@ correctly — which finder is installed, how navigation works, what the keys do
       uncontaminated, and nobody who has read this repo — including this
       orchestrator — can be the grader. That is a human's job by construction,
       not by convention.
+
+      **Closed 2026-08-29 by user decision, on the filed evidence — see this
+      node's `## Answers` Q2 and the amended H.5 row in
+      [`gates/manual/wave6.md`](../../../gates/manual/wave6.md).** The
+      paragraph above stands as written and is not deleted: it is the correct
+      reading of the box, and the tick is a decision to accept the weaker of
+      the two properties it asks for. What is proven is an uncontaminated
+      **subject**, graded against a tool list fixed in advance. What is not
+      proven is an uncontaminated **grader**, and no run on this board can
+      supply that.
 - [x] `help --md > manual.md` produces a document readable top to bottom.
 
       Produced and read: an H1, one line saying `help --json` carries the same

@@ -48,7 +48,7 @@ know in advance. FAIL: any step that needed a tool the container did not have,
 a path only this Mac has, or a piece of knowledge that lives in nobody's
 README. macOS-only steps are expected to be skipped in a Linux container;
 record which ones, because on a fresh *Mac* they must all run.
-- [ ] **H.5** — the reading test, and the only check that measures whether this
+- [x] **H.5** — the reading test, and the only check that measures whether this
       whole epic worked. Start a **fresh** agent session that knows nothing
       about this repo. Give it the output of `help` and nothing else, plus an
       ordinary task that needs a search and a file-find — "find where X is
@@ -76,3 +76,22 @@ record which ones, because on a fresh *Mac* they must all run.
       ("rather than `find`/`grep`"), and named no `grep`, `find` or `fzf`
       anywhere in its plan. The full transcript is quoted in the same PRD's
       closing note. Evidence, still not a tick.
+
+      **Ticked 2026-08-29, on the second run, by user decision in the
+      board-frontier drill round.** The grade of record is the post-`0f9f635`
+      session: uncontaminated, given only the rendered `help` output, it
+      prescribed `fd` to locate and `rg` to search, credited the idioms line
+      for both, and named no `grep`, `find` or `fzf` anywhere. That is this
+      box's PASS line met term for term, which is why the line names the tools
+      rather than describing them.
+
+      **What this tick does not claim, and the next reader should not read
+      into it.** The box says *"Why a human sets it up"*, and the human who
+      set up both filed runs was the orchestrator. So the independence relied
+      on here is the **subject session's**, never the grader's — the weaker of
+      the two properties the box was written to obtain, and the only one on
+      file. The stronger one is still available to anyone who wants it: a
+      third run, set up by someone who has not read this repo, graded against
+      the same list. Recorded rather than smoothed over, because a tick that
+      hides which half it proved is the kind of false record this board exists
+      to refuse.
