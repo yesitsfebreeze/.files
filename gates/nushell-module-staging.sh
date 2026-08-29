@@ -44,11 +44,59 @@
 #            naming the gate and the module, so the line says what to add
 #            and where.
 #
-# Known state on 2026-08-23: ZERO misses — every in-scope gate stages every
-# module config.nu sources, `help.nu` included (config.nu:565, staged by
-# tests/shell-television.sh:471). An earlier version of this comment recorded
-# one standing MISS and called the red CORRECT until it landed; it landed, so
-# green is now the expected verdict and any MISS here is a live regression.
+# Known state on 2026-08-29: ZERO misses over a 10 x 14 grid — every in-scope
+# gate stages every module config.nu sources, `help.nu` (config.nu:610) and
+# `help-check.nu` (config.nu:609) included. An earlier version of this comment
+# recorded one standing MISS and called the red CORRECT until it landed; it
+# landed, so green is now the expected verdict and any MISS here is a live
+# regression.
+#
+# TWO HYPHEN DEFECTS, both found by 06-help/04-drift-check/01-check-plumbing
+# adding the first hyphenated module the tree has ever had. Read these before
+# adding the next one — the gate was green through both, which is the only
+# kind of defect this file exists to make impossible.
+#
+#   1. THE DERIVATION WAS BLIND TO HYPHENS. `modules()`'s character class was
+#      `[a-z]` plus `+` where it now reads `[a-z-]+` — written out that way on
+#      purpose, because the acceptance check for this defect is a literal
+#      `grep -rn 'nushell/\[a-z\]+' gates tests` that must find NOTHING, and a
+#      comment quoting the old pattern verbatim would defeat the very search
+#      that proves no narrow copy survives. `help-check.nu` therefore
+#      never entered the list, the grid stayed 10 x 13, and the gate printed
+#      "misses: 0" while ELEVEN gates were dead at
+#      `nu::parser::sourced_file_not_found`, config.nu:609 — the exact outage
+#      named at the top of this file, invisible to the thing that reports it.
+#      Now `[a-z-]+`.
+#      COUNTERFACTUAL: `bash gates/nushell-module-staging.sh --repo <copy>`
+#      against a scratch copy with `help-check` removed from ONE gate's
+#      staging list must print
+#      `does not stage help-check.nu` and exit non-zero. Under the narrow
+#      regex it exits 0. Measured 2026-08-29, both ways.
+#      A SECOND copy of this regex lives in `tests/help-agent.sh`'s
+#      `modules_fresh`, which asserts that gate's own `MODULES=` string equals
+#      config.nu's derived list. The two copies must move together.
+#
+#   2. `names_it`'s STEM BOUNDARY WAS BLIND TO HYPHENS, independently. The
+#      list-driven branch matched
+#      `(^|[^a-zA-Z0-9_])$stem(\.nu)?([^a-zA-Z0-9_.]|$)`; `-` is in NEITHER
+#      class, so once `help-check` sat in a `for m in` list the stem `help`
+#      matched INSIDE `help-check`, and a gate that had dropped `help.nu`
+#      entirely still read as staging it. That is this file's own `--selftest`
+#      GREEN half, which deletes `help` from tests/shell-television.sh's list
+#      and requires red before repair — so the hole would have made the
+#      selftest VACUOUS the moment the hyphenated module landed. Both classes
+#      now exclude `-`.
+#      COUNTERFACTUAL: a scratch copy with `help` removed from
+#      shell-television's `for m in` list WHILE `help-check` stays must still
+#      print `does not stage help.nu`. Under the old boundary it does not.
+#      Measured 2026-08-29. `--selftest`'s two `sed` expressions were
+#      re-anchored off `[a-z ]*` (which cannot match a list containing a
+#      hyphen) onto `help-check` for the same reason.
+#
+# The general rule both defects share: a character class written for the
+# module names that existed is a guess about the ones that will. Run the
+# counterfactuals above whenever a module name grows a character no existing
+# name has.
 #
 #   bash gates/nushell-module-staging.sh [--repo <root>]
 #   bash gates/nushell-module-staging.sh --selftest
@@ -129,6 +177,13 @@ gate_files() {
 # misses — copymode.nu in six gates and help.nu in shell-television — and
 # those seven were precisely the seven runtime reds measured the same day.
 # The static verdict and the behavioural verdict agreed cell for cell.
+#
+# BOTH BOUNDARY CLASSES BELOW EXCLUDE `-` ON PURPOSE — defect 2 in the header.
+# They read `[^a-zA-Z0-9_]` and `[^a-zA-Z0-9_.]` until 2026-08-29, and with
+# `help-check` in a `for m in` list the stem `help` matched inside it, so a
+# gate that staged no `help.nu` at all still counted as staging it. Do not
+# drop the `-` back out of either class: the counterfactual that catches it is
+# in the header, and this file's own --selftest GREEN half depends on it.
 names_it() {
   local f="$1" mod="$2" stem="${2%.nu}" esc
   esc="${mod//./\\.}"

@@ -597,6 +597,7 @@ cp "$NUSHELL_SRC/finder.nu" "$M/home/.config/nushell/finder.nu"  # 04-shell/04: 
   cp "$NUSHELL_SRC/quicklist.nu" "$M/home/.config/nushell/quicklist.nu"  # 04-shell/07: config.nu sources quicklist.nu at MODULES, below finder.nu
   cp "$NUSHELL_SRC/copymode.nu" "$M/home/.config/nushell/copymode.nu"  # 02-terminal/04: config.nu sources copymode.nu at MODULES
   cp "$NUSHELL_SRC/help.nu" "$M/home/.config/nushell/help.nu"  # 06-help/02: config.nu sources help.nu at MODULES
+  cp "$NUSHELL_SRC/help-check.nu" "$M/home/.config/nushell/help-check.nu"  # 06-help/04: config.nu sources help-check.nu ABOVE help.nu
   printf '# stub starship init\n'   > "$M/home/.cache/nushell/init/starship.nu"
   printf '# stub television init\n' > "$M/home/.cache/nushell/init/television.nu"
   # The fixture init: the two defs of `zoxide init nushell` (zoxide 0.10.0),

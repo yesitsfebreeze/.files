@@ -543,6 +543,7 @@ mk_machine() {
   cp "$NUSHELL_SRC/quicklist.nu" "$M/home/.config/nushell/quicklist.nu"  # 04-shell/07: config.nu sources quicklist.nu at MODULES, below finder.nu
   cp "$NUSHELL_SRC/copymode.nu" "$M/home/.config/nushell/copymode.nu"  # 02-terminal/04: config.nu sources copymode.nu at MODULES
   cp "$NUSHELL_SRC/help.nu" "$M/home/.config/nushell/help.nu"  # 06-help/02: config.nu sources help.nu at MODULES
+  cp "$NUSHELL_SRC/help-check.nu" "$M/home/.config/nushell/help-check.nu"  # 06-help/04: config.nu sources help-check.nu ABOVE help.nu
   printf '# stub starship init\n' > "$M/home/.cache/nushell/init/starship.nu"
   printf '# stub zoxide init\n'   > "$M/home/.cache/nushell/init/zoxide.nu"
   # The television fixture: the generated init's real shape (`tv init nu`,

@@ -144,11 +144,22 @@ HOST_ONLY=' (host-only — the terminal is outside a capsule)'
 # not stand alone: `modules_fresh` compares it against config.nu's own `source`
 # lines in the SAME run, and is asserted at the top of both stages. The list
 # can be wrong for exactly as long as one gate run.
-MODULES="dirstack.nu pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu theme.nu"
+#
+# `modules_fresh`'s `^source ~/\.config/nushell/[a-z-]+\.nu$` IS A SECOND
+# COPY of gates/nushell-module-staging.sh's `modules()` regex, and the two must
+# move together. It read `[a-z]+` until 2026-08-29 — no hyphen — so when
+# `help-check.nu` became the tree's first hyphenated module the derivation
+# dropped it silently and the gate reported "misses: 0" while eleven gates were
+# dead at `nu::parser::sourced_file_not_found`. Here the narrow copy fails in
+# the OTHER direction: `MODULES=` would carry help-check.nu, config.nu's
+# derived list would not, and `modules_fresh` goes red on a list that is in
+# fact correct. Either way the two spellings have to agree, so widen both or
+# neither. The counterfactuals that catch it are in that gate's header.
+MODULES="dirstack.nu pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help-check.nu help.nu theme.nu"
 modules_fresh() {
   local want got
   want="$(printf '%s\n' $MODULES | LC_ALL=C sort | tr '\n' ' ')"
-  got="$($GREP -oE '^source ~/\.config/nushell/[a-z]+\.nu$' "$CONFIG_NU" \
+  got="$($GREP -oE '^source ~/\.config/nushell/[a-z-]+\.nu$' "$CONFIG_NU" \
          | sed 's|.*/||' | LC_ALL=C sort | tr '\n' ' ')"
   [ "$want" = "$got" ] || { echo "      MODULES=[$want] config.nu=[$got]"; return 1; }
 }

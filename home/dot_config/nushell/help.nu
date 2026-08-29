@@ -667,6 +667,7 @@ def help [
     --fuzzy                # browse the manual (degrades to the search table)
     --json                 # the whole manual as one JSON document
     --md                   # the whole manual as markdown
+    --check                # diff the manual against the live configuration
 ] {
     let m = ($mode | default "")
     if ($m | is-not-empty) and ($m not-in ["shell" "nvim" "terminal" "container"]) {
@@ -702,6 +703,14 @@ def help [
             error make {msg: $"help: ($render) renders the whole manual — drop --delegate"}
         }
     }
+
+    # 0 — the drift check (06-help/04-drift-check). FIRST, and it delegates
+    # to help-check.nu rather than doing the work here: this file carries R8's
+    # no-spawn guarantee and the check spawns `nvim --headless`, so every line
+    # that spawns lives in the other file and only the flag lives here.
+    # config.nu sources help-check.nu ABOVE this file, because a def calling a
+    # def from a LATER source fails at run time with `Command not found`.
+    if $check { return (_help_check) }
 
     # 1 — nushell's own help, addressed explicitly.
     let deleg = ($delegate | default "")

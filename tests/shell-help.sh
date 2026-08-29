@@ -145,26 +145,40 @@ squash() { tr -d ' \t\n\r|'; }
 
 # ── the checks as FUNCTIONS, so a counterfactual runs the SAME check ────────
 
-# The capture's three lines sit under MODULES in THIS order — history.nu's
-# source line, `use std/help`, `alias core-help = help`, help.nu's source
-# line — and before PALETTE, each exactly once. The order is not cosmetic:
-# `use std/help` must parse before the shadow, and the alias must bind
-# before it too (D1/D2), or the alias points at our own def and the wrapper
-# recurses.
+# The capture's lines sit under MODULES in THIS order — history.nu's source
+# line, `use std/help`, `alias core-help = help`, help-check.nu's source
+# line, help.nu's source line — and before PALETTE, each exactly once. The
+# order is not cosmetic: `use std/help` must parse before the shadow, and
+# the alias must bind before it too (D1/D2), or the alias points at our own
+# def and the wrapper recurses.
+#
+# help-check.nu ABOVE help.nu is the same class of requirement and was
+# proven the same way. `def help`'s `--check` clause calls `_help_check`,
+# which lives in help-check.nu because help.nu may name no spawn target
+# (render_no_spawn_ok / browse_only_spawner_ok below) and `--check` runs
+# `nvim --headless`. A `def` calling a `def` from a LATER `source` parses
+# fine and dies at RUN time: measured 2026-08-29 with the two lines swapped,
+# `help --check` gives `nu::shell::external_command`, ``Command
+# `_help_check` not found`` at help.nu:713. So the position is gated
+# statically here, and the swapped counterfactual at the call site is what
+# keeps this clause able to fail.
 capture_ok() {
-  local f="$1" mod_ln hist_ln use_ln alias_ln help_ln pal_ln
+  local f="$1" mod_ln hist_ln use_ln alias_ln chk_ln help_ln pal_ln
   [ "$($GREP -cxF 'use std/help' "$f")" -eq 1 ] || return 1
   [ "$($GREP -cxF 'alias core-help = help' "$f")" -eq 1 ] || return 1
+  [ "$($GREP -cxF 'source ~/.config/nushell/help-check.nu' "$f")" -eq 1 ] || return 1
   [ "$($GREP -cxF 'source ~/.config/nushell/help.nu' "$f")" -eq 1 ] || return 1
   mod_ln="$(line_of "$f" '# ── MODULES ──')"
   hist_ln="$(line_of "$f" 'source ~/.config/nushell/history.nu')"
   use_ln="$($GREP -nxF 'use std/help' "$f" | cut -d: -f1)"
   alias_ln="$($GREP -nxF 'alias core-help = help' "$f" | cut -d: -f1)"
+  chk_ln="$($GREP -nxF 'source ~/.config/nushell/help-check.nu' "$f" | cut -d: -f1)"
   help_ln="$($GREP -nxF 'source ~/.config/nushell/help.nu' "$f" | cut -d: -f1)"
   pal_ln="$(line_of "$f" '# ── PALETTE ──')"
   [ "$mod_ln" -gt 0 ] && [ "$mod_ln" -lt "$hist_ln" ] \
     && [ "$hist_ln" -lt "$use_ln" ] && [ "$use_ln" -lt "$alias_ln" ] \
-    && [ "$alias_ln" -lt "$help_ln" ] && [ "$help_ln" -lt "$pal_ln" ]
+    && [ "$alias_ln" -lt "$chk_ln" ] && [ "$chk_ln" -lt "$help_ln" ] \
+    && [ "$help_ln" -lt "$pal_ln" ]
 }
 
 # help.nu is DEFS ONLY (the history.nu precedent): one `def help`, no write
@@ -308,11 +322,12 @@ stage_tree() {
               -a -f "$CORPUS_DIR/nvim.nuon" -a -f "$CORPUS_DIR/terminal.nuon" \
               -a -f "$CORPUS_DIR/capsule.nuon"
 
-  # 1 — the capture's line order, plus the D1/D2 counterfactual.
+  # 1 — the capture's line order, plus the D1/D2 counterfactual and the
+  #     help-check.nu ordering counterfactual.
   if capture_ok "$CONFIG_NU"; then
-    chk "tree: history.nu < 'use std/help' < 'alias core-help = help' < help.nu < PALETTE, each once (use at line $($GREP -nxF 'use std/help' "$CONFIG_NU" | cut -d: -f1))" 0
+    chk "tree: history.nu < 'use std/help' < 'alias core-help = help' < help-check.nu < help.nu < PALETTE, each once (use at line $($GREP -nxF 'use std/help' "$CONFIG_NU" | cut -d: -f1), help-check.nu at line $($GREP -nxF 'source ~/.config/nushell/help-check.nu' "$CONFIG_NU" | cut -d: -f1))" 0
   else
-    chk "tree: history.nu < 'use std/help' < 'alias core-help = help' < help.nu < PALETTE, each once" 1
+    chk "tree: history.nu < 'use std/help' < 'alias core-help = help' < help-check.nu < help.nu < PALETTE, each once" 1
   fi
   local CF_USE="$SCRATCH/cf-use-below-shadow.nu"
   awk '
@@ -324,6 +339,19 @@ stage_tree() {
     chk "tree: counterfactual use-std-help-below-the-shadow FAILS the order check" 1
   else
     chk "tree: counterfactual use-std-help-below-the-shadow FAILS the order check" 0
+  fi
+  # The swap that dies at RUN time with ``Command `_help_check` not found``:
+  # a check that would also pass against it is not gating the order at all.
+  local CF_CHK="$SCRATCH/cf-help-check-below-shadow.nu"
+  awk '
+    /^source ~\/\.config\/nushell\/help-check\.nu$/ { next }
+    { print }
+    /^source ~\/\.config\/nushell\/help\.nu$/ { print "source ~/.config/nushell/help-check.nu" }
+  ' "$CONFIG_NU" > "$CF_CHK"
+  if capture_ok "$CF_CHK"; then
+    chk "tree: counterfactual help-check.nu-sourced-below-help.nu FAILS the order check" 1
+  else
+    chk "tree: counterfactual help-check.nu-sourced-below-help.nu FAILS the order check" 0
   fi
 
   # 2 — purity, plus its counterfactual.

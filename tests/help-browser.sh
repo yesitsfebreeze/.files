@@ -514,7 +514,7 @@ PYEOF
 mk_machine() {
   local M="$1" p m
   mkdir -p "$M/home/.config/nushell" "$M/home/.cache/nushell/init" "$M/bin" "$M/home/dev"
-  for m in dirstack pass theme claude litellm recents zoxide history capsule finder quicklist copymode help; do
+  for m in dirstack pass theme claude litellm recents zoxide history capsule finder quicklist copymode help-check help; do
     cp "$NUSHELL_SRC/$m.nu" "$M/home/.config/nushell/$m.nu"
   done
   cp -R "$CORPUS_DIR" "$M/home/.config/nushell/help"

@@ -606,6 +606,7 @@ source ~/.config/nushell/copymode.nu
 # it pointing at std's `help` and stops the wrapper recursing.
 use std/help
 alias core-help = help
+source ~/.config/nushell/help-check.nu
 source ~/.config/nushell/help.nu
 
 # ── PALETTE ──
