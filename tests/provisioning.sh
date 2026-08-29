@@ -227,6 +227,25 @@ cf() {
   st=$?
   if [ "$st" -ne 0 ]; then chk "$label" 0; else chk "$label" 1; fi
 }
+# pkgs_binaries <install.sh> — every BINARY name PKGS declares, one per line.
+#
+# DERIVED FROM THE ARRAY, never listed. PROV_BINS above is keyed on the binary
+# and its header already says it "has to grow whenever PKGS does" — a comment
+# doing a check's job. Measured 2026-08-29: adding `tmux=tmux` to PKGS reddened
+# shape/prov, and the only thing that would have caught it before the gate ran
+# was somebody remembering to read that comment. The property is TOTAL, not a
+# sample: every `${p##*=}` in PKGS must appear in PROV_BINS.
+#
+# See prds/memos/a-hand-kept-list-standing-in-for-a-property-of-the-tree-is-this-board-s-most-common-defect.md
+# — this is the fifth instance of that shape and the cheapest to convert,
+# because one of the two lists was always derivable from the other.
+pkgs_binaries() {
+  sed -n '/^PKGS=(/,/^)/p' "$1" \
+    | sed -e 's/#.*//' -e 's/^PKGS=(//' -e 's/^)//' \
+    | tr -s ' \t' '\n' | sed '/^$/d' \
+    | grep -F '=' | sed 's/.*=//'
+}
+
 scratch_install() {   # scratch_install <name> -> path to a fresh copy
   local p="$SCRATCH/cf/$1"
   mkdir -p "$SCRATCH/cf"
@@ -276,6 +295,45 @@ stage_shape() {
   printf '\nbrew install foo\n' >> "$dirty"
   chk_fail "shape: the lint DOES fire on an appended bare \`brew install foo\`" \
            lint_install "$dirty"
+
+  # PKGS <-> PROV_BINS, derived rather than trusted. The positive precondition
+  # is not decoration: without it, a parser that returned NOTHING would make
+  # the missing-set empty and this check green on a tree it never read — the
+  # failure mode prds/memos/an-absence-assertion-needs-a-positive-precondition
+  # -or-it-is-green-on-a-blank-screen.md is about.
+  # The one binary the poison loop must NOT provide, with its reason. This is
+  # a DECISION list, not a fact-cache: `nvim` is seeded into BIN_PROV by
+  # mk_nvim (:136) because it has to ANSWER `--version` for the floor checks,
+  # which a poison stub cannot do. Adding a name here is a claim that the
+  # binary is provided some other way, and it is visible in a diff.
+  #
+  # My first draft asserted membership of PROV_BINS alone and went red on
+  # `nvim` — red for a reason that had nothing to do with the code. A check
+  # that fails for the wrong reason is one edit from passing for the wrong
+  # reason, so the property is stated as "provided", not "in that one list".
+  local PROV_SEEDED_ELSEWHERE="nvim"
+  local pb pb_n missing=""
+  pb="$(pkgs_binaries "$inst")"
+  pb_n="$(printf '%s\n' "$pb" | sed '/^$/d' | grep -c . || true)"
+  chk_ok "shape: PKGS parses to a non-empty binary set ($pb_n) — the precondition for the pairing check below" \
+         test "$pb_n" -ge 10
+  local b
+  for b in $pb; do
+    case " $PROV_BINS $PROV_SEEDED_ELSEWHERE " in *" $b "*) ;; *) missing="$missing $b" ;; esac
+  done
+  chk_ok "shape: every PKGS binary is provided to the provisioned bin (missing:${missing:- <none>}) — PROV_BINS plus the named exceptions, so the lists cannot silently disagree" \
+         test -z "$missing"
+
+  # Its counterfactual, and it fails for its own reason: a PKGS row whose
+  # binary nothing declares.
+  local unpaired; unpaired="$(scratch_install unpaired.sh)"
+  sed -i.bak 's/^  tmux=tmux$/  tmux=tmux nosuchtool=nosuchbinary/' "$unpaired"
+  local cf_missing="" cb
+  for cb in $(pkgs_binaries "$unpaired"); do
+    case " $PROV_BINS $PROV_SEEDED_ELSEWHERE " in *" $cb "*) ;; *) cf_missing="$cf_missing $cb" ;; esac
+  done
+  chk_ok "shape: the pairing check DOES fire on a PKGS row with no declared binary (caught:${cf_missing:- <none>})" \
+         test -n "$cf_missing"
 
   # ── fresh machine ────────────────────────────────────────────────────────
   RUN_LABEL="shape/fresh"

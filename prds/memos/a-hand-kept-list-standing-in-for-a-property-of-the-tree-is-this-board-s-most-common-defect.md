@@ -30,7 +30,7 @@ made a mistake. The list simply did not know.
 | `tests/shell-init.sh` S3.10 | one **literal** always-run script name | `5e7934c` added a second always-run script (the mason seeder). Fixed 2026-08-29 with `always_run_targets()`, derived |
 | `gates/waves.tsv` | rows keyed by a hand-issued `task:` id | 0 of 9 `07-multiplexer` nodes have one; **50 of 116 `done` nodes never did**. Open as `00-delivery/wave-registry-keying` |
 | `gates/retired-phrases.sh` | exemptions, per phrase | every document that records the gate's red becomes a new carrier. Open as `retired-phrases-mention-vs-use`, whose **R4 forbids** growing the list as the fix |
-| `install.sh` `PKGS` ↔ `tests/provisioning.sh` `PROV_BINS` | two lists that must agree | adding `tmux=tmux` reddened `shape`/`prov` until `PROV_BINS` was edited too. Its own header already says it "has to grow whenever `PKGS` does" — a comment doing a check's job |
+| `install.sh` `PKGS` ↔ `tests/provisioning.sh` `PROV_BINS` | two lists that must agree | adding `tmux=tmux` reddened `shape`/`prov` until `PROV_BINS` was edited too. Its own header already says it "has to grow whenever `PKGS` does" — a comment doing a check's job. **Converted 2026-08-29**: `pkgs_binaries()` derives the set from the array, and the pairing is asserted |
 | `tests/managed-config.sh` `SURFACE` | the declared surface, by name | `0b77a71` arrived with `litellm` undeclared; `07-multiplexer` arrived with `tmux` undeclared |
 
 The `PKGS`/`PROV_BINS` pair is the sharpest: **two hand-kept lists that must
@@ -65,9 +65,28 @@ instead — `always_run_targets()` and `nushell-module-staging.sh`'s derived
 module list are the two worked examples in this tree.
 
 Where a list must stay because it encodes a decision, **something else has to
-check the pairing.** `PROV_BINS` is the open case: nothing today would notice
-the two lists disagreeing, and the next tool to arrive will find out the same
-way this one did.
+check the pairing.** `PROV_BINS` is the worked example, converted the day this
+memo was written and cheap because one of the two lists was always derivable
+from the other: `pkgs_binaries()` reads the array, and every binary must be
+provided — `test -z "$missing"`.
+
+**Two things that conversion taught, both worth more than the fix.**
+
+Its first draft asserted membership of `PROV_BINS` alone and went red on
+`nvim` — which is in `PKGS` as `neovim=nvim` and is deliberately **not**
+poisoned, because `mk_nvim` seeds a stub that has to answer `--version` for
+the floor checks. The check was red for a reason that had nothing to do with
+the code. Session dotfiles-06 had hit the same class an hour earlier writing a
+BRE assertion against an `-qE` matcher, and put it best: **a check that fails
+for the wrong reason is one edit away from passing for the wrong reason.** The
+property had to be stated as *provided*, not as *in that one list*.
+
+And the exception that survives — one name, `nvim`, carrying why — is a
+**decision** list by this memo's own distinction, so it is legitimate where the
+thing it replaced was not. That is the test to apply: could someone add a file
+and make this silently wrong? For `PROV_BINS` the answer was yes. For "nvim is
+provided another way" it is no; changing that requires changing what the stub
+does, which is visible.
 
 And when the list *is* the fix people reach for, say so out loud — the
 `retired-phrases` node's R4 exists to forbid exactly the repair that would have
