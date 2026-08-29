@@ -88,7 +88,21 @@ SURFACE="nushell nvim wezterm television starship.toml bat gh lazygit tinted-the
 # ~/.config/litellm/ is a tool's config directory, which is exactly the shape
 # R2's surface describes. Its one file needed a chezmoi ATTRIBUTE, not a new
 # home: see the create_ census below.
-SURFACE_PENDING="capsule litellm"
+# `tmux` is the third declared-pending name, added 2026-08-29. 07-multiplexer
+# creates home/dot_config/tmux/ (session dotfiles-06), and the direction that
+# put it there — tmux takes windows, panes and scrollback, withdrawing
+# 02-terminal I1 — is confirmed by the user and is already in the tree:
+# 615467b declares tmux as a host PACKAGE in install.sh's four lists.
+#
+# PENDING AND NOT SURFACE, deliberately, because those are two different
+# decisions and only the first is made. Declaring a tool as a package says the
+# host installs it; declaring it in R2's nine says chezmoi owns its config
+# directory. The header above is explicit that growing R2's list belongs to
+# 05-platform/01-deploy-mechanism/managed-config, and this gate does not get to
+# take that decision by editing itself — which is what "Editing one of these
+# lists IS the decision" is warning about. Routed exactly as `litellm` was on
+# 2026-08-28 and `capsule` before it, for the same reason.
+SURFACE_PENDING="capsule litellm tmux"
 # The home/ root. run_once_before_* (P.3) and run_after_* (P.4) are allowed by
 # glob as well — they are chezmoi scripts, not deploy targets.
 #
