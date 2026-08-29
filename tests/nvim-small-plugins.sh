@@ -1028,12 +1028,12 @@ stage_headless() {
   OUT="$(cat "$PROBE_OUT")"; show '.'
   ok "C/R2: Config.loaded reached — the VeryLazy fire plus the deferred-setup wait" \
     'wk_loaded=true'
-  ok "C/R2: five leader groups declared"                        'wk_decl_n=5'
+  ok "C/R2: six leader groups declared"                         'wk_decl_n=6'
   ok "C/R2: in R2's order, with their names" \
-    'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=code | <leader>r=rename/refactor | <leader>t=table'
+    'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=code | <leader>r=rename/refactor | <leader>t=table | <leader>s=session'
   ok "C/R2: the RENDERED tree is exactly the declared groups with a live keymap — tree:fix() pruning, executed" \
     'sync_ok=true'
-  ok "C/R2: and with the four missing keymaps seeded, ALL FIVE groups render with their names" \
+  ok "C/R2: and with the missing keymaps seeded, ALL SIX groups render with their names" \
     'all_five_after_seeding=true'
   ok "C: the probe body did not throw"                          'probe_ok=true'
 
@@ -1131,17 +1131,17 @@ stage_headless() {
   chk "cf6 staging: group = \"code\" renamed to \"codes\" in the COPY" $?
   code="$(nv_watch "$R" 25 "$E" "+luafile $W/pc.lua")"
   OUT="$(cat "$PROBE_OUT")"; show '^(wk_decl|sync_)'
-  ok "cf6: the ordered five-group readback goes red" \
-    'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=codes | <leader>r=rename/refactor | <leader>t=table'
+  ok "cf6: the ordered six-group readback goes red" \
+    'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=codes | <leader>r=rename/refactor | <leader>t=table | <leader>s=session'
   chk_fail "cf6: which is NOT the expected declaration line" \
-    /usr/bin/grep -qxF 'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=code | <leader>r=rename/refactor | <leader>t=table' "$PROBE_OUT"
+    /usr/bin/grep -qxF 'wk_decl=<leader>f=find | <leader>b=buffer | <leader>c=code | <leader>r=rename/refactor | <leader>t=table | <leader>s=session' "$PROBE_OUT"
 
   R="$W/cf7-no-b"
   cf_stage "$R" which-key.lua '/{ "<leader>b", group = "buffer" },/d'
   chk "cf7 staging: the <leader>b group line deleted from the COPY" $?
   code="$(nv_watch "$R" 25 "$E" "+luafile $W/pc.lua")"
   OUT="$(cat "$PROBE_OUT")"; show '^(wk_decl_n|sync_|kids_|all_five)'
-  ok "cf7: four declared groups, not five"                      'wk_decl_n=4'
+  ok "cf7: five declared groups, not six"                       'wk_decl_n=5'
   ok "cf7: and the seeded rendered-tree check goes red too"     'all_five_after_seeding=false'
 
   R="$W/cf8-ap-noop"

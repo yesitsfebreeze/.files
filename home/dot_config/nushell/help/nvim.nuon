@@ -378,4 +378,19 @@
         ]
         source: "prds/03-editor/09-lsp/prd.md"
     }
+    {
+        key: "<leader>ss <leader>sl <leader>sd"
+        title: "Restore the buffers you had open here"
+        use: "The session for a directory is written automatically when you quit Neovim with at least one real file open. `<leader>ss` restores the one belonging to the directory you are in, `<leader>sl` restores the most recent session from anywhere, and `<leader>sd` turns the save off for this run when you do not want what you are about to do remembered. Nothing is restored unless you ask: starting `nvim` plainly gives you an empty editor, as it always did."
+        topic: "edit"
+        mode: "nvim:normal"
+        also: ["<leader>w and <leader>q"]
+        why: "This is what tmux-resurrect brings back after a reboot: it re-launches nvim in the pane's directory with the restore command, and without a written session that pane would come back as an empty editor in the right place. The keys sit on `<leader>s` and not persistence.nvim's documented `<leader>q` because `<leader>q` is already Quit here, and making it a prefix would leave every quit waiting `timeoutlen` for a second key."
+        verify: [
+            {kind: "nvim-map", mode: "n", lhs: "<leader>ss", desc: "Restore session for this directory"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>sl", desc: "Restore last session"}
+            {kind: "nvim-map", mode: "n", lhs: "<leader>sd", desc: "Stop session save on exit"}
+        ]
+        source: "prds/07-multiplexer/06-nvim-session/prd.md"
+    }
 ]

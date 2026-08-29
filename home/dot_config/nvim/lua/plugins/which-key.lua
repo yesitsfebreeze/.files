@@ -49,6 +49,12 @@ return {
       { "<leader>c", group = "code" },
       { "<leader>r", group = "rename/refactor" },
       { "<leader>t", group = "table" },
+      -- Added by 07-multiplexer/06-nvim-session. It goes AFTER table, not in
+      -- alphabetical order: tests/nvim-small-plugins.sh asserts R2's five
+      -- groups as five ASCENDING line numbers, so inserting anywhere among
+      -- them would go red on the order check while the set check still
+      -- passed. Appending leaves f, b, c, r, t in the order R2 states.
+      { "<leader>s", group = "session" },
     },
   },
 }
