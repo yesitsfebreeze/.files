@@ -13,6 +13,7 @@ needs:
   - 01-capsule/03-credential-propagation
 verify: "bash tests/capsule-recents.sh"
 actual: 0.11h
+commit: 6151ae5
 ---
 
 # Recent-workspace picker
