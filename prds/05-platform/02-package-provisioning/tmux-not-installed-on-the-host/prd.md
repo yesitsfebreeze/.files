@@ -79,24 +79,75 @@ makes the change itself on the direction confirmed to it, which is the same
 outcome with the licence in the right place.
 
 ## Requirements
-- [ ] **R1** — Establish, before any edit, that the tmux direction is settled
+- [x] **R1** — Establish, before any edit, that the tmux direction is settled
       **by the user** and not only by a memo. Quote where. If it is not, stop
       and report; that is a correct outcome for this node.
-- [ ] **R2** — Add tmux to `install.sh`'s `PKGS` in the same guarded shape as
+      **Closed 2026-08-29 by session `dotfiles-06`, which held the licence
+      first-hand.** It put the direction to the user through the
+      ask-user-question mechanism as a three-answer fork — the epic's
+      fourteen-answer drill and the I1/I2 reversal, against "a session wrote
+      those answers without asking me" and "show me the memo first". The user
+      chose *"Yes, I settled those 14"*. That is the user's own answer in the
+      session that asked, not a relay, which is what this requirement was
+      written to demand. The `.transitions.jsonl` gap recorded above is what
+      made asking necessary and stands as part of the evidence.
+- [x] **R2** — Add tmux to `install.sh`'s `PKGS` in the same guarded shape as
       every other entry, so a second run is a no-op. Name the binary as well
       as the formula if they differ.
-- [ ] **R3** — Extend `tests/provisioning.sh`'s packages assertions to cover
+      `install.sh:104` — `tmux=tmux`, formula and binary identical, in the
+      "required by a scheduled node" group with the reason and the inertness
+      recorded beside it. The guarded shape is inherited, not re-implemented:
+      the straggler loop at `:303` is `have "${p##*=}" && continue`.
+- [x] **R3** — Extend `tests/provisioning.sh`'s packages assertions to cover
       it, and prove the check by its own red: deleting the name from `PKGS`
       must fail the gate. The gate already does this per-name — follow that
       shape rather than inventing one.
-- [ ] **R4** — Say what happens on a host that already has tmux from
+      Two assertions added in the gate's own idiom: `packages: it carries
+      tmux=tmux` beside the existing `gnupg=gpg` / `git-delta=delta` pair, and
+      `packages/linux: apt carries tmux` on the Linux ladder. `PROV_BINS` also
+      gained `tmux` — its own header says the list "has to grow whenever PKGS
+      does", and without it the have-guard at `:303` would emit a per-package
+      install line on a provisioned machine and redden `shape`/`prov`.
+- [x] **R4** — Say what happens on a host that already has tmux from
       elsewhere, and on Linux, since `install.sh` runs on both.
+      **Already present:** nothing runs. The batch at `:297` is one
+      `brew install` over every name, which brew no-ops on an installed
+      formula; the straggler loop at `:303` is `have tmux && continue`, so a
+      host that got tmux from anywhere — MacPorts, a manual build, Nix — is
+      skipped by binary presence rather than by package-manager bookkeeping.
+      This is exercised, not asserted: the `packages/prov` stage runs with
+      every `PROV_BINS` name resolvable, which now includes tmux, and is green.
+      **On Linux:** the three distro strings at `:121`–`:123` each gained
+      `tmux`, which is the correct name in apt, pacman and dnf alike, so no
+      binary-rename shim of the `batcat`/`fdfind` kind is needed. Only the apt
+      arm is asserted, because only the apt arm has a fixture.
 
 ## Acceptance
-- [ ] `grep -n tmux install.sh` matches, and `bash tests/provisioning.sh` is
+- [x] `grep -n tmux install.sh` matches, and `bash tests/provisioning.sh` is
       green with the count quoted before and after.
-- [ ] The counterfactual: with the name removed, the gate goes red — quoted.
-- [ ] R1's evidence is quoted in this node, or this node reports blocked.
+      `grep -n tmux install.sh` → lines 100, 104, 121, 122, 123.
+      **Before** (a clean worktree at `d63f145`, carrying none of this change):
+      **115 assertions, 0 FAIL**. **After** (working tree): **117 assertions,
+      0 FAIL** — the two this node added. Both counts measured by running the
+      gate, not derived from the diff; the first reading taken for this box
+      was discarded because the worktree it ran in sat at `eea3102` rather
+      than HEAD.
+- [x] The counterfactual: with the name removed, the gate goes red — quoted.
+      Three, on scratch copies, so the predicates are proven to discriminate
+      rather than merely to pass:
+      **CF1** drop the `tmux=tmux` row → `grep -qF 'tmux=tmux'` finds nothing
+      (red); matches on the real file (green).
+      **CF2** drop `tmux` from `APT_PKGS` → the apt pattern does not match
+      (red); matches on the real file (green).
+      **CF3** the substring trap — `DRY sudo apt-get install -y neovim
+      libtmux eza` does **not** satisfy the apt check, so a name merely
+      *ending* in `tmux` cannot green it.
+      CF3 exists because the first draft of that assertion was written in BRE
+      against a `grep -qE` matcher and was red for a reason that had nothing
+      to do with the code. A check that fails for the wrong reason is one
+      edit away from passing for the wrong reason.
+- [x] R1's evidence is quoted in this node, or this node reports blocked.
+      Quoted under R1 above.
 
 ## Out of scope
 - Anything in `07-multiplexer`, which is another session's half of the tree.

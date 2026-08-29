@@ -69,7 +69,7 @@ R7_BATCH="nushell television zoxide starship neovim git ripgrep fd bat eza fzf l
 # already-provisioned machine. The last four are 03-editor/07-formatting's
 # formatters, added with the same carve-out that put their formulas in PKGS —
 # `rustfmt` rather than `rust`, because the pair is `rust=rustfmt`.
-PROV_BINS="brew nu tv zoxide starship git rg fd bat eza fzf lazygit chezmoi gh docker just jq gpg pass delta tinty stylua prettier black rustfmt"
+PROV_BINS="brew nu tv zoxide starship git rg fd bat eza fzf lazygit chezmoi gh docker just jq gpg pass delta tinty stylua prettier black rustfmt tmux"
 
 # ── scratch machines ────────────────────────────────────────────────────────
 # A poison stub: never executed by a correct run, and says so by name if it is.
@@ -335,6 +335,10 @@ stage_packages() {
   chk_ok   "packages: the formula=binary list carries gnupg=gpg" grep -qF 'gnupg=gpg' "$inst"
   chk_fail "packages: it does NOT carry gnupg=gnupg"             grep -qF 'gnupg=gnupg' "$inst"
   chk_ok   "packages: it carries git-delta=delta"                grep -qF 'git-delta=delta' "$inst"
+  # 07-multiplexer's host dependency. Proven by its own red: drop the row from
+  # PKGS and this goes red on the name, not on a downstream symptom.
+  chk_ok   "packages: it carries tmux=tmux (07-multiplexer's host dependency)" \
+           grep -qF 'tmux=tmux' "$inst"
 
   # ── fresh macOS: R7 coverage, parsed as a SET off the batch line ─────────
   RUN_LABEL="packages/fresh"
@@ -400,6 +404,7 @@ stage_packages() {
   for t in tv nu gh lazygit starship tinty; do
     chk_has "packages/linux: release rung installs $t" "fetch_release_do $t "
   done
+  chk_has   "packages/linux: apt carries tmux"          '^DRY sudo apt-get install -y .* tmux( |$)'
   chk_hasnt "packages/linux: no brew on Linux"          '^DRY brew '
 
   RUN_LABEL="packages/nopkgmgr"

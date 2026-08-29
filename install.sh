@@ -97,6 +97,11 @@ PKGS=(
   gnupg=gpg         # the backend pass stores secrets in
   pass=pass         # 04-shell/02 R6 ships a nushell completion for it
   git-delta=delta   # the diff pager the platform rung table lists under brew
+  # 07-multiplexer makes tmux a HOST dependency, not a container one. It was
+  # in the capsule Dockerfile and nowhere else until 2026-08-29, so the epic
+  # named a hard dependency that no host rung installed. This row installs
+  # nothing on its own — PKGS is read at :291/:298 when install.sh runs.
+  tmux=tmux
   # 03-editor/07-formatting's four formatters (its R2). conform.nvim names
   # them by binary; a configured-but-absent formatter is SILENT when a
   # language server is attached (lsp_format = "fallback" substitutes it),
@@ -113,9 +118,9 @@ CASKS=(
 
 # Distro subsets: what each distro actually carries. Whatever it does not
 # carry falls through to the release rung in section 2.
-APT_PKGS="neovim ripgrep fd-find fzf bat zoxide git git-delta jq gnupg pass eza"
-PACMAN_PKGS="neovim nushell television ripgrep fd fzf bat zoxide starship jq git git-delta lazygit github-cli just gnupg pass eza docker chezmoi"
-DNF_PKGS="neovim ripgrep fd-find fzf bat zoxide jq git git-delta gh just gnupg2 pass eza"
+APT_PKGS="neovim ripgrep fd-find fzf bat zoxide git git-delta jq gnupg pass eza tmux"
+PACMAN_PKGS="neovim nushell television ripgrep fd fzf bat zoxide starship jq git git-delta lazygit github-cli just gnupg pass eza docker chezmoi tmux"
+DNF_PKGS="neovim ripgrep fd-find fzf bat zoxide jq git git-delta gh just gnupg2 pass eza tmux"
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
