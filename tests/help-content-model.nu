@@ -65,6 +65,17 @@ const VERIFY_KINDS = {
     "command": {req: ["name"], opt: [], nullable: []}
     "nvim-map": {req: ["mode" "lhs"], opt: ["desc" "scope"], nullable: ["desc"]}
     "wezterm-key": {req: ["key" "mods"], opt: ["table"], nullable: []}
+    # tmux-key — added 2026-08-30 with 07-multiplexer/09-manual-entries. The
+    # same SHAPE as wezterm-key against a different reader
+    # (`tmux -L <label> list-keys -T <table>` rather than `wezterm show-keys`),
+    # so the fields are deliberately identical and a reader who knows one
+    # knows the other.
+    #
+    # `table` is optional and defaults to tmux's `root`; `mods` is required
+    # and is almost always "NONE", because a tmux binding spells its
+    # modifiers INSIDE the key — `C-S-x`, not a separate field. Keeping the
+    # field rather than dropping it is what lets the two kinds stay one shape.
+    "tmux-key": {req: ["key" "mods"], opt: ["table"], nullable: []}
     "prose": {req: [], opt: [], nullable: []}
 }
 
@@ -216,10 +227,27 @@ const COVERAGE = {
     # this list asserts slightly more than the requirement says, which is the
     # safe direction. `F6` (DEFER) and the `Ctrl+Shift+B` wallpaper pipeline
     # (DO NOT PORT) are the two live keys deliberately NOT listed.
+    #
+    # REWRITTEN 2026-08-30 for the tmux cutover (07-multiplexer). Four of the
+    # eleven named a mechanism that no longer exists and could not be
+    # documented by anything:
+    #   Ctrl+Shift+<arrow>  a WezTerm DEFAULT, and every default is off now
+    #                       (`disable_default_key_bindings`). Pane movement is
+    #                       `F5 <letter>`.
+    #   Ctrl+Shift+Q        went with the nine-tab floor it existed to defeat.
+    #   nine tabs           there are no tabs.
+    #   Ctrl+Shift+T        was WezTerm's own SpawnTab, and was documented as
+    #                       an open collision for exactly that reason. The
+    #                       capsule picker's second gesture is Ctrl+Shift+O
+    #                       and opens a WINDOW.
+    # Five are new, and each is a gesture this config could not offer before:
+    # the split, the pane letters, the nested double-tap, the bar, and the
+    # session surviving a reboot.
     "terminal.nuon": [
-        "F5 <digit>" "Ctrl+Shift+<arrow>" "Ctrl+Shift+Q" "nine tabs"
-        "Ctrl+Shift+D" "Ctrl+Shift+B" "Ctrl+Shift+S" "Ctrl+Shift+T"
-        "Ctrl+Shift+X" "Ctrl+V" "Ctrl+C"
+        "F5 <digit>" "F5 <letter>" "F4 <arrow>" "F5 F5"
+        "the status bar" "the session survives"
+        "Ctrl+Shift+D" "Ctrl+Shift+B" "Ctrl+Shift+S" "Ctrl+Shift+O"
+        "Ctrl+Shift+X" "Ctrl+V" "Ctrl+C" "F6"
     ]
     # coverage R4 — capsule
     "capsule.nuon": [
@@ -228,7 +256,17 @@ const COVERAGE = {
 }
 
 # R4 — the concept entries, which must exist AND must be prose.
-const CONCEPTS = ["mkcd" "<word>" "tv channel" "credentials in a capsule"]
+#
+# `mkcd` LEFT THIS LIST on 2026-08-30, and the reason is worth the line: it
+# was never a concept. It is a real nushell command that introspection can
+# see, and carrying `verify: prose` over a live handle is what let it sit in
+# `help --check`'s undocumented column while an entry describing it was right
+# there in the manual. A concept entry is for something with NO live
+# counterpart — the bare-word fallback is a `pre_execution` hook, a tv channel
+# is a config file, capsule credentials are a mount — and `mkcd` is not in
+# that class. Its entry still reads as a concept; its verify now names the
+# command, which is the honest pair.
+const CONCEPTS = ["<word>" "tv channel" "credentials in a capsule"]
 
 def id [e: record] {
     if ("key" in ($e | columns)) { $e.key } else if ("cmd" in ($e | columns)) { $e.cmd } else { "<unidentified>" }

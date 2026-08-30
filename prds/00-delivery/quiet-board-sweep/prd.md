@@ -39,7 +39,7 @@ afterwards: **EXIT=0, 100 PASS, 0 FAIL**. And the four meta-gate scratch-guard
 reds blamed three unrelated gates for the identical
 `tests/tmux-session-and-windows.sh`, printing `INDETERMINATE` themselves —
 exactly what
-[`a-concurrent-lane-trips-the-scratch-guard`](../memos/a-concurrent-lane-trips-the-scratch-guard.md)
+[`a-concurrent-lane-trips-the-scratch-guard`](../../memos/a-concurrent-lane-trips-the-scratch-guard.md)
 says the guard can and cannot decide. `just gate-selftest` in the same window:
 **45 PASS / 3 FAIL**, all three other lanes', with all nine of its own
 scratch-guard checks **green** — which reproduces that memo's claim from the
@@ -56,12 +56,12 @@ other side.
       scratch guard is by design unable to tell that from a real finding.
 - [ ] **R3** — Report the tally and route every red that survives a quiet
       board to the node whose subject it is. A red with no owner goes to
-      [`corrections`](corrections/prd.md) per
-      [`an-unattributed-red-has-no-owner`](../memos/an-unattributed-red-has-no-owner.md);
+      [`corrections`](../corrections/prd.md) per
+      [`an-unattributed-red-has-no-owner`](../../memos/an-unattributed-red-has-no-owner.md);
       it does not get absorbed into this one.
 - [ ] **R4** — If the sweep is green, say which nodes it unblocks and name
       them, so the result is spent rather than merely recorded. At minimum:
-      [`g1-verify-still-red-on-just-gates`](corrections/g1-verify-still-red-on-just-gates/prd.md)'s
+      [`g1-verify-still-red-on-just-gates`](../corrections/g1-verify-still-red-on-just-gates/prd.md)'s
       last box, and `00-delivery/verification-gates` (G.1) itself.
 - [ ] **R5** — Do **not** widen a budget, retry a gate until it passes, or
       mark a red indeterminate to reach green. A gate that is red on a quiet

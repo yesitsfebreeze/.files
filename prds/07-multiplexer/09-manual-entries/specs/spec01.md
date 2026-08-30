@@ -15,7 +15,7 @@ none of it was true. 17 entries now, 30 `tmux-key` targets, 3 `wezterm-key`,
 
 - Roughly 20 `kind: "wezterm-key"` targets became `kind: "tmux-key"`. The
   resolver for that kind is
-  [`06-help/04-drift-check/07-tmux-key-resolver`](../../06-help/04-drift-check/07-tmux-key-resolver/prd.md),
+  [`06-help/04-drift-check/07-tmux-key-resolver`](../../../06-help/04-drift-check/07-tmux-key-resolver/prd.md),
   which landed in the same session — so these entries are **verified**, not
   "documented and unverified" as the epic's constraint allowed for.
 - **New gestures:** `F4 <arrow>`, `F5 <letter>` (the pane letters), `F5 F5`

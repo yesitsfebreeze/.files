@@ -267,6 +267,23 @@ IN=tkt-in
 OUT=tkt-out
 k() { tmux -L "$OUT" send-keys -t outer "$1"; sleep 0.45; }
 
+# RULE 6, PAID FOR ON THE 2026-08-30 QUIET SWEEP. THE FIXTURE'S PANES MUST NOT
+# RUN THE CONFIGURED SHELL.
+#
+# This gate passed standalone all day and went red in the sweep with
+# `got /Users/feb/onshape` on the two cwd checks. Nothing about the bindings
+# had changed. The conf's `default-command` starts nushell, and nushell's
+# env.nu moves the pane on startup — `cd` to the last directory recorded in
+# `startdir.txt` — so both checks were reading where the DEVELOPER last
+# navigated, not where the binding put the pane. Green or red by whoever had
+# `cd`'d where that morning, which is worse than either verdict.
+#
+# `/bin/sh` on the first pane AND as `default-command` for every pane a key
+# creates afterwards. It is not a weakening: what these checks are about is
+# the cwd the BINDING gives a new window or pane (`-c ~` versus
+# `-c "#{pane_current_path}"`, the two rules Q14 deliberately made disagree),
+# and a shell that relocates itself can only hide that. Which shell runs is
+# 01-session-and-windows' claim and is proven there.
 nest_up() { # $1 = inner session path, $2 = client cwd, $3 = optional pane cmd
   tmux -L "$OUT" kill-server > /dev/null 2>&1
   tmux -L "$IN"  kill-server > /dev/null 2>&1
@@ -274,8 +291,11 @@ nest_up() { # $1 = inner session path, $2 = client cwd, $3 = optional pane cmd
   if [ -n "${3:-}" ]; then
     tmux -L "$IN" -f "$CONF" new-session -d -s main -c "$1" "$3"
   else
-    tmux -L "$IN" -f "$CONF" new-session -d -s main -c "$1"
+    tmux -L "$IN" -f "$CONF" new-session -d -s main -c "$1" /bin/sh
   fi
+  # Every window and pane a key creates from here runs /bin/sh too. Set on the
+  # server, after the conf loaded, so it overrides the conf's own value.
+  tmux -L "$IN" set -g default-command /bin/sh > /dev/null 2>&1
   tmux -L "$OUT" new-session -d -s outer -c "$2" "tmux -L $IN attach"
   sleep 1.2
 }

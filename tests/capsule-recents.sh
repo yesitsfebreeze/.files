@@ -173,16 +173,25 @@ wez_s_ok() {
   $GREP -qF '{ key = "s", mods = "CTRL|SHIFT", action = act.SendString("capsule recent\r") },' "$1"
 }
 
-# The Ctrl+Shift+O entry: SpawnCommandInNewTab, the two 06-launchd-path locals
+# AMENDED 2026-08-30 by 07-multiplexer/08-wezterm-reduction: a new WINDOW, not
+# a new tab. There is no tab bar and WezTerm addresses no tabs; the picker is a
+# one-shot that should exit with itself rather than attach a second time to the
+# session you are already in. Everything else about the row is unchanged, which
+# is why the checks below are edited rather than deleted.
+#
+# The Ctrl+Shift+O entry: SpawnCommandInNewWindow, the two 06-launchd-path locals
 # BY NAME, the picker as the tab's program — and no literal config path inside
 # the entry. The absence is the reuse check in text form: a hardcoded
 # `.config/nushell/config.nu` here is a second spelling that drifts from
 # default_prog's the moment 06-launchd-path moves it.
 wez_o_ok() {
   local f="$1" block
-  block="$($GREP -A5 -F 'key = "o",' "$f")"
+  # -A14, not -A5: the entry gained a five-line comment on 2026-08-30 saying
+  # why it spawns a WINDOW rather than a tab, and a window that stops at the
+  # comment reads none of the row it is checking.
+  block="$($GREP -A14 -F 'key = "o",' "$f")"
   printf '%s\n' "$block" | $GREP -qF 'mods = "CTRL|SHIFT"' || return 1
-  printf '%s\n' "$block" | $GREP -qF 'act.SpawnCommandInNewTab' || return 1
+  printf '%s\n' "$block" | $GREP -qF 'act.SpawnCommandInNewWindow' || return 1
   printf '%s\n' "$block" | $GREP -qF '"--config", nu_config' || return 1
   printf '%s\n' "$block" | $GREP -qF '"--env-config", nu_env' || return 1
   printf '%s\n' "$block" | $GREP -qF '"--execute", "capsule recent"' || return 1
@@ -272,7 +281,7 @@ stage_tree() {
            wez_s_ok "$CF_WEZ_S"
 
   # The O entry, plus the hardcoded-path counterfactual — the reuse check.
-  chk_ok "tree: the o CTRL|SHIFT entry is SpawnCommandInNewTab over nu_config/nu_env with \"--execute\", \"capsule recent\", and names no literal config path" \
+  chk_ok "tree: the o CTRL|SHIFT entry is SpawnCommandInNewWindow over nu_config/nu_env with \"--execute\", \"capsule recent\", and names no literal config path" \
          wez_o_ok "$WEZTERM_LUA"
   local CF_WEZ_O="$SCRATCH/cf-wez-o-hardcoded.lua"
   sed 's|"--config", nu_config|"--config", home .. "/.config/nushell/config.nu"|' "$WEZTERM_LUA" > "$CF_WEZ_O"
@@ -320,8 +329,8 @@ stage_keys() {
   # R2 — the new-tab key, its program, and the reuse proof.
   local o_row
   o_row="$($GREP -F "key = 'O', mods = 'CTRL'" "$K")"
-  chk_ok "keys: 'O' with 'CTRL' is SpawnCommandInNewTab (R2, a new tab)" \
-         sh -c "printf '%s\n' \"\$1\" | $GREP -qF 'act.SpawnCommandInNewTab'" _ "$o_row"
+  chk_ok "keys: 'O' with 'CTRL' is SpawnCommandInNewWindow (R2, amended: a new window)" \
+         sh -c "printf '%s\n' \"\$1\" | $GREP -qF 'act.SpawnCommandInNewWindow'" _ "$o_row"
   chk_ok "keys: the O row's args end '--execute', 'capsule\\u{20}recent'" \
          sh -c "printf '%s\n' \"\$1\" | $GREP -qF \"'--execute', 'capsule\\u{20}recent' }\"" _ "$o_row"
   chk_ok "keys: the O row's domain is 'CurrentPaneDomain' — the tab lands in this window" \
@@ -337,22 +346,44 @@ stage_keys() {
   chk_fail "keys: counterfactual O row carrying a foreign home FAILS the nu_config reuse check" \
            sh -c "printf '%s\n' \"\$1\" | $GREP -qF \"'$H/.config/nushell/config.nu'\"" _ "$CF_ROW"
 
-  # The PRD's decision: Ctrl+Shift+T stays SpawnTab, both spellings show-keys
-  # emits for it. This is the node's second acceptance line.
-  chk_ok "keys: 'T' with 'CTRL' is still SpawnTab 'CurrentPaneDomain' — the tab reconciler's manual path (finding C-1)" \
+  # THE Ctrl+Shift+T DECISION IS GONE, AND SO IS THE COLLISION IT MANAGED.
+  # This asserted that T stays WezTerm's own `SpawnTab` — the tab reconciler's
+  # manual path, finding C-1 — and that the capsule picker must therefore not
+  # claim it. `disable_default_key_bindings = true` removed every WezTerm
+  # default (07-multiplexer/08-wezterm-reduction), so there is no SpawnTab to
+  # collide with and no reconciler to have a manual path. The check is
+  # INVERTED rather than deleted: T coming back would mean the defaults came
+  # back, which is the epic's invariant failing.
+  chk_fail "keys: 'T' with 'CTRL' is NOT bound — no WezTerm default survives (the C-1 collision is gone with them)" \
          $GREP -qF "{ key = 'T', mods = 'CTRL', action = act.SpawnTab 'CurrentPaneDomain' }" "$K"
-  chk_ok "keys: 'T' with 'SHIFT|CTRL' is still SpawnTab 'CurrentPaneDomain'" \
+  chk_fail "keys: 'T' with 'SHIFT|CTRL' is not bound either" \
          $GREP -qF "{ key = 'T', mods = 'SHIFT|CTRL', action = act.SpawnTab 'CurrentPaneDomain' }" "$K"
+  chk_fail "keys: and no ActivateTab anywhere in the loaded table — the invariant, measured" \
+         $GREP -q 'ActivateTab' "$K"
 
   # Nothing displaced: C.2's two keys and the three terminal incumbents.
   chk_ok "keys: 'D' with 'CTRL' is still SendString 'capsule\\r' — C.2 undisturbed" \
          $GREP -qF "{ key = 'D', mods = 'CTRL', action = act.SendString 'capsule\\r' }" "$K"
   chk_ok "keys: 'B' with 'CTRL' is still SendString 'capsule\\u{20}--rebuild\\r' — C.2 undisturbed" \
          $GREP -qF "{ key = 'B', mods = 'CTRL', action = act.SendString 'capsule\\u{20}--rebuild\\r' }" "$K"
+  # THE THREE TERMINAL INCUMBENTS MOVED, and this check moved with them. It
+  # asserted F6, Q and X were still bound, to prove the capsule keys displaced
+  # no terminal-epic row. All three left WezTerm on 2026-08-30: F6 and
+  # Ctrl+Shift+X are tmux bindings now (the toggle and copy mode have to work
+  # over ssh), and Ctrl+Shift+Q went with the nine-tab floor it existed to
+  # defeat. The claim this check makes is unchanged — the capsule keys
+  # displaced nothing — so it is now asserted where those keys actually live.
   local k
-  for k in F6 Q X; do
-    chk_ok "keys: '$k' is still bound — no terminal-epic row displaced" \
-           $GREP -qF "key = '$k'" "$K"
+  for k in F6 F5 F4; do
+    chk_ok "keys: '$k' is bound in tmux.conf — the terminal-epic rows moved, they were not displaced" \
+           $GREP -qF "bind -n $k" "$REPO/home/dot_config/tmux/tmux.conf"
+  done
+  chk_ok "keys: Ctrl+Shift+X is tmux's copy-mode entry" \
+         $GREP -qF 'bind -n C-S-x copy-mode' "$REPO/home/dot_config/tmux/tmux.conf"
+  local k2
+  for k2 in F6 Q X; do
+    chk_fail "keys: '$k2' is no longer bound in wezterm.lua" \
+           $GREP -qF "key = '$k2'" "$K"
   done
 
   guard_end

@@ -75,6 +75,7 @@ each with a `kind`:
 | `command` | `name` | `scope commands` (defs and externs) |
 | `nvim-map` | `mode`, `lhs`, optional `desc`, optional `scope` | `nvim_get_keymap` |
 | `wezterm-key` | `key`, `mods`, optional `table` | `wezterm show-keys --lua` |
+| `tmux-key` | `key`, `mods`, optional `table` (default `root`) | `tmux -L <label> list-keys -T <table>` |
 | `prose` | — | nothing; existence-exempt and counted separately |
 
 Two nuances the drift check depends on:
@@ -134,6 +135,18 @@ a rule the next reader re-discovers by watching a real map read as stale.
 One more measured detail: `K` is **not** a global map. Neovim attaches hover
 per buffer on `LspAttach`, while `grn`, `gra`, `grr`, `gri` and `gO` are
 global. So `K` carries `scope: "buffer"` and the others do not.
+
+### `tmux-key` puts the modifiers in the key, `wezterm-key` does not
+
+The two kinds share a shape and differ in exactly one habit, which is the
+thing that trips a writer moving between them.
+
+A **tmux** binding spells its modifiers inside the key — `C-S-x`, `M-x` — so a
+`tmux-key` target carries the whole chord in `key` and `mods: "NONE"`. Written
+as `{key: "x", mods: "CTRL|SHIFT"}` it matches nothing, because
+`list-keys` never prints that form.
+
+A **wezterm** target keeps them apart, and carries its own trap, below.
 
 ### `wezterm-key` is spelled the way `show-keys` prints it
 

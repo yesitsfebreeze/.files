@@ -179,7 +179,7 @@ just gates 2>&1 | grep -E '^FAIL |sweep rc='
       this node's analyst measured it, `just gates` was `rc=1` on five
       failures in `tests/managed-config.sh` and `tests/shell-init.sh`. Those
       are not this node's and were filed as
-      [`g1-verify-still-red-on-just-gates`](../g1-verify-still-red-on-just-gates/prd.md);
+      [`g1-verify-still-red-on-just-gates`](../../g1-verify-still-red-on-just-gates/prd.md);
       that lane's fixes were in the working tree when this ran. So what is
       proven here is: **this node's own half — `gate-selftest` — is green on
       its own merit**, and the sweep is green with the other lane's work

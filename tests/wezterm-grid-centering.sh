@@ -167,8 +167,30 @@ stage_static() {
   # must not have disturbed.
   chk_ok "static: T.1's zeroed window_padding declaration is intact (R9)" \
          $GREP -qF 'window_padding = { left = 0, right = 0, top = 0, bottom = 0 }' "$SRC"
-  chk_ok "static: hide_tab_bar_if_only_one_tab = true — the reserve assumes a shown bar (R4)" \
-         $GREP -qF 'hide_tab_bar_if_only_one_tab = true' "$SRC"
+  # THE RESERVE'S PRECONDITION, INVERTED 2026-08-30. This asserted
+  # `hide_tab_bar_if_only_one_tab = true`, because the reserve assumed a bar
+  # was shown and the nine-tab floor guaranteed it. The tmux cutover
+  # (07-multiplexer/08-wezterm-reduction) removed both the floor and the
+  # option and set `enable_tab_bar = false`, so the precondition is now the
+  # opposite one — and this check is what CAUGHT that, on the quiet sweep,
+  # before anyone looked at a window. It is inverted rather than deleted for
+  # that reason: it is the only thing standing between a config change and a
+  # silently off-centre grid.
+  chk_ok "static: enable_tab_bar = false — there is no bar to reserve for (R4, inverted)" \
+         $GREP -qF 'config.enable_tab_bar = false' "$SRC"
+  # CODE, NOT COMMENTARY. The file QUOTES the old rule twice, in the note
+  # explaining why the reserve moved — and that note is the valuable part. A
+  # bare grep convicts the explanation of the removal, which is the same trap
+  # tests/wezterm-appearance.sh records hitting on four checks the same day.
+  chk_fail "static: …and no CODE line still sets hide_tab_bar_if_only_one_tab" \
+         bash -c "$GREP -vE '^[[:space:]]*--' \"\$1\" | $GREP -q 'hide_tab_bar_if_only_one_tab'" _ "$SRC"
+  # The reserve itself, as a byte fact: zero, and declared outside the pure
+  # block so the --math slice still defaults to the measured formula.
+  chk_ok "static: TAB_BAR_RESERVE = 0 is declared (R4)" \
+         $GREP -qF 'local TAB_BAR_RESERVE = 0' "$SRC"
+  chk_ok "static: …above the opening sentinel, not inside the pure block" \
+         test "$($GREP -n 'local TAB_BAR_RESERVE = 0' "$SRC" | cut -d: -f1)" \
+              -lt "$($GREP -n -- '-- >>> grid-padding' "$SRC" | cut -d: -f1)"
 
   # Epic acceptance: nothing below WezTerm hardcodes a palette, and the
   # directory holds one file.

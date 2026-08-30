@@ -109,6 +109,14 @@ end
 -- (prds/02-terminal/01-appearance R8): the declaration is only the neutral
 -- starting point, and every value after the first tick comes from here.
 
+-- The tab bar's pixel reserve, read by grid_padding below through an upvalue.
+-- ZERO because `config.enable_tab_bar = false` since the tmux cutover
+-- (07-multiplexer/08-wezterm-reduction) — there is no bar to reserve for, and
+-- reserving one pushed the grid up by cell_h + 1 with that much dead space at
+-- the bottom. Declared OUT HERE, above the sentinel, on purpose: see the long
+-- note inside grid_padding for the two shapes that did not survive the gate.
+local TAB_BAR_RESERVE = 0
+
 -- >>> grid-padding (pure): no wezterm calls in this block --
 -- tests/wezterm-grid-centering.sh --math slices it out between these two
 -- sentinels and runs it against measured geometries. The failure this node
@@ -137,13 +145,75 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
     -- over-pads, drops a row and parks a whole extra cell at the bottom,
     -- which is the flicker failure described further down in its stable form.
     --
-    -- The reserve assumes the tab bar is SHOWN, and the nine-tab floor above
-    -- is what guarantees it: hide_tab_bar_if_only_one_tab hides the bar at
-    -- one tab only, and the floor keeps nine. The two one-tab states -- a new
-    -- window's birth instant before the reconciler fills it, and a window on
-    -- its way out through ctrl+shift+q -- are transient, and neither is worth
-    -- a branch.
-    local bar_h = math.ceil(cell_h) + 1
+    -- THE RESERVE IS ZERO SINCE 2026-08-30, AND THAT IS THE WHOLE OF WHAT
+    -- THE tmux CUTOVER DID TO THIS FUNCTION. Everything above still describes
+    -- the arithmetic correctly and is kept, because the day a tab bar comes
+    -- back this is the reasoning that has to come back with it.
+    --
+    -- What changed: `config.enable_tab_bar = false`
+    -- (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a
+    -- row of pixels for one pushes the grid up by cell_h + 1 and leaves that
+    -- much dead space at the bottom — an off-centre grid, which is the exact
+    -- defect this node exists to prevent, arrived at from the other side.
+    --
+    -- The old text said the reserve "assumes the tab bar is SHOWN, and the
+    -- nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab
+    -- hides the bar at one tab only, and the floor keeps nine". Both halves of
+    -- that guarantee are gone — the floor and the option — which is why this
+    -- had to move rather than being left as a harmless constant. Found by
+    -- `bash tests/wezterm-grid-centering.sh` on the quiet sweep, not by
+    -- reading: its static check asserts the option the reserve depends on.
+    --
+    -- It is written as a branch on the config rather than as a bare `0`, so
+    -- the constant and its measurement survive and a future tab bar needs one
+    -- line, not an archaeology dig. The constant is EMPIRICAL: measured
+    -- against wezterm 20240203-110809-5046fc22 (dpi 144, CaskaydiaCove,
+    -- line_height = 1.0, retro tab bar shown), the bar is cell_h or
+    -- cell_h + 1 pixels tall at font sizes 9, 12, 14, 17 and 21.
+    -- RE-MEASURE IT IF THE WEZTERM BUILD MOVES.
+    -- THE RESERVE IS AN ARGUMENT SINCE 2026-08-30, AND ZERO AT THE ONE CALL
+    -- SITE. Everything above still describes the arithmetic correctly and is
+    -- kept, because the day a tab bar comes back this is the reasoning that
+    -- has to come back with it — and the default below is that reasoning,
+    -- still executable.
+    --
+    -- What changed: `config.enable_tab_bar = false`
+    -- (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a
+    -- row of pixels for one pushes the grid up by cell_h + 1 and leaves that
+    -- much dead space at the bottom — an off-centre grid, which is the exact
+    -- defect this node exists to prevent, arrived at from the other side.
+    --
+    -- The old text said the reserve "assumes the tab bar is SHOWN, and the
+    -- nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab
+    -- hides the bar at one tab only, and the floor keeps nine". BOTH halves of
+    -- that guarantee are gone — the floor and the option — which is why this
+    -- had to move rather than being left as a harmless constant. Found by
+    -- `bash tests/wezterm-grid-centering.sh` on the 2026-08-30 quiet sweep,
+    -- whose static check asserts the very option the reserve depended on.
+    --
+    -- AN UPVALUE, not a parameter, not a hardcoded 0, and not a read of
+    -- `config`. Three shapes were tried and the gate rejected two of them,
+    -- which is the gate doing its job:
+    --
+    --   * `config.enable_tab_bar and … or 0` — CRASHES the harness. This
+    --     block is PURE by contract; the sentinels exist so the gate can
+    --     slice it out and run it with no wezterm and no `config` in scope,
+    --     and that slice is the only thing that tests the arithmetic at all.
+    --   * a fifth PARAMETER — silently steals a slot the gate uses. R8's
+    --     pad-independence check calls `grid_padding(w, h, cw, ch, 37, 41)`
+    --     with deliberate junk to prove extra arguments are ignored; a real
+    --     fifth parameter turns that 37 into a 37-pixel reserve. Measured:
+    --     it reddened all nine cases.
+    --   * THIS: an upvalue declared ABOVE the opening sentinel. In
+    --     wezterm.lua it is 0. In the sliced harness the name is undefined,
+    --     so it is nil and the measured formula below applies — which is
+    --     what keeps the gate's nine cases meaningful instead of forcing
+    --     nine expected values to be re-derived from the very function they
+    --     are supposed to be checking, the tautology that gate's own header
+    --     warns against.
+    --
+    -- `or`, not a nil-check, and 0 survives it: 0 is TRUTHY in Lua.
+    local bar_h = TAB_BAR_RESERVE or (math.ceil(cell_h) + 1)
 
     -- ABSOLUTE, never incremental. Both axes are derived from the constant
     -- window and the cell only; the padding in force is not an input to this
