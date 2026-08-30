@@ -7,7 +7,7 @@ task: T.2
 mode: afk
 needs:
   - 02-terminal/01-appearance
-verify: "bash tests/wezterm-startup-layout.sh"
+verify: "bash tests/tmux-key-tables.sh --keys"   # SUPERSEDED 2026-08-30: the nine-tab floor and its gate retired with the WezTerm mux; a digit is a tmux window now
 ---
 
 # Startup layout — the self-healing nine-tab floor

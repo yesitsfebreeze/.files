@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 02-terminal/02-startup-layout
   - 06-help/01-content-model
-verify: "bash tests/wezterm-f5-tab-select.sh"
+verify: "bash tests/tmux-key-tables.sh"          # AMENDED 2026-08-30: the behaviour moved to tmux; this gate presses the same keys
 ---
 
 # F5 one-shot tab select

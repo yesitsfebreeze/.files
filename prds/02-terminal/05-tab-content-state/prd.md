@@ -8,7 +8,7 @@ task: T.6
 mode: afk
 needs:
   - 02-terminal/04-copy-mode
-verify: "bash tests/wezterm-tab-content-state.sh"
+verify: "bash tests/tmux-status-bar.sh --render" # SUPERSEDED 2026-08-30: the occupied/empty tint is a tmux status format now
 ---
 
 # Tab content-state colouring

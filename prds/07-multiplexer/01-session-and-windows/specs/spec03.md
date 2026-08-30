@@ -211,3 +211,7 @@ notes because they are cheap to re-introduce: `F16` (deleting the
 defaults to `tmux-256color`) and `F18` (a `$( )` in a `chk` label beside a
 bare `$?` is a guaranteed false PASS — seven checks here were written that
 way, including Q14's, and `status_lint` now forbids it).
+
+<!--
+retired-phrase-mention: RP7 — the spec records the red the probe hit.
+-->

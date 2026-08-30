@@ -163,3 +163,10 @@ newer multiplexer is weakest.
   thing deleted then was a *second* multiplexer under a WezTerm that already
   was one. It stays excluded, for a reason that now needs restating rather
   than repeating.
+
+<!--
+retired-phrase-mention: RP7 — the phrase appears inside a sentence about
+AGENTS.md's CORRECTION of that wording going stale. A mention of a
+correction, never of a claim; it would read the same if this gate did not
+exist.
+-->

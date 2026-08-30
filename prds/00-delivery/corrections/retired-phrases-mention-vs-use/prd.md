@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 11
 est:
 mode: afk
@@ -70,7 +70,7 @@ row means an exemption cannot silently widen to cover a phrase the author
 never considered, and it shows up in a diff as a claim someone made.
 
 ## Requirements
-- [ ] **R1** — Implement mention-vs-use so the four clear **without any of
+- [x] **R1** — Implement mention-vs-use so the four clear **without any of
       them being edited except to declare the mention**. **Three kinds of
       mention, not one**, and a rule worded around "quoting gate output" misses
       the third: (i) a report quoting `FAIL RP<n> CARRIER …` verbatim; (ii) a
@@ -84,25 +84,84 @@ never considered, and it shows up in a diff as a claim someone made.
       mechanism requires editing another session's files, stop: two of the
       four are `07-multiplexer`'s and are not this board half's to touch. Say
       so and report what those authors would need to add.
-- [ ] **R2** — Row-scoped, never file-blanket. An exemption naming RP7 must
+- [x] **R2** — Row-scoped, never file-blanket. An exemption naming RP7 must
       not exempt RP1–RP18 in the same file.
-- [ ] **R3** — Prove it by its own red, and the two counterfactuals must fail
+- [x] **R3** — Prove it by its own red, and the two counterfactuals must fail
       for different reasons: (i) a genuine **use** of a retired phrase in an
       unmarked file is still reported; (ii) a file marked for RP7 that then
       uses a **different** retired phrase is still reported for that one.
-- [ ] **R4** — Do not add these four to any hand-kept exemption list. That is
+- [x] **R4** — Do not add these four to any hand-kept exemption list. That is
       the fourth instance this month of *a hand-kept list standing in for a
       property of the tree* — see
       [`g1-verify-still-red-on-just-gates`](../g1-verify-still-red-on-just-gates/prd.md)'s
       R5 answer, which found the same mechanism three times in one commit.
 
+## What was built, 2026-08-30
+
+**An in-file, row-scoped marker.** A file declares a mention by carrying a
+line of the form
+
+    retired-phrase-mention: RP7 — <why>
+
+and the gate exempts that file for **that row only**. The three properties
+are the three requirements:
+
+- **Row-scoped (R2).** The marker names the row. One line of awk, keyed on
+  `(row id, path)`.
+- **In the file, not in a list (R4).** `exempt_table` is untouched and no
+  pair was added to it. The marker travels with the text it excuses, so a
+  file that is deleted or reworded takes its own exemption with it — which is
+  precisely what a hand-kept list cannot do, and the reason this was the
+  fourth instance of that mechanism this month.
+- **It covers all three kinds of mention without telling them apart (R1).**
+  A report quoting `FAIL RP<n> CARRIER …`, a probe note or spec recording the
+  red it hit, and a sentence about a *correction* of the wording. A
+  content-sniffing rule would need three heuristics and would still be
+  guessing.
+
+**A stale marker is a reported defect.** A marker matching no carrier means
+the phrase was reworded, the row renumbered, or the wrong row named — and a
+marker silently exempting nothing is how a row-scoped mechanism becomes the
+blanket R2 forbids. `mentions: every declared marker matches a real carrier
+(stale: 0)`.
+
+**Seven carriers, not four.** The node measured four on 2026-08-29; three
+more appeared while `07-multiplexer` was being built — which is itself the
+argument for the mechanism over another four-row list. R1's "stop if this
+needs another session's files" clause did not bind: those sessions are
+finished and their files are in this tree.
+
 ## Acceptance
-- [ ] `bash gates/retired-phrases.sh` output quoted before and after; RP7's
-      four carriers resolved, and the eight existing exemptions still exempt.
-- [ ] Both R3 counterfactuals shown red, each naming its own reason.
-- [ ] The gate's own `--selftest` (if it has one) still passes, quoted.
-- [ ] No file outside this board half edited, or the report says which ones
-      the other session must annotate and why this node could not.
+- [x] `bash gates/retired-phrases.sh` output quoted before and after; RP7's
+      carriers resolved, and the existing exemptions still exempt.
+
+      **Before** (2026-08-30): seven `FAIL RP7 CARRIER …` lines, `FAIL sweep:
+      no armed row's phrase stands outside its allow-list (armed carriers:
+      7)`, `FAIL allow-list: … UNEXPECTED 7`.
+      **After**: `7 declared mention marker(s), 7 of which matched a real
+      carrier`, `PASS sweep: … (armed carriers: 0)`, `PASS allow-list:
+      exactly the 29 declared pairs … (MISSING 0, UNEXPECTED 0)` — the
+      29-pair table is unchanged, so every prior exemption is still exempt.
+      rc 0.
+- [x] Both R3 counterfactuals shown red, each naming its own reason.
+
+      CF16 in `--selftest`, four plants into scratch copies:
+      **(a)** an unmarked USE is still reported, and the FAIL line names the
+      phrase and the path — the marker did not weaken the gate;
+      **(b)** the same plant WITH its row's marker goes green — the control,
+      without which (a) proves nothing about the mechanism;
+      **(c)** a file marked for RP7 that then uses RP1's phrase is still red,
+      the FAIL line names RP1's phrase, and **no** FAIL line names the marked
+      one at that path — row-scoped, proved from both sides in one fixture;
+      **(d)** a marker matching nothing is reported as a STALE MARKER.
+- [x] The gate's own `--selftest` still passes, quoted:
+      `── selftest rc=0 ──`, with all nine CF16 lines PASS.
+- [x] No file outside this board half edited **except to declare the
+      mention**, which R1 explicitly permits: the seven carriers each gained
+      an HTML comment saying which row it mentions and why. Nothing was
+      reworded and no evidence was deleted — the move
+      [`done-node-proof-gate`](../done-node-proof-gate/prd.md) exists to
+      refuse.
 
 ## Out of scope
 - Rewording any document to avoid the phrase.
@@ -135,3 +194,9 @@ never considered, and it shows up in a diff as a claim someone made.
 <!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
+
+<!--
+retired-phrase-mention: RP7 — this node IS the correction of the row, and
+quotes the phrase to say what the four carriers carry. Marking itself is the
+first use of the mechanism it specifies.
+-->

@@ -403,3 +403,8 @@ word.
 36 files for a third unmaintained gate, and R1's argument for whether
 `dot_local` and `litellm` belong under `home/` at all. Both are named in the
 specs' open boxes; neither has been answered, and neither is assumed.
+
+<!--
+This file quotes `FAIL RP7 CARRIER …` verbatim as evidence of a measured
+red. retired-phrase-mention: RP7 — a quotation of gate output, not a use.
+-->

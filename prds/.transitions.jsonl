@@ -59,3 +59,6 @@
 {"from":"open","prd":"05-platform/01-deploy-mechanism","t":"2026-08-30 03:00","to":"done"}
 {"from":"open","prd":"05-platform/02-package-provisioning","t":"2026-08-30 03:00","to":"done"}
 {"from":"open","prd":"06-help/01-content-model/coverage","t":"2026-08-30 03:00","to":"done"}
+{"from":"open","prd":"00-delivery/corrections/retired-phrases-mention-vs-use","t":"2026-08-30 04:00","to":"done"}
+{"from":"open","prd":"00-delivery/wave-registry-keying","t":"2026-08-30 04:00","to":"done"}
+{"from":"open","prd":"00-delivery/finish-line/drift-check-terminal-surface","t":"2026-08-30 04:00","to":"done"}

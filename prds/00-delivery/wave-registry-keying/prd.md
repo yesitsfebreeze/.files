@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 8
 est:
 mode: afk
@@ -40,31 +40,108 @@ registry unmaintained, and it was found by accident. An unregistrable gate is
 an unmaintained gate with extra steps.
 
 ## Requirements
-- [ ] **R1** — Decide the scheme before issuing a single id, and write the
+- [x] **R1** — Decide the scheme before issuing a single id, and write the
       decision down: either every board node gets a `task:` (and say what
       issues them, and what stops two nodes sharing one), or `waves.tsv` stops
       keying on `task:` and keys on the node path, which every node has by
       construction and which cannot drift from the node's identity.
       **Recommend the second and argue it here**, because the path is the id
       the board already guarantees — but do not decide it in a commit message.
-- [ ] **R2** — Whatever R1 chooses, `gates/wave-status.sh --validate` must be
+- [x] **R2** — Whatever R1 chooses, `gates/wave-status.sh --validate` must be
       able to report a node whose gate is missing. It currently cannot: its
       two assertions are independent set-coverage checks with nothing tying a
       node to its own gate, which is why the S.10 mispairing survived. Say
       whether R1's scheme fixes that or leaves it.
-- [ ] **R3** — Do not renumber or reissue any existing `task:` id. Other
+- [x] **R3** — Do not renumber or reissue any existing `task:` id. Other
       documents, `gates/manual/wave*.md` included, cite them.
-- [ ] **R4** — Prove the change by its own red: a node with a gate and no
+- [x] **R4** — Prove the change by its own red: a node with a gate and no
       registration must make `--validate` fail. A green `--validate` on a
       board where the mapping is broken is the exact defect.
 
+## The decision, 2026-08-30
+
+**A wave row may name a node by its PATH as well as by its `task:` id. Both
+are ids; the path is the better one.** Written into
+`gates/wave-status.sh`'s `gen_board_pairs`, beside the code that implements
+it, and repeated here because a decision in a commit message is not a record.
+
+**Why the path wins.** Every node has one by construction. Nothing has to
+issue it, nothing has to stop two nodes sharing one, and it cannot drift from
+the node's identity because it IS the node's identity — the board's whole
+addressing scheme already rests on it. A `task:` id is a second name for a
+thing that already had one, and every second name is a thing that can go
+stale.
+
+**Why the alternative lost.** "Issue a `task:` to every node" needs an
+issuer, a uniqueness rule and a hundred edits — measured below — and buys a
+name the path already provides. It also fails the same way the first scheme
+did: the ids exist only because someone typed them, so nothing stops the next
+node being written without one.
+
+**Additive, and that is the point of the shape.** Not one existing id is
+renumbered or reissued (R3): `gates/manual/wave*.md` and other documents cite
+them by name, and a rename would break real citations to buy nothing. The
+`tasks` column now accepts either form, and the first four uses of the path
+form are in `gates/waves.tsv` today.
+
+## R2 — the node-to-gate pairing, which is what actually fixes the S.10 shape
+
+`--validate`'s five original checks are independent **set-coverage** checks:
+every task in a row, every row's task on the board. Nothing tied a node to
+the gate that proves it, which is exactly how the S.10 mispairing passed all
+of them — both sets were complete and the pairing was wrong.
+
+The scheme fixes it, and could not have without the path form: a new check
+reads each node's own `verify:` and demands that the row registering it NAMES
+that script. Two outcomes, and the split is this node's scoping:
+
+- **MISPAIRED** — registered, in a row that does not name its gate. **Hard
+  fail.** It found two on the first run: `02-terminal/02-startup-layout` and
+  `03-f5-jump-mode` still named `tests/wezterm-startup-layout.sh` and
+  `tests/wezterm-f5-tab-select.sh`, both retired hours earlier by the tmux
+  cutover. Their `verify:` fields now name the tmux gates that replaced them.
+- **UNREGISTERED** — a gate and no row at all. **Reported with a count, never
+  counted**, because registering that class is explicitly out of this node's
+  scope. A hard fail would redden every board for work nobody has been asked
+  to do, and a check nobody can green is a check nobody reads.
+
 ## Acceptance
-- [ ] R1's decision written here with the alternative and why it lost.
-- [ ] `bash gates/wave-status.sh --validate` output quoted before and after.
-- [ ] The counterfactual in R4 shown red, and shown red for the intended
+- [x] R1's decision written here with the alternative and why it lost. Above.
+- [x] `bash gates/wave-status.sh --validate` output quoted before and after.
+
+      **Before** (2026-08-30): 6 PASS and
+      `FAIL registry: every script under tests/ is named by a row
+      (unreferenced: box-audit.py capsule-recents-gui.sh nvim-session.sh)` —
+      three gates that could not be registered because their nodes carry no
+      `task:`.
+      **After**: 7 PASS, rc 0, including
+      `PASS registry: every script under tests/ is named by a row
+      (unreferenced: none)` — the three are registered BY PATH, which is the
+      scheme's first real use — and
+      `PASS registry: every REGISTERED node's row names its own verify:
+      script (mispaired: none)`, plus the census line
+      `66 node(s) carry a verify: script and no wave row at all — reported,
+      never counted`.
+- [x] The counterfactual in R4 shown red, and shown red for the intended
       reason rather than an unrelated one.
-- [ ] The count of `done` nodes with no `task:` re-measured (it was 50 of 116
-      on 2026-08-24) and stated as of the run.
+
+      `--selftest`, four plants, each on a scratch board:
+      **(a)** a node with `verify: tests/deploy-skeleton.sh` registered in
+      wave 2, whose row names a different script → RED;
+      **(b)** the control — the same node moved to wave 1, whose row does
+      name it → GREEN, so the check reads the pairing and not the presence;
+      **(c)** a node with **no `task:` at all**, registered by its path in
+      wave 1 → GREEN, which is the scheme working on the class it exists for;
+      **(d)** that same path-registered node moved to a row naming a
+      different script → RED. The path form buys registration, not amnesty.
+      `── selftest rc=0 ──`.
+- [x] The count of `done` nodes with no `task:` re-measured and stated as of
+      the run.
+
+      **2026-08-30: 100 of 171 `done` nodes carry no `task:`** — 117 of 188
+      nodes overall. It was 50 of 116 on 2026-08-24. The class did not shrink
+      while it was being discussed; it doubled, which is the argument for a
+      scheme that needs nothing issued.
 
 ## Out of scope
 - Writing any `07-multiplexer` gate. That epic is another session's half.

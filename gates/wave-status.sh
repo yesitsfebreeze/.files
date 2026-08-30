@@ -50,21 +50,50 @@ wave_gates() { rows | awk -F'\t' -v w="$1" '$1 == w {print $3}'; }
 # node_state has, so a `task:` in a body never counts. Computed once per
 # process (BOARD_PAIRS below): node_of runs in command substitutions, whose
 # subshells cannot share a lazy cache.
+# THE SCHEME, decided by 00-delivery/wave-registry-keying on 2026-08-30:
+# **a row may name a node by its PATH as well as by its `task:` id.** Both
+# forms are ids here, and the path is the better one — every node has it by
+# construction, it cannot drift from the node's identity, and nothing has to
+# issue it or stop two nodes sharing one.
+#
+# Additive, deliberately. Not one existing `task:` is renumbered or reissued
+# (R3): other documents, `gates/manual/wave*.md` included, cite them by name,
+# and a rename would break citations to buy nothing. The path form is what
+# makes the ~50 `done` nodes that never had a `task:` — every `corrections/*`
+# and `decisions/*` among them — registrable at all.
 gen_board_pairs() {
   [ -d "$BOARD" ] || return 0
   find "$BOARD" -name prd.md -print0 2>/dev/null | LC_ALL=C sort -z \
     | xargs -0 awk -v blen="${#BOARD}" '
-        FNR == 1 { fm = ($0 == "---") ? 1 : 0; next }
+        FNR == 1 { fm = ($0 == "---") ? 1 : 0; node = substr(FILENAME, blen + 2); sub(/\/prd\.md$/, "", node); print node "\t" node; next }
         fm && /^---$/ { fm = 0 }
         fm && /^task:/ {
-          node = substr(FILENAME, blen + 2)
-          sub(/\/prd\.md$/, "", node)
           print $2 "\t" node
         }'
 }
 board_pairs() { printf '%s\n' "$BOARD_PAIRS"; }
+# node<TAB>script for every node whose frontmatter `verify:` names a script
+# under tests/ or gates/. Frontmatter only, same discipline as node_state: a
+# `verify:` in a body is prose about someone else's gate.
+node_verifies() {
+  [ -d "$BOARD" ] || return 0
+  find "$BOARD" -name prd.md -print0 2>/dev/null | LC_ALL=C sort -z \
+    | xargs -0 awk -v blen="${#BOARD}" '
+        FNR == 1 { fm = ($0 == "---") ? 1 : 0; node = substr(FILENAME, blen + 2); sub(/\/prd\.md$/, "", node); next }
+        fm && /^---$/ { fm = 0 }
+        fm && /^verify:/ {
+          line = $0
+          if (match(line, /(tests|gates)\/[A-Za-z0-9._-]+\.(sh|nu|py)/)) {
+            print node "\t" substr(line, RSTART, RLENGTH)
+          }
+        }'
+}
+
 node_of()   { board_pairs | awk -F'\t' -v i="$1" '$1 == i {print $2}'; }
 board_ids() { board_pairs | cut -f1 | grep -v '^$'; }
+# Just the `task:` ids — a pair whose two columns differ. The path scheme
+# emits `<path>\t<path>`, so equality is what tells the two apart.
+task_ids()  { board_pairs | awk -F'\t' '$1 != $2 {print $1}' | grep -v '^$'; }
 
 # `state:` from a node's prd.md frontmatter, or `<no-node>`.
 node_state() {
@@ -110,8 +139,14 @@ validate() {
   echo "── registry integrity: $REGISTRY ────────────────────────────────────"
 
   # every board task in exactly one wave row
+  #
+  # `task_ids` here, not `board_ids`: since the path scheme landed, board_ids
+  # also emits a path for EVERY node, and demanding a wave row for each would
+  # turn this from "no planned task was forgotten" into "register the whole
+  # board", which is not what the row means and is explicitly out of this
+  # scheme's scope. A path-registered node is checked by its own check below.
   local all; all="$(for w in $(wave_ids); do wave_tasks "$w"; done | tr ' ' '\n' | grep -v '^$')"
-  for id in $(board_ids | LC_ALL=C sort -u); do
+  for id in $(task_ids | LC_ALL=C sort -u); do
     seen="$(grep -cxF "$id" <<< "$all")"
     [ "$seen" -eq 0 ] && missing="$missing $id"
     [ "$seen" -gt 1 ] && dup="$dup $id($seen)"
@@ -129,7 +164,7 @@ validate() {
   # no two nodes carry the same task id — nothing structural stops two
   # prd.md frontmatters from claiming one id, so it is asserted here.
   local dupids dupnodes=""
-  dupids="$(board_ids | LC_ALL=C sort | uniq -d)"
+  dupids="$(task_ids | LC_ALL=C sort | uniq -d)"
   for id in $dupids; do
     dupnodes="$dupnodes $id($(node_of "$id" | paste -sd, -))"
   done
@@ -149,6 +184,50 @@ validate() {
     grep -q "tests/$(basename "$script")" "$REGISTRY" || unref="$unref $(basename "$script")"
   done
   chk_ok "registry: every script under tests/ is named by a row (unreferenced:${unref:- none})" test -z "$unref"
+
+  # ── R2: a node tied to ITS OWN gate ──────────────────────────────────────
+  #
+  # The checks above are independent set-coverage checks — every task is in a
+  # row, every row's task is on the board — with NOTHING connecting a node to
+  # the gate that proves it. That is why the S.10 mispairing survived them
+  # all: both sets were complete and the pairing was wrong.
+  #
+  # This check reads each node's own `verify:` and demands that the row
+  # registering that node NAMES that script. It is what makes "a node whose
+  # gate is missing" reportable at all, and it is only possible now that a
+  # node can be registered by path.
+  # TWO OUTCOMES, and the split is the scoping this scheme was given.
+  #
+  #   MISPAIRED — the node IS registered and its row does not name its own
+  #   gate. That is the S.10 shape: both coverage sets complete, the pairing
+  #   wrong. Hard fail.
+  #
+  #   UNREGISTERED — the node has a gate and no row at all. Reported with a
+  #   count and never counted, because registering the ~50 nodes in that
+  #   class is explicitly the NEXT node's work, not this one's. A hard fail
+  #   here would make every board red for work nobody has been asked to do
+  #   yet, and a check nobody can green is a check nobody reads.
+  local vnode vscript vrow mispaired="" nunreg=0
+  while IFS=$'\t' read -r vnode vscript; do
+    [ -n "$vscript" ] || continue
+    # The row that registers this node, by path or by its `task:` id.
+    vrow="$(rows | awk -F'\t' -v n="$vnode" '
+        { split($2, ts, " "); for (i in ts) if (ts[i] == n) { print $0; exit } }')"
+    if [ -z "$vrow" ]; then
+      vrow="$(for id in $(board_pairs | awk -F'\t' -v n="$vnode" '$2 == n && $1 != $2 {print $1}'); do
+                rows | awk -F'\t' -v t="$id" '{ split($2, ts, " "); for (i in ts) if (ts[i] == t) { print $0; exit } }'
+              done | head -1)"
+    fi
+    if [ -z "$vrow" ]; then
+      nunreg=$((nunreg + 1))
+    elif ! printf '%s' "$vrow" | grep -qF "$vscript"; then
+      mispaired="$mispaired $vnode(row-names-no-$vscript)"
+    fi
+  done < <(node_verifies)
+  printf '      %s node(s) carry a verify: script and no wave row at all — reported, never counted (the scheme now lets them be registered by path)\n' \
+    "$nunreg"
+  chk_ok "registry: every REGISTERED node's row names its own \`verify:\` script (mispaired:${mispaired:- none})" \
+    test -z "$mispaired"
 
   # every gates/ script the registry names actually exists
   local ghost=""
@@ -320,6 +399,54 @@ selftest() {
   echo "      MUTATION: $R3 drops the row naming tests/deploy-skeleton.sh"
   chk_fail "coverage: an unreferenced script under tests/ makes the runner red" \
     validate_scratch "$R3" "$B"
+
+  # 4b. R4 of 00-delivery/wave-registry-keying — THE PAIRING, proved by its
+  #     own red, and in both directions.
+  #
+  #     A node with a gate and no registration is REPORTED and not counted
+  #     (registering the ~66 in that class is the next node's work), so the
+  #     red this asserts is the other one: a node that IS registered in a row
+  #     that does not name its own gate. That is the S.10 mispairing shape,
+  #     and before this check every coverage assertion above passed while it
+  #     was true.
+  local B4="$T/board-pairing" R4="$T/waves-pairing.tsv"
+  cp -R "$B" "$B4"
+  mkdir -p "$B4/paired-node"
+  printf -- '---\nstate: done\ntask: Z.98\nverify: "bash tests/deploy-skeleton.sh"\n---\n\n# planted by the selftest\n' \
+    > "$B4/paired-node/prd.md"
+  # Registered in a row that names a DIFFERENT script.
+  awk -F'\t' 'BEGIN{OFS="\t"} $1 == "2" { $2 = $2 " Z.98" } {print}' "$R" > "$R4"
+  echo "      MUTATION: planted paired-node (verify: tests/deploy-skeleton.sh) into $B4, registered in wave 2, whose row names a different script"
+  chk_fail "pairing: a registered node whose row does not name its own \`verify:\` script makes the runner red" \
+    validate_scratch "$R4" "$B4"
+  # The control: the same node registered in the row that DOES name it.
+  local R4B="$T/waves-pairing-ok.tsv"
+  awk -F'\t' 'BEGIN{OFS="\t"} $1 == "1" { $2 = $2 " Z.98" } {print}' "$R" > "$R4B"
+  echo "      MUTATION: the same node moved to wave 1, whose row names tests/deploy-skeleton.sh"
+  chk_ok "pairing: …and registering it in the row that names its gate turns it green — the check reads the PAIRING, not the presence" \
+    validate_scratch "$R4B" "$B4"
+  # And the path form is a real id — on a node with NO `task:` at all, which
+  # is the whole class the scheme exists for: every `corrections/*` and
+  # `decisions/*` node on this board is in it, and none of them could be
+  # registered before. The fixture carries no task id deliberately; one that
+  # did would also have to appear in a row under its id, and the check would
+  # then be measuring the id scheme, not the path one.
+  local B4C="$T/board-pathonly" R4C="$T/waves-pairing-path.tsv"
+  cp -R "$B" "$B4C"
+  mkdir -p "$B4C/path-only-node"
+  printf -- '---\nstate: done\nverify: "bash tests/deploy-skeleton.sh"\n---\n\n# planted by the selftest, with no task id\n' \
+    > "$B4C/path-only-node/prd.md"
+  awk -F'\t' 'BEGIN{OFS="\t"} $1 == "1" { $2 = $2 " path-only-node" } {print}' "$R" > "$R4C"
+  echo "      MUTATION: planted path-only-node with NO task id, registered in wave 1 by its path"
+  chk_ok "pairing: a row may name a node by PATH — the scheme 00-delivery/wave-registry-keying decided" \
+    validate_scratch "$R4C" "$B4C"
+  # And it is still held to the pairing: the same node in a row that names a
+  # different script is red, so the path form buys registration, not amnesty.
+  local R4D="$T/waves-pairing-path-bad.tsv"
+  awk -F'\t' 'BEGIN{OFS="\t"} $1 == "2" { $2 = $2 " path-only-node" } {print}' "$R" > "$R4D"
+  echo "      MUTATION: the same path-registered node moved to a row that names a different script"
+  chk_fail "pairing: a PATH-registered node is held to the same pairing — the scheme buys registration, not amnesty" \
+    validate_scratch "$R4D" "$B4C"
 
   # 5. the arming rules, on a synthetic two-node board: one done, one open.
   local SB="$T/board-synth"

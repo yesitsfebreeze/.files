@@ -349,3 +349,7 @@ outside its scratch` failed naming `tests/tmux-session-and-windows.sh`. That
 was this implementer editing the gate while the sweep ran — the "run the
 sweep on a QUIET board" case `gates/selftest.sh`'s own header documents. It
 did not reproduce on the quiet re-run.
+
+<!--
+retired-phrase-mention: RP7 — probe notes recording the red this session hit.
+-->

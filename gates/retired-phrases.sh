@@ -485,6 +485,43 @@ run() {
       test "$nmaint" -le "$SWEEP_MAINTAINER_PIN"
   fi
 
+  # ── R1: the in-file mention marker ───────────────────────────────────────
+  #
+  # A file may declare that it MENTIONS a retired phrase rather than USING it,
+  # by carrying a line of the form
+  #
+  #     retired-phrase-mention: RP7 — <why>
+  #
+  # THREE PROPERTIES, each of which is the reason for a requirement:
+  #
+  #   ROW-SCOPED (R2). The marker names the row. A file marked for RP7 that
+  #   later uses RP2's phrase is still reported for RP2 — proved by
+  #   counterfactual (ii) in --selftest.
+  #
+  #   IN THE FILE, NOT IN A LIST (R4). `exempt_table` above is a hand-kept
+  #   list and is closed: no row is added to it for a mention. The marker
+  #   travels with the text it excuses, so a file that is deleted or reworded
+  #   takes its own exemption with it and no stale row survives — which is
+  #   exactly what a hand-kept list cannot do.
+  #
+  #   IT COVERS ALL THREE KINDS OF MENTION WITHOUT TELLING THEM APART (R1): a
+  #   report quoting `FAIL RP<n> CARRIER …` verbatim, a probe note or spec
+  #   recording the red it hit, and a sentence about a correction of the
+  #   wording. A content-sniffing rule would need three heuristics and would
+  #   still be guessing; a marker needs none, at the cost of one line the
+  #   author has to write on purpose.
+  #
+  # The marker text itself is not a phrase any row retires, so declaring a
+  # mention cannot create one.
+  $GREP -rIl -- 'retired-phrase-mention:' "$root/prds" "$root/docs" 2> /dev/null \
+    | while IFS= read -r f; do
+        rel="${f#"$root"/}"
+        $GREP -o -- 'retired-phrase-mention:[[:space:]]*RP[0-9][0-9]*' "$f" \
+          | sed 's/.*\(RP[0-9][0-9]*\).*/\1/' \
+          | while IFS= read -r rid; do printf '%s\t%s\n' "$rid" "$rel"; done
+      done | LC_ALL=C sort -u > "$W/mentions.tsv"
+  nmention="$(wc -l < "$W/mentions.tsv" | tr -d ' ')"
+
   # ── the sweep ────────────────────────────────────────────────────────────
   sweep "$root" "$W/phrase-strings.txt" > "$W/pairs.tsv"
   nfile="$(sweep_files "$root" | wc -l | tr -d ' ')"
@@ -493,7 +530,7 @@ run() {
   # ── classify ─────────────────────────────────────────────────────────────
   # KIND is TIER1, EXEMPT, CARRIER or PENDINGCARRIER. Tier 1 is derived from
   # the retirers column; this node's own folder counts for every row.
-  awk -F'\t' -v rowsf="$W/rows.tsv" -v exf="$W/exempt.tsv" -v maintf="$W/maint" '
+  awk -F'\t' -v rowsf="$W/rows.tsv" -v exf="$W/exempt.tsv" -v maintf="$W/maint" -v menf="$W/mentions.tsv" '
     function tier1(ph, path,   n, i, parts, pfx, m) {
       for (m in maint) if (index(path, m "/") == 1) return 1
       n = split(retir[ph], parts, " ")
@@ -511,18 +548,23 @@ run() {
       }
       while ((getline l < exf) > 0) { split(l, b, "\t"); ex[b[1] SUBSEP b[2]] = 1 }
       while ((getline l < maintf) > 0) if (l != "") maint[l] = 1
+      # (row id, path) -> declared mention. Keyed by the ROW, never by the
+      # file: that is R2, and it is one line of code.
+      while ((getline l < menf) > 0) { split(l, c, "\t"); men[c[1] SUBSEP c[2]] = 1 }
     }
     {
       ph = $1; path = $2
       if (!(ph in claim)) next
       if (tier1(ph, path)) { print "TIER1\t" claim[ph] "\t" ph "\t" path "\t" retir[ph]; next }
       if ((ph SUBSEP path) in ex) { print "EXEMPT\t" claim[ph] "\t" ph "\t" path "\t" retir[ph]; next }
+      if ((claim[ph] SUBSEP path) in men) { print "MENTION\t" claim[ph] "\t" ph "\t" path "\t" retir[ph]; next }
       if (arm[ph] == "ARMED") print "CARRIER\t" claim[ph] "\t" ph "\t" path "\t" retir[ph] "\t" sts[ph]
       else print "PENDINGCARRIER\t" claim[ph] "\t" ph "\t" path "\t" retir[ph] "\t" sts[ph]
     }
   ' "$W/pairs.tsv" > "$W/classified.tsv"
 
   ntier1="$($GREP -c '^TIER1	' "$W/classified.tsv" || true)"
+  nmentionhit="$($GREP -c '^MENTION	' "$W/classified.tsv" || true)"
   ncarrier="$($GREP -c '^CARRIER	' "$W/classified.tsv" || true)"
 
   if [ "$MODE" = "pairs" ]; then
@@ -534,6 +576,26 @@ run() {
   echo "── sweep ────────────────────────────────────────────────────────────"
   printf '      %s files, %s (phrase, path) pairs, %s in a retirer folder\n' \
     "$nfile" "$npair" "$ntier1"
+  printf '      %s declared mention marker(s), %s of which matched a real carrier\n' \
+    "$nmention" "$nmentionhit"
+  # A MARKER THAT MATCHES NOTHING IS A DEFECT, and it is reported rather than
+  # ignored: it means the phrase was reworded, the row was renumbered, or the
+  # author marked the wrong row — and a stale marker silently exempting
+  # nothing is the beginning of the blanket exemption R2 forbids.
+  if [ "$nmention" -gt 0 ]; then
+    while IFS=$'\t' read -r rid rel; do
+      [ -n "$rid" ] || continue
+      if ! $GREP -q "^MENTION	$rid	" "$W/classified.tsv"; then
+        printf '      STALE MARKER: %s declares %s and carries no phrase that row retires\n' "$rel" "$rid"
+      fi
+    done < "$W/mentions.tsv"
+    stale_markers="$(while IFS=$'\t' read -r rid rel; do
+        [ -n "$rid" ] || continue
+        $GREP -q "^MENTION	$rid	" "$W/classified.tsv" || echo x
+      done < "$W/mentions.tsv" | wc -l | tr -d ' ')"
+    chk_ok "mentions: every declared marker matches a real carrier (stale: ${stale_markers:-0})" \
+      test "${stale_markers:-0}" -eq 0
+  fi
 
   # ── check 2: anchored ────────────────────────────────────────────────────
   local anch found n_variant=0
@@ -576,7 +638,12 @@ run() {
   local nex missing unexpected nmiss nunexp npendunexp
   nex="$(wc -l < "$W/exempt.tsv" | tr -d ' ')"
   # Observed tier-2 territory: every pair tier 1 did not absorb.
-  $GREP -vE '^TIER1	' "$W/classified.tsv" | cut -f3,4 | LC_ALL=C sort -u > "$W/observed.tsv"
+  # MENTION rows are excluded alongside TIER1, and for the same reason: this
+  # set-equality check is about the hand-kept `exempt_table`, and a declared
+  # mention is deliberately NOT in that table (R4). Counting one as
+  # UNEXPECTED would demand it be added to the very list the mechanism exists
+  # to stop growing.
+  $GREP -vE '^(TIER1|MENTION)	' "$W/classified.tsv" | cut -f3,4 | LC_ALL=C sort -u > "$W/observed.tsv"
   LC_ALL=C sort -u "$W/exempt.tsv" > "$W/declared.tsv"
   comm -23 "$W/declared.tsv" "$W/observed.tsv" > "$W/missing.tsv"
   comm -13 "$W/declared.tsv" "$W/observed.tsv" > "$W/unexpected.tsv"
@@ -1065,6 +1132,67 @@ PLANT
     test "$st" -ne 0
   chk_ok "CF15: and the FAIL line reports the COUNT — a derivation that stopped seeing footprints would report 0, pass the pin check, and take this half green when it must be red" \
     $GREP -qF 'FAIL  waiver: the derived sweep-maintainer set is within its pinned ceiling (3 <= 2)' "$T/cf15.out"
+
+  # ── CF16 — the mention marker, and its two failure directions ────────────
+  #
+  # R3 of `retired-phrases-mention-vs-use`: the marker is proved by ITS OWN
+  # RED, twice, and the two counterfactuals fail for DIFFERENT reasons.
+  #
+  #   (i)  a genuine USE of a retired phrase in an unmarked file is still
+  #        reported — the marker did not weaken the gate;
+  #   (ii) a file marked for RP7 that then uses a DIFFERENT retired phrase is
+  #        still reported for that one — the exemption is row-scoped and not a
+  #        file blanket (R2).
+  #
+  # Both plants go into the same host file, so the only difference between
+  # them is which row the marker names.
+  local m_host="prds/04-shell/prd.md"
+  local m_rp7="the terminal owns the palette"
+  local m_rp1="the window dies"
+
+  # (i) — the use, unmarked.
+  local d16a; d16a="$(mk "cf16-unmarked")"
+  printf '\nA sentence that really does assert %s as a claim.\n' "$m_rp7" >> "$d16a/$m_host"
+  echo "      MUTATION: planted RP7's \`$m_rp7\` into $d16a/$m_host with NO marker"
+  chk_ok   "CF16a: the mutation really landed" $GREP -qF "$m_rp7" "$d16a/$m_host"
+  chk_fail "CF16a: an unmarked USE is still reported — the marker did not weaken the gate" \
+    run_q "$d16a"
+  chk_ok   "CF16a: and the FAIL line names the phrase and the path" \
+    fail_names "$d16a" "$m_rp7" "$m_host"
+
+  # (i, control) — the same plant, marked for its own row, goes green.
+  local d16b; d16b="$(mk "cf16-marked")"
+  printf '\nA sentence that quotes %s.\n\n<!-- retired-phrase-mention: RP7 — selftest fixture -->\n' \
+    "$m_rp7" >> "$d16b/$m_host"
+  echo "      MUTATION: the same plant, plus a RP7 marker in the same file"
+  chk_ok "CF16b: with the row's own marker the gate is green again — the exemption works" \
+    run_q "$d16b"
+
+  # (ii) — marked for RP7, then a DIFFERENT row's phrase. Row-scoped means
+  # this must still be red, and red for RP1, not RP7.
+  local d16c; d16c="$(mk "cf16-other-row")"
+  printf '\nQuoting %s.\n\n<!-- retired-phrase-mention: RP7 — selftest fixture -->\n' \
+    "$m_rp7" >> "$d16c/$m_host"
+  printf '\nAnd a real use: %s when the seeding is absent.\n' "$m_rp1" >> "$d16c/$m_host"
+  echo "      MUTATION: an RP7 marker, and then a use of RP1's \`$m_rp1\` in the same file"
+  chk_fail "CF16c: a file marked for RP7 is STILL red for another row's phrase (R2: row-scoped, never file-blanket)" \
+    run_q "$d16c"
+  chk_ok   "CF16c: and the FAIL line names the OTHER phrase, not the marked one" \
+    fail_names "$d16c" "$m_rp1" "$m_host"
+  chk_ok   "CF16c: …and no FAIL line names the marked phrase at that path" \
+    no_fail_names "$d16c" "$m_rp7" "$m_host"
+
+  # (iii) — a marker that excuses nothing is reported. A stale marker
+  # silently exempting no carrier is how a row-scoped mechanism turns into
+  # the blanket it was built to avoid.
+  local d16d; d16d="$(mk "cf16-stale-marker")"
+  printf '\n<!-- retired-phrase-mention: RP9 — selftest fixture, matching nothing -->\n' \
+    >> "$d16d/$m_host"
+  echo "      MUTATION: a marker for RP9 in a file carrying none of RP9's phrases"
+  chk_fail "CF16d: a marker that matches no carrier is reported" run_q "$d16d"
+  chk_ok   "CF16d: and the report names the file as a STALE MARKER" \
+    bash -c '( bash "$0" --root "$1" 2>&1 | '"$GREP"' -q "STALE MARKER: '"$m_host"'" )' \
+      "$GATES_DIR/retired-phrases.sh" "$d16d"
 
   # ── CF13 — isolation ────────────────────────────────────────────────────
   echo "      MUTATION: none — CF13 asserts the live tree came out byte-identical"

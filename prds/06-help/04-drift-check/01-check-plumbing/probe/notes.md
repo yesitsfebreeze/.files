@@ -323,3 +323,7 @@ Plus `registry: every script under tests/ is named by a row (unreferenced:
 box-audit.py capsule-recents-gui.sh nvim-session.sh tmux-session-and-windows.sh)`
 — the last two are the concurrent 07-multiplexer session's new gates.
 All reported, none fixed: outside this node's footprint.
+
+<!--
+retired-phrase-mention: RP7 — probe notes recording the red this session hit.
+-->

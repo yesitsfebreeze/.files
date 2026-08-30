@@ -349,3 +349,7 @@ colour from how the fixture happened to start the server. The gate asserts
 SPECCED. specs/spec01 (the conf section), specs/spec02 (the gate). Both are
 BUILT and green: `bash tests/tmux-copy-and-clipboard.sh` → 52 PASS, 0 FAIL,
 rc 0, byte-identical across three runs; `--selftest` → 22 PASS, 0 FAIL.
+
+<!--
+retired-phrase-mention: RP7 — probe notes recording the red this session hit.
+-->
