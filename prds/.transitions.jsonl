@@ -2,3 +2,46 @@
 {"calls": null, "from": "blocked", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:39", "to": "specced", "tokens": null}
 {"calls": null, "from": "specced", "prd": "06-help/05-agent-interface", "reads": null, "refused": null, "t": "2026-08-29T08:15:42", "to": "claimed", "tokens": null}
 {"from": "claimed", "prd": "06-help/05-agent-interface", "t": "2026-08-29 08:15", "to": "done"}
+{"calls": null, "from": "blocked", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:43", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:48", "to": "claimed", "tokens": null}
+{"calls": null, "from": null, "prd": "07-multiplexer", "reads": null, "refused": null, "t": "2026-08-29T08:50:56", "to": "open", "tokens": null}
+{"from": "claimed", "prd": "01-capsule/04-recent-workspaces", "t": "2026-08-29 08:56", "to": "done"}
+{"calls": null, "from": "open", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T09:18:11", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "specced", "prd": "00-delivery/corrections/g1-verify-still-red-on-just-gates", "reads": null, "refused": null, "t": "2026-08-29T10:35:16", "to": "claimed", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T10:37:50", "to": "open", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T10:39:12", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T10:39:15", "to": "claimed", "tokens": null}
+{"calls": null, "from": "open", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T10:40:03", "to": "analyzing", "tokens": null}
+{"calls": null, "from": null, "prd": "00-delivery/corrections/02-terminal-closed-six-children-with-41-requirement-boxes-ne", "reads": null, "refused": null, "t": "2026-08-29T10:47:22", "to": "open", "tokens": null}
+{"calls": null, "from": null, "prd": "05-platform/02-package-provisioning/tmux-is-a-host-dependency-of-07-multiplexer-and-is-in-no-hos", "reads": null, "refused": null, "t": "2026-08-29T10:47:56", "to": "open", "tokens": null}
+{"calls": null, "from": null, "prd": "00-delivery/gates-waves-tsv-cannot-register-a-gate-for-any-node-without-", "reads": null, "refused": null, "t": "2026-08-29T10:48:21", "to": "open", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T10:50:07", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T10:50:17", "to": "claimed", "tokens": null}
+{"calls": null, "from": null, "prd": "00-delivery/a-green-just-gates-needs-one-serial-sweep-on-a-quiet-board", "reads": null, "refused": null, "t": "2026-08-29T11:42:59", "to": "open", "tokens": null}
+{"calls": null, "from": "claimed", "prd": "00-delivery/corrections/g1-verify-still-red-on-just-gates", "reads": null, "refused": null, "t": "2026-08-29T11:44:00", "to": "blocked", "tokens": null}
+{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T12:17:19", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T14:04:08", "to": "refine", "tokens": null}
+{"calls": null, "from": "refine", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T14:04:31", "to": "open", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T17:36:05", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T17:36:06", "to": "claimed", "tokens": null}
+{"calls": null, "from": null, "prd": "00-delivery/corrections/retired-phrases-cannot-tell-a-mention-from-a-use-so-every-re", "reads": null, "refused": null, "t": "2026-08-29T17:41:44", "to": "open", "tokens": null}
+{"from": "claimed", "prd": "06-help/04-drift-check/01-check-plumbing", "t": "2026-08-29 19:17", "to": "done"}
+{"from": "claimed", "prd": "07-multiplexer/06-nvim-session", "t": "2026-08-29 21:45", "to": "done"}
+{"calls": null, "from": "open", "prd": "05-platform/02-package-provisioning/tmux-not-installed-on-the-host", "reads": null, "refused": null, "t": "2026-08-29T21:50:27", "to": "claimed", "tokens": null}
+{"calls": null, "from": "claimed", "prd": "05-platform/02-package-provisioning/tmux-not-installed-on-the-host", "reads": null, "refused": null, "t": "2026-08-29T21:50:45", "to": "done", "tokens": null}
+{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check", "reads": null, "refused": null, "t": "2026-08-29T21:50:51", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status", "reads": null, "refused": null, "t": "2026-08-29T21:50:51", "to": "analyzing", "tokens": null}
+{"from": "claimed", "prd": "07-multiplexer/01-session-and-windows", "t": "2026-08-29 22:16", "to": "done"}
+{"calls": null, "from": "open", "prd": "07-multiplexer/02-key-tables", "reads": null, "refused": null, "t": "2026-08-29T22:22:29", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "07-multiplexer/05-copy-and-clipboard", "reads": null, "refused": null, "t": "2026-08-29T22:22:29", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "06-help/04-drift-check/03-nvim-resolver", "reads": null, "refused": null, "t": "2026-08-29T22:22:29", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "07-multiplexer/02-key-tables", "reads": null, "refused": null, "t": "2026-08-29T22:55:57", "to": "specced", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "06-help/04-drift-check/03-nvim-resolver", "reads": null, "refused": null, "t": "2026-08-29T23:02:19", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "06-help/04-drift-check/03-nvim-resolver", "reads": null, "refused": null, "t": "2026-08-29T23:02:19", "to": "claimed", "tokens": null}
+{"from": "claimed", "prd": "06-help/04-drift-check/03-nvim-resolver", "t": "2026-08-29 23:05", "to": "done"}
+{"calls": null, "from": "analyzing", "prd": "07-multiplexer/05-copy-and-clipboard", "reads": null, "refused": null, "t": "2026-08-29T23:15:21", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "07-multiplexer/02-key-tables", "reads": null, "refused": null, "t": "2026-08-29T23:15:22", "to": "claimed", "tokens": null}
+{"from": "claimed", "prd": "07-multiplexer/02-key-tables", "t": "2026-08-30 00:10", "to": "done"}
+{"from": "specced", "prd": "07-multiplexer/05-copy-and-clipboard", "t": "2026-08-30 00:10", "to": "done"}

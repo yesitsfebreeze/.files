@@ -1,5 +1,5 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: derived  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 12        # higher first
@@ -14,6 +14,7 @@ time:              # OPTIONAL. See @references/parts/order.md
   actual:          # a record. Nothing reads it
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 from: 07-multiplexer/01-session-and-windows
+claim: analyst 2026-08-29 21:50
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own

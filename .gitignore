@@ -18,3 +18,4 @@
 prds/.history.jsonl
 prds/.plan.json
 prds/.view.html
+__pycache__/

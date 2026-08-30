@@ -66,6 +66,33 @@ deliberately **not** in this node's `needs:` — `04-recent-workspaces` is alrea
 `done`, so a `needs:` edge would gate nothing. A named constraint is what a
 finished-but-load-bearing sibling gets instead.
 
+## Obligation — the `Ctrl+Shift+X` shim, or `05-copy-and-clipboard`'s headline key does nothing
+
+Recorded 2026-08-29 from `05-copy-and-clipboard`'s analyst, measured on this
+desk. This node **adds one line while deleting the block it lives in**:
+
+    Ctrl+Shift+X  ->  SendString "\x1b[120;6u"
+
+plus the matching assertion in `tests/wezterm-copy-mode.sh`.
+
+**Why it is needed, and why no tmux-side change is an alternative.** Ctrl+X and
+Ctrl+Shift+X are the same byte in the legacy encoding. tmux *decodes*
+`CSI 120;6u` and `CSI 27;6;120~` into `C-S-x` regardless of `extended-keys`
+(that option governs **sending**, not receiving), so the tmux binding is
+already correct. WezTerm emits neither, because `enable_kitty_keyboard = false`
+— and that is **a matched pair with nushell's `use_kitty_protocol = false`**,
+which exists because the kitty protocol leaks an escape through the WezTerm
+pty. Flipping it to fix this key would reintroduce that bug. The shim sends the
+CSI-u sequence explicitly instead, leaving both flags alone.
+
+Binding `C-S-x` costs plain `C-x` nothing — measured — so nvim's `i_CTRL-X` is
+safe. Binding `C-x` instead would have taken it.
+
+The analyst did not make this edit: `wezterm.lua` is this epic's footprint, and
+`02-terminal/04-copy-mode` is `done` with a registered gate asserting the
+current binding. So it is this node's, and it is easy to lose precisely because
+it is one added line inside a deletion.
+
 <!-- Three more headings exist, and none of them is a slot to copy down. Each
      is a claim about the state of this PRD, so an empty copy of it is a false
      one: an empty `## Questions` stops the board on nothing, an empty

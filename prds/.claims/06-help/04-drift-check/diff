@@ -1,0 +1,55 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 8f3aafa..5b1bb14 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -105,0 +106 @@ it is, not to decide what it says.
++| [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
+@@ -107,3 +108,6 @@ it is, not to decide what it says.
+-85 nodes in all. Counts are direct children, with grandchildren in
+-parentheses; `find prds -name prd.md` is the index, because node membership
+-is by existence and a maintained list beside it goes stale.
++Counts are direct children, with grandchildren in parentheses.
++`find prds -name prd.md` is the index, because node membership is by existence
++and a maintained list beside it goes stale — **as the number that stood here
++had.** Corrected 2026-08-29: this paragraph opened "85 nodes in all" while
++`find` answered **173**, so the sentence warning that a maintained count goes
++stale was carrying one that had. No total is written here now; run the `find`.
+diff --git a/prds/.transitions.jsonl b/prds/.transitions.jsonl
+index 48c8369..7f41028 100644
+--- a/prds/.transitions.jsonl
++++ b/prds/.transitions.jsonl
+@@ -4,0 +5,7 @@
++{"calls": null, "from": "blocked", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:43", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:48", "to": "claimed", "tokens": null}
++{"calls": null, "from": null, "prd": "07-multiplexer", "reads": null, "refused": null, "t": "2026-08-29T08:50:56", "to": "open", "tokens": null}
++{"from": "claimed", "prd": "01-capsule/04-recent-workspaces", "t": "2026-08-29 08:56", "to": "done"}
++{"calls": null, "from": "open", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T09:18:11", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
+diff --git a/prds/06-help/04-drift-check/prd.md b/prds/06-help/04-drift-check/prd.md
+index fe1961c..3339680 100644
+--- a/prds/06-help/04-drift-check/prd.md
++++ b/prds/06-help/04-drift-check/prd.md
+@@ -2 +2 @@
+-state: open
++state: analyzing
+@@ -60,0 +61 @@ verify: "help --check exits 0"
++claim: analyst 2026-08-29 09:18
+diff --git a/prds/07-multiplexer/01-session-and-windows/prd.md b/prds/07-multiplexer/01-session-and-windows/prd.md
+index 9c52efb..b8e1902 100644
+--- a/prds/07-multiplexer/01-session-and-windows/prd.md
++++ b/prds/07-multiplexer/01-session-and-windows/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -15,0 +16 @@ time:              # OPTIONAL. See @references/parts/order.md
++claim: analyst 2026-08-29 09:18
+diff --git a/prds/07-multiplexer/06-nvim-session/prd.md b/prds/07-multiplexer/06-nvim-session/prd.md
+index 6c74979..ab87fc6 100644
+--- a/prds/07-multiplexer/06-nvim-session/prd.md
++++ b/prds/07-multiplexer/06-nvim-session/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -15,0 +16 @@ time:              # OPTIONAL. See @references/parts/order.md
++claim: analyst 2026-08-29 09:18

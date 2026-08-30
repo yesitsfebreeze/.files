@@ -1,0 +1,184 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 8f3aafa..5b1bb14 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -105,0 +106 @@ it is, not to decide what it says.
++| [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
+@@ -107,3 +108,6 @@ it is, not to decide what it says.
+-85 nodes in all. Counts are direct children, with grandchildren in
+-parentheses; `find prds -name prd.md` is the index, because node membership
+-is by existence and a maintained list beside it goes stale.
++Counts are direct children, with grandchildren in parentheses.
++`find prds -name prd.md` is the index, because node membership is by existence
++and a maintained list beside it goes stale — **as the number that stood here
++had.** Corrected 2026-08-29: this paragraph opened "85 nodes in all" while
++`find` answered **173**, so the sentence warning that a maintained count goes
++stale was carrying one that had. No total is written here now; run the `find`.
+diff --git a/gates/nushell-module-staging.sh b/gates/nushell-module-staging.sh
+index 4b72562..d6844e3 100755
+--- a/gates/nushell-module-staging.sh
++++ b/gates/nushell-module-staging.sh
+@@ -131 +131 @@ modules() {
+-  $GREP -oE '^source ~/\.config/nushell/[a-z]+\.nu$' "$1" | sed 's|.*/||'
++  $GREP -oE '^source ~/\.config/nushell/[a-z-]+\.nu$' "$1" | sed 's|.*/||'
+@@ -194 +194 @@ names_it() {
+-       | $GREP -qE "(^|[^a-zA-Z0-9_])$stem(\.nu)?([^a-zA-Z0-9_.]|$)" \
++       | $GREP -qE "(^|[^a-zA-Z0-9_-])$stem(\.nu)?([^a-zA-Z0-9_.-]|$)" \
+@@ -401 +401 @@ selftest() {
+-    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode) help(; do)/\1\2/'
++    "$TV" 's/^([[:space:]]*for m in [a-z -]*help-check) help(; do)/\1\2/'
+@@ -407 +407 @@ selftest() {
+-    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode)(; do)/\1 help\2/'
++    "$TV" 's/^([[:space:]]*for m in [a-z -]*help-check)(; do)/\1 help\2/'
+diff --git a/prds/.transitions.jsonl b/prds/.transitions.jsonl
+index 48c8369..eadfdc1 100644
+--- a/prds/.transitions.jsonl
++++ b/prds/.transitions.jsonl
+@@ -4,0 +5,31 @@
++{"calls": null, "from": "blocked", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:43", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:48", "to": "claimed", "tokens": null}
++{"calls": null, "from": null, "prd": "07-multiplexer", "reads": null, "refused": null, "t": "2026-08-29T08:50:56", "to": "open", "tokens": null}
++{"from": "claimed", "prd": "01-capsule/04-recent-workspaces", "t": "2026-08-29 08:56", "to": "done"}
++{"calls": null, "from": "open", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T09:18:11", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "specced", "prd": "00-delivery/corrections/g1-verify-still-red-on-just-gates", "reads": null, "refused": null, "t": "2026-08-29T10:35:16", "to": "claimed", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T10:37:50", "to": "open", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T10:39:12", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T10:39:15", "to": "claimed", "tokens": null}
++{"calls": null, "from": "open", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T10:40:03", "to": "analyzing", "tokens": null}
++{"calls": null, "from": null, "prd": "00-delivery/corrections/02-terminal-closed-six-children-with-41-requirement-boxes-ne", "reads": null, "refused": null, "t": "2026-08-29T10:47:22", "to": "open", "tokens": null}
++{"calls": null, "from": null, "prd": "05-platform/02-package-provisioning/tmux-is-a-host-dependency-of-07-multiplexer-and-is-in-no-hos", "reads": null, "refused": null, "t": "2026-08-29T10:47:56", "to": "open", "tokens": null}
++{"calls": null, "from": null, "prd": "00-delivery/gates-waves-tsv-cannot-register-a-gate-for-any-node-without-", "reads": null, "refused": null, "t": "2026-08-29T10:48:21", "to": "open", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T10:50:07", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T10:50:17", "to": "claimed", "tokens": null}
++{"calls": null, "from": null, "prd": "00-delivery/a-green-just-gates-needs-one-serial-sweep-on-a-quiet-board", "reads": null, "refused": null, "t": "2026-08-29T11:42:59", "to": "open", "tokens": null}
++{"calls": null, "from": "claimed", "prd": "00-delivery/corrections/g1-verify-still-red-on-just-gates", "reads": null, "refused": null, "t": "2026-08-29T11:44:00", "to": "blocked", "tokens": null}
++{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T12:17:19", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T14:04:08", "to": "refine", "tokens": null}
++{"calls": null, "from": "refine", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes", "reads": null, "refused": null, "t": "2026-08-29T14:04:31", "to": "open", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T17:36:05", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "06-help/04-drift-check/01-check-plumbing", "reads": null, "refused": null, "t": "2026-08-29T17:36:06", "to": "claimed", "tokens": null}
++{"calls": null, "from": null, "prd": "00-delivery/corrections/retired-phrases-cannot-tell-a-mention-from-a-use-so-every-re", "reads": null, "refused": null, "t": "2026-08-29T17:41:44", "to": "open", "tokens": null}
++{"from": "claimed", "prd": "06-help/04-drift-check/01-check-plumbing", "t": "2026-08-29 19:17", "to": "done"}
++{"from": "claimed", "prd": "07-multiplexer/06-nvim-session", "t": "2026-08-29 21:45", "to": "done"}
++{"calls": null, "from": "open", "prd": "05-platform/02-package-provisioning/tmux-not-installed-on-the-host", "reads": null, "refused": null, "t": "2026-08-29T21:50:27", "to": "claimed", "tokens": null}
++{"calls": null, "from": "claimed", "prd": "05-platform/02-package-provisioning/tmux-not-installed-on-the-host", "reads": null, "refused": null, "t": "2026-08-29T21:50:45", "to": "done", "tokens": null}
++{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check", "reads": null, "refused": null, "t": "2026-08-29T21:50:51", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status", "reads": null, "refused": null, "t": "2026-08-29T21:50:51", "to": "analyzing", "tokens": null}
+diff --git a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check/prd.md b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check/prd.md
+index 135e569..002dab1 100644
+--- a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check/prd.md
++++ b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -16,0 +17 @@ from: 07-multiplexer/01-session-and-windows
++claim: analyst 2026-08-29 21:50
+diff --git a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status/prd.md b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status/prd.md
+index 23ebba4..bdfcd57 100644
+--- a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status/prd.md
++++ b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -16,0 +17 @@ from: 07-multiplexer/01-session-and-windows
++claim: analyst 2026-08-29 21:50
+diff --git a/prds/05-platform/02-package-provisioning/tmux-not-installed-on-the-host/prd.md b/prds/05-platform/02-package-provisioning/tmux-not-installed-on-the-host/prd.md
+index 0c407c5..3a2d4a1 100644
+--- a/prds/05-platform/02-package-provisioning/tmux-not-installed-on-the-host/prd.md
++++ b/prds/05-platform/02-package-provisioning/tmux-not-installed-on-the-host/prd.md
+@@ -2 +2 @@
+-state: open
++state: done
+diff --git a/prds/06-help/04-drift-check/prd.md b/prds/06-help/04-drift-check/prd.md
+index fe1961c..3f77510 100644
+--- a/prds/06-help/04-drift-check/prd.md
++++ b/prds/06-help/04-drift-check/prd.md
+@@ -160,0 +161,12 @@ terminal surface, and R5 closes for shell and Neovim only.
++
++## Children
++
++| child | contract | needs |
++|---|---|---|
++| `01-check-plumbing` | help --check` parses and runs: the flag on `def help`, `help-check.nu`, config.nu source order, and the eleven sibling `MODULES=` constants plus the `[a-z-]+` regex fix so no gate dies at parse | — |
++| `02-shell-resolver` | R1 resolves keybinding/alias/command in a configured shell, and the four wrong-kind corpus defects are reported | 01-check-plumbing |
++| `03-nvim-resolver` | R2 for global maps: one headless spawn that never installs plugins and raises on a missing config, the seven normalization rules, the three-state `desc | 01-check-plumbing |
++| `04-nvim-buffer-maps` | The eight `scope: "buffer"` targets resolve against an LSP-attached and filetype-loaded buffer, or the check declares them unresolvable with the measurement | 03-nvim-resolver |
++| `05-allowlist` | R6: the ~281 live handles classified explicitly, the `_`-private convention written down, the LSP-defaults exception kept documented | 02-shell-resolver, 03-nvim-resolver |
++| `06-report-and-gate` | R4/R5/R7 report and exit code, and `tests/help-drift-check.sh` proving all four acceptance mutations including the Neovim-default collision | 05-allowlist, 04-nvim-buffer-maps |
++| `07-tmux-key-resolver` | The memo's `tmux-key` verify kind resolves against `tmux -L … list-keys`, and terminal.nuon's ~20 `wezterm-key` entries convert | 01-check-plumbing |
+diff --git a/prds/06-help/prd.md b/prds/06-help/prd.md
+index 0d708ce..fa3a5a4 100644
+--- a/prds/06-help/prd.md
++++ b/prds/06-help/prd.md
+@@ -60 +60 @@ targets — enforced in `tests/help-content-model.nu`, whose
+-  | `desc: null` | the live map carries **no** description on purpose — assert existence only, never a mismatch (14 targets do this today) |
++  | `desc: null` | the live map carries **no** description on purpose — assert existence only, never a mismatch (**7** targets do this, measured 2026-08-29; this cell read 14 until then) |
+@@ -72 +72,2 @@ targets — enforced in `tests/help-content-model.nu`, whose
+-    the field. It bites today: four `nvim-map` targets recorded in
++    the field. **The four failures this bullet promised do not exist.**
++    Corrected 2026-08-29: it named four `nvim-map` targets from
+@@ -74,3 +75,9 @@ targets — enforced in `tests/help-content-model.nu`, whose
+-    omit `desc` where the live maps set `LSP: …` strings — four drift-check
+-    false failures waiting. They belong to the content files and to
+-    [04-drift-check](04-drift-check/prd.md), not to this epic.
++    that omit `desc` where the live maps set `LSP: …` strings, and called
++    them "four drift-check false failures waiting". The `04-drift-check`
++    analyst built the check and measured the live corpus: `desc` **absent 0**,
++    **null 7**, **explicit 59**, and **zero** desc mismatches. The record does
++    not say whether the corpus was fixed after this was written or the count
++    was never right. The clause above still binds — an omitted `desc` on a map
++    that carries one live is still a defect — but no child inherits an
++    exception for four targets that are not there. See
++    [`an-invariant-naming-a-defect-must-be-re-measured`](../memos/an-invariant-naming-a-defect-must-be-re-measured-before-a-child-inherits-it.md).
+diff --git a/prds/07-multiplexer/01-session-and-windows/prd.md b/prds/07-multiplexer/01-session-and-windows/prd.md
+index 9c52efb..9551b2c 100644
+--- a/prds/07-multiplexer/01-session-and-windows/prd.md
++++ b/prds/07-multiplexer/01-session-and-windows/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -6,2 +6,2 @@ priority: 20        # higher first
+-complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+-blast-radius:      # analyst, at spec time — high|mid|low. What breaks if this is wrong
++complexity: 32      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
++blast-radius: high
+@@ -15,0 +16 @@ time:              # OPTIONAL. See @references/parts/order.md
++claim: implementer 2026-08-29 10:39
+diff --git a/prds/07-multiplexer/08-wezterm-reduction/prd.md b/prds/07-multiplexer/08-wezterm-reduction/prd.md
+index 51a0593..b5abd94 100644
+--- a/prds/07-multiplexer/08-wezterm-reduction/prd.md
++++ b/prds/07-multiplexer/08-wezterm-reduction/prd.md
+@@ -44,0 +45,24 @@ The cutover, in one change (Q8): `default_prog` attaches tmux, `enable_tab_bar =
++## Constraint — the two capsule keys are named, not implied
++
++`Ctrl+Shift+S` and `Ctrl+Shift+O` survive this reduction. They are the capsule
++recents picker, and the prose clause "the capsule `SendString` keys" above is
++not enough to hold them, because what rests on those two keys is specific and
++already `done`:
++
++- [`01-capsule/04-recent-workspaces`](../../01-capsule/04-recent-workspaces/prd.md)
++  R2 and R3, and three of its acceptance boxes.
++- The five C.4 rows in `gates/manual/wave4.md`, ticked on real hardware on
++  2026-08-29.
++- `tests/capsule-recents-gui.sh`, which drives both keys through a real GUI
++  WezTerm (35 run, 35 passed).
++- `tests/capsule-recents.sh --keys`, which asserts the **compiled** WezTerm key
++  table verbatim and goes red the moment either key moves.
++
++So the implementer of this node deletes F5, F6 and the tab machinery and leaves
++those two bindings exactly where they are, and `tests/capsule-recents.sh --keys`
++staying green is a check on this node, not a coincidence. Recorded 2026-08-29
++after the session holding `01-capsule` raised it: the dependency is real and is
++deliberately **not** in this node's `needs:` — `04-recent-workspaces` is already
++`done`, so a `needs:` edge would gate nothing. A named constraint is what a
++finished-but-load-bearing sibling gets instead.
++
+diff --git a/tests/shell-help.sh b/tests/shell-help.sh
+index d9b670f..6217c64 100644
+--- a/tests/shell-help.sh
++++ b/tests/shell-help.sh
+@@ -101 +101 @@ PRD_PATH="prds/06-help/02-help-command/prd.md"
+-MODULES="pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help.nu"
++MODULES="pass.nu claude.nu litellm.nu recents.nu zoxide.nu history.nu capsule.nu finder.nu quicklist.nu copymode.nu help-check.nu help.nu"

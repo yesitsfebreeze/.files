@@ -1,0 +1,136 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 8f3aafa..5b1bb14 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -105,0 +106 @@ it is, not to decide what it says.
++| [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
+@@ -107,3 +108,6 @@ it is, not to decide what it says.
+-85 nodes in all. Counts are direct children, with grandchildren in
+-parentheses; `find prds -name prd.md` is the index, because node membership
+-is by existence and a maintained list beside it goes stale.
++Counts are direct children, with grandchildren in parentheses.
++`find prds -name prd.md` is the index, because node membership is by existence
++and a maintained list beside it goes stale — **as the number that stood here
++had.** Corrected 2026-08-29: this paragraph opened "85 nodes in all" while
++`find` answered **173**, so the sentence warning that a maintained count goes
++stale was carrying one that had. No total is written here now; run the `find`.
+diff --git a/home/dot_config/nushell/config.nu b/home/dot_config/nushell/config.nu
+index 1bbaa58..78f25de 100644
+--- a/home/dot_config/nushell/config.nu
++++ b/home/dot_config/nushell/config.nu
+@@ -608,0 +609 @@ alias core-help = help
++source ~/.config/nushell/help-check.nu
+diff --git a/home/dot_config/nushell/help.nu b/home/dot_config/nushell/help.nu
+index 5770349..a8fb6c6 100644
+--- a/home/dot_config/nushell/help.nu
++++ b/home/dot_config/nushell/help.nu
+@@ -669,0 +670 @@ def help [
++    --check                # diff the manual against the live configuration
+@@ -705,0 +707,8 @@ def help [
++    # 0 — the drift check (06-help/04-drift-check). FIRST, and it delegates
++    # to help-check.nu rather than doing the work here: this file carries R8's
++    # no-spawn guarantee and the check spawns `nvim --headless`, so every line
++    # that spawns lives in the other file and only the flag lives here.
++    # config.nu sources help-check.nu ABOVE this file, because a def calling a
++    # def from a LATER source fails at run time with `Command not found`.
++    if $check { return (_help_check) }
++
+diff --git a/home/dot_config/nushell/help/nvim.nuon b/home/dot_config/nushell/help/nvim.nuon
+index 93adad2..3b86e12 100644
+--- a/home/dot_config/nushell/help/nvim.nuon
++++ b/home/dot_config/nushell/help/nvim.nuon
+@@ -380,0 +381,15 @@
++    {
++        key: "<leader>ss <leader>sl <leader>sd"
++        title: "Restore the buffers you had open here"
++        use: "The session for a directory is written automatically when you quit Neovim with at least one real file open. `<leader>ss` restores the one belonging to the directory you are in, `<leader>sl` restores the most recent session from anywhere, and `<leader>sd` turns the save off for this run when you do not want what you are about to do remembered. Nothing is restored unless you ask: starting `nvim` plainly gives you an empty editor, as it always did."
++        topic: "edit"
++        mode: "nvim:normal"
++        also: ["<leader>w and <leader>q"]
++        why: "This is what tmux-resurrect brings back after a reboot: it re-launches nvim in the pane's directory with the restore command, and without a written session that pane would come back as an empty editor in the right place. The keys sit on `<leader>s` and not persistence.nvim's documented `<leader>q` because `<leader>q` is already Quit here, and making it a prefix would leave every quit waiting `timeoutlen` for a second key."
++        verify: [
++            {kind: "nvim-map", mode: "n", lhs: "<leader>ss", desc: "Restore session for this directory"}
++            {kind: "nvim-map", mode: "n", lhs: "<leader>sl", desc: "Restore last session"}
++            {kind: "nvim-map", mode: "n", lhs: "<leader>sd", desc: "Stop session save on exit"}
++        ]
++        source: "prds/07-multiplexer/06-nvim-session/prd.md"
++    }
+diff --git a/home/dot_config/nushell/help/use-review.nuon b/home/dot_config/nushell/help/use-review.nuon
+index a9270a4..5e73aae 100644
+--- a/home/dot_config/nushell/help/use-review.nuon
++++ b/home/dot_config/nushell/help/use-review.nuon
+@@ -193,0 +194 @@
++    {id: "<leader>ss <leader>sl <leader>sd", file: "nvim.nuon", digest: "b3919ace8b0a107e", reviewer: "analyst-07-06-nvim-session", author: "analyst-07-06-nvim-session", date: "2026-08-29", note: "NEW ENTRY, AND THE READER IS THE AUTHOR — recorded as such rather than dressed as an independent reading, which this file's other rows have and this one does not. What the reading can still be worth is that it was made against a run rather than against the spec: every clause of the `use` is a line of `bash tests/nvim-session.sh` that passed on 2026-08-29 (nvim 0.12.4, persistence.nvim b20b2a7). `written automatically when you quit with at least one real file open` — probe B, exit with two files gives exactly one session file; the `at least one` is persistence.nvim's `need = 1` default, probe D, where exiting an empty nvim leaves the session byte-identical. `<leader>ss` restores this directory's session and `<leader>sl` the most recent from anywhere — `M.current()` keys the filename on `getcwd()`, `M.last()` sorts `M.list()` by mtime. `Nothing is restored unless you ask` — probe C, a bare `nvim` in a directory with a session reopens no buffers, which is the property that separates this plugin from auto-session and the reason 07-persistence has to be handed an explicit restore command. UNVERIFIED, AND SAID SO RATHER THAN TICKED: the three `nvim-map` targets below cannot be resolved today; the drift check that reads them (06-help/04-drift-check) is `open` and parse-erroring, so this entry is documented and machine-unverified until it lands."}
+diff --git a/home/dot_config/nushell/help/why-review.nuon b/home/dot_config/nushell/help/why-review.nuon
+index 10ddaca..b4bfea8 100644
+--- a/home/dot_config/nushell/help/why-review.nuon
++++ b/home/dot_config/nushell/help/why-review.nuon
+@@ -125,0 +126 @@
++    {id: "<leader>ss <leader>sl <leader>sd", file: "nvim.nuon", digest: "a3d233b599fb26ea", reviewer: "analyst-07-06-nvim-session", author: "analyst-07-06-nvim-session", date: "2026-08-29", note: "NEW ENTRY, READER IS THE AUTHOR — declared, not implied. Read for the one thing this file exists to catch, restatement: the `use` is entirely gesture (when a session is written, what the three keys do, that nothing restores unless asked) and names no mechanism, no consumer and no other key. The `why` is two facts the `use` cannot carry. First, WHO READS IT — tmux-resurrect re-launches nvim in the pane's directory, so without a written session that pane comes back as an empty editor in the right place; measured, not assumed, from `tmux-resurrect/strategies/nvim_session.sh` and the inline-strategy split in `scripts/process_restore_helpers.sh`. Second, WHY THE PREFIX IS ODD — persistence.nvim documents `<leader>q`, this config already binds `<leader>q` as a leaf (`Quit`, its own entry `<leader>w and <leader>q`), and a prefix on top of a leaf makes every quit wait `timeoutlen`. Both are reasons a reader would otherwise have to discover by being bitten. No word of either appears in the `use`. 111 words."}
+diff --git a/home/dot_config/nvim/lazy-lock.json b/home/dot_config/nvim/lazy-lock.json
+index 253b58d..44ceefe 100644
+--- a/home/dot_config/nvim/lazy-lock.json
++++ b/home/dot_config/nvim/lazy-lock.json
+@@ -14,0 +15 @@
++  "persistence.nvim": { "branch": "main", "commit": "b20b2a7887bd39c1a356980b45e03250f3dce49c" },
+diff --git a/home/dot_config/nvim/lua/plugins/which-key.lua b/home/dot_config/nvim/lua/plugins/which-key.lua
+index d041fb3..0adf10d 100644
+--- a/home/dot_config/nvim/lua/plugins/which-key.lua
++++ b/home/dot_config/nvim/lua/plugins/which-key.lua
+@@ -51,0 +52,6 @@ return {
++      -- Added by 07-multiplexer/06-nvim-session. It goes AFTER table, not in
++      -- alphabetical order: tests/nvim-small-plugins.sh asserts R2's five
++      -- groups as five ASCENDING line numbers, so inserting anywhere among
++      -- them would go red on the order check while the set check still
++      -- passed. Appending leaves f, b, c, r, t in the order R2 states.
++      { "<leader>s", group = "session" },
+diff --git a/prds/.transitions.jsonl b/prds/.transitions.jsonl
+index 48c8369..bc6689e 100644
+--- a/prds/.transitions.jsonl
++++ b/prds/.transitions.jsonl
+@@ -4,0 +5,8 @@
++{"calls": null, "from": "blocked", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:43", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "01-capsule/04-recent-workspaces", "reads": null, "refused": null, "t": "2026-08-29T08:50:48", "to": "claimed", "tokens": null}
++{"calls": null, "from": null, "prd": "07-multiplexer", "reads": null, "refused": null, "t": "2026-08-29T08:50:56", "to": "open", "tokens": null}
++{"from": "claimed", "prd": "01-capsule/04-recent-workspaces", "t": "2026-08-29 08:56", "to": "done"}
++{"calls": null, "from": "open", "prd": "07-multiplexer/01-session-and-windows", "reads": null, "refused": null, "t": "2026-08-29T09:18:11", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "07-multiplexer/06-nvim-session", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "06-help/04-drift-check", "reads": null, "refused": null, "t": "2026-08-29T09:18:12", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "specced", "prd": "00-delivery/corrections/g1-verify-still-red-on-just-gates", "reads": null, "refused": null, "t": "2026-08-29T10:35:16", "to": "claimed", "tokens": null}
+diff --git a/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md b/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
+index 13afb4e..53a319d 100644
+--- a/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
++++ b/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
+@@ -2 +2 @@
+-state: specced
++state: claimed
+@@ -10 +10 @@ from: 00-delivery/verification-gates
+-claim:
++claim: implementer 2026-08-29 10:35
+diff --git a/prds/06-help/04-drift-check/prd.md b/prds/06-help/04-drift-check/prd.md
+index fe1961c..3339680 100644
+--- a/prds/06-help/04-drift-check/prd.md
++++ b/prds/06-help/04-drift-check/prd.md
+@@ -2 +2 @@
+-state: open
++state: analyzing
+@@ -60,0 +61 @@ verify: "help --check exits 0"
++claim: analyst 2026-08-29 09:18
+diff --git a/prds/07-multiplexer/01-session-and-windows/prd.md b/prds/07-multiplexer/01-session-and-windows/prd.md
+index 9c52efb..b8e1902 100644
+--- a/prds/07-multiplexer/01-session-and-windows/prd.md
++++ b/prds/07-multiplexer/01-session-and-windows/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -15,0 +16 @@ time:              # OPTIONAL. See @references/parts/order.md
++claim: analyst 2026-08-29 09:18
+diff --git a/prds/07-multiplexer/06-nvim-session/prd.md b/prds/07-multiplexer/06-nvim-session/prd.md
+index 6c74979..ab87fc6 100644
+--- a/prds/07-multiplexer/06-nvim-session/prd.md
++++ b/prds/07-multiplexer/06-nvim-session/prd.md
+@@ -2 +2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
++state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+@@ -15,0 +16 @@ time:              # OPTIONAL. See @references/parts/order.md
++claim: analyst 2026-08-29 09:18

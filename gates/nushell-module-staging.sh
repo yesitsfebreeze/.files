@@ -128,7 +128,7 @@ GATE_FLOOR="nushell-aliases nushell-core shell-claude shell-help
 # pattern is anchored at both ends so a `source` inside a comment or a string
 # cannot enter the list.
 modules() {
-  $GREP -oE '^source ~/\.config/nushell/[a-z]+\.nu$' "$1" | sed 's|.*/||'
+  $GREP -oE '^source ~/\.config/nushell/[a-z-]+\.nu$' "$1" | sed 's|.*/||'
 }
 
 # The config.nu line number of one module's own source line, so a fatal drop
@@ -191,7 +191,7 @@ names_it() {
     && return 0
   $GREP -qE "/\.config/nushell/\\\$[a-zA-Z_]+(\.nu)?\"" "$f" \
     && $GREP -E '(for +[a-zA-Z_]+ +in|MODULES=)' "$f" \
-       | $GREP -qE "(^|[^a-zA-Z0-9_])$stem(\.nu)?([^a-zA-Z0-9_.]|$)" \
+       | $GREP -qE "(^|[^a-zA-Z0-9_-])$stem(\.nu)?([^a-zA-Z0-9_.-]|$)" \
     && return 0
   return 1
 }
@@ -398,13 +398,13 @@ selftest() {
   scratch_tree "$GREEN" > /dev/null
   local TV="$GREEN/tests/shell-television.sh"
   edit_proved "selftest GREEN: the mutation changed the copy — help dropped from shell-television's staging list" \
-    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode) help(; do)/\1\2/'
+    "$TV" 's/^([[:space:]]*for m in [a-z -]*help-check) help(; do)/\1\2/'
   echo "      MUTATION: removed help from the \`for m in\` staging list in $TV"
   chk_fail "selftest GREEN: the copy is red before repair" run_repo "$GREEN"
   chk_ok   "selftest GREEN: and the FAIL names the gate and the module" \
     says "$GREEN" "does not stage help.nu"
   edit_proved "selftest GREEN: the repair changed the copy back" \
-    "$TV" 's/^([[:space:]]*for m in [a-z ]*copymode)(; do)/\1 help\2/'
+    "$TV" 's/^([[:space:]]*for m in [a-z -]*help-check)(; do)/\1 help\2/'
   echo "      MUTATION: repaired the copy by restoring help to the staging list"
   chk_ok "selftest GREEN: the repaired copy is byte-identical to the managed file — the repair is the exact inverse" \
     cmp -s "$TV" "$REPO_ROOT/tests/shell-television.sh"

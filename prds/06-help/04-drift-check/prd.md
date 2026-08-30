@@ -158,3 +158,15 @@ R4–R8 apply to the two built surfaces. R6's allowlist and R5's prose exemption
 are unchanged. Consequence carried into
 [`coverage`](../01-content-model/coverage/prd.md): its R3 defers with the
 terminal surface, and R5 closes for shell and Neovim only.
+
+## Children
+
+| child | contract | needs |
+|---|---|---|
+| `01-check-plumbing` | help --check` parses and runs: the flag on `def help`, `help-check.nu`, config.nu source order, and the eleven sibling `MODULES=` constants plus the `[a-z-]+` regex fix so no gate dies at parse | — |
+| `02-shell-resolver` | R1 resolves keybinding/alias/command in a configured shell, and the four wrong-kind corpus defects are reported | 01-check-plumbing |
+| `03-nvim-resolver` | R2 for global maps: one headless spawn that never installs plugins and raises on a missing config, the seven normalization rules, the three-state `desc | 01-check-plumbing |
+| `04-nvim-buffer-maps` | The eight `scope: "buffer"` targets resolve against an LSP-attached and filetype-loaded buffer, or the check declares them unresolvable with the measurement | 03-nvim-resolver |
+| `05-allowlist` | R6: the ~281 live handles classified explicitly, the `_`-private convention written down, the LSP-defaults exception kept documented | 02-shell-resolver, 03-nvim-resolver |
+| `06-report-and-gate` | R4/R5/R7 report and exit code, and `tests/help-drift-check.sh` proving all four acceptance mutations including the Neovim-default collision | 05-allowlist, 04-nvim-buffer-maps |
+| `07-tmux-key-resolver` | The memo's `tmux-key` verify kind resolves against `tmux -L … list-keys`, and terminal.nuon's ~20 `wezterm-key` entries convert | 01-check-plumbing |

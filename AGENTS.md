@@ -103,10 +103,14 @@ it is, not to decide what it says.
 | [`04-shell`](prds/04-shell/prd.md) | Nushell daily driver | 9 |
 | [`05-platform`](prds/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
 | [`06-help`](prds/06-help/prd.md) | `help` — the environment manual (net-new) | 5 (+1) |
+| [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
 
-85 nodes in all. Counts are direct children, with grandchildren in
-parentheses; `find prds -name prd.md` is the index, because node membership
-is by existence and a maintained list beside it goes stale.
+Counts are direct children, with grandchildren in parentheses.
+`find prds -name prd.md` is the index, because node membership is by existence
+and a maintained list beside it goes stale — **as the number that stood here
+had.** Corrected 2026-08-29: this paragraph opened "85 nodes in all" while
+`find` answered **173**, so the sentence warning that a maintained count goes
+stale was carrying one that had. No total is written here now; run the `find`.
 
 **Working on the build?** [`00-delivery`](prds/00-delivery/prd.md) is
 the operational plan: every task with its size, files, and dependencies in
