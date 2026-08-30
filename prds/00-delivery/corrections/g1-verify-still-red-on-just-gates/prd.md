@@ -317,7 +317,7 @@ that gets to write the state.
       deliberately.**
 
       **Updated 2026-08-30.** The scheduling act this box needed happened:
-      [`quiet-board-sweep`](../quiet-board-sweep/prd.md) ran `just
+      [`quiet-board-sweep`](../../quiet-board-sweep/prd.md) ran `just
       gate-selftest` and `just gates` serially, twice, on a board with a clean
       `git status --porcelain` and no node `claimed` or `analyzing`. The tally
       moved from **3550 PASS / 43 FAIL** to **5096 PASS / 8 FAIL**, and
