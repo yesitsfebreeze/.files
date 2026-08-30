@@ -936,7 +936,22 @@ stage_spawn() {
   mux_start "$M3" "$M3/cfg.lua"
   if mux_wait "$M3"; then
     sed 's/^/      /' "$M3/list.txt"
-    wez_cli "$M3" get-text --pane-id 0 > "$M3/text.txt" 2>/dev/null
+    # POLL FOR THE TEXT, DO NOT READ ONCE. `mux_wait` returns as soon as the
+    # pane EXISTS; tmux-main has not necessarily printed by then. A single
+    # `get-text` therefore races the two lines this stage is about, and lost
+    # the race on the 2026-08-30 quiet sweep — both checks red, while the
+    # same gate passed 111/111 standalone an hour earlier. A red that depends
+    # on machine load is worse than either verdict, because it teaches the
+    # reader to re-run instead of to look.
+    #
+    # Bounded, and it fails loudly rather than hanging: after 60 tries the
+    # last read stands and the checks below report on whatever was there.
+    local i
+    for i in $(seq 1 60); do
+      wez_cli "$M3" get-text --pane-id 0 > "$M3/text.txt" 2>/dev/null
+      squash_q "$M3/text.txt" 'tmux is not installed' && break
+      sleep 0.5
+    done
     sed 's/^/      /' "$M3/text.txt" | $GREP -v '^ *$' | head -6
     # Matched through squash, never on the raw bytes — see the helper.
     # AMENDED 2026-08-30. The failure has a different SHAPE now, and the

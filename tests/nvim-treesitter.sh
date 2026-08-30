@@ -813,6 +813,20 @@ stage_headless() {
   # passes for a reason that does not exist on a fresh machine.
   R="$W/cf-prov"
   raw_stage "$R"
+  # THE COUNTERFACTUAL NEEDS LEFTOVERS TO EXIST, AND ON A CLEAN STORE THEY DO
+  # NOT. Measured 2026-08-30 on the quiet sweep: this machine's
+  # ~/.local/share/nvim/lazy/nvim-treesitter carries neither `parser/` nor
+  # `parser-info/`, so the plain `cp -R` copies nothing to keep, the false
+  # pass cannot be CONSTRUCTED, and both checks below went red for the
+  # absence of the hazard rather than for its presence.
+  #
+  # Reported, not failed, and loudly — the distinction this whole gate is
+  # built on. A counterfactual that cannot be built proves nothing either
+  # way; failing on it teaches the reader to ignore the line. The moment a
+  # treesitter build leaves parsers in the plugin directory again, this arms
+  # itself and the two checks run exactly as written.
+  if [ -d "$HOME/.local/share/nvim/lazy/$NT/parser" ] \
+     || [ -d "$HOME/.local/share/nvim/lazy/$NT/parser-info" ]; then
   ! prov_ok "$R"; st=$?
   chk "counterfactual staging: the plain cp -R copy KEEPS parser/ and parser-info/" "$st"
   # Its own curl log: with no parser store this root really does start
@@ -823,6 +837,15 @@ stage_headless() {
   printf '%s\n' "$OUT" | /usr/bin/grep -E '^(hl|installed)' | sed 's/^/      /'
   ok "THE FALSE PASS: x.nu is highlighted from the clone's untracked leftovers" 'hl=true'
   ok "THE FALSE PASS: while get_installed() is EMPTY — nothing is really installed" 'installed='
+  else
+    printf '      SKIPPED the provenance counterfactual: %s carries no parser/ or parser-info/, so the plain-copy false pass cannot be constructed on this machine. It arms itself the moment a build leaves parsers there.\n' \
+      "~/.local/share/nvim/lazy/$NT"
+    # What IS asserted, so the skip is not a blank: the precondition itself,
+    # measured rather than assumed. If leftovers ever appear here and this
+    # check stays green, the skip above is lying and the branch is dead.
+    chk_fail "provenance: the live plugin dir really carries no parser/ — the reason the counterfactual is skipped, measured not assumed" \
+      test -d "$HOME/.local/share/nvim/lazy/$NT/parser"
+  fi
 
   # ── hermeticity, last checks of the stage ───────────────────────────────
   [ -s "$GATE_GIT_LOG" ]; st=$?

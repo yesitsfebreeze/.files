@@ -159,9 +159,34 @@ run() {
   chk_ok "boxes: no checklist box is a decision row — a decision closes in its own PRD (decisions:${dec:- none})" \
     test -z "$dec"
 
-  # no box is pre-ticked
-  ticked="$(grep -lE '^- \[[x~]\]' "$DIR"/wave*.md 2>/dev/null | xargs -r -n1 basename 2>/dev/null | tr '\n' ' ')"
-  chk_ok "boxes: no checklist box is ticked in the repo (ticked:${ticked:- none})" test -z "$ticked"
+  # A TICKED BOX IS A RUN, AND IS COUNTED — NOT A FAILURE. Inverted
+  # 2026-08-30, and the reason is that this check contradicted the protocol it
+  # exists to enforce.
+  #
+  # `gates/manual/COMMITTED.md`, written 2026-08-28 from the finish-line
+  # drill, says in as many words: "Run them in gates/manual/wave4.md itself —
+  # tick the box there, not here. This file is the worklist, not a second
+  # place for results." So the tick IS the record, it belongs in the
+  # checklist, and it has to be committed to be evidence — a run recorded in
+  # a working copy nobody sees unblocks nothing.
+  #
+  # Measured on the quiet sweep: five `C.4` rows in wave4.md and one `H.5` in
+  # wave6.md are ticked. Those five are precisely the group COMMITTED.md lists
+  # as unblocking `01-capsule/04-recent-workspaces`. Failing on them asks the
+  # person who did the work to erase it to green a gate — the move
+  # `done-node-proof-gate` exists to refuse.
+  #
+  # WHAT THIS CHECK WAS FOR SURVIVES, one line up: a checklist box that is a
+  # DECISION row is still red, because a decision closes in its own PRD. That
+  # is the real "pre-ticked" hazard (`fd5c471` ticked a decision from the
+  # record — sound reasoning, wrong place) and it is caught by name rather
+  # than by banning every tick.
+  ticked="$(grep -cE '^- \[[x~]\]' "$DIR"/wave*.md 2>/dev/null | awk -F: '{n += $2} END {print n + 0}')"
+  total="$(grep -cE '^- \[[ x~]\]' "$DIR"/wave*.md 2>/dev/null | awk -F: '{n += $2} END {print n + 0}')"
+  printf '      %s of %s checklist boxes are ticked — a tick is a run, and the record lives in the checklist\n' \
+    "$ticked" "$total"
+  chk_ok "boxes: the checklists are readable and hold boxes at all (got $total)" \
+    test "${total:-0}" -gt 0
 
   return "$rc"
 }
@@ -220,7 +245,10 @@ selftest() {
   C="$T/ticked"; mkdir -p "$C"; cp "$DIR"/wave*.md "$C/"
   LC_ALL=C sed -i '' -E 's/^- \[ \] \*\*G\.1\*\*/- [x] **G.1**/' "$C/wave0.md"
   echo "      MUTATION: ticked the G.1 box in $C/wave0.md"
-  chk_fail "a pre-ticked box makes it red" run_q "$C"
+  # INVERTED with the check above: a ticked box is a recorded run and must
+  # NOT make the gate red. The counterfactual that matters is the one below
+  # it — a DECISION row on a checklist — and that one is unchanged.
+  chk_ok "a ticked box does NOT make it red — the tick is the record (COMMITTED.md)" run_q "$C"
 
   # 6. a decision row planted back onto a checklist is red
   C="$T/decision"; mkdir -p "$C"; cp "$DIR"/wave*.md "$C/"

@@ -573,6 +573,25 @@ main() {
   osascript -e 'tell application "System Events" to get name of (first process whose frontmost is true)' >/dev/null 2>&1 \
     || die "System Events is not reachable — grant Accessibility to the controlling terminal"
 
+  # THE SUBJECT MUST EXIST. Every check below presses a key that runs
+  # `capsule recent` in a pane and then reads what the picker drew; with no
+  # `capsule` on PATH the pane prints "command not found", no picker opens,
+  # and the run fails seven checks deep with "the picker never opened" — a
+  # true statement about the wrong thing.
+  #
+  # Measured 2026-08-30, on the first sweep that ever ran this file (it was
+  # unreferenced by `gates/waves.tsv` until `00-delivery/wave-registry-keying`
+  # made a path-keyed row possible): `command -v capsule` answers nothing on
+  # this machine, exactly as this file's own header recorded in August. The
+  # gate is not broken and neither is the binding — the tool is not installed,
+  # and `just cutover` has not run.
+  #
+  # `die`, not a skip: a harness that cannot reach its subject must say so in
+  # one line at the top, not accumulate failures that read like defects in the
+  # thing it is testing.
+  command -v capsule >/dev/null 2>&1 \
+    || die "capsule is not on PATH — this harness drives the picker that RUNS it, so it cannot test anything until the CLI is installed (01-capsule/01-container-lifecycle) and \`just cutover\` has run"
+
   case "${1:-}" in
     --selftest) selftest ;;
     *)
