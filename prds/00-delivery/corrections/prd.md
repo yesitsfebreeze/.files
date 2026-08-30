@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -35,12 +35,31 @@ invalidates a PRD or a scope decision · **S2** a factual error to correct ·
 ## Acceptance
 - [x] Every S1 item is either fixed or converted into a task in
       [`01-work-breakdown`](../work-breakdown/prd.md) before Wave 1 starts.
-- [ ] The three open decisions have a recorded answer, in this file, with a
+- [x] The three open decisions have a recorded answer, in this file, with a
       date.
-- [ ] No S2 "live bug" is reproduced in the rebuild; each is either fixed or
+
+      Five, in the end, and every one carries its answer and its date in the
+      S1 section above: burrito vs the tab floor (2026-08-21 — and **reversed
+      on 2026-08-30** by [`07-multiplexer`](../../07-multiplexer/prd.md),
+      recorded where the question was asked rather than overwritten), tinty
+      (2026-08-21), fzf (2026-08-21), deployed-vs-source (2026-08-21) and the
+      wallpaper/opacity pair (2026-08-21). Each also has a
+      `decisions/<slug>` node, and all six of those are `done`.
+- [x] No S2 "live bug" is reproduced in the rebuild; each is either fixed or
       documented as accepted-with-reason.
-- [ ] `capabilities.md` corrections are confirmed with the author before
+
+      `bash tests/live-bugs.sh` — rc 0 (2026-08-30). That gate is the
+      standing proof: it drives each S2 bug against the rebuilt config and
+      fails if one reproduces.
+- [x] `capabilities.md` corrections are confirmed with the author before
       editing.
+
+      Held by construction: no inventory correction has been made without a
+      dated user decision above it, and the four `docs/capabilities*.md`
+      inventories carry their corrections with the decision that authorised
+      each. The one place this was tested — the split-entry rating rule — was
+      referred to the user and answered on 2026-08-21 before
+      `02-terminal/03-f5-jump-mode`'s numbers moved.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

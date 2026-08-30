@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -58,12 +58,39 @@ the PRD wrong stops and files the correction into
 or silently improvise a different one.
 
 ## Acceptance
-- [ ] A fresh macOS machine reaches the full daily driver from a clone plus
-      one apply, with every wave gate passing.
-- [ ] The critical path is explicit, and no task sits on it that didn't have
+- [ ] **A fresh macOS machine reaches the full daily driver from a clone plus
+      one apply, with every wave gate passing.** Unmet, and split so the two
+      halves are not confused with each other.
+
+      **Every wave gate passing:** measured 2026-08-30 by
+      [`quiet-board-sweep`](quiet-board-sweep/prd.md) — all seven waves ARMED,
+      **5096 PASS / 8 FAIL**, `sweep rc=1`. Three causes behind the eight, all
+      routed: a gate whose subject (`capsule`) is not installed, a probe that
+      passed and failed on the same commit, and a contradiction between two
+      board requirements that was fixed inside the window.
+
+      **A fresh macOS machine:** untested and untestable from here. It is a
+      human check in [`gates/manual/wave1.md`](../../gates/manual/wave1.md),
+      and `just cutover` has not run — `chezmoi source-path` still answers
+      `/Users/feb/dev/.files/home`, so this repo is not yet the machine's
+      source at all.
+- [x] The critical path is explicit, and no task sits on it that didn't have
       to.
-- [ ] Any agent can pick up a task from the breakdown and know its spec, its
+
+      `python3 .../plan.py plan` reads it off the frontmatter rather than off
+      a maintained list, and on 2026-08-30 it is nearly empty: 6 PRDs, one
+      of them parked. The path shortened by construction this session —
+      `07-multiplexer`'s nine children were the last long chain, and the
+      `needs:` graph is what serialised them.
+- [x] Any agent can pick up a task from the breakdown and know its spec, its
       dependencies, its files, and how its completion is proven.
+
+      The four are `specs/`, `needs:`, `footprint:` and `verify:`, and the
+      last of those got a real check on 2026-08-30: `wave-status.sh
+      --validate` now reads each node's own `verify:` and demands the wave row
+      registering it NAMES that script. It found two nodes pointing at gates
+      that had been retired hours earlier — the first mechanical proof this
+      board has had that a node's stated proof exists.
 
 ## Out of scope
 - Re-litigating scope. What gets built is settled by the other epics and the

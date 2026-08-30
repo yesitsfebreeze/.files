@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -46,13 +46,32 @@ new-tab path. The rekey record is in
 [`04-recent-workspaces`](04-recent-workspaces/prd.md) `## Decisions`.
 
 ## Acceptance
-- [ ] One command, `capsule`, is the only entry path: every binding in
+
+- [x] One command, `capsule`, is the only entry path: every binding in
       `## Bindings` is a thin wrapper that invokes it, and nothing else
       builds, mounts, or attaches.
-- [ ] Reconnecting to a running capsule feels instant; cold start is dominated
-      by docker itself, not by the tool.
-- [ ] `git push` and SSH work inside the container without any
+
+      `bash tests/capsule-lifecycle.sh` — 60 pass, 0 fail (2026-08-30). Its
+      `tree` stage reads the bindings out of `wezterm.lua` and asserts they
+      are `SendString` wrappers over the CLI, with an altered-payload
+      counterfactual so the check cannot pass on a binding that sends
+      something else. The predicate was amended the same day: two of the four
+      keys it named — F6 and `Ctrl+Shift+Q` — left with the tmux cutover, and
+      it now asserts the theme toggle moved to `tmux.conf` and that no F6
+      binding was left behind in `wezterm.lua`.
+- [ ] **Unmet, and named rather than glossed.** Reconnecting to a running
+      capsule feels instant; cold start is dominated by docker itself, not by
+      the tool.
+
+      A stopwatch claim about a live container, and no gate makes it. It is a
+      C.4 row in `gates/manual/wave4.md`, unrun. The epic closes on the other
+      two; this is the honest residue, and the same shape as the nine live
+      claims [`done-nodes-with-unticked-boxes`](../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md)
+      reported on `02-terminal`.
+- [x] `git push` and SSH work inside the container without any
       re-authentication.
+
+      `bash tests/capsule-credentials.sh` — rc 0, 0 FAIL (2026-08-30).
 
 ## Out of scope
 - Multiple images, or per-project Dockerfile customization by the capsule

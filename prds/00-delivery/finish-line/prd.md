@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 30
 est: 0h
 kind: epic
@@ -75,6 +75,31 @@ and an inferred `from:` is a guess written as a fact.
   does not cancel it.
 
 ## Acceptance
-- [ ] Every child of this node is `done` or explicitly deferred on the record.
-- [ ] `python3 .../plan.py plan` shows no node waiting on a decision this
+- [x] Every child of this node is `done` or explicitly deferred on the record.
+
+      All four: `agent-overview-derived-tools`, `doctor-debt-live-nodes`,
+      `epic-invariants-prose`, and — 2026-08-30 —
+      [`drift-check-terminal-surface`](drift-check-terminal-surface/prd.md),
+      the deferred third surface that answer 1 cut from the first build. It
+      landed as **two** surfaces rather than one, because the terminal became
+      two programs in between: `tmux-key` against `tmux list-keys` and
+      `wezterm-key` against `wezterm show-keys`, 142 and 86 live keys read.
+- [x] `python3 .../plan.py plan` shows no node waiting on a decision this
       round already answered.
+
+      Run 2026-08-30: the plan's "waiting on you" list holds exactly one
+      node, `g1-verify-still-red-on-just-gates`, and it is not waiting on a
+      decision — it is `blocked` on a green `just gates`, which
+      [`quiet-board-sweep`](../quiet-board-sweep/prd.md) ran twice and could
+      not deliver. Its remaining reds are routed to two filed nodes and to a
+      missing `capsule` binary. No node on the board is parked on any of this
+      round's six answers.
+
+## What the round's six answers cost, settled
+
+Answer 1's deferral was the only one that carried a debt forward, and it is
+paid. Answer 2's committed set is the one still outstanding: eighteen manual
+boxes, of which **six are ticked** — five `C.4` rows and one `H.5`, run by
+the user. `gates/manual-coverage.sh` used to fail on exactly those ticks, and
+was corrected on 2026-08-30: `COMMITTED.md` says to tick them there, so a
+tick is a record and not a defect.

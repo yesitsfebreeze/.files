@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -98,11 +98,34 @@ targets — enforced in `tests/help-content-model.nu`, whose
   rather than edited here — another ticket owns that file.
 
 ## Acceptance
-- [ ] A newcomer runs `help` and can use this environment: navigate, find,
+
+Closed 2026-08-30 — the last of the five children,
+[`04-drift-check`](04-drift-check/prd.md), landed that day and is what the
+third box was always waiting for.
+
+- [x] A newcomer runs `help` and can use this environment: navigate, find,
       edit, containerize.
-- [ ] An agent runs one command and gets the same knowledge as structured
+
+      164 documented entries across four surfaces, on the nine-topic spine,
+      and the check now says the coverage is total in both directions:
+      **undocumented 0, stale 0, mismatched 0**. Whether a newcomer *feels*
+      oriented is not a thing a gate can answer; what a gate can answer is
+      whether anything they will press is missing or wrong, and nothing is.
+- [x] An agent runs one command and gets the same knowledge as structured
       data.
-- [ ] Adding a keybinding without documenting it fails the drift check.
+
+      `help --json`, proved by `bash tests/help-agent.sh` (rc 0) — the same
+      corpus, no second source of truth, which is the property that makes
+      the answer worth trusting rather than merely available.
+- [x] Adding a keybinding without documenting it fails the drift check.
+
+      `bash tests/help-drift-check.sh --terminal`, mutation 2: a key added to
+      the `jump` table with no manual entry is reported `undocumented`, and
+      the run exits non-zero. It is not hypothetical either — the reverse
+      sweep found **seven real undocumented handles** (`cll`, `llm`,
+      `llm quota`, `llm regen`, `mkcd`, `quicklist`, `capsule recent`) before
+      it read zero, and each one held the exit code non-zero until it was
+      written up.
 
 ## Out of scope
 - Replacing nushell's builtin `help` for nu commands, or `:help` in Neovim,

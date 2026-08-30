@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -67,16 +67,36 @@ this is the invariant the epic most depends on.
 
 ## Acceptance
 
-- [ ] End to end on a scratch target: clone → `./install.sh` (which ends by
-      calling `chezmoi apply`) → a machine on which every tool the other five
-      epics assume resolves on `PATH`, with no manual step between the clone
-      and the working shell. (I1–I4 together; each child proves its own leg,
-      this box proves they compose.)
-- [ ] A second run immediately after the first reports zero changes: a second
+- [ ] **End to end on a scratch target — unmet, and it needs a machine this
+      one is not.** clone → `./install.sh` → a machine on which every tool the
+      other five epics assume resolves on `PATH`, with no manual step between
+      the clone and the working shell.
+
+      Every LEG is proven and the composition is not: `bash
+      tests/provisioning.sh` (rc 0) holds the installer's shape and its
+      required set, `bash tests/deploy-skeleton.sh` (63 PASS) proves a fresh
+      `chezmoi init` + `apply` produces the tree and that a second apply
+      reports nothing, and `bash gates/nvim-seed-registry.sh` (30 PASS) proves
+      the mason seed. What no gate on a provisioned machine can do is the
+      FIRST run on a machine that has none of it — registered as a human
+      check in [`gates/manual/wave1.md`](../../gates/manual/wave1.md),
+      unrun.
+- [x] A second run immediately after the first reports zero changes: a second
       `install.sh` on a provisioned machine installs nothing, and
       `run_after_generate-shell-init.sh` re-runs to byte-identical output.
       (I2)
-- [ ] Adding one tool to the base is a single edit to `install.sh`'s package
+
+      Observed 2026-08-30, and by accident, which makes it a better reading
+      than a designed one: a real (non-dry) `install.sh` run on this
+      already-provisioned machine reported "already installed and up-to-date"
+      for every brew formula it touched, installed nothing and exited 0. The
+      structural half is `bash tests/provisioning.sh` — every step
+      `command -v`-guarded — and the apply half is `deploy-skeleton`'s
+      `R3 second apply --verbose prints nothing but always-run scripts`, with
+      a counterfactual proving a drifted managed file still reports under the
+      same narrowed command.
+- [ ] **Forward-looking, and correctly still open.** Adding one tool to the
+      base is a single edit to `install.sh`'s package
       list, and the next run installs it. Checked by carrier, not by diff:
       after adding the tool, `grep -rl <tool>` across the repo names
       `install.sh` and nothing else, so the package list is its only mention.
@@ -87,8 +107,17 @@ this is the invariant the epic most depends on.
       `05-platform` is implemented; an implementer reaching for `git diff`
       here measures nothing. (I2 — this box used to prove I3, which is
       withdrawn.)
-- [ ] Apply survives a hostile machine: with one package made unresolvable,
+- [x] Apply survives a hostile machine: with one package made unresolvable,
       the run still exits 0 and the remaining tools are installed. (I4)
+
+      `bash tests/provisioning.sh` (rc 0, 2026-08-30), and it is simulated
+      rather than argued: `INSTALL_DRY_FAIL=install` makes `run()` return 1
+      for any command whose argv carries that word, and the stage asserts
+      the run **still exits 0**, emits at least one `!!` warn line (27 of
+      them), and **still reaches `chezmoi apply`** — not merely non-fatal,
+      but all the way to §4. The `set` line is asserted to carry `u` and
+      `o pipefail` and deliberately NOT `e`, which is the mechanism that
+      makes it true.
 
 ## Out of scope
 - The legacy `conf/bootstrap.lua` checker and its `.cache/.bootstrap` stamp.

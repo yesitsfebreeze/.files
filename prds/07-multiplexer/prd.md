@@ -1,5 +1,5 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 20        # higher first
@@ -135,6 +135,47 @@ pane key at all and `wezterm.lua` is roughly 470 lines shorter.
 - `docs/capabilities-terminal.md` is ground truth for what the live config
   does. The entries this epic supersedes need pointing at it, per the
   split-entry rating rule in `AGENTS.md`.
+
+## Delivered 2026-08-30
+
+All nine children `done` in one session. The epic's own "when this is done"
+paragraph, checked line by line against what shipped:
+
+- **The terminal comes up attached to one tmux session `main`** —
+  `config.default_prog = { home .. "/.local/bin/tmux-main" }`, and the attach
+  is idempotent by construction.
+- **`F5` then a digit is a window; `F5` then a letter is a pane, and the pane
+  borders print the letters** — `bash tests/tmux-key-tables.sh` presses every
+  one of them through real key dispatch, and `tests/tmux-status-bar.sh`
+  proves the border letter follows the INDEX across a renumber, which is what
+  makes the label honest.
+- **`F4` then an arrow splits in that direction, starting in the active
+  pane's cwd** — and it deliberately disagrees with the digit's `-c ~`
+  (Q14); both rules are driven, not read.
+- **`F6` works on any terminal that honours OSC 11 rather than only on this
+  desk** — `tests/tmux-palette-delivery.sh --osc` reads the sequences off a
+  real attached client's wire.
+- **The session survives quitting the terminal and, through resurrect and
+  continuum, a reboot** — `tests/tmux-persistence.sh --live` drives the real
+  plugins and reads back a state file naming both windows and the pane cwds.
+- **WezTerm binds no tab or pane key at all** — measured in the LOADED table,
+  not the source: zero `ActivateTab`, zero `Split*`, and
+  `disable_default_key_bindings = true`, without which the claim would be
+  false out of the box.
+- **`wezterm.lua` is roughly 470 lines shorter** — it is **848** shorter:
+  1297 → 449.
+
+**What the epic cost elsewhere, paid rather than deferred:** four WezTerm
+gates retired and four amended, `02-terminal`'s I1 reversed and I2 amended in
+place, all seven of its children annotated, `terminal.nuon` rewritten with a
+`tmux-key` verify kind that `06-help/04-drift-check` had to grow a resolver
+for, and `copymode.nu` rebuilt on `tmux copy-mode` — it had been silently
+broken the moment its WezTerm handler was deleted.
+
+**One thing the cutover got wrong and a gate caught**: `grid_padding` kept
+reserving a tab bar's height after `enable_tab_bar = false`, which would have
+left every window's grid off-centre by a row. Found by
+`tests/wezterm-grid-centering.sh` on the quiet sweep, not by reading.
 
 ## Consequences the tree must carry
 
