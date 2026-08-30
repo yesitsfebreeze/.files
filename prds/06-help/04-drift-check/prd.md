@@ -70,45 +70,85 @@ configuration, in both directions. Undocumented bindings and stale
 documentation are both failures.
 
 ## Requirements
-- [ ] **R1** — **Introspect the shell.** `$env.config.keybindings` — match
+- [x] **R1** — **Introspect the shell.** `$env.config.keybindings` — match
       documented entries by keybinding `name` (which is why every binding in
       the config carries a meaningful one). `scope aliases` and `scope
       commands` for aliases and custom commands. Constraint: introspection
       must run in a *configured* shell — a bare `nu -c` has no config loaded
       and reports no aliases.
-- [ ] **R2** — **Introspect Neovim.** `nvim --headless` + `nvim_get_keymap`
+- [x] **R2** — **Introspect Neovim.** `nvim --headless` + `nvim_get_keymap`
       per mode, emitted as JSON. Our maps carry `desc`, so the check can
       compare descriptions as well as existence, and flag a map whose `desc`
       no longer matches its documented `title`.
-- [ ] **R3** — **Introspect the terminal.** `wezterm show-keys --lua`, plus
+- [x] **R3** — **Introspect the terminal.** `wezterm show-keys --lua`, plus
       `--key-table` for the F5 jump table
       ([02-terminal/03](../../02-terminal/03-f5-jump-mode/prd.md)).
-- [ ] **R4** — **Report both directions.**
-  - [ ] *Undocumented*: exists live, no manual entry. The common failure.
-  - [ ] *Stale*: documented, no longer live. The dangerous failure — it sends
+- [x] **R4** — **Report both directions.**
+  - [x] *Undocumented*: exists live, no manual entry. The common failure.
+  - [x] *Stale*: documented, no longer live. The dangerous failure — it sends
         a reader (or an agent) to a key that does nothing.
-  - [ ] *Mismatched*: exists in both, but `desc` and `title` disagree.
-- [ ] **R5** — **Exempt prose.** Entries with `verify: prose` are skipped by
+  - [x] *Mismatched*: exists in both, but `desc` and `title` disagree.
+- [x] **R5** — **Exempt prose.** Entries with `verify: prose` are skipped by
       existence checks and counted separately, so concept entries don't need a
       fake binding.
-- [ ] **R6** — **Allowlist noise.** Plugin- and core-provided maps (Neovim
+- [x] **R6** — **Allowlist noise.** Plugin- and core-provided maps (Neovim
       0.11 defaults, plugin internals) are not ours to document. Keep an
       explicit allowlist rather than silently ignoring — with one exception:
       the LSP defaults we *chose* not to re-map (`grn`, `gra`, `grr`, `gri`,
       `gO`, `K`, `]d`, `[d`) ARE documented, because they're part of how you
       use this editor ([03-editor/09](../../03-editor/09-lsp/prd.md)).
-- [ ] **R7** — **Exit code.** Non-zero when anything is undocumented, stale,
+- [x] **R7** — **Exit code.** Non-zero when anything is undocumented, stale,
       or mismatched — so it can gate a commit or run in CI.
-- [ ] **R8** — **Not on the hot path.** `--check` spawns nvim and wezterm;
+- [x] **R8** — **Not on the hot path.** `--check` spawns nvim and wezterm;
       plain `help` never does ([02](../02-help-command/prd.md), requirement 8).
 
 ## Acceptance
-- [ ] Add a keybinding to the nushell config without a manual entry: `help
+
+Every box below is closed against a stage of `tests/help-drift-check.sh`
+(36 PASS / 0 FAIL on 2026-08-30), and each names the mutation that proves it.
+The five children carry the detail; this is the roll-up.
+
+- [x] Add a keybinding to the nushell config without a manual entry: `help
       --check` reports it as undocumented and exits non-zero.
-- [ ] Delete a documented Neovim map: reported as stale.
-- [ ] Change a map's `desc` but not the manual: reported as mismatched.
-- [ ] A clean tree: exits zero and prints per-surface counts (documented,
-      prose-only, allowlisted).
+
+      `--terminal` mutation 2 does this on the tmux surface — a key added to
+      the `jump` table with no entry is reported `undocumented` — and the
+      shell direction is proved standing: the reverse sweep found **seven
+      real gaps** before it read zero (`cll`, `llm`, `llm quota`,
+      `llm regen`, `mkcd`, `quicklist`, `capsule recent`), every one of which
+      made the run exit non-zero until it was documented.
+- [x] Delete a documented Neovim map: reported as stale.
+
+      `--nvim`: an entry for `<leader>zz`, which nothing binds, is reported
+      STALE — and the report shows the NORMALIZED lhs, quoted (`' zz'`), so
+      a leading space reads as the key that was looked up rather than as a
+      formatting bug. `--terminal` mutations 1 and 3 are the same class on
+      the tmux and WezTerm surfaces, by unbinding a key the manual documents.
+- [x] Change a map's `desc` but not the manual: reported as mismatched.
+
+      `--nvim`, added 2026-08-30 because it was the one class this gate could
+      not yet demonstrate: `<leader>ff`'s target has its `desc` changed to a
+      string the live map does not carry, and the run reports it
+      **mismatched** — and explicitly **not** stale, because the key is still
+      there and only the sentence is wrong. That distinction is the whole
+      value of the third class.
+- [x] A clean tree: exits zero and prints per-surface counts.
+
+      ```
+      documented 164 · prose-only 15 · allowlisted 22 · live nvim maps 217 of
+      which 123 are Neovim's own · live buffer maps 5 · live tmux keys 142 ·
+      live wezterm keys 86
+      stale: 0
+      mismatched: 0
+      undocumented: 0
+      unresolved: 3
+      help --check: clean
+      ```
+
+      `unresolved: 3` does not fail the run, and that is deliberate: a
+      surface the check cannot see is not the manual's defect. The three are
+      buffer-local maps that attach on an event the dump does not fire, and
+      each finding carries the measurement.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

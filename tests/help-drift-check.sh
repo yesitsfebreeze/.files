@@ -322,6 +322,30 @@ nvim_stage() {
   chk "nvim: a documented map nothing binds is STALE" $?
   has_finding "$out" stale "looked up as ' zz'"
   chk "nvim: …and the report shows the NORMALIZED lhs, quoted, so a leading space is visible" $?
+
+  # MUTATION — a title that has stopped describing its map. This is the third
+  # class and the least obvious one: the key exists, the entry exists, and the
+  # sentence above it has quietly become false. A target with no explicit
+  # `desc` compares against the entry's TITLE, so changing the title is
+  # exactly the drift a writer causes by editing prose and nothing else.
+  local M3="$SCRATCH/nvim-mismatch"
+  rm -rf "$M3"; mk_machine "$M3"
+  local B3="$M3/home/.config/nushell/help/nvim.nuon"
+  # The `<leader>ff` target carries an EXPLICIT desc, so breaking that is the
+  # cleaner mutation: it is the string the live map's desc must equal, and
+  # nothing else about the entry moves. (A target that OMITS desc compares
+  # against the title instead — the same class, reached by editing prose.)
+  $GREP -q '{kind: "nvim-map", mode: "n", lhs: "<leader>ff", desc: "Find files"}' "$B3"
+  chk "nvim: the fixture entry for <leader>ff is there to break" $?
+  sed -i.bak 's/lhs: "<leader>ff", desc: "Find files"/lhs: "<leader>ff", desc: "A desc that no longer matches the map"/' "$B3"
+  rm -f "$B3.bak"
+  $GREP -q 'A desc that no longer matches the map' "$B3"
+  chk "nvim: the desc mutation landed in the staged corpus" $?
+  run_check "$M3" > "$out" 2>&1
+  has_finding "$out" mismatched "<leader>ff"
+  chk "nvim: a title that has stopped matching its map's desc is MISMATCHED" $?
+  ! has_finding "$out" stale "<leader>ff"
+  chk "nvim: …and NOT stale — the key is still there, only the sentence is wrong" $?
 }
 
 # ── stage: --degraded ──────────────────────────────────────────────────────
