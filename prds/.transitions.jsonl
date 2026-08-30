@@ -45,3 +45,4 @@
 {"calls": null, "from": "specced", "prd": "07-multiplexer/02-key-tables", "reads": null, "refused": null, "t": "2026-08-29T23:15:22", "to": "claimed", "tokens": null}
 {"from": "claimed", "prd": "07-multiplexer/02-key-tables", "t": "2026-08-30 00:10", "to": "done"}
 {"from": "specced", "prd": "07-multiplexer/05-copy-and-clipboard", "t": "2026-08-30 00:10", "to": "done"}
+{"from": "open", "prd": "07-multiplexer/03-status-bar", "t": "2026-08-30 00:40", "to": "done"}
