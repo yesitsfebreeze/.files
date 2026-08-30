@@ -1,5 +1,6 @@
 ---
-state: done        priority: 8
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+priority: 8
 est: 5h
 task: H.4
 mode: afk

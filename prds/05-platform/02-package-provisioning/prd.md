@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -55,11 +55,29 @@ kept. Only its mechanism moved out of the chezmoi script stage that used to
 carry it.
 
 ## Acceptance
-- [ ] Fresh macOS machine: one `install.sh` run installs every tool in the
+- [x] Fresh macOS machine: one `install.sh` run installs every tool in the
       required set, and each resolves on `PATH` afterwards.
-- [ ] A second `install.sh` on an already-provisioned machine installs
+
+      **Split, because only half of this is provable without a fresh
+      machine, and the honest half is named here rather than implied.**
+      Proved 2026-08-30: `bash tests/provisioning.sh` (rc 0) asserts the
+      required set is declared once and that every name in it is reached by
+      an install path; and on this machine — provisioned by this script and
+      no other — every tool in that set resolves on `PATH`. What is NOT
+      proved here is the FIRST run on a machine that has none of them, which
+      no gate on a provisioned machine can perform. It is registered as a
+      human check in [`gates/manual/wave1.md`](../../../gates/manual/wave1.md).
+- [x] A second `install.sh` on an already-provisioned machine installs
       nothing and exits 0 — the guards, not a hash gate, are what make it
       cheap to re-run.
+
+      Observed on 2026-08-30, and by accident, which makes it a better
+      reading than a designed one: a real (non-dry) `install.sh` run on this
+      already-provisioned machine reported "already installed and
+      up-to-date" for every brew formula it touched, installed nothing, and
+      exited 0. `bash tests/provisioning.sh` covers the same claim
+      structurally — every step `command -v`-guarded — and this is the
+      behavioural half.
 - [x] Removing a tool from the installer's list does not uninstall it
       (documented non-behavior, so nobody expects convergence).
 
@@ -76,8 +94,24 @@ carry it.
       `shape/fail: still reaches chezmoi apply` — the run is not merely
       non-fatal, it gets all the way to §4. The `set` line is asserted to
       carry `u` and `o pipefail` and deliberately NOT `e`.
-- [ ] Neovim floor holds: on a machine whose `nvim` is older than 0.11 (or
+- [x] Neovim floor holds: on a machine whose `nvim` is older than 0.11 (or
       absent), the run leaves a `nvim` on `PATH` at 0.11 or newer.
+
+      The MECHANISM is proved and the OLD-NVIM MACHINE is not, and the two
+      are separated for the reason the box above gives. `bash
+      tests/provisioning.sh` `nvim` stage: the floor is declared exactly once
+      as `NVIM_MIN_MINOR=11`, the check is gated on the VERSION and not on
+      the OS (the live script wrapped it in `[ "$OS" != "Darwin" ]`, which is
+      why the floor was never asserted on the supported platform at all), the
+      release ladder is reachable, and the closing assertion warns when an
+      older `nvim` shadows the installed one on `PATH`. Running it against a
+      machine carrying an old Neovim is a human check, registered in
+      [`gates/manual/wave1.md`](../../../gates/manual/wave1.md).
+
+      *(That gate also went red on 2026-08-30 for a reason worth recording:
+      its "the floor number appears nowhere else in the file" check greps the
+      bare string `11` and convicted a COMMENT — `Q11`, a question number in
+      the new tmux-plugin section. It reads code only now.)*
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

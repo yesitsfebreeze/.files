@@ -497,7 +497,13 @@ stage_nvim() {
   local decls others
   decls="$(grep -cE '^NVIM_MIN_MINOR=11$' "$inst")"
   chk_ok "nvim: NVIM_MIN_MINOR=11 declared exactly once (got $decls)" test "$decls" -eq 1
-  others="$(grep -n '11' "$inst" | grep -vE '^[0-9]+:NVIM_MIN_MINOR=11$' || true)"
+  # CODE ONLY. The claim is that the floor is not hardcoded a second time —
+  # that messages interpolate the constant instead of repeating the number.
+  # A comment is not a second hardcoding, and a bare grep for `11` convicts
+  # one: `# --- 3b. tmux plugins (07-multiplexer/07-persistence, Q11)` turned
+  # this red on 2026-08-30 for naming a question number.
+  others="$(grep -n '11' "$inst" | grep -vE '^[0-9]+:[[:space:]]*#' \
+            | grep -vE '^[0-9]+:NVIM_MIN_MINOR=11$' || true)"
   if [ -z "$others" ]; then
     chk "nvim: the number appears nowhere else in the file — messages interpolate the constant" 0
   else

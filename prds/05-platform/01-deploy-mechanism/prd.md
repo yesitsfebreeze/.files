@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 0
 est: 0h
 kind: epic
@@ -19,7 +19,7 @@ between the repo and a machine. One deploy path, idempotent, with every tool's
 config under one root.
 
 ## Requirements
-- [ ] **R6** — **Install before use, and re-resolve PATH.** Anything that
+- [x] **R6** — **Install before use, and re-resolve PATH.** Anything that
       depends on an installed tool must run after the install, and must
       re-resolve PATH before using it: a tool installed during this run is
       not on the PATH the run inherited. Homebrew is the canonical case — its
@@ -102,19 +102,43 @@ requirement is owned by exactly one node:
   [`04-shell/02`](../../04-shell/02-aliases-utilities/prd.md) R3
 
 ## Acceptance
-- [ ] Fresh clone + `chezmoi apply` on a scratch target produces the full
+
+Closed 2026-08-30 against runs, not readings. Every box names the gate and
+the stage that proves it.
+
+- [x] Fresh clone + `chezmoi apply` on a scratch target produces the full
       `~/.config` tree; a second apply reports no changes.
-- [ ] `just push` round-trips a local edit to the remote and back. It is git
+
+      `bash tests/deploy-skeleton.sh` (63 PASS / 0 FAIL): `apply: isolated
+      init succeeded`, `apply: managed tree reached the target`, `apply: R3
+      second apply --verbose prints nothing but always-run scripts`, and its
+      counterfactual — a deliberately drifted managed file STILL reports
+      under the narrowed command, so "nothing to do" is a reading of the
+      tree and not of a filter that hides everything.
+- [x] `just push` round-trips a local edit to the remote and back. It is git
       only; the cutover that repoints this machine's chezmoi source lives in a
       separate `just cutover` recipe (amended 2026-08-21 — see
       [`repo-skeleton`](repo-skeleton/prd.md) R5).
-- [ ] Editing one tool's config touches exactly one path under
+
+      Same gate, `push` stage: a scratch working copy publishes to a bare
+      remote, `just push` exits 0, **the nonce came back out of a fresh
+      clone**, and a poison `chezmoi` shim on PATH was never invoked — which
+      is how "git only" is proven rather than asserted.
+- [x] Editing one tool's config touches exactly one path under
       `home/dot_config/`.
-- [ ] On a scratch target with an empty `<data>/mason`, `install.sh` leaves a
+
+      Measured 2026-08-30: the directory holds exactly eight entries, one per
+      tool — capsule, litellm, nushell, nvim, television, tinted-theming,
+      tmux, wezterm — and no tool has a second home. `tmux/` is the newest and
+      was added by [`07-multiplexer`](../../07-multiplexer/prd.md) under the
+      same rule.
+- [x] On a scratch target with an empty `<data>/mason`, `install.sh` leaves a
       seeded registry — `require("mason-registry").has_package("pyright")` is
       true — without a human launching `nvim` first, and E.7 in
       [`gates/manual/wave4.md`](../../../gates/manual/wave4.md) is re-run
       after it.
+
+      `bash gates/nvim-seed-registry.sh` — rc 0, 30 PASS.
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

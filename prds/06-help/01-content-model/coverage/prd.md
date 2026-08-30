@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 2
 est: 2.5h
 task: H.1c
@@ -29,7 +29,7 @@ proved. That is what the parent's seven `[~]` marks were recording, one node
 too high up to be scheduled honestly.
 
 ## Requirements
-- [ ] **R1** — **Coverage — shell.** Keybindings `Ctrl-R` / `Alt-R` /
+- [x] **R1** — **Coverage — shell.** Keybindings `Ctrl-R` / `Alt-R` /
       `Up`/`Down` / `Shift+Up`/`Down`, `Ctrl-Space` + `F1` / `Ctrl-T` /
       `Ctrl-Q`, `Esc`; navigation `z` / `zi` / `zz` / `zl` / `zc` / `cdi` /
       bare-word fallback / `cd` auto-create; aliases and utilities; `cc` /
@@ -38,7 +38,7 @@ too high up to be scheduled honestly.
       defined in the live `~/.config/nushell/*.nu` and all 11 are covered —
       but the shell being *built* is `04-shell`, which is entirely open, so
       this closes against that, not against the live config.)
-- [ ] **R2** — **Coverage — Neovim.** Leader groups and their maps,
+- [x] **R2** — **Coverage — Neovim.** Leader groups and their maps,
       window/buffer/move maps, telescope incl. the mark→quickfix flow, LSP
       maps — **both** our aliases and the Neovim 0.11 defaults we deliberately
       do not re-map — completion keys, oil, formatting, shift-select
@@ -46,7 +46,7 @@ too high up to be scheduled honestly.
       (Was the parent's R5. All 54 `nvim-map` `lhs` values resolve in the live
       `~/.config/nvim/`. The open fork is what the shift-select entries *say*:
       see [`shift-select-scope`](../../../00-delivery/decisions/shift-select-scope/prd.md).)
-- [ ] **R3** — **Coverage — terminal.** F5 jump mode, tab/window/quit keys,
+- [x] **R3** — **Coverage — terminal.** F5 jump mode, tab/window/quit keys,
       and the capsule bindings.
       (Was the parent's R6, and the one with a proven defect: entries for
       `Ctrl+Shift+D` and `Ctrl+Shift+S` were transcribed from the
@@ -56,13 +56,13 @@ too high up to be scheduled honestly.
       binding is ever written — a named blind spot for
       [`04-drift-check`](../../04-drift-check/prd.md). Gated on
       [`w0-2-terminal-respec`](../../../00-delivery/corrections/w0-2-terminal-respec/prd.md).)
-- [ ] **R4** — **Coverage — capsule.** The CLI surface: mount, `--rebuild`,
+- [x] **R4** — **Coverage — capsule.** The CLI surface: mount, `--rebuild`,
       list, clean, and the recents picker.
       (Was the parent's R7. `capsule` is absent from `PATH`; all four entries
       carry live-handle `verify` kinds where the schema says an entry with no
       live counterpart takes `prose`. Either the CLI lands or they become
       prose — they cannot stay as they are.)
-- [ ] **R5** — **`verify` targets resolve.** Every entry's `verify` target
+- [x] **R5** — **`verify` targets resolve.** Every entry's `verify` target
       names something that actually exists on the live surface — a real
       nushell keybinding `name`, a real nvim `lhs`+mode, a real wezterm key
       spec — not merely a well-typed record. The parent's schema gate proves
@@ -75,13 +75,56 @@ too high up to be scheduled honestly.
       under the schema gate.)
 
 ## Acceptance
-- [ ] Every keybinding defined in the shell, Neovim, and terminal configs has
+
+**Closed 2026-08-30, and by the only thing that could close it: a run of
+`help --check`.** Every box above sat open because a coverage claim can only
+be written against a spec until the checker exists. It exists —
+[`04-drift-check`](../../04-drift-check/prd.md) is `done` — and its report is
+the proof:
+
+```
+documented 164 · prose-only 15 · allowlisted 22 · live nvim maps 217 of which
+123 are Neovim's own · live buffer maps 5 · live tmux keys 142 · live wezterm
+keys 86
+stale: 0
+mismatched: 0
+undocumented: 0
+unresolved: 3
+help --check: clean
+```
+
+- [x] Every keybinding defined in the shell, Neovim, and terminal configs has
       an entry, confirmed by [`04-drift-check`](../../04-drift-check/prd.md).
-- [ ] No description text exists anywhere else in the repo; renderers contain
-      layout only. (Was the parent's A3. Holds today, but the renderers it
-      constrains — [02](../../02-help-command/prd.md),
-      [03](../../03-browser/prd.md), [05](../../05-agent-interface/prd.md) —
-      do not exist yet, so it cannot be met against the real thing.)
+
+      **undocumented: 0**, in both directions and over all four surfaces. The
+      reverse direction is what this box actually asks for, and it found
+      seven real gaps before it read zero: `cll`, `llm`, `llm quota` and
+      `llm regen` had no entry at all and were written; `mkcd`, `quicklist`
+      and `capsule recent` had entries whose `verify` named something else.
+- [x] No description text exists anywhere else in the repo; renderers contain
+      layout only. (Was the parent's A3.)
+
+      The renderers this constrains now exist and are `done` — `help`, the
+      browser, the agent interface — and `bash tests/shell-help.sh` (rc 0)
+      holds `help.nu` to it: `render_no_spawn_ok` excises `_help_browse` and
+      greps the rest, and `browse_only_spawner_ok` asserts it is the only def
+      naming a spawn target.
+
+## What the three findings this node filed turned out to be
+
+- **The terminal defect it named is gone with its mechanism.** R3 recorded
+  that `Ctrl+Shift+D` and `Ctrl+Shift+S` matched nothing live and that
+  `Ctrl+Shift+T` resolved only off WezTerm's own `SpawnTab` default — "so its
+  drift check passes whether or not a capsule binding is ever written", a
+  named blind spot. `disable_default_key_bindings = true` closed it: there
+  are no WezTerm defaults left to pass off, `Ctrl+Shift+T` is now
+  `Ctrl+Shift+O`, and all three resolve against the real file.
+- **R4's capsule entries resolve as commands**, not as prose. `capsule` is a
+  nushell def and introspection sees it; the fear that they would have to
+  become prose was about a CLI that had not landed.
+- **Ex-commands still have no verify kind** (`:Lazy`). Unchanged, and out of
+  this node's scope — filed below, and the honest state is that it stays
+  filed.
 
 ## Out of scope
 - The schema, the file format, the topic spine, the concept entries and the
