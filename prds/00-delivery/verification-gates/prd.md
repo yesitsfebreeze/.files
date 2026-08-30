@@ -97,6 +97,21 @@ repo, so the answer flips the gate red on day one. Also exclude
       time; R3's four hand-named checks matched through `norm`; no box `[x]`.
 - [ ] Running all gates from scratch on a clean machine passes end to end.
 
+      **Measured 2026-08-30, and still open — for two reasons, only one of
+      which is about the gates.** The serial quiet-board sweep
+      ([`quiet-board-sweep`](../quiet-board-sweep/prd.md)) reached
+      **5096 PASS / 8 FAIL** with all seven waves ARMED. Of the three causes
+      behind those 8: one was a contradiction between two board requirements
+      and was fixed in the window; one is a gate whose subject (`capsule`) is
+      not installed on this machine; one is a probe that passed and failed on
+      the same commit. Only the last is "the gates are wrong".
+
+      **"On a clean machine" remains untested by anything here**, and cannot
+      be tested here: this box needs the fresh-machine run registered in
+      `gates/manual/wave1.md`. What the sweep proves is the weaker half — the
+      suite runs end to end on THIS machine and reports a tally rather than
+      falling over.
+
 ## Findings
 
 Measured by this node's own gates on 2026-08-21, recorded here because a red

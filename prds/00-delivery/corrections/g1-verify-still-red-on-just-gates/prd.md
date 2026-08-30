@@ -312,8 +312,30 @@ needs re-running serially, once, when the board is quiet, and that whoever does
 that gets to write the state.
 
 ## Acceptance
-- [ ] `just gates` exits 0, its PASS/FAIL tally quoted. — **NOT MET, and left
-      open deliberately.** The tally is quoted (`sweep rc=1`, **3550 PASS / 43
+- [ ] `just gates` exits 0, its PASS/FAIL tally quoted. — **STILL NOT MET
+      after the serial sweep this node was waiting for, and still left open
+      deliberately.**
+
+      **Updated 2026-08-30.** The scheduling act this box needed happened:
+      [`quiet-board-sweep`](../quiet-board-sweep/prd.md) ran `just
+      gate-selftest` and `just gates` serially, twice, on a board with a clean
+      `git status --porcelain` and no node `claimed` or `analyzing`. The tally
+      moved from **3550 PASS / 43 FAIL** to **5096 PASS / 8 FAIL**, and
+      `sweep rc` is still **1**, so the box still cannot be ticked as written
+      and a tick would still be a false record.
+
+      What the quiet window changed is the strength of the weaker claim. In
+      August it read "not one of the 43 reds is this node's work", measured on
+      a contended board where the scratch guard could not tell a lane's write
+      from a defect. It now reads the same sentence measured on a quiet one,
+      against **three** surviving causes rather than 43, every one of them
+      named and routed in that node: a gate whose subject is not installed
+      (`capsule`), a probe that disagrees with itself between runs, and a
+      contradiction between two of the board's own requirements — which was
+      fixed inside the window.
+
+      The old text follows, unchanged, because it is the reading that stood
+      before the sweep and the two together are the record. The tally is quoted (`sweep rc=1`, **3550 PASS / 43
       FAIL**) but the exit is 1, so the box cannot be ticked as written and a
       tick would be a false record. What is true is the weaker claim R3 allows
       and this node proved: **not one of the 43 reds is this node's work**, the
