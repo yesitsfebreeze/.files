@@ -65,3 +65,4 @@
 {"from":"open","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes","t":"2026-08-30 05:00","to":"done"}
 {"from":"analyzing","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check","t":"2026-08-30 05:00","to":"done"}
 {"from":"analyzing","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status","t":"2026-08-30 05:00","to":"done"}
+{"from":"open","prd":"00-delivery/corrections/questions-check-red-only-on-history","t":"2026-08-30 05:30","to":"done"}

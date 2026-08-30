@@ -156,7 +156,7 @@ Recorded here because they are cross-cutting and no single child owns them:
   its requirement boxes still `- [ ]`. That is either a false `done` or an
   unrecorded run, and it wants a correction of its own.
 
-## Questions
+## Questions (round 1, answered)
 
 ### Q1: Session model
 

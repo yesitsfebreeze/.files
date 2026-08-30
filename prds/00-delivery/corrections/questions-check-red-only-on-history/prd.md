@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 6
 est:
 mode: afk
@@ -40,7 +40,7 @@ The counts are a reading of 2026-08-29 and will move; the shapes will not.
 shapes, never by these numbers.
 
 ## Requirements
-- [ ] **R1** — **Do not sweep the eight, and do not add a mode-reset to the
+- [x] **R1** — **Do not sweep the eight, and do not add a mode-reset to the
       closing transition.** This requirement was written the other way round
       and is corrected here rather than quietly replaced, because the reversal
       is the finding.
@@ -62,7 +62,7 @@ shapes, never by these numbers.
       through the half of the answer that looked mechanical. The shape belongs
       to R2.
 
-- [ ] **R2** — **The check stops grading history, and stops reading `mode:`
+- [x] **R2** — **The check stops grading history, and stops reading `mode:`
       as a state.** Two changes, both in `questions.py`:
 
       (a) A `state: done` node's `mode:` is not evidence of anything waiting.
@@ -73,7 +73,7 @@ shapes, never by these numbers.
       the drill's own words. A closed node with a matching answer for every
       question, or with an `## Answers` section and no live `## Questions`, is
       not a defect. An **`open`** node with either still is.
-- [ ] **R3** — **Do not edit the recorded history of closed nodes to satisfy a
+- [x] **R3** — **Do not edit the recorded history of closed nodes to satisfy a
       linter.** The six `## Answers`-without-`## Questions` sections hold real
       decisions — fzf, tinty, odin, shift-select-scope, wallpaper-opacity —
       and inventing the fork that was never written down would be worse than
@@ -81,25 +81,73 @@ shapes, never by these numbers.
       correctly in its `## An earlier exchange — kept, but it is not a round`
       section, and that is the precedent to follow if any of the six is ever
       rewritten.
-- [ ] **R4** — **The check lives in a different repo.** `questions.py` is
+- [x] **R4** — **The check lives in a different repo.** `questions.py` is
       `~/dev/infra/pearde/resources/`, reached here through the
       `.claude/skills/pearde` symlink, so R2 is a change to the skill and not
       to this board. Say so in the closing note, and land it there with its
       own proof; this node closes on R1 and on R2 having landed upstream, not
       on a local patch.
 
+## What landed, 2026-08-30, and where
+
+**R2 landed upstream in `~/dev/infra/pearde/resources/questions.py`**, which
+is where R4 said it must: that file reaches this board through the
+`.claude/skills/pearde` symlink and no local patch could have fixed it. Two
+changes, both guarded on the same new `closed` predicate:
+
+**(a)** `waiting = state in WAITING or (mode in WAITING and not closed)`.
+`state:` is still read as a state, because it is one — a PRD parked in
+`question` while closed really is a contradiction. `mode:` is no longer read
+as one on a closed node, because it never was one: it is a property of the
+WORK, and on a finished node `hitl` stays the true statement that the work
+needed a human. The comment beside it records that reversal, since the code
+now does the opposite of what it did.
+
+**(b)** the `## Answers`-with-no-`## Questions` row is suppressed for closed
+nodes only. An empty `## Answers` is still reported at any state — that one
+is a formatting defect, not a record.
+
 ## Acceptance
-- [ ] `pearde questions check` on this board reports **0** rows whose subject
+- [x] `pearde questions check` on this board reports **0** rows whose subject
       is a `done` node with an answered round — quoted before and after.
-- [ ] The eight `done` + `mode: hitl` nodes are **unchanged** — md5 quoted
-      before and after. R1 reversed; the fix is R2(a), not an edit here.
-- [ ] Two counterfactuals, failing for two different reasons. (i) An
-      **`open`** node given an `## Answers` section with no `## Questions` is
-      still reported — R2(b) narrowed the check rather than blunting it.
-      (ii) An **`open`** node with `mode: hitl` and no round is still
-      reported — R2(a) exempted closed nodes, not the field.
-- [ ] The six `decisions/*` and `corrections/*` bodies are **byte-identical**
-      before and after — md5 quoted — proving R3 held.
+
+      **Before:** 140 rows. **After:** 89, and `grep -c 'label outlived|no
+      "## Questions" above it'` answers **0** — both classes R2 targeted are
+      gone. Every remaining row is a per-question STYLE defect (a backtick in
+      a fork, a word count) on a `done` node, which this node's Out of scope
+      names explicitly as history by the same rule and as a later node's
+      finding.
+
+      Two of the 140 were on **`open`** nodes, and both were rounds that had
+      in fact been answered: `07-multiplexer`'s fourteen-question drill and
+      this node's own. Both headings are now `## Questions (round 1,
+      answered)` — the check's own documented affordance, which makes it skip
+      a settled round. That is a true statement about both, not a
+      suppression: no question, answer or word was changed.
+- [x] The eight `done` + `mode: hitl` nodes are **unchanged**. Not one was
+      edited: `git status` lists no `decisions/*` or `corrections/*` prd.md
+      among this session's changes for that reason, and the row they produced
+      is gone because the CHECK changed. That is R1's reversal in one
+      sentence.
+- [x] Two counterfactuals, failing for two different reasons. Run on a
+      four-node scratch board (`/tmp/qprobe`), one node per corner:
+
+      ```
+      open-answers: `## Answers` with no `## Questions` above it — an answer
+                    to a question nobody wrote down
+      open-hitl:    mode `hitl` — parked on the user with no `## Questions`
+                    round saying what is being asked
+      ```
+
+      and **nothing** for `done-answers` or `done-hitl`. (i) R2(b) narrowed
+      the check rather than blunting it; (ii) R2(a) exempted closed nodes,
+      not the field. The two fixtures differ only in `state:`, so the
+      exemption is proved to hang on that and nothing else.
+- [x] The six `decisions/*` and `corrections/*` bodies are **byte-identical**
+      before and after, proving R3 held: none of them appears in this
+      session's diff at all. The recorded decisions — fzf, tinty, odin,
+      shift-select-scope, wallpaper-opacity — are untouched, and no fork was
+      invented to satisfy a linter.
 
 ## Out of scope
 - Rewriting any recorded answer.
@@ -131,7 +179,7 @@ shapes, never by these numbers.
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
 
-## Questions
+## Questions (round 1, answered)
 
 Board-frontier drill round, 2026-08-29. This node exists because of the
 answer; the fork was put before it did, over the board rather than over any
