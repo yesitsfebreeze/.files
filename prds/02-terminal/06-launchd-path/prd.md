@@ -35,6 +35,28 @@ that vanishes. This is the best value ratio in
 [`capabilities-terminal.md`](../../../docs/capabilities-terminal.md), and the
 item finding T-10 called the one uncovered feature whose absence is fatal.
 
+## Status after the tmux cutover
+
+**AMENDED 2026-08-30 by [`07-multiplexer/08-wezterm-reduction`](../../07-multiplexer/08-wezterm-reduction/prd.md).**
+R1-R3, R5 and R7 — the launch PATH seeding, its shape, and the
+`XDG_CONFIG_HOME` export — are untouched and still the reason this node
+exists.
+
+Two amendments. **R6 now names `~/.local/bin/tmux-main`** instead of
+nushell's argv: the terminal opens into tmux, and the script resolves
+`nu` on PATH, exports `XDG_CONFIG_HOME` before the exec and falls back
+to a shell that exists — the same three obligations, one layer down and
+in one place that an ssh login also says. **R4's F6 PATH prefix moved to
+`tmux.conf`** with the binding, measurement and all; `tests/wezterm-launchd-path.sh`
+reads it there and asserts none is left here.
+
+The counterfactuals moved with it, and one got sharper. Without the
+seeding you no longer get a pane that never started: `tmux-main` is an
+absolute path, so it always spawns, cannot find `tmux` or `nu`, and hands
+you `/bin/sh` with two lines saying why. The requirement is unchanged —
+the seeding is what gets nushell running — and the failure is now
+diagnosable instead of silent.
+
 ## Requirements
 
 - [~] **R1** — **A GUI launch resolves the config's own program.** Launched

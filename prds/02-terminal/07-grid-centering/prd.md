@@ -52,6 +52,17 @@ prefixes by value ratio, but this epic already does not —
 sits last — and renumbering would churn every dependency string in
 `plan.json` and both README lists for no gain.
 
+## Status after the tmux cutover
+
+**UNTOUCHED by the 2026-08-30 tmux cutover, and deliberately so.** Grid
+centering is local chrome — it is about this window on this display —
+so it stays in `wezterm.lua` in full: `grid_padding`, `center_grid`, and
+its three event registrations including `update-status`, which is why
+`status_update_interval = 5000` also stays. Recorded here because "the
+epic narrowed and nothing happened to this node" is a claim worth being
+able to check, and because the reduction deleted every OTHER
+`update-status` consumer in the file.
+
 ## Requirements
 
 - [x] **R1** — **Measure the cell from the grid's own rendered area.**

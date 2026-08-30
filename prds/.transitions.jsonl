@@ -46,3 +46,6 @@
 {"from": "claimed", "prd": "07-multiplexer/02-key-tables", "t": "2026-08-30 00:10", "to": "done"}
 {"from": "specced", "prd": "07-multiplexer/05-copy-and-clipboard", "t": "2026-08-30 00:10", "to": "done"}
 {"from": "open", "prd": "07-multiplexer/03-status-bar", "t": "2026-08-30 00:40", "to": "done"}
+{"from":"open","prd":"07-multiplexer/04-palette-delivery","t":"2026-08-30 01:30","to":"done"}
+{"from":"open","prd":"07-multiplexer/07-persistence","t":"2026-08-30 01:30","to":"done"}
+{"from":"open","prd":"07-multiplexer/08-wezterm-reduction","t":"2026-08-30 01:30","to":"done"}

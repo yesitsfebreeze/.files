@@ -36,6 +36,30 @@ inventory on 2026-08-21; the text it replaced named a font that is not
 installed, a palette source that does not exist, and four config fields the
 installed WezTerm rejects at load time.
 
+## Status after the tmux cutover
+
+**AMENDED 2026-08-30 by [`07-multiplexer/08-wezterm-reduction`](../../07-multiplexer/08-wezterm-reduction/prd.md).**
+What survives here is the local chrome and is untouched: the font stack,
+`window_decorations = "RESIZE"`, opacity and blur, `inactive_pane_hsb`,
+`scrollback_lines`, `enable_kitty_keyboard = false` and the zeroed
+`window_padding`. What left this node, with the mechanism it named:
+
+- **R2/R3, the palette reader** — the `colors.lua` `dofile`, the reload
+  watch and the derived `colors.tab_bar` are deleted. The palette arrives
+  as OSC now; see the epic's amended **I2**.
+- **R4, the tab bar** — replaced by one line, `enable_tab_bar = false`.
+- **R5, the digit tab title** — tmux's `window-status-format` draws it
+  ([`07-multiplexer/03-status-bar`](../../07-multiplexer/03-status-bar/prd.md)).
+- **R6, the per-pane OSC retint** — tinty writes the client tty directly.
+- **R10, the clock** — tmux's `status-right`.
+- **R11, the F6 toggle** — `bind -n F6` in `tmux.conf`, PATH prefix and
+  measured reason carried across whole.
+
+`tests/wezterm-appearance.sh` was not deleted with them: every one of
+those checks is INVERTED there and still runs, because a gate that simply
+stopped looking would pass just as well against a file where the old code
+came back.
+
 ## Requirements
 
 - [x] **R1** — **Font stack, with the reason for the font directory**

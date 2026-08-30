@@ -38,6 +38,22 @@ exactly nine tabs whose ids were `22, 24, 26, 28, 29, 30, 34, 36, 37` — nine
 live tabs scattered across a 16-wide id range, i.e. tabs had died and been
 refilled *and* repositioned repeatedly inside a single session.
 
+## Status after the tmux cutover
+
+**SUPERSEDED 2026-08-30 by [`07-multiplexer/01-session-and-windows`](../../07-multiplexer/01-session-and-windows/prd.md)
+and [`02-key-tables`](../../07-multiplexer/02-key-tables/prd.md).**
+The self-healing nine-tab floor — `reconcile_tabs`, the slot map, the
+closing marker, the four event registrations, roughly 320 lines — is
+deleted from `wezterm.lua`, and `tests/wezterm-startup-layout.sh` is
+retired with it.
+
+The floor existed because WezTerm renumbers tabs on close, so a digit was
+not a stable address without one. **tmux indices do not renumber**
+(`renumber-windows off`), so the entire mechanism is unnecessary rather
+than reimplemented: Q2 chose lazy creation — `F5 <digit>` selects window
+N or creates it there — and startup is one window, not nine. The
+capability this node was for is intact; the machinery is gone.
+
 ## Requirements
 
 Proven 2026-08-22 by `bash tests/wezterm-startup-layout.sh` (both stages,

@@ -191,8 +191,14 @@ Ctrl+Space; `input listen` can't do reliable modifiers) · `overlay.nu`
 below; they actually invoked `brr`, per M-7).
 
 **`DO NOT PORT` — burrito**, decided 2026-08-20: it is no longer used. This
-also settles what was open decision 1, "which layer owns panes/tabs": WezTerm's
-self-healing nine-tab floor owns them, with no competing multiplexer. What
+also settled what was open decision 1, "which layer owns panes/tabs" —
+**and the answer to that half was reversed on 2026-08-30**: tmux owns them
+now, WezTerm binds no tab or pane key at all, and
+[`07-multiplexer`](07-multiplexer/prd.md) carries the argument. The
+exclusion itself is unchanged and the reason needs restating rather than
+repeating: what was deleted in 2026-08-20 was a *second* multiplexer under a
+WezTerm that already was one. Two live key schemes was the hazard then and
+is the hazard now; only the surviving one changed. What
 comes out with it: the `bb`/`ba` aliases, the `burrito-sessions` tv channel
 (which also dissolves the `cht.sh=f5` shortcut collision), `burrito/brr` from
 the required package set, burrito from the managed-config surface, and the
@@ -241,7 +247,11 @@ of tv cable channels.
 
 **Retained — the tinty theme switcher**, decided 2026-08-21: it does not
 leave the minimal base after all. `tinty apply` is the palette source of
-truth; WezTerm `dofile`s the `colors.lua` it writes, `config.nu` re-asserts
+truth; **since 2026-08-30 its hook writes `~/.config/tmux/colors.conf` and
+pushes OSC 4/10/11/12 to every attached client's tty** (the `colors.lua`
+path and WezTerm's reload watch are deleted — see
+[`07-multiplexer/04-palette-delivery`](07-multiplexer/04-palette-delivery/prd.md)),
+`config.nu` re-asserts
 its tinted-shell artifact in every new shell, F6 delegates the switch to
 `theme.nu`, and Neovim (base16 + transparent) and television (`default`
 ANSI theme) inherit downstream. Dropping it would have left four scheduled

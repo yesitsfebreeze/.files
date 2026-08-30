@@ -23,6 +23,22 @@ keystroke. This is the one terminal node with no inventory entry, because it
 is not live anywhere — hence `net-new`, with the rating carried in this header
 as `AGENTS.md` requires.
 
+## Status after the tmux cutover
+
+**SUPERSEDED 2026-08-30 by [`07-multiplexer/03-status-bar`](../../07-multiplexer/03-status-bar/prd.md).**
+The occupied/empty tint — the learned per-pane baseline map, its four
+event registrations, `tab_is_occupied`, roughly 120 lines — is deleted,
+and `tests/wezterm-tab-content-state.sh` is retired with it.
+
+The *capability* is ported and the port is smaller by an order of
+magnitude, because tmux exposes what WezTerm made this node infer. A
+window is occupied when any of its panes runs something that is not a
+shell, written as one format: `#{P:…}` over the panes emitting a marker
+for each non-shell command, and `#{m:*X*,…}` asking whether any did. No
+baseline to learn, nothing to re-learn on reload. The design split this
+node made — background says focus, foreground says busy — is carried
+over deliberately.
+
 ## Requirements
 
 - [x] **R1** — **Classification by foreground process.** A pane is

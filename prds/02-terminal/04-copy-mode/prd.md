@@ -31,6 +31,24 @@ Purpose: get text out of the terminal and into it. Copy mode as WezTerm
 actually implements it, plus the four bindings the audit found uncovered:
 paste, copy-or-interrupt, the window drag handle, and the link opener.
 
+## Status after the tmux cutover
+
+**AMENDED 2026-08-30: the gesture survives on a different mechanism**
+([`07-multiplexer/05-copy-and-clipboard`](../../07-multiplexer/05-copy-and-clipboard/prd.md)).
+`Ctrl+Shift+X` enters copy mode with the selection cleared, `c` cycles
+cell → word → line per pane, `y` copies — now as `copy-mode-vi` bindings
+and an `after-copy-mode` hook, with the clipboard sink chosen once at
+parse time (`pbcopy` where it exists, OSC 52 where it does not, which is
+the half that follows an ssh). `tests/wezterm-copy-mode.sh` is retired.
+
+**Mouse selection stays WezTerm's** — tmux's `mouse` option is
+deliberately off — which is what keeps the `Ctrl+C`
+copy-or-interrupt binding in `wezterm.lua` meaningful.
+
+Filed by the epic and still true: this node was `done` with every
+requirement box unticked. That is a separate correction and this
+amendment does not close it.
+
 ## Requirements
 
 - [ ] **R1** — **Entry from a clean state.** `Ctrl+Shift+X` clears any stale

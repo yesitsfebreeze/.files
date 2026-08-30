@@ -35,6 +35,24 @@ overlay, no legend and no painted labels; the nine-tab floor
 ([`02-startup-layout`](../02-startup-layout/prd.md)) is what makes a digit a
 stable address rather than a guess.
 
+## Status after the tmux cutover
+
+**AMENDED 2026-08-30: the behaviour survives on a different mechanism**
+([`07-multiplexer/02-key-tables`](../../07-multiplexer/02-key-tables/prd.md)).
+`F5` then a digit, `F5` then a letter, and a mistype that cancels
+without leaking a character are all still true — they are `bind -n F5
+switch-client -T jump` now, and `tests/wezterm-f5-tab-select.sh` is
+retired.
+
+Two things are worth carrying forward. **R2's no-leak guarantee is free
+on tmux**: a key with no binding in a pushed table is looked up once more
+in `root` and DROPPED if it misses, so the 26 letters bound as bare
+cancels would be dead code — measured, and recorded in `tmux.conf`.
+And the pane-letter addressing this node could not have (I3 forbids
+`PaneSelect`, and self-painting an overlay was the only alternative) is
+nine `select-pane -t` lines there. **I3 still stands** and its reason is
+still true; it simply no longer costs anything.
+
 ## Requirements
 
 Proven 2026-08-22 by `bash tests/wezterm-f5-tab-select.sh` (both stages,

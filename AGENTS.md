@@ -98,7 +98,7 @@ it is, not to decide what it says.
 |---|---|---|
 | [`00-delivery`](prds/00-delivery/prd.md) | Meta: work breakdown, waves, gates, and the open decisions | 5 (+19) |
 | [`01-capsule`](prds/01-capsule/prd.md) | One consolidated dev-container tool | 4 |
-| [`02-terminal`](prds/02-terminal/prd.md) | WezTerm appearance, tabs, jump mode, copy mode, grid centering | 7 |
+| [`02-terminal`](prds/02-terminal/prd.md) | WezTerm — local chrome only since the 2026-08-30 cutover: appearance, launchd PATH, grid centering. Tabs, jump mode and copy mode moved to `07-multiplexer` | 7 |
 | [`03-editor`](prds/03-editor/prd.md) | Neovim (lazy.nvim stack) | 15 |
 | [`04-shell`](prds/04-shell/prd.md) | Nushell daily driver | 9 |
 | [`05-platform`](prds/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
@@ -212,17 +212,33 @@ Four rules for keeping ratings honest across the tree:
   zoxide's frecency ranking. Decided 2026-08-21 — see
   [`decisions/fzf`](prds/00-delivery/decisions/fzf/prd.md) and the invariant
   it amends, [`04-shell`](prds/04-shell/prd.md) I3.
-- **tinty owns the palette; the terminal is its first reader.** `tinty
-  apply` writes `~/.config/wezterm/colors.lua`, WezTerm `dofile`s it (never
-  `require` — it caches by module name and would hand back the *first*
-  palette on a second apply) and re-tints every window at once because
-  `config.colors` is WezTerm-wide; `config.nu` sources tinty's tinted-shell
-  artifact so a new shell re-asserts the same scheme; Neovim (base16 +
-  transparent) and television (`default` ANSI theme) inherit downstream.
-  Nothing below WezTerm hardcodes hex values. This corrects the earlier
-  "the terminal owns the palette" wording, which had the direction
-  backwards — see finding T-3 and open decision 2 in the
-  [corrections backlog](prds/00-delivery/corrections/prd.md).
+- **tmux is the multiplexer; WezTerm keeps only the local chrome.**
+  Reversed 2026-08-30 and carried by
+  [the memo](prds/memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md).
+  The terminal opens into one tmux session `main` through
+  `~/.local/bin/tmux-main`; tmux owns windows, panes, addressing, splits,
+  copy, the status bar and persistence, and `wezterm.lua` binds nothing that
+  addresses a tab or a pane — including WezTerm's own shipped defaults,
+  which is why `disable_default_key_bindings = true` is load-bearing rather
+  than tidy. What stays in WezTerm: font, grid centering, opacity and blur,
+  the launchd PATH seeding, the capsule `SendString` keys. It is 449 lines,
+  down from 1297.
+- **tinty owns the palette; every reader is downstream of it.** `tinty
+  apply` runs `tmux-colors.sh`, which writes `~/.config/tmux/colors.conf`
+  for tmux's own surfaces (base02, the active window label's background, has
+  no ANSI slot) and pushes OSC 4/10/11/12 straight to every attached
+  client's tty — so one apply retints the terminal, tmux and every pane at
+  once, over ssh included. `config.nu` sources tinty's tinted-shell artifact
+  so a new shell re-asserts the same scheme; Neovim (base16 + transparent)
+  and television (`default` ANSI theme) inherit downstream. Nothing below
+  tinty hardcodes hex values. **Corrected 2026-08-30**: this bullet used to
+  say WezTerm `dofile`s a generated `colors.lua` and retints from it. That
+  file, its generator and the reload watch are deleted — the path worked on
+  one emulator on one desk. The `dofile`-never-`require` trap it carried
+  (`require` caches by module name and hands back the *first* palette on a
+  second apply) is kept in the memo as history. The earlier correction of
+  "the terminal owns the palette" — finding T-3, open decision 2 — still
+  holds: tinty owns it.
 - **Minimal base first.** Cosmetic and WIP surfaces are out of the initial
   cut. The canonical list of what's excluded and why is the exclusion section
   of [`prds/README.md`](prds/README.md) — don't duplicate it here.

@@ -30,28 +30,45 @@ tab addressing, copy mode and paste one keystroke away.
 These are what make the pieces compose. Every child leans on them by
 reference; none of them restates one.
 
-**I1** — **The self-healing nine-tab floor owns tabs and panes.**
-There is no second multiplexer. The shell-side one was deleted on
-2026-08-20 and took `DO NOT PORT` in
-[`README.md`](../README.md)'s exclusion list; open decision 1 of the
-[corrections backlog](../00-delivery/corrections/prd.md) records the
-answer where the question was asked. `TAB_COUNT = 9` is a floor, not a
-target, and a digit is a stable address —
-[`02-startup-layout`](02-startup-layout/prd.md) owns the mechanism and
-[`03-f5-jump-mode`](03-f5-jump-mode/prd.md) is what the guarantee is
-for. Children cite I1 rather than re-arguing it.
+**I1** — **REVERSED 2026-08-30. tmux owns tabs and panes; WezTerm owns
+neither.** The original text made the self-healing nine-tab floor the
+owner, with `TAB_COUNT = 9` a floor and a digit a stable address. That
+was right about the hazard — two live key schemes is exactly what it
+existed to prevent — and wrong about which program should be the one.
+[`07-multiplexer`](../07-multiplexer/prd.md) is the reversal, carried by
+[the memo](../memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md);
+do not re-take that decision here. What binds now: WezTerm binds nothing
+that addresses a tab or a pane, `enable_tab_bar = false`, and
+`disable_default_key_bindings = true` — because WezTerm's own shipped
+defaults bind ActivateTab and SplitVertical, so the invariant is false
+out of the box without that line. The 2026-08-20 deletion of the
+shell-side multiplexer still stands and is still `DO NOT PORT` in
+[`README.md`](../README.md)'s exclusion list — what was deleted then was
+a *second* multiplexer under a WezTerm that already was one, and that
+reason survives the reversal intact. `tests/wezterm-appearance.sh`
+--probe reads the loaded key table and asserts the absence.
 
-**I2** — **tinty owns the palette; WezTerm is its first reader, not
-its owner.** `tinty apply` writes `~/.config/wezterm/colors.lua`, and
-WezTerm `dofile`s that file — never `require`, which caches by module
-name and would hand back the *first* palette on a second apply. Reading
-it here rather than accepting per-pane escapes is what makes a theme
-switch global: `config.colors` is WezTerm-wide, so every window, tab
-and pane retints at once. Nothing below WezTerm hardcodes a hex value,
-and no PRD in this epic names a scheme — the scheme is user state that
-tinty rewrites. Any earlier wording that put ownership the other way
-round is finding T-3, corrected by open decision 2 on 2026-08-21
-([`decisions/tinty`](../00-delivery/decisions/tinty/prd.md)).
+**I2** — **tinty owns the palette. AMENDED 2026-08-30: WezTerm is no
+longer its reader.** The first clause stands and is the important half:
+`tinty apply` is the single funnel, nothing below the terminal hardcodes
+a hex value, and no PRD in this epic names a scheme — the scheme is user
+state that tinty rewrites. The second clause is gone. `tinty` no longer
+writes `~/.config/wezterm/colors.lua`, WezTerm no longer `dofile`s it,
+and the reload watch is deleted:
+[`07-multiplexer/04-palette-delivery`](../07-multiplexer/04-palette-delivery/prd.md)
+replaced that path with OSC 4/10/11/12 written straight to every attached
+client's tty plus `~/.config/tmux/colors.conf` for tmux's own surfaces
+(base02, the active window label's background, has no ANSI slot, which is
+why a file is still needed at all). The reason the old clause gave was
+sound and machine-specific: `config.colors` is WezTerm-wide, so one write
+retints everything — on that emulator, on that desk. The new path retints
+a terminal reached over ssh, which the old one never could. **The
+`dofile`-never-`require` trap is not deleted knowledge** — `require`
+caches by module name and would hand back the *first* palette on a second
+apply — it is recorded in the memo as history, because no file in this
+tree reads a lua palette any more. Finding T-3 and open decision 2
+([`decisions/tinty`](../00-delivery/decisions/tinty/prd.md)) are
+unaffected: they corrected who OWNS the palette, and tinty still does.
 
 **I3** — **`PaneSelect` is forbidden, and the reason is the
 requirement.** A key bound in `config.keys` or in a key table is
