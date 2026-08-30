@@ -578,8 +578,8 @@ stage_hermetic() {
   chk_ok "hermetic: precondition: nu is on PATH"      test -n "$NU"
   chk_ok "hermetic: precondition: python3 is on PATH" test -n "$PYTHON"
   if [ -z "$NU" ] || [ -z "$PYTHON" ]; then return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1" \
-         test "$("$NU" --version)" = "0.114.1"
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1" \
+         test "$("$NU" --version)" = "0.115.1"
 
   write_pty_runner
   write_check_h11
@@ -773,4 +773,8 @@ chk_ok "~/.cache/nushell does not exist (a real one appearing means an isolation
        test ! -e "$LIVE_CACHE"
 
 echo "EXIT=$rc"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30. The machine had moved and
+  # every gate carrying this line stopped before it measured anything. What
+  # re-establishes the "measured on the pinned …" claims in this file is not
+  # this line but the rest of the run, against the binary it names.
 exit "$rc"

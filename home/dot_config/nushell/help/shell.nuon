@@ -21,7 +21,7 @@
         mode: "shell"
         also: ["zi", "zz", "<word>"]
         why: "Every jump goes through the `cd` funnel, so the start dir, the dirstack and the recents log update no matter which route you took. A jump that does not move PWD logs nothing — a failed `z` leaves no trace."
-        verify: [{kind: "command", name: "z"}]
+        verify: [{kind: "alias", name: "z"}]
         source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
@@ -32,7 +32,7 @@
         mode: "shell"
         also: ["cdi", "z <query>"]
         why: "The exception was granted rather than tolerated: drawing this list from a cable file would mean reimplementing zoxide's frecency ranking inside television, and that ranking is the only reason the list is worth opening. So fzf sits in the required package set as zoxide's dependency, never as a picker anything else may reach for — a second picker outside tv is a new decision, not an appeal to this one. Decided 2026-08-21 (user)."
-        verify: [{kind: "command", name: "zi"}]
+        verify: [{kind: "alias", name: "zi"}]
         source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
@@ -52,7 +52,7 @@
         topic: "navigate"
         mode: "shell"
         also: ["<word>"]
-        verify: [{kind: "command", name: "zz"}]
+        verify: [{kind: "alias", name: "zz"}]
         source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
@@ -105,7 +105,10 @@
         mode: "shell"
         also: ["cd <path>", "<word>", "Ctrl-Q"]
         why: "Because there is exactly one funnel and exactly one reaction point, four things stay true however you moved: the directory is recorded to `startdir.txt` so a new pane opens where you left off, it is pushed onto the dirstack that feeds the recent-dirs picker, the pick is logged to the recents list, and the listing prints. Scatter that per navigation command and one route always ends up forgetting one of the four."
-        verify: [{kind: "prose"}]
+        # `prose` was wrong here and hid a real handle: this entry describes a
+        # concept, but `mkcd` is a command you can type and introspection can
+        # see. A concept entry over a real handle should name it.
+        verify: [{kind: "command", name: "mkcd"}]
         source: "prds/04-shell/prd.md"
     }
     {
@@ -171,7 +174,10 @@
         topic: "find"
         mode: "shell"
         also: ["Ctrl-Space / F1", "mkcd"]
-        verify: [{kind: "keybinding", name: "quicklist"}]
+        # Two handles, one gesture: the key, and the command it runs. Naming
+        # only the key left `quicklist` reported undocumented in the reverse
+        # direction while the entry describing it sat right here.
+        verify: [{kind: "keybinding", name: "quicklist"}, {kind: "command", name: "quicklist"}]
         source: "prds/04-shell/07-quicklist/prd.md"
     }
     {
@@ -440,7 +446,13 @@
         topic: "config"
         mode: "shell"
         why: "Nushell ships no completion for pass, so this is an extern signature written by hand — which is also why an undeclared flag has to pass through rather than error."
-        verify: [{kind: "command", name: "pass"}]
+        # `pass` itself is the external binary and nushell reports no handle
+        # for it; what this config actually adds is the completion, so that is
+        # what the target names. Corrected 2026-08-30 — the old
+        # `{kind: "command", name: "pass"}` was stale in both directions at
+        # once: it resolved to nothing, and the completer it should have named
+        # was reported undocumented.
+        verify: [{kind: "command", name: "nu-complete pass"}]
         source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     # theme switcher (04-shell/09)
@@ -475,5 +487,49 @@
         also: ["theme toggle"]
         verify: [{kind: "command", name: "theme"}]
         source: "prds/04-shell/09-theme-switcher/prd.md"
+    }
+    {
+        cmd: "cll [model]"
+        title: "Start Claude Code on a chosen model"
+        use: "Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy with its fallback chain."
+        topic: "agents"
+        mode: "shell"
+        also: ["llm", "llm quota"]
+        why: "The picker lives in the script rather than in the shell, so every shell gets the same one. An earlier split — a nushell picker calling a script launcher — meant a stale shell called the script with no model at all and fell into a fallback path nothing had ever exercised."
+        verify: [{kind: "command", name: "cll"}]
+        source: "prds/04-shell/10-litellm-launcher/prd.md"
+    }
+    {
+        cmd: "llm"
+        title: "See every model and what is left on it"
+        use: "Run `llm` for the catalogue as a table: every model, who serves it, and the balance remaining. It is a nushell table, so `llm | where provider == openai` works."
+        topic: "agents"
+        mode: "shell"
+        also: ["cll [model]", "llm quota", "llm regen"]
+        why: "One table rather than a page per provider: choosing a model is a comparison, and a comparison wants rows."
+        verify: [{kind: "command", name: "llm"}]
+        source: "prds/04-shell/10-litellm-launcher/prd.md"
+    }
+    {
+        cmd: "llm quota"
+        title: "Read or record the balance per provider"
+        use: "`llm quota` prints the balances. `llm quota refresh` re-fetches the ones that have an API; `llm quota set <provider> <amount>` records the ones only a dashboard can tell you."
+        topic: "agents"
+        mode: "shell"
+        also: ["llm", "cll [model]"]
+        why: "Two kinds of provider, one command: some publish a balance endpoint and some publish nothing at all, and the second kind is why `set` exists rather than an empty column."
+        verify: [{kind: "command", name: "llm quota"}]
+        source: "prds/04-shell/10-litellm-launcher/prd.md"
+    }
+    {
+        cmd: "llm regen"
+        title: "Rebuild the proxy's routing from live inventories"
+        use: "Run `llm regen` after a provider gains or loses models: it rewrites the proxy's routing config from what the providers actually serve now, and tells you to restart the proxy to pick it up."
+        topic: "agents"
+        mode: "shell"
+        also: ["llm", "cll [model]"]
+        why: "The routing config is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model."
+        verify: [{kind: "command", name: "llm regen"}]
+        source: "prds/04-shell/10-litellm-launcher/prd.md"
     }
 ]

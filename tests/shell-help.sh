@@ -523,8 +523,15 @@ stage_hermetic() {
 
   chk_ok "hermetic: precondition: nu is on PATH" test -n "$NU"
   if [ -z "$NU" ]; then guard_end; return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)" \
-         test "$("$NU" --version)" = "0.114.1"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30, and moving it is not a
+  # free edit. Every "measured on the pinned 0.114.1" claim in this gate and
+  # in help-check.nu was taken on the old version; what re-establishes them is
+  # not this line but the rest of this run, which exercises each of them
+  # against the binary the line names. A pin that no longer matches the
+  # machine is worse than a moved one: the whole stage stops before it
+  # measures anything, which is what it did here.
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1 (nothing is installed or upgraded here)" \
+         test "$("$NU" --version)" = "0.115.1"
   chk_ok "hermetic: precondition: python3 is on PATH (the JSON probe parses, never eyeballs)" test -n "$PY"
 
   local M="$SCRATCH/m-help" out prc

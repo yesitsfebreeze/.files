@@ -34,7 +34,7 @@
         topic: "containers"
         mode: "shell"
         also: ["capsule clean"]
-        verify: [{kind: "command", name: "capsule"}]
+        verify: [{kind: "command", name: "capsule list"}]
         source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
@@ -44,7 +44,7 @@
         topic: "containers"
         mode: "shell"
         also: ["capsule list"]
-        verify: [{kind: "command", name: "capsule"}]
+        verify: [{kind: "command", name: "capsule clean"}]
         source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {

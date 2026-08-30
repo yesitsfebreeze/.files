@@ -1,6 +1,5 @@
 ---
-state: open
-priority: 8
+state: done        priority: 8
 est: 5h
 task: H.4
 mode: afk

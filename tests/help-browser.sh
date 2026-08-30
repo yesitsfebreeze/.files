@@ -615,8 +615,12 @@ stage_hermetic() {
 
   chk_ok "hermetic: precondition: nu is on PATH" test -n "$NU"
   if [ -z "$NU" ]; then guard_end; return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)" \
-         test "$("$NU" --version)" = "0.114.1"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30. The machine had moved and
+  # every gate carrying this line stopped before it measured anything. What
+  # re-establishes the "measured on the pinned …" claims in this file is not
+  # this line but the rest of the run, against the binary it names.
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1 (nothing is installed or upgraded here)" \
+         test "$("$NU" --version)" = "0.115.1"
 
   local M out prc n rows
   M="$SCRATCH/m-manual"; mk_machine "$M"

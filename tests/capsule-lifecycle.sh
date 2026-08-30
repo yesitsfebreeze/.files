@@ -131,14 +131,29 @@ anchors_ok() {
 }
 
 # The two wezterm.lua bindings, exact payloads, plus the T.1/T.2 incumbents.
+# AMENDED 2026-08-30 by 07-multiplexer/08-wezterm-reduction. Two of the four
+# things this predicate asserted are gone from wezterm.lua and their absence is
+# now the correct state:
+#
+#   F6              — a tmux binding (`bind -n F6`), because the toggle has to
+#                     work in a session reached over ssh where no WezTerm runs.
+#   Ctrl+Shift+Q    — went with the nine-tab floor it existed to defeat; the
+#                     window-closing key is Cmd+Q, a re-added WezTerm default.
+#
+# The two capsule SendString keys are untouched and still this node's, which is
+# what this predicate is FOR — so it keeps asserting them, and now also asserts
+# that the two departed keys really departed rather than being quietly dropped
+# from the check.
 wez_ok() {
   local f="$1"
   $GREP -qF '{ key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },' "$f" || return 1
   $GREP -qF '{ key = "b", mods = "CTRL|SHIFT", action = act.SendString("capsule --rebuild\r") },' "$f" || return 1
-  $GREP -qF 'key = "F6"' "$f" || return 1
-  local q_block
-  q_block="$($GREP -A1 -F 'key = "q",' "$f")"
-  printf '%s' "$q_block" | $GREP -qF 'mods = "CTRL|SHIFT"'
+  # The theme toggle now lives in tmux.conf, and this is where that is checked.
+  $GREP -qF 'bind -n F6' "$REPO/home/dot_config/tmux/tmux.conf" || return 1
+  # And no F6 binding is left behind in wezterm.lua, in code (the file
+  # explains at length why it is gone).
+  $GREP -vE '^[[:space:]]*--' "$f" | $GREP -qF 'key = "F6"' && return 1
+  return 0
 }
 
 # The C-3 regression absences: no ~/docker, no `just `, the bind is the
@@ -255,7 +270,7 @@ stage_tree() {
   chk "tree: all six config.nu-sourcing gates stage capsule.nu in mk_machine" "$missing"
 
   # The wezterm bindings, plus the altered-payload counterfactual.
-  chk_ok "tree: wezterm.lua carries the d/b CTRL|SHIFT SendString entries, F6 and the q entry intact" \
+  chk_ok "tree: wezterm.lua carries the d/b CTRL|SHIFT SendString entries; F6 moved to tmux.conf and left none behind" \
          wez_ok "$WEZTERM_LUA"
   local CF_WEZ="$SCRATCH/cf-wez-payload.lua"
   sed 's|SendString("capsule\\r")|SendString("caps\\r")|' "$WEZTERM_LUA" > "$CF_WEZ"
@@ -478,8 +493,12 @@ stage_hermetic() {
 
   chk_ok "hermetic: precondition: nu is on PATH" test -n "$NU"
   if [ -z "$NU" ]; then guard_end; return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)" \
-         test "$("$NU" --version)" = "0.114.1"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30. The machine had moved and
+  # every gate carrying this line stopped before it measured anything. What
+  # re-establishes the "measured on the pinned …" claims in this file is not
+  # this line but the rest of the run, against the binary it names.
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1 (nothing is installed or upgraded here)" \
+         test "$("$NU" --version)" = "0.115.1"
   chk_ok "hermetic: precondition: no docker in /usr/bin:/bin (the shim is the only docker any scenario can reach)" \
          test -z "$(PATH=/usr/bin:/bin command -v docker || true)"
 

@@ -1,4 +1,4 @@
-# Surface: WezTerm — the terminal itself, and the keys that reach a capsule.
+# Surface: the terminal — tmux, and the few keys WezTerm still owns.
 # Schema, verify kinds and writing rules: see README.md in this directory.
 #
 # Every entry here is host-only: a shell inside a container cannot press these.
@@ -6,138 +6,159 @@
 # carries `mode: "shell"` instead, because it is typed at the host prompt
 # rather than pressed.
 #
-# CAVEAT, and it is not a small one. `prds/02-terminal` is recorded as
-# invalid as written (CLAUDE.md, Known gaps) and is pending a from-scratch
-# re-spec (task W0.2). Its inventory has since landed
-# (`docs/capabilities-terminal.md`, task W0.1) and IS ground truth for what
-# the live config does; the 02-terminal PRDs are not. Every entry below was
-# re-checked against `wezterm show-keys --lua` and that inventory on
-# 2026-08-20. Consequences:
-#   - `02-terminal/02` binds no window-spawn key. `Cmd+N` and `Ctrl+Shift+N`
-#     are WezTerm defaults resolving to `SpawnWindow`, and any new window
-#     comes up at the nine-tab floor via the reconciler — which is the
-#     `nine tabs` entry's ground.
-#   - the F5 key table is named `jump_mode`: it binds `Escape`, digits `1`-`9`
-#     to tabs, and all 26 letters as bare cancels. The pane-letter half was
-#     dropped (Q2, 2026-08-21), and pane movement is WezTerm's own
-#     `Ctrl+Shift+`arrow defaults.
-#   - `mods` is spelled the way `wezterm show-keys` prints it, which is NOT
-#     the way the binding is written in Lua. A control+shift binding on a
-#     *letter* is printed as the UPPERCASE letter with `mods = 'CTRL'` —
-#     `Ctrl+Shift+Q` is `{key: "Q", mods: "CTRL"}`, and a documented
-#     `{key: "q", mods: "SHIFT|CTRL"}` matches nothing at all while looking
-#     perfectly reasonable. `SHIFT|CTRL` survives only where shift cannot
-#     fold into the key (`Tab`, digits, symbols). Measured, not assumed; see
-#     README.md.
-#   - what the live config actually binds today, in full: `F5`, `F6`,
-#     `Ctrl+Shift+X`, `Ctrl+Shift+Q`, `Ctrl+V`, `Ctrl+C`, `Ctrl+Shift+B`,
-#     plus the `jump_mode` and `copy_mode` tables. `F6` (theme toggle) is
-#     documented: its DEFER verdict was withdrawn by
-#     `prds/00-delivery/decisions/tinty` (D.1b, 2026-08-21) and
-#     `prds/02-terminal/01-appearance` binds the key. Only `Ctrl+Shift+B`
-#     (the wallpaper pipeline, DO NOT PORT) stays undocumented as itself —
-#     the rest are.
-#   - the four capsule keys below are UNBUILT, like everything else in this
-#     repo, and that is all they are for three of them: `Ctrl+Shift+D`,
-#     `Ctrl+Shift+S` and `Ctrl+Shift+B` are bound to nothing in the rebuilt
-#     environment. `Ctrl+Shift+B`'s wallpaper prompt was the one live
-#     collision and the inventory rates that pipeline DO NOT PORT, so the key
-#     comes free. `Ctrl+Shift+T` is the one real collision left: it is
-#     WezTerm's own `SpawnTab` default and the tab reconciler's manual
-#     new-tab path. Picking it is `01-capsule/04`'s call via the terminal
-#     re-spec, not this file's — and note its verify target passes today off
-#     the WezTerm default alone, so the drift check cannot catch a capsule
-#     binding that never lands.
-#   - the "Recent:" indicator the recents picker claims has no host in the
-#     live config either: that status bar is clock-only and nothing ever sets
-#     its left side. Documented as intended, not as observed.
+# REWRITTEN 2026-08-30 for the tmux cutover (07-multiplexer/09-manual-entries).
+# tmux stays on THIS surface rather than getting a fifth `--mode`: from the
+# user's seat it *is* the terminal, and the closed four-surface list in
+# 06-help/01-content-model is left alone deliberately.
+#
+# What changed, so a reader arriving from an older copy is not misled:
+#   - Roughly twenty `kind: "wezterm-key"` targets became `kind: "tmux-key"`,
+#     resolved against `tmux -L <label> -f <conf> list-keys` rather than
+#     `wezterm show-keys --lua`. A tmux-key target names `key`, `mods` and an
+#     optional `table` (`root` when absent) — the same shape as the WezTerm
+#     kind, against a different reader.
+#   - Entries for `F4 <arrow>` and the pane letters are new: neither gesture
+#     existed before, because WezTerm could not address a pane by letter
+#     without a self-painted overlay (I3).
+#   - `nine tabs`, `lit and dim tabs` and `Ctrl+Shift+Q` described the WezTerm
+#     floor and are gone or replaced. Windows are created on demand now, the
+#     tint moved to tmux's status bar, and the window-closing key went with
+#     the floor it existed to defeat.
+#   - `Ctrl+Shift+<arrow>` and `Ctrl+Shift+F` were WezTerm DEFAULTS this
+#     config left unshadowed. `disable_default_key_bindings = true` turned
+#     every default off, so both are gone: pane movement is `F5 <letter>` and
+#     scrollback search is `/` inside copy mode.
+#
+# WHAT `mods` MEANS HERE, and it is not what it meant before. A tmux binding
+# spells its modifiers in the key itself — `C-S-x`, not a separate field — so
+# a tmux-key target carries `mods: "NONE"` and puts the whole chord in `key`,
+# exactly as `list-keys` prints it. The WezTerm trap the old header warned
+# about at length (a control+shift binding on a letter printed as the
+# UPPERCASE letter with `mods = 'CTRL'`) still applies to the three
+# `wezterm-key` targets left in this file, and to nothing else.
 [
     # ---------------------------------------------------------------- terminal
     {
         key: "F5 <digit>"
-        title: "Jump to a tab by its number"
-        use: "Press `F5`, let go, then a digit 1-9: you are on that tab. The mode is over the moment you press the second key — the next thing you type goes into the pane. `Esc` after `F5` cancels."
+        title: "Jump to a window by its number"
+        use: "Press `F5`, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. The mode is over the moment you press the second key — the next thing you type goes into the pane. Any unbound key cancels."
         topic: "terminal"
         mode: "terminal"
-        also: ["Ctrl+Shift+<arrow>", "nine tabs"]
-        why: "A one-shot key table, not a mode you have to leave: any key pops it, mapped or not. The tab bar is the whole legend — each tab's title is its digit and nothing else — and not a status-bar word, which was tried and removed as noise. Every letter is bound as a bare cancel, because `until_unknown` pops the table without eating the keystroke: a mistyped letter ends the mode instead of leaking a character into whatever is running."
+        also: ["F5 <letter>", "F4 <arrow>", "F5 F5"]
+        why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. A key with no binding in the pushed table is looked up once more in the root table and dropped if it misses, so a mistyped letter ends the mode and types nothing, with no bindings needed to arrange it. A lazily created window starts at `~` and NOT at the current directory — that disagrees with `F4` on purpose: a digit is a clean slate, a split is a division of the work in front of you."
         verify: [
-            {kind: "wezterm-key", key: "F5", mods: "NONE"}
-            {kind: "wezterm-key", key: "Escape", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "1", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "2", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "3", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "4", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "5", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "6", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "7", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "8", mods: "NONE", table: "jump_mode"}
-            {kind: "wezterm-key", key: "9", mods: "NONE", table: "jump_mode"}
+            {kind: "tmux-key", key: "F5", mods: "NONE"}
+            {kind: "tmux-key", key: "1", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "2", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "3", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "4", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "5", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "6", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "7", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "8", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "9", mods: "NONE", table: "jump"}
         ]
-        source: "prds/02-terminal/03-f5-jump-mode/prd.md"
+        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
-        key: "Ctrl+Shift+<arrow>"
-        title: "Move between panes with the arrows"
-        use: "Hold `Ctrl+Shift` and press an arrow: focus moves to the pane in that direction. Nothing to enter and nothing to leave — it works mid-anything, over a running TUI included."
+        key: "F5 <letter>"
+        title: "Jump to a pane by its letter"
+        use: "Press `F5`, let go, then `a` to `i`: focus moves to that pane. The letters are printed on the pane borders whenever a window has more than one pane, so the label you are reading is the key you press."
         topic: "terminal"
         mode: "terminal"
-        also: ["F5 <digit>"]
-        why: "These are WezTerm's own defaults, deliberately left unshadowed rather than rebound: F5's pane half was dropped (Q2, 2026-08-21), and a custom pane picker is off the table anyway because a modal opened from Lua can never be closed from Lua."
+        also: ["F5 <digit>", "F4 <arrow>", "the status bar"]
+        why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. That is exactly why the border prints it: the label is derived from the same index the key uses, so it is right the instant after a renumber rather than describing where a pane used to be. The two halves are one design and neither is honest without the other. This is the capability WezTerm refused: `PaneSelect` cannot be closed from Lua, so letter addressing there would have meant painting an overlay by hand — nine `select-pane -t` lines do it here."
         verify: [
-            {kind: "wezterm-key", key: "LeftArrow", mods: "SHIFT|CTRL"}
-            {kind: "wezterm-key", key: "RightArrow", mods: "SHIFT|CTRL"}
-            {kind: "wezterm-key", key: "UpArrow", mods: "SHIFT|CTRL"}
-            {kind: "wezterm-key", key: "DownArrow", mods: "SHIFT|CTRL"}
+            {kind: "tmux-key", key: "a", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "b", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "c", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "d", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "e", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "f", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "g", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "h", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "i", mods: "NONE", table: "jump"}
         ]
-        source: "prds/02-terminal/03-f5-jump-mode/prd.md"
+        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
-        key: "Ctrl+Shift+Q"
-        title: "Close every tab in this window"
-        use: "Press `Ctrl+Shift+Q` and the whole window closes at once, without asking — there is no are-you-sure, so a build running in tab 6 goes with it."
+        key: "F4 <arrow>"
+        title: "Split the view in a direction"
+        use: "Press `F4`, let go, then an arrow: the pane splits that way and the new pane opens in the directory the old one was in. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it."
         topic: "terminal"
         mode: "terminal"
-        also: ["nine tabs", "q / :q / /exit"]
-        verify: [{kind: "wezterm-key", key: "Q", mods: "CTRL"}]
-        source: "prds/02-terminal/02-startup-layout/prd.md"
+        also: ["F5 <letter>", "F5 <digit>"]
+        why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The directory comes from the shell's OSC 7 report, which is why `config.nu` keeps `osc7: true` — its neighbour `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
+        verify: [
+            {kind: "tmux-key", key: "F4", mods: "NONE"}
+            {kind: "tmux-key", key: "Left", mods: "NONE", table: "split"}
+            {kind: "tmux-key", key: "Right", mods: "NONE", table: "split"}
+            {kind: "tmux-key", key: "Up", mods: "NONE", table: "split"}
+            {kind: "tmux-key", key: "Down", mods: "NONE", table: "split"}
+        ]
+        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
-        cmd: "nine tabs"
-        title: "Expect nine tabs in every window"
-        use: "Nothing to press. A window opens full-screen with nine tabs already there, focus on the first, so `F5 4` means something from the first second — there is never a tab to create before you can jump to it."
+        key: "F5 F5"
+        title: "Send F5 or F4 through to a nested session"
+        use: "Press the key twice — `F5 F5`, or `F4 F4` — and the second press is sent to whatever is running in the pane instead of being handled here. That is how you reach the window and split keys of a tmux you have ssh'd into: the outer session gets the first press, the inner one gets the second."
         topic: "terminal"
         mode: "terminal"
-        also: ["F5 <digit>", "Ctrl+Shift+Q"]
-        why: "Nine because that is what one row of digits addresses. The count is a floor the terminal keeps repairing, not a one-off at startup: a reconciler refills and re-positions tabs, which is also how a new window gets its nine. Closing a tab is allowed; dropping below the addressable set is not. Quitting has to tell that reconciler it is closing, or the floor refills the tabs being closed."
+        also: ["F5 <digit>", "F4 <arrow>", "F6"]
+        why: "These keys are bound without a prefix, so the outermost session eats them always — which is the portability case biting itself the moment you ssh somewhere that also runs tmux. The double tap needs an explicit binding and does not fall out for free: without it the second press misses in the pushed table, is looked up again in the root table, finds the same key there and silently re-arms the mode. `F6` is deliberately NOT forwardable: the palette belongs to the outermost terminal, because that is the process that owns the colours and reads the escape sequence."
+        verify: [
+            {kind: "tmux-key", key: "F5", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "F4", mods: "NONE", table: "split"}
+        ]
+        source: "prds/07-multiplexer/02-key-tables/prd.md"
+    }
+    {
+        cmd: "the status bar"
+        title: "Read the bar across the top"
+        use: "Nothing to press. The window numbers run along the left of the bar: the one you are in has a filled background, and a number shows lit rather than dimmed when something is running in any of that window's panes — one glance says where the work is. On the right is the current pane's directory and the clock. Over ssh the machine's name appears on the far left; on this machine that space is blank, because you already know."
+        topic: "terminal"
+        mode: "terminal"
+        also: ["F5 <digit>", "F5 <letter>"]
+        why: "Background says which window has focus, foreground says which windows are busy — two signals that never have to be decoded out of one channel. A window counts as busy when any of its panes is running something that is not a shell, read from the pane's foreground process rather than from prompt marking, which is deliberately off. There is no key legend on the bar: the digits are the legend, and a legend in words was tried and removed as noise. The colours are ANSI slots, never fixed values, so a theme switch retints the bar with everything else."
         verify: [{kind: "prose"}]
-        source: "prds/02-terminal/02-startup-layout/prd.md"
+        source: "prds/07-multiplexer/03-status-bar/prd.md"
     }
     {
-        cmd: "lit and dim tabs"
-        title: "See which tabs have something running"
-        use: "Nothing to press. A tab whose panes are all sitting at a prompt shows its digit in the dim inactive colour; a tab with a command running anywhere inside it shows the same digit lit, so one glance at the bar says where the work is. It settles by itself within five seconds of a command starting or finishing, with nothing to refresh, and a focused tab looks the same whether it is busy or not."
+        cmd: "the session survives"
+        title: "Close the terminal without losing your work"
+        use: "Quit the terminal — or lose the ssh connection — and nothing stops: reopening it puts you back exactly where you were, same windows, same panes, same directories. A reboot costs you at most fifteen minutes of layout changes: the arrangement is saved on a timer and restored when the machine comes back, with editors reopening on the files they had."
         topic: "terminal"
         mode: "terminal"
-        also: ["nine tabs", "F5 <digit>"]
-        why: "The signal is the pane's foreground process, not its prompt: OSC 133 prompt marking is deliberately off, because it double-marks starship's two-line prompt under WezTerm and leaves a phantom blank line behind. Which process counts as idle is learned rather than named — the first program WezTerm puts in a pane is that pane's baseline, so no shell name appears anywhere and the reading survives a change of shell. Five seconds is the status tick, and it is the whole mechanism rather than a delay: this WezTerm emits no event for a pane opening or closing, so the tick is what notices, and it is also what lets a tab go dim again after a process is killed from outside. Brightness and background are kept as two separate channels on purpose: the background says which tab has focus, the digit says which tabs are busy, so neither reading has to be decoded out of the other."
+        also: ["the status bar", "F5 <digit>"]
+        why: "The session outliving the terminal is free — the server is a separate process and the attach is idempotent, so opening the terminal again is the same gesture as opening it the first time. Surviving a REBOOT is not free and is two plugins: one saves and restores the layout, the other runs the timer. What comes back is the shape of the work — where each pane was, what it was running — and not a copy of its scrollback, which would put the output of every command on disk and grow without bound. Editors come back through the editor's own session file rather than by dropping an untracked file in every project directory."
         verify: [{kind: "prose"}]
-        source: "prds/02-terminal/05-tab-content-state/prd.md"
+        source: "prds/07-multiplexer/07-persistence/prd.md"
     }
-
     {
         key: "Ctrl+Shift+X"
         title: "Freeze the screen and select text with the keyboard"
-        use: "Press `Ctrl+Shift+X` and the pane stops scrolling: you get a cursor that moves on WezTerm's own copy-mode keys — `hjkl` to move, `w` and `b` by word, `g` and `G` to the ends of the scrollback, 54 of them in all. Press `c` once where the selection should start, move to the far end, press `c` again: the text is on the clipboard and the mode is gone. `y` does the same in one key once something is selected; `q` or `Esc` leave with nothing copied. There is no `/` here and no search of any kind inside this build's copy mode — searching the scrollback is `Ctrl+Shift+F`, pressed from the normal screen before you enter."
+        use: "Press `Ctrl+Shift+X` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` to move, `w` and `b` by word, `g` and `G` to the ends of the scrollback, `/` to search it. Press `c` where the selection should start; each further `c` widens it from the character to the word to the whole line and then back to the character. `y` copies what is selected and leaves; `q` or `Esc` leave with nothing copied."
         topic: "terminal"
         mode: "terminal"
-        also: ["Ctrl+C", "Ctrl+V", "Ctrl+Shift+F", "copymode"]
-        why: "Entry resets the selection and the per-pane toggle flag first, so an exit through `q`, `Esc` or `y` cannot leave the two-press `c` cycle half-armed for the next time. The flag is tracked by pane id rather than by reading the selection text back, because a selection that starts on blank cells reads as empty and would desync the toggle. The default `copy_mode` table is extended, never replaced, which is why every builtin motion still works."
+        also: ["Ctrl+C", "Ctrl+V", "copymode"]
+        why: "The gesture is carried over from the terminal's own copy mode; the motions underneath are tmux's, which is why searching the scrollback is `/` from inside the mode now rather than a separate key from outside it. Leaving copy mode by ANY route clears the widen cycle, through a hook rather than through the exit keys — copy mode is also entered by the mouse wheel and by the `copymode` command, and a cycle left half-armed for the next time was the failure the hook exists to prevent. Where the copy lands is decided once, when the config loads: the local clipboard where there is one, and an escape sequence to the terminal where there is not — which is what makes copying work from a session at the far end of an ssh."
         verify: [
-            {kind: "wezterm-key", key: "X", mods: "CTRL"}
-            {kind: "wezterm-key", key: "c", mods: "NONE", table: "copy_mode"}
+            {kind: "tmux-key", key: "C-S-x", mods: "NONE"}
+            {kind: "tmux-key", key: "c", mods: "NONE", table: "copy-mode-vi"}
+            {kind: "tmux-key", key: "y", mods: "NONE", table: "copy-mode-vi"}
         ]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
+        source: "prds/07-multiplexer/05-copy-and-clipboard/prd.md"
+    }
+    {
+        cmd: "copymode"
+        title: "Enter copy mode without touching a chord"
+        use: "Type `copymode` at a host prompt and the pane it runs in freezes into copy mode, exactly as `Ctrl+Shift+X` leaves it — the same motions, the same widening `c` cycle. Outside tmux it says so rather than doing nothing."
+        topic: "terminal"
+        mode: "shell"
+        also: ["Ctrl+Shift+X"]
+        why: "One command addressed at the pane it was typed in. It used to print an escape sequence the terminal parsed off the pty, because that was the only route a shell command had into a GUI-only mode; the mode is the multiplexer's now and the multiplexer has a command for it, so the trick is gone."
+        verify: [{kind: "command", name: "copymode"}]
+        source: "prds/07-multiplexer/05-copy-and-clipboard/prd.md"
     }
     {
         key: "Ctrl+V"
@@ -146,41 +167,19 @@
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+C"]
-        why: "Bracketed paste is the mechanism: the text arrives wrapped in the escape sequence that marks it as pasted rather than typed, so a program that would reindent or autocomplete every keystroke can tell the two apart. That marker is also the only route clipboard-based dictation has into a terminal. No subprocess is involved, so size costs nothing."
+        why: "Bracketed paste is the mechanism: the text arrives wrapped in the escape sequence that marks it as pasted rather than typed, so a program that would reindent or autocomplete every keystroke can tell the two apart. That marker is also the only route clipboard-based dictation has into a terminal. Still the terminal's binding rather than the multiplexer's, because it is about this machine's clipboard."
         verify: [{kind: "wezterm-key", key: "v", mods: "CTRL"}]
         source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "Ctrl+C"
         title: "Copy the selection, or interrupt when there is none"
-        use: "With text selected, `Ctrl+C` copies it and drops the selection. With nothing selected the same key is the ordinary interrupt and reaches the program as SIGINT, so you never spend a stop on a copy that was not there."
+        use: "With text selected by the mouse, `Ctrl+C` copies it and drops the selection. With nothing selected the same key is the ordinary interrupt and reaches the program as SIGINT, so you never spend a stop on a copy that was not there."
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+V", "Ctrl+Shift+X"]
-        why: "The binding reads the pane's selection first and only falls through to sending the key when it is empty. That is what buys the platform-native copy shortcut without giving up the interrupt — the trade a plain `CopyTo` binding loses, and the reason this key is not simply left to the shell."
+        why: "The binding reads the pane's selection first and only falls through to sending the key when it is empty — that is what buys the platform-native copy shortcut without giving up the interrupt. It stays meaningful because MOUSE selection is deliberately left to the terminal: the multiplexer's mouse mode is off, so dragging still selects the way it does in any other window."
         verify: [{kind: "wezterm-key", key: "c", mods: "CTRL"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
-    }
-    {
-        key: "Ctrl+Shift+F"
-        title: "Search the scrollback"
-        use: "From the normal screen — never from inside copy mode — a search prompt opens over the pane: type a pattern, then `Enter` or `Ctrl+P` walks back up the matches, `Ctrl+N` walks down again, `Ctrl+R` cycles the match type, and `Escape` leaves."
-        topic: "terminal"
-        mode: "terminal"
-        also: ["Ctrl+Shift+X"]
-        why: "This is WezTerm's own default, left unshadowed on purpose: the config binds no search key of its own. Search and copy mode are separate key tables on this build, and the copy-mode one carries no `/` and none of the match keys — measured against `wezterm show-keys --lua`, so the absence is WezTerm's, not an omission of this configuration."
-        verify: [{kind: "wezterm-key", key: "F", mods: "CTRL"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
-    }
-    {
-        cmd: "copymode"
-        title: "Enter copy mode without touching a chord"
-        use: "Type `copymode` at a host prompt and the pane it runs in freezes into copy mode, exactly as `Ctrl+Shift+X` leaves it — the same motions, the same two-press `c` cycle."
-        topic: "terminal"
-        mode: "shell"
-        also: ["Ctrl+Shift+X"]
-        why: "The command prints an OSC 1337 user-var and WezTerm parses it off the pty — the only route a shell command has into a GUI-only mode, because WezTerm's CLI exposes no action for copy mode. The handler answers to this one name: its live sibling, the background-transparency toggle, is refused by `prds/00-delivery/decisions/wallpaper-opacity` and did not come over."
-        verify: [{kind: "command", name: "copymode"}]
         source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
@@ -201,20 +200,20 @@
         topic: "terminal"
         mode: "terminal"
         also: ["Ctrl+Alt+Super+drag"]
-        why: "The binding sets `mouse_reporting`, which is what keeps it working while an application is capturing the mouse. Without that flag WezTerm forwards the click to the application and nobody opens the URL."
+        why: "The binding sets `mouse_reporting`, which is what keeps it working while an application is capturing the mouse. Without that flag the click is forwarded to the application and nobody opens the URL."
         verify: [{kind: "prose"}]
         source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "F6"
         title: "Switch the colour scheme from anywhere"
-        use: "Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied to every window, tab and pane at once. Press it again to come back."
+        use: "Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh."
         topic: "config"
         mode: "terminal"
-        also: ["theme toggle"]
-        why: "Bound in WezTerm rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the tinty hook chain would otherwise freeze every window for its duration."
-        verify: [{kind: "wezterm-key", key: "F6", mods: "NONE"}]
-        source: "prds/02-terminal/01-appearance/prd.md"
+        also: ["theme toggle", "F5 F5"]
+        why: "Bound in the multiplexer rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the theme tool's hook chain would otherwise block the server for its duration. The scheme reaches the terminal as escape sequences written straight to it, not through a file only one emulator could read — which is why the key is worth pressing on a machine you ssh'd into. It is the one key that is never forwarded to a nested session: the palette belongs to the outermost terminal."
+        verify: [{kind: "tmux-key", key: "F6", mods: "NONE"}]
+        source: "prds/07-multiplexer/04-palette-delivery/prd.md"
     }
 
     # -------------------------------------------------------------- containers
@@ -225,7 +224,7 @@
         topic: "containers"
         mode: "terminal"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
-        why: "The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided."
+        why: "The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided. It is one of the four keys the terminal still owns after the multiplexer took the rest: it types into the pane rather than addressing it."
         verify: [{kind: "wezterm-key", key: "D", mods: "CTRL"}]
         source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
@@ -236,30 +235,32 @@
         topic: "containers"
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
-        why: "The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but `capabilities-terminal.md` rates that whole pipeline DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here."
+        why: "The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but that whole pipeline is rated DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here."
         verify: [{kind: "wezterm-key", key: "B", mods: "CTRL"}]
         source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         key: "Ctrl+Shift+S"
         title: "Reopen a recent workspace here"
-        use: "Press `Ctrl+Shift+S` and a fuzzy-selectable list of the directories you have most recently mounted opens, newest first: type to narrow it, then choose, and that directory's capsule is mounted in this pane. Directories that no longer exist are dropped as the list is read. The status area says `Recent:` while it is open, so a stray key is not mistaken for the prompt."
+        use: "Press `Ctrl+Shift+S` and a fuzzy-selectable list of the directories you have most recently mounted opens, newest first: type to narrow it, then choose, and that directory's capsule is mounted in this pane. Directories that no longer exist are dropped as the list is read."
         topic: "containers"
         mode: "terminal"
-        also: ["Ctrl+Shift+T", "Ctrl+Shift+D"]
-        why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting WezTerm."
-        verify: [{kind: "wezterm-key", key: "S", mods: "CTRL"}]
+        also: ["Ctrl+Shift+O", "Ctrl+Shift+D"]
+        why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting the terminal. The `Recent:` indicator this entry used to promise is gone with the derived status bar: the bar is the multiplexer's now and nothing sets its left side from a picker."
+        # Two handles, one gesture: the key, and `capsule recent`, which it
+        # runs and which is equally typeable at a prompt.
+        verify: [{kind: "wezterm-key", key: "S", mods: "CTRL"}, {kind: "command", name: "capsule recent"}]
         source: "prds/01-capsule/04-recent-workspaces/prd.md"
     }
     {
-        key: "Ctrl+Shift+T"
-        title: "Reopen a recent workspace in a new tab"
-        use: "Same picker as `Ctrl+Shift+S`, but the capsule opens in a new tab and leaves the pane you were in alone."
+        key: "Ctrl+Shift+O"
+        title: "Reopen a recent workspace in a new window"
+        use: "Same picker as `Ctrl+Shift+S`, but it opens in a new OS window and leaves the pane you were in alone."
         topic: "containers"
         mode: "terminal"
-        also: ["Ctrl+Shift+S", "nine tabs"]
-        why: "Taken, not free: this is WezTerm's own new-tab key, and the tab reconciler treats that default as the manual new-tab path. Claiming it here collides with both, which is an open correction rather than a settled trade — the binding needs picking, not defending. Worse for the manual than for the terminal: `wezterm show-keys` already reports `T`+`CTRL` from the WezTerm default, so this entry's drift check passes whether or not a capsule binding is ever written."
-        verify: [{kind: "wezterm-key", key: "T", mods: "CTRL"}]
+        also: ["Ctrl+Shift+S"]
+        why: "A window, not a tab, and that is the point: there are no tabs. This key replaced `Ctrl+Shift+T`, which was documented as an open collision — it was the terminal's own new-tab default AND the tab reconciler's manual path, so the drift check passed off the default alone whether or not a capsule binding was ever written. Both of those are gone, and the collision went with them. The picker runs the shell directly rather than attaching to the session, because it is a one-shot that should exit with itself."
+        verify: [{kind: "wezterm-key", key: "O", mods: "CTRL"}]
         source: "prds/01-capsule/04-recent-workspaces/prd.md"
     }
 ]

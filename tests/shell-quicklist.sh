@@ -347,7 +347,14 @@ empty_state_ok() {
 # it. Both sides are read and compared, so a rename on either cannot pass.
 name_matches_manual_ok() {
   local cfg="$1" nuon="$2" want
-  want="$(sed -n 's/^ *verify: \[{kind: "keybinding", name: "\([a-z_]*\)"}\] *$/\1/p' "$nuon" \
+  # THE TARGET IS FOUND ANYWHERE IN THE LIST, not only as the sole element.
+  # The old pattern anchored on `verify: [{…}]` with exactly one record and
+  # went red the day the entry gained a second target (`{kind: "command",
+  # name: "quicklist"}`, added when the drift check reported the command
+  # handle undocumented). It was reading the manual's formatting, not its
+  # content.
+  want="$($GREP -o '{kind: "keybinding", name: "[a-z_]*"}' "$nuon" \
+          | sed 's/.*name: "\([a-z_]*\)".*/\1/' \
           | while read -r n; do [ "$n" = "quicklist" ] && echo "$n"; done | head -1)"
   [ "$want" = "quicklist" ] || return 1
   [ "$($GREP -c "name: $want\$" "$cfg")" -eq 1 ]
@@ -805,8 +812,12 @@ stage_hermetic() {
   chk_ok "hermetic: precondition: nu is on PATH"      test -n "$NU"
   chk_ok "hermetic: precondition: python3 is on PATH" test -n "$PYTHON"
   if [ -z "$NU" ] || [ -z "$PYTHON" ]; then guard_end; return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)" \
-         test "$("$NU" --version)" = "0.114.1"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30. The machine had moved and
+  # every gate carrying this line stopped before it measured anything. What
+  # re-establishes the "measured on the pinned …" claims in this file is not
+  # this line but the rest of the run, against the binary it names.
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1 (nothing is installed or upgraded here)" \
+         test "$("$NU" --version)" = "0.115.1"
 
   write_pty_runner
   local M out prc LOG

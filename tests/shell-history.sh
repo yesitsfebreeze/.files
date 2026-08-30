@@ -678,8 +678,12 @@ stage_hermetic() {
   chk_ok "hermetic: precondition: nu is on PATH"      test -n "$NU"
   chk_ok "hermetic: precondition: python3 is on PATH" test -n "$PYTHON"
   if [ -z "$NU" ] || [ -z "$PYTHON" ]; then guard_end; return; fi
-  chk_ok "hermetic: precondition: nu is the pinned 0.114.1 (nothing is installed or upgraded here)" \
-         test "$("$NU" --version)" = "0.114.1"
+  # THE PIN MOVED 0.114.1 -> 0.115.1 on 2026-08-30. The machine had moved and
+  # every gate carrying this line stopped before it measured anything. What
+  # re-establishes the "measured on the pinned …" claims in this file is not
+  # this line but the rest of the run, against the binary it names.
+  chk_ok "hermetic: precondition: nu is the pinned 0.115.1 (nothing is installed or upgraded here)" \
+         test "$("$NU" --version)" = "0.115.1"
 
   write_pty_runner
   local M out
@@ -784,8 +788,15 @@ stage_hermetic() {
   chk_ok "hermetic: for (control, char_r) the LAST keybinding entry is hist_picker_local (got $out)" \
          test "$out" = "hist_picker_local"
   out="$(nu_c "$M" '$env.config.keybindings | where ($it.modifier | str lowercase) == control and ($it.keycode | str lowercase) == char_r | length | print')"
-  chk_ok "hermetic: …and it beat a REAL earlier entry — the pair is bound twice (tv's, then ours; count=$out)" \
-         test "$out" = "2"
+  # AT LEAST TWO, not exactly two. Corrected 2026-08-30 when the machine moved
+  # to nushell 0.115.1: that version ships its own `search_history` on
+  # (control, char_r), so the count is three — nushell's, television's, then
+  # ours. The claim this box makes is unchanged and is the line above: OURS IS
+  # LAST, and it displaced a real earlier binding rather than landing on an
+  # empty slot. Pinning the exact count measured how many other people also
+  # wanted the key, which is not this node's business and moves without notice.
+  chk_ok "hermetic: …and it beat REAL earlier entries — the pair is bound more than once (count=$out)" \
+         test "${out:-0}" -ge 2
   local want got
   check_record() {
     local name="$1" want="$2"
