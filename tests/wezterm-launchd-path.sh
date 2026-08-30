@@ -106,7 +106,10 @@ chk() {
 }
 
 GREP=/usr/bin/grep                     # safety rule 1
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 SRC="$REPO/home/dot_config/wezterm/wezterm.lua"
+# The F6 binding, and its PATH reason, live here now.
+TMUXCONF="$REPO/home/dot_config/tmux/tmux.conf"
 NUSHELL_SRC="$REPO/home/dot_config/nushell"
 # The PRD this node's gate implements. Guarded for the SAME three phrases as
 # the .lua file below — see the phrase loop in stage_static for why the
@@ -220,15 +223,19 @@ shape_ok() {
 # same code against a stripped copy rather than by asserting it in prose.
 block_ok() {
   local f="$1" d
-  $GREP -qF 'config.default_prog = { "nu", "--config"' "$f" || return 1
+  $GREP -qF 'config.default_prog = { home .. "/.local/bin/tmux-main" }' "$f" || return 1
   [ "$(file_count "$f" '^config\.default_prog')" -eq 1 ] || return 1
   [ "$(file_count "$f" '^config\.set_environment_variables = \{')" -eq 1 ] \
     || return 1
   $GREP -qF 'XDG_CONFIG_HOME' "$f" || return 1
   $GREP -qF 'os.getenv("PATH")' "$f" || return 1
-  for d in /opt/homebrew/bin /opt/homebrew/sbin .local/bin .cargo/bin; do
-    [ "$(code_count "$f" "$d")" -eq 2 ] || return 1
+  # ONCE each, not twice: 07-multiplexer/08-wezterm-reduction moved the F6
+  # binding to tmux, and its `sh -lc` PATH prefix went with it. The launch
+  # prefix is the only occurrence left in this file.
+  for d in /opt/homebrew/bin /opt/homebrew/sbin .cargo/bin; do
+    [ "$(code_count "$f" "$d")" -eq 1 ] || return 1
   done
+  [ "$(code_count "$f" '.local/bin')" -eq 2 ] || return 1
   shape_ok "$f" || return 1
   return 0
 }
@@ -255,9 +262,16 @@ stage_static() {
 
   chk_ok "static: wezterm.lua exists in the source tree" test -f "$SRC"
 
-  # R6 — nushell, named once, with both config files.
-  chk_ok 'static: config.default_prog = { "nu", "--config" present (R6)' \
-         $GREP -qF 'config.default_prog = { "nu", "--config"' "$SRC"
+  # R6, AMENDED by 07-multiplexer/08-wezterm-reduction — the terminal opens
+  # into tmux, not straight into nushell. R6's substance is unchanged and now
+  # lives one layer down: ~/.local/bin/tmux-main is what resolves `nu` on
+  # PATH, exports XDG_CONFIG_HOME before the exec and falls back to a shell
+  # that exists. Naming the script rather than repeating its flags is the
+  # point — an ssh login says the same word.
+  chk_ok 'static: config.default_prog attaches tmux through tmux-main (R6)' \
+         $GREP -qF 'config.default_prog = { home .. "/.local/bin/tmux-main" }' "$SRC"
+  chk_ok "static: …and the script it names is in the source tree" \
+         test -f "$REPO/home/dot_local/bin/executable_tmux-main"
   local n
   n="$(file_count "$SRC" '^config\.default_prog')"
   chk_ok "static: exactly one ^config.default_prog assignment (got $n) (R6)" \
@@ -287,24 +301,41 @@ stage_static() {
   chk_ok "static: the line above the PATH assignment is exactly 'if is_mac then', and the table is assigned before it (R2)" \
          shape_ok "$SRC"
 
-  # THE NEGATIVE CONTROL THAT MATTERS. Each of these four already occurred
-  # once before this node landed — the F6 `sh -lc` line — so "present" was
-  # true before the work was done. Counted over CODE; see the DEVIATION note
-  # in the header for why prose is excluded.
-  local d c
+  # THE NEGATIVE CONTROL THAT MATTERS, re-counted. Each of these four used to
+  # occur TWICE — the launch prefix and the F6 `sh -lc` line — and the second
+  # occurrence left with the F6 binding when tmux took the key over. Exactly
+  # once is now the honest count, and it is still a control: zero would mean
+  # the launch prefix itself had been lost.
+  #
+  # `.local/bin` is the one that expects TWO: the launch prefix, and
+  # default_prog naming ~/.local/bin/tmux-main. Spelling that out rather than
+  # loosening every count to "at least one" is the point of a control.
+  local d c want
   for d in /opt/homebrew/bin /opt/homebrew/sbin .local/bin .cargo/bin; do
+    want=1
+    [ "$d" = ".local/bin" ] && want=2
     c="$(code_count "$SRC" "$d")"
-    chk_ok "static: $d occurs exactly twice in code — launch prefix + F6 line (got $c) (R2, R4)" \
-           test "$c" -eq 2
+    chk_ok "static: $d occurs exactly $want time(s) in code (got $c) (R2)" \
+           test "$c" -eq "$want"
   done
 
   # R4 — ONE repetition, not two. The second subprocess was the wallpaper
   # pipeline, refused by open decision 5(a). Note for whoever extends this
   # gate: this is also why a file-wide "no shell name appears" assertion is
   # unsatisfiable here.
+  # R4 — ZERO now. The one repetition this file carried was the F6 toggle's,
+  # and the toggle is `bind -n F6 run-shell` in tmux.conf. The reason did not
+  # evaporate with the move: the same PATH prefix is on the tmux binding, for
+  # the same measured reason (`sh -lc` runs path_helper, which finds
+  # /opt/homebrew/bin but never ~/.local/bin where tinty lives), and the
+  # check below reads it THERE.
   n="$($GREP -cF '"sh", "-lc"' "$SRC" | tr -d ' ')"
-  chk_ok "static: \"sh\", \"-lc\" occurs exactly once (got $n) (R4)" \
-         test "$n" -eq 1
+  chk_ok "static: no \"sh\", \"-lc\" subprocess is left in wezterm.lua (got $n) (R4)" \
+         test "$n" -eq 0
+  chk_ok "static: the F6 PATH prefix moved to tmux.conf with its reason intact (R4)" \
+         $GREP -qF '.local/bin' "$REPO/home/dot_config/tmux/tmux.conf"
+  chk_ok "static: …and tmux.conf's F6 binding really is the theme toggle" \
+         $GREP -qF '_theme_toggle' "$REPO/home/dot_config/tmux/tmux.conf"
 
   # The header repair. Red before spec01, green after.
   n="$($GREP -cF 'Deliberately absent: default_prog' "$SRC" | tr -d ' ')"
@@ -367,20 +398,25 @@ stage_static() {
   #     silently — the pair is already on the allow-list. The two chk_fail
   #     checks above are what catches it. That is this node's whole value.
 
-  # R4's corrected reason, in the F6 comment: `sh -lc` is a LOGIN shell, so
-  # path_helper recovers Homebrew by itself and what the prefix earns is
-  # ~/.local/bin (tinty), ~/.cargo/bin and /opt/homebrew/sbin.
-  chk_ok "static: the F6 comment names path_helper (R4, corrected reason)" \
-         $GREP -qF 'path_helper' "$SRC"
-  chk_ok "static: the F6 comment names /etc/paths.d/homebrew (R4, corrected reason)" \
-         $GREP -qF '/etc/paths.d/homebrew' "$SRC"
+  # R4's corrected reason MOVED WITH THE BINDING and is checked where it now
+  # lives. `sh -lc` is a LOGIN shell, so path_helper recovers Homebrew by
+  # itself and what the prefix earns is ~/.local/bin (tinty) and
+  # ~/.cargo/bin. Losing the reason in the move is the failure this pair
+  # exists to catch — the expensive part of the knowledge is the WHY, not
+  # the line.
+  chk_ok "static: tmux.conf's F6 comment names path_helper (R4, moved reason)" \
+         $GREP -qF 'path_helper' "$TMUXCONF"
+  chk_ok "static: …and names /etc/paths.d/homebrew" \
+         $GREP -qF '/etc/paths.d/homebrew' "$TMUXCONF"
 
   # Untouched-sibling guards: four other nodes own regions of this file, and
   # this edit must have left every one of their declarations standing.
   chk_fail "static: no #rrggbb constant anywhere in the file (epic invariant)" \
            $GREP -qE '#[0-9a-fA-F]{6}' "$SRC"
-  chk_ok "static: T.2's hide_tab_bar_if_only_one_tab = true is intact" \
-         $GREP -qF 'hide_tab_bar_if_only_one_tab = true' "$SRC"
+  # T.2's tab-bar options were superseded by one line: there is no tab bar at
+  # all after 08-wezterm-reduction, so hiding it conditionally is moot.
+  chk_ok "static: enable_tab_bar = false (supersedes T.2's hide_tab_bar_if_only_one_tab)" \
+         $GREP -qF 'config.enable_tab_bar = false' "$SRC"
   chk_ok "static: T.1's status_update_interval = 5000 is intact" \
          $GREP -qF 'status_update_interval = 5000' "$SRC"
   chk_ok "static: T.1's enable_kitty_keyboard = false is intact" \
@@ -389,8 +425,10 @@ stage_static() {
          $GREP -qF 'window_padding = { left = 0, right = 0, top = 0, bottom = 0 }' "$SRC"
   chk_ok "static: T.8's grid_padding( is intact" \
          $GREP -qF 'grid_padding(' "$SRC"
-  chk_ok "static: T.1's format-tab-title handler is intact" \
-         $GREP -qF 'format-tab-title' "$SRC"
+  # T.1's format-tab-title is gone with the tab bar; tmux draws the digits
+  # now and tests/tmux-status-bar.sh is where that claim is measured.
+  chk_fail "static: no format-tab-title handler (superseded by 07-multiplexer/03-status-bar)" \
+           $GREP -qF 'format-tab-title' "$SRC"
   local tracked
   tracked="$(cd "$REPO" && git ls-files home/dot_config/wezterm/)"
   chk_ok "static: git ls-files home/dot_config/wezterm/ is exactly wezterm.lua (got: $tracked)" \
@@ -513,11 +551,15 @@ stage_config() {
   chk "config: the probe wrote its result file" 0
   sed 's/^/      /' "$OUT"
 
-  local want_dp="nu|--config|$H/.config/nushell/config.nu|--env-config|$H/.config/nushell/env.nu"
+  # AMENDED: default_prog resolves to the attach script, not to nu's argv.
+  # What used to be asserted here — that both nushell config files are named
+  # absolutely — did not evaporate; it moved into tmux-main, which names them
+  # for the same reason and is read by tests/tmux-session-and-windows.sh.
+  local want_dp="$H/.local/bin/tmux-main"
   local want_xdg="$H/.config"
   local want_path="/opt/homebrew/bin:/opt/homebrew/sbin:$H/.local/bin:$H/.cargo/bin:/usr/bin:/bin"
 
-  chk_ok "config: default_prog is nu with both config files named absolutely (R6)" \
+  chk_ok "config: default_prog resolves to <home>/.local/bin/tmux-main (R6)" \
          test "$(row "$OUT" default_prog)" = "$want_dp"
   chk_ok "config: sev.XDG_CONFIG_HOME resolves to <home>/.config (R7)" \
          test "$(row "$OUT" sev.XDG_CONFIG_HOME)" = "$want_xdg"
@@ -625,6 +667,16 @@ mk_machine() {
   done
   printf '#!/bin/sh\necho http://127.0.0.1:11434\n' > "$m/home/.local/bin/ollama-host"
   chmod +x "$m/home/.local/bin/ollama-host"
+  # default_prog is ~/.local/bin/tmux-main now (08-wezterm-reduction), so the
+  # machine has to carry it and the conf it loads. THE STAGE'S CLAIM IS
+  # UNCHANGED — that a launchd-shaped environment ends up running nushell —
+  # but the route is one hop longer, and the hop is load-bearing: tmux itself
+  # only resolves because the launch prefix put /opt/homebrew/bin on PATH,
+  # which is the very thing this stage measures.
+  install -m 755 "$REPO/home/dot_local/bin/executable_tmux-main" \
+                 "$m/home/.local/bin/tmux-main"
+  mkdir -p "$m/home/.config/tmux"
+  cp "$REPO/home/dot_config/tmux/tmux.conf" "$m/home/.config/tmux/tmux.conf"
   write_shim "$m/shim.lua"
 }
 
@@ -632,9 +684,19 @@ mk_machine() {
 # measured, `launchctl getenv PATH` is unset, so a GUI-launched app gets that
 # hardcoded default and nothing else. env -i is what makes this a LAUNCH
 # rather than an inherited shell environment.
+# TMUX_TMPDIR IS A SAFETY LINE, NOT TIDINESS. default_prog is tmux-main now,
+# so this stage really starts a tmux server — and tmux puts its socket under
+# $TMUX_TMPDIR, falling back to /tmp, NEVER $TMPDIR. Without this line the
+# server lands on /tmp/tmux-$UID/default, which is the DEVELOPER'S OWN
+# socket: `new-session -A -s main` then attaches to the session they are
+# sitting in, and the stage measures that instead. Measured 2026-08-30, the
+# first time this gate ran after the cutover: it attached to a session left
+# by an earlier run of itself, whose cwd no longer existed, and reported "the
+# pane never answered" — with the real session one keystroke away.
 mux_start() {
   local m="$1" cfg="$2"
   /usr/bin/env -i HOME="$m/home" PATH=/usr/bin:/bin TMPDIR="$m/tmp" \
+    TMUX_TMPDIR="$m/tmp" \
     SRC="$cfg" "$MUXSRV" --config-file "$m/shim.lua" --daemonize \
     > "$m/mux.out" 2>&1
 }
@@ -642,6 +704,7 @@ mux_start() {
 wez_cli() {
   local m="$1"; shift
   /usr/bin/env -i HOME="$m/home" PATH=/usr/bin:/bin TMPDIR="$m/tmp" \
+    TMUX_TMPDIR="$m/tmp" \
     "$WEZTERM" cli "$@"
 }
 
@@ -693,6 +756,10 @@ stage_spawn() {
   chk_ok "spawn: precondition: wezterm is on PATH (the cli client)" test -n "$WEZTERM"
   chk_ok "spawn: precondition: nu is on PATH" test -n "$NU"
   if [ -z "$MUXSRV" ] || [ -z "$WEZTERM" ] || [ -z "$NU" ]; then return; fi
+
+  # The isolation this stage now depends on, asserted rather than assumed.
+  chk_ok "spawn: this script pins TMUX_TMPDIR — no machine can reach the developer's tmux socket" \
+         $GREP -q 'TMUX_TMPDIR="\$m/tmp"' "$SELF_PATH"
 
   local ps_before ps_after
   ps_before="$(ps -eo command | $GREP -c '[w]ezterm-mux-server' | tr -d ' ')"
@@ -800,9 +867,27 @@ stage_spawn() {
   # ── counterfactual 1: XDG_CONFIG_HOME removed ────────────────────────────
   # The shell still starts, and the defect is INVISIBLE until you look for
   # the database. That is why R7 is a requirement and not a nicety.
+  # AMENDED 2026-08-30. Two things changed under 08-wezterm-reduction and
+  # both had to be handled or this counterfactual would prove nothing.
+  #
+  # 1. default_prog is tmux-main now, and tmux.conf's `default-command`
+  #    exports XDG_CONFIG_HOME itself, for the same reason and with the same
+  #    measurement. So deleting WezTerm's export no longer produces the drift
+  #    on the live path — tmux re-establishes it one layer down. That is
+  #    defence in depth, not a reason to stop measuring: the check below
+  #    asserts tmux.conf really does carry it, and the counterfactual is run
+  #    on a copy that spawns nushell DIRECTLY, which is the arrangement R7 is
+  #    a requirement about.
+  # 2. Reverting default_prog in the copy is what keeps the drift reachable.
   local M2="$SPAWN_ROOT/m2"
   mk_machine "$M2"
-  sed '/^    XDG_CONFIG_HOME = home \.\. "\/\.config",$/d' "$SRC" > "$M2/cfg.lua"
+  chk_ok "spawn/cf1: tmux.conf exports XDG_CONFIG_HOME too — the live path is protected twice" \
+         $GREP -qF 'XDG_CONFIG_HOME' "$TMUXCONF"
+  sed -e '/^    XDG_CONFIG_HOME = home \.\. "\/\.config",$/d' \
+      -e 's|^config\.default_prog = { home \.\. "/\.local/bin/tmux-main" }$|config.default_prog = { "nu", "--config", home .. "/.config/nushell/config.nu", "--env-config", home .. "/.config/nushell/env.nu" }|' \
+      "$SRC" > "$M2/cfg.lua"
+  chk_ok "spawn/cf1: the copy spawns nushell directly, so the drift is reachable" \
+         $GREP -qF 'config.default_prog = { "nu", "--config"' "$M2/cfg.lua"
   chk_fail "spawn/cf1: the copy no longer exports XDG_CONFIG_HOME" \
            $GREP -qF 'XDG_CONFIG_HOME = home' "$M2/cfg.lua"
   mux_start "$M2" "$M2/cfg.lua"
@@ -854,12 +939,21 @@ stage_spawn() {
     wez_cli "$M3" get-text --pane-id 0 > "$M3/text.txt" 2>/dev/null
     sed 's/^/      /' "$M3/text.txt" | $GREP -v '^ *$' | head -6
     # Matched through squash, never on the raw bytes — see the helper.
-    chk_ok "spawn/cf2: 'Unable to spawn nu because:' — the seeding is what got the binary spawned (R3)" \
-           squash_q "$M3/text.txt" 'Unable to spawn nu because:'
-    chk_ok "spawn/cf2: 'No viable candidates found in PATH \"/usr/bin:/bin\"'" \
-           squash_q "$M3/text.txt" 'No viable candidates found in PATH "/usr/bin:/bin"'
-    chk_ok "spawn/cf2: \"didn't exit cleanly\"" \
-           squash_q "$M3/text.txt" "didn't exit cleanly"
+    # AMENDED 2026-08-30. The failure has a different SHAPE now, and the
+    # difference is the whole value of tmux-main. default_prog names an
+    # absolute path, so it always spawns; what it cannot do without the
+    # seeding is find `tmux` — or `nu` — on PATH. So instead of a pane that
+    # never started, you get tmux-main's own two-line diagnosis and a plain
+    # POSIX shell. The requirement is unchanged and still measured: THE
+    # SEEDING IS WHAT GETS NUSHELL RUNNING. Without it you land in /bin/sh
+    # with a message saying why, which is the best available outcome and
+    # nothing like a working environment.
+    chk_ok "spawn/cf2: tmux-main says tmux is not installed — nothing on PATH resolved (R3)" \
+           squash_q "$M3/text.txt" 'tmux is not installed'
+    chk_ok "spawn/cf2: …and says it plainly, as a hard dependency" \
+           squash_q "$M3/text.txt" 'tmux is a hard dependency'
+    chk_ok "spawn/cf2: PATH really is the bare launchd default in this machine" \
+           test "$(code_count "$M3/cfg.lua" 'config.set_environment_variables.PATH')" -eq 0
     # spec01's finding 1, as a check. The pane STAYS. WezTerm's default
     # exit_behavior is CloseOnCleanExit and neither config sets it, so an
     # UNclean exit retains the pane: the failure is a terminal you cannot
@@ -868,7 +962,7 @@ stage_spawn() {
     # dies", this line contradicts them.
     chk_ok "spawn/cf2: THE PANE STILL EXISTS — the window does not die (R1/R3, corrected)" \
            $GREP -q '^ *0 ' "$M3/list.txt"
-    chk_ok "spawn/cf2: no shell ever ran — probe.nuon absent" \
+    chk_ok "spawn/cf2: no NUSHELL ever ran — probe.nuon absent (the fallback is /bin/sh)" \
            test ! -e "$M3/home/probe.nuon"
   else
     chk "spawn/cf2: the mux server never came up" 1
@@ -1009,11 +1103,21 @@ stage_path() {
 
   # ── the F6 prefix (R4) ───────────────────────────────────────────────────
   # One repetition, as a byte fact: exactly one `export PATH="…"` in the file.
+  # READ FROM tmux.conf. The F6 binding moved there whole
+  # (08-wezterm-reduction), prefix and reason together, so this is where the
+  # byte fact lives now: exactly one `PATH="…"` on the toggle's line. R4's
+  # "one repetition, not two" still holds — the second subprocess was the
+  # wallpaper pipeline, refused by open decision 5(a).
   local ex exn
-  ex="$(sed -n 's/.*export PATH="\([^"]*\)".*/\1/p' "$SRC")"
+  ex="$(sed -n 's/.*PATH="\([^"]*\)" sh -lc.*/\1/p' "$TMUXCONF")"
   exn="$(printf '%s\n' "$ex" | $GREP -c . | tr -d ' ')"
-  chk_ok "path: exactly one export PATH=\"…\" in the file (got $exn) (R4: one repetition, not two — the second subprocess was the wallpaper pipeline, refused by open decision 5(a))" \
+  chk_ok "path: exactly one PATH=\"…\" sh -lc prefix in tmux.conf (got $exn) (R4)" \
          test "$exn" -eq 1
+  chk_ok "path: and none is left in wezterm.lua" \
+         test "$($GREP -c 'export PATH="' "$SRC" | tr -d ' ')" -eq 0
+  # $HOME is literal in a tmux command string; the shell that runs the
+  # binding expands it. Expand it here the same way before probing.
+  ex="$(printf '%s' "$ex" | sed "s|\$HOME|$M/home|g")"
   echo "      F6 prefix: $ex"
 
   printf '#!/bin/sh\necho local-ok\n' > "$M/home/.local/bin/probe-local"

@@ -1,14 +1,19 @@
 # tinty (Tinted Theming) — the engine behind the `theme` switcher (theme.nu).
 # `tinty apply` is the single palette funnel: this file is what makes an apply
-# propagate to every reader. The tinted-shell item emits OSC sequences that
-# retint the terminal's ANSI colors live; the hook then runs
-# wezterm-colors.sh, which writes ~/.config/wezterm/colors.lua.
+# propagate to every reader. The tinted-shell item emits OSC sequences into
+# the pane the hook ran in; the hook then runs tmux-colors.sh, which does the
+# two things that pane cannot.
 #
-# The split matters: the OSC sequences from tinted-shell only ever reach the
-# ONE pane the hook ran in, so they can never retint the whole terminal on
-# their own. The global path is colors.lua — WezTerm dofile's it into
-# config.colors and has it on the config-reload watch list, so that one write
-# retints every window/tab/pane at once.
+# 07-multiplexer/04-palette-delivery (Q4) replaced wezterm-colors.sh here.
+# The old note in this file was right about the problem — OSC from inside a
+# pane reaches only that pane — and solved it in a way that worked on one
+# emulator on one desk: write ~/.config/wezterm/colors.lua and let WezTerm's
+# reload watch retint every pane. tmux-colors.sh instead writes the OSC
+# straight to every attached client's tty (bypassing the multiplexer, so no
+# passthrough wrapping and no dependence on which terminal it is) and writes
+# ~/.config/tmux/colors.conf for tmux's own surfaces, which are not ANSI
+# slots — base02, the active window label's background, has no slot at all.
+# The result follows an ssh; colors.lua never could.
 #
 # `default-scheme` is the Gruvbox base16 hard scheme, matching WezTerm's
 # builtin fallback, so a fresh checkout with no prior pick lands on a neutral
@@ -24,5 +29,5 @@ shell = "bash -c '{}'"
 name = "tinted-shell"
 path = "https://github.com/tinted-theming/tinted-shell"
 themes-dir = "scripts"
-hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/wezterm-colors.sh\""
+hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/tmux-colors.sh\""
 supported-systems = ["base16", "base24"]

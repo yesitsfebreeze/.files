@@ -10,7 +10,12 @@
 #              apply-before-pointer ordering (with a counterfactual that must
 #              FAIL it), drift adoption, the no-op skip, the tag strip, the
 #              dropped-surface grep, and the config.nu anchor.
-#   --hook     wezterm-colors.sh against fixture schemes in a scratch HOME:
+#   --hook     tmux-colors.sh against fixture schemes in a scratch HOME
+#              (AMENDED 2026-08-30: 07-multiplexer/04-palette-delivery
+#              replaced wezterm-colors.sh with it — the generated artifact is
+#              ~/.config/tmux/colors.conf, and the OSC half is proved in
+#              tests/tmux-palette-delivery.sh --osc, which needs a real
+#              attached client this stage has no business starting):
 #              generation, base24 brights, the half-parse bail, the
 #              unchanged-content guard, the dropped-integrations grep, bash -n.
 #   --preview  the cable template through a REAL, isolated chezmoi
@@ -43,7 +48,7 @@ GREP=/usr/bin/grep                     # safety rule 3
 THEME_NU="$REPO/home/dot_config/nushell/theme.nu"
 CONFIG_NU="$REPO/home/dot_config/nushell/config.nu"
 TINTY_TOML="$REPO/home/dot_config/tinted-theming/tinty/config.toml"
-HOOK="$REPO/home/dot_config/tinted-theming/tinty/executable_wezterm-colors.sh"
+HOOK="$REPO/home/dot_config/tinted-theming/tinty/executable_tmux-colors.sh"
 CABLE_TMPL="$REPO/home/dot_config/television/cable/theme.toml.tmpl"
 PREVIEW="$REPO/home/dot_config/television/executable_theme-preview.sh"
 HELP_DIR="$REPO/home/dot_config/nushell/help"
@@ -279,7 +284,7 @@ stage_module() {
 # stage --hook (spec02)
 # ════════════════════════════════════════════════════════════════════════════
 stage_hook() {
-  echo "── stage --hook: wezterm-colors.sh against fixture schemes"
+  echo "── stage --hook: tmux-colors.sh against fixture schemes"
   guard_begin "hook"
 
   chk_ok "hook: bash -n passes under /bin/bash (the 3.2 on macOS)" /bin/bash -n "$HOOK"
@@ -295,53 +300,53 @@ stage_hook() {
       /bin/bash "$HOOK" ${1:+"$1"}
   }
 
-  # spec02 — generation from current_scheme.
+  # spec02 — generation from current_scheme. The artifact is a tmux conf now,
+  # not a lua table, and the values are style options.
   printf 'base16-fix16' > "$H/data/tinted-theming/tinty/current_scheme"
   chk_ok "hook: runs clean against the base16 fixture" run_hook ""
-  local LUA="$H/.config/wezterm/colors.lua"
-  chk_ok "hook: writes \$HOME/.config/wezterm/colors.lua" test -f "$LUA"
-  chk_ok "hook: colors.lua carries the fixture's base00 (#101010) as background" \
-         $GREP -qF 'background    = "#101010"' "$LUA"
-  chk_ok "hook: …and base05 (#d8d8d8) as foreground" \
-         $GREP -qF 'foreground    = "#d8d8d8"' "$LUA"
-  local nhex
-  nhex="$($GREP -oE '#[0-9a-f]{6}' "$LUA" | wc -l | tr -d ' ')"
-  chk_ok "hook: 7 role colours + 8 ansi + 8 brights = 23 hex values (got $nhex)" \
-         test "$nhex" -eq 23
-  # base16 brights fall back to the accents: br_red = base08.
-  chk_ok "hook: base16 brights fall back to the accents (br_red = base08 #ab4642)" \
-         test -n "$(sed -n '/brights = {/,/}/p' "$LUA" | $GREP -oF '#ab4642')"
+  local CONF="$H/.config/tmux/colors.conf"
+  chk_ok "hook: writes \$HOME/.config/tmux/colors.conf" test -f "$CONF"
+  chk_ok "hook: the conf carries the fixture's base00 (#101010) as the bar background" \
+         $GREP -qF "status-style 'bg=#101010" "$CONF"
+  chk_ok "hook: …and base05 (#d8d8d8) as the active label's foreground" \
+         $GREP -qF "fg=#d8d8d8,bold" "$CONF"
+  chk_ok "hook: …and base02 (#282828), the value with no ANSI slot" \
+         $GREP -qF "#282828" "$CONF"
+  chk_ok "hook: it names the scheme it came from" \
+         $GREP -qF 'scheme: base16-fix16' "$CONF"
 
-  # spec02 — base24 brights come from base12-17.
-  printf 'base24-fix24' > "$H/data/tinted-theming/tinty/current_scheme"
-  chk_ok "hook: runs clean against the base24 fixture" run_hook ""
-  chk_ok "hook: base24 brights carry base12 (#bb0012)" \
-         test -n "$(sed -n '/brights = {/,/}/p' "$LUA" | $GREP -oF '#bb0012')"
-  chk_ok "hook: …and base17 (#bb0017)" \
-         test -n "$(sed -n '/brights = {/,/}/p' "$LUA" | $GREP -oF '#bb0017')"
-
-  # spec02 — the half-parse bail: a fixture missing base05 leaves an
-  # existing colors.lua byte-identical (spec04's second counterfactual).
+  # spec02 — the half-parse bail: a fixture missing base05 leaves an existing
+  # colors.conf byte-identical (spec04's second counterfactual).
   sed '/base05/d' "$H/data/tinted-theming/tinty/repos/schemes/base16/fix16.yaml" \
     > "$H/data/tinted-theming/tinty/repos/schemes/base16/broken.yaml"
   local before after
-  before="$(shasum -a 256 "$LUA" | awk '{print $1}')"
+  before="$(shasum -a 256 "$CONF" | awk '{print $1}')"
   printf 'base16-broken' > "$H/data/tinted-theming/tinty/current_scheme"
   chk_ok "hook: still exits 0 on the broken fixture" run_hook ""
-  after="$(shasum -a 256 "$LUA" | awk '{print $1}')"
-  chk_ok "hook: half-parse bail — colors.lua is byte-identical ($before)" \
+  after="$(shasum -a 256 "$CONF" | awk '{print $1}')"
+  chk_ok "hook: half-parse bail — colors.conf is byte-identical ($before)" \
          test "$before" = "$after"
 
   # spec02 — the unchanged-content guard: the second run does not rewrite.
   printf 'base16-fix16' > "$H/data/tinted-theming/tinty/current_scheme"
   run_hook "" > /dev/null 2>&1
-  touch -t 202001010000 "$LUA"
+  touch -t 202001010000 "$CONF"
   local m1 m2
-  m1="$(stat -f %m "$LUA")"
+  m1="$(stat -f %m "$CONF")"
   chk_ok "hook: (second run exits 0)" run_hook ""
-  m2="$(stat -f %m "$LUA")"
+  m2="$(stat -f %m "$CONF")"
   chk_ok "hook: unchanged-content guard — mtime untouched on the no-change re-run ($m1 = $m2)" \
          test "$m1" = "$m2"
+
+  # THE BASE24 BRIGHTS did not become untested — they moved. The conf carries
+  # styles, not the sixteen ANSI slots, so the base12-17 fallback now shows up
+  # in the OSC 4 payload, where tests/tmux-palette-delivery.sh --osc reads it
+  # off a real client's wire. Asserted here only where this file can see it:
+  # the generator still exits 0 on a base24 scheme.
+  printf 'base24-fix24' > "$H/data/tinted-theming/tinty/current_scheme"
+  chk_ok "hook: runs clean against the base24 fixture" run_hook ""
+  printf 'base16-fix16' > "$H/data/tinted-theming/tinty/current_scheme"
+  run_hook "" > /dev/null 2>&1
 
   # spec02 — the dropped integrations stayed dropped, in BOTH new files.
   local hits
@@ -351,8 +356,15 @@ stage_hook() {
       "$([ -n "$hits" ] && echo 1 || echo 0)"
 
   # spec02 — config.toml really wires the hook and the systems.
-  chk_ok "hook: config.toml's hook sources TINTY_THEME_FILE_PATH then runs wezterm-colors.sh" \
-         $GREP -qF 'source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/wezterm-colors.sh\"' "$TINTY_TOML"
+  chk_ok "hook: config.toml's hook sources TINTY_THEME_FILE_PATH then runs tmux-colors.sh" \
+         $GREP -qF 'source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/tmux-colors.sh\"' "$TINTY_TOML"
+  # Code only. config.toml's header explains at length WHY wezterm-colors.sh
+  # was replaced, and that history is worth keeping — a bare grep would
+  # convict the explanation.
+  chk_fail "hook: no non-comment line in config.toml still runs wezterm-colors.sh" \
+           bash -c '$GREP -vE "^[[:space:]]*#" "$1" | $GREP -q "wezterm-colors"' _ "$TINTY_TOML"
+  chk_fail "hook: …and the script itself is gone from the source tree" \
+           test -f "$REPO/home/dot_config/tinted-theming/tinty/executable_wezterm-colors.sh"
   chk_ok "hook: config.toml default-scheme matches WezTerm's builtin fallback" \
          $GREP -qxF 'default-scheme = "base16-gruvbox-dark-hard"' "$TINTY_TOML"
   chk_ok "hook: config.toml supports base16 and base24" \
@@ -501,7 +513,7 @@ main() {
     "$HOME/.config/television/theme-preview.sh" \
     "$HOME/.config/television/cable/theme.toml" \
     "$HOME/.config/tinted-theming/tinty/config.toml" \
-    "$HOME/.config/wezterm/colors.lua"
+    "$HOME/.config/tmux/colors.conf"
 
   case "${1:-}" in
     --module)  stage_module ;;

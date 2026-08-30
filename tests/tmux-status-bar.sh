@@ -92,8 +92,14 @@ options_stage() {
 
   # No hex anywhere in the bar's styles: the palette rule is that nothing
   # below the terminal hardcodes a colour value.
-  v="$(tmux -L "$L" show -g 2> /dev/null | $GREP -E '^(status|window-status|pane-(active-)?border|mode|message)-' | $GREP -c '#[0-9a-fA-F]\{6\}')"
-  [ "$v" = "0" ]; chk "options: not one style carries a hex value — ANSI slots only (found $v)"  $?
+  #
+  # Read from THE FILE, not from the loaded server. 04-palette-delivery makes
+  # tmux.conf source ~/.config/tmux/colors.conf when it exists, and that file
+  # is nothing but exact hex — so on a machine that has ever run `tinty
+  # apply` a server reading would be red for the correct reason, and the
+  # claim this box makes is about what THIS conf hardcodes.
+  v="$($GREP -E "^(set|setw) .*-(style|format) " "$CONF" | $GREP -c '#[0-9a-fA-F]\{6\}')"
+  [ "$v" = "0" ]; chk "options: tmux.conf hardcodes no hex in a style or format — ANSI slots only (found $v)"  $?
 
   v="$(wopt "$L" window-status-separator)"; [ -z "$v" ]; chk "options: window labels are not separated by spaces of their own (got '$v')" $?
   v="$(wopt "$L" pane-border-status)";      [ "$v" = "off" ]; chk "options: a fresh one-pane window draws no border line (got '$v')" $?
@@ -278,11 +284,8 @@ selftest_stage() {
   # red, which is the palette rule this bar is held to.
   sed 's/^set -g status-style .*/set -g status-style "bg=#1d2021,fg=#665c54"/' "$REAL" > "$T/m5.conf"
   ! cmp -s "$REAL" "$T/m5.conf"; chk "selftest M5: the mutation applied" $?
-  tmux -L "$L" kill-server > /dev/null 2>&1
-  tmux -L "$L" -f "$T/m5.conf" new-session -d -s main -x 120 -y 40
-  v="$(tmux -L "$L" show -g 2> /dev/null | $GREP -E '^status-style' | $GREP -c '#[0-9a-fA-F]\{6\}')"
-  [ "$v" != "0" ]; chk "selftest M5: a hex value in a style is seen (found $v)" $?
-  tmux -L "$L" kill-server > /dev/null 2>&1
+  v="$($GREP -E "^(set|setw) .*-(style|format) " "$T/m5.conf" | $GREP -c '#[0-9a-fA-F]\{6\}')"
+  [ "$v" != "0" ]; chk "selftest M5: a hex value written into a style is seen (found $v)" $?
 
   printf 'tmux new-session -d\n' > "$T/bad.sh"
   ! tmux_lint "$T/bad.sh" > /dev/null; chk "selftest M6: tmux_lint convicts an unlabelled tmux call" $?

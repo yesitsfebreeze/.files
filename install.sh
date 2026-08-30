@@ -411,6 +411,42 @@ elif [ "$(nvim_minor_now)" -lt "$NVIM_MIN_MINOR" ]; then
     warn "neovim: $(command -v nvim) is below the 0.$NVIM_MIN_MINOR floor — an older nvim is shadowing the installed one on PATH"
 fi
 
+# --- 3b. tmux plugins (07-multiplexer/07-persistence, Q11) ------------------
+# resurrect and continuum are the only two plugins this environment has, and
+# they arrive by `git clone` into a fixed path — no tpm.
+#
+# WHY NO tpm. tpm exists to install and update plugins and to give a config a
+# place to declare them. chezmoi plus this script already do the first two,
+# and tmux.conf declares them with two `run-shell` lines, so tpm would be a
+# third mechanism doing a job that is done. The contract's "prefer built-ins
+# over plugins" applies to the plugins themselves, and these two earn their
+# place: a tmux server dies with the machine, and nothing else here brings a
+# session back after a reboot.
+#
+# The path is FIXED and stated in one place only if you read this file and
+# tmux.conf together — they must agree, and tests/tmux-persistence.sh asserts
+# that they do rather than trusting the comment.
+TMUX_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins"
+clone_or_update() {   # DRY-SEALED   $1 url  $2 dest
+    if [ -d "$2/.git" ]; then
+        git -C "$2" pull --ff-only --quiet
+    else
+        mkdir -p "$(dirname "$2")"
+        git clone --depth 1 --quiet "$1" "$2"
+    fi
+}
+if have git; then
+    log "tmux plugins -> $TMUX_PLUGIN_DIR"
+    run clone_or_update https://github.com/tmux-plugins/tmux-resurrect \
+        "$TMUX_PLUGIN_DIR/tmux-resurrect" \
+        || warn "tmux-resurrect: clone failed — a reboot will lose the session layout"
+    run clone_or_update https://github.com/tmux-plugins/tmux-continuum \
+        "$TMUX_PLUGIN_DIR/tmux-continuum" \
+        || warn "tmux-continuum: clone failed — nothing will autosave"
+else
+    warn "git not found — tmux-resurrect and tmux-continuum were not installed"
+fi
+
 # --- 4. Apply the configs (the epic's I1: chezmoi apply LAST) ---------------
 # Everything is installed by now, so chezmoi's script stages run with every
 # tool on PATH. chezmoi is in PKGS, so a real run has it here; a dry run
