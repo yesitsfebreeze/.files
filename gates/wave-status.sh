@@ -500,19 +500,41 @@ selftest() {
     wrapped_link_line "$DUP"
 
   # 7. assert_unchanged fires on a mutated file and stays quiet on an
-  #    untouched one — WHILE git is dirty, which is the point: the guard must
+  #    untouched one, WHATEVER git thinks — which is the point: the guard must
   #    not borrow git's opinion.
+  #
+  # THE DIRTY TREE IS REPORTED, NOT REQUIRED. Corrected 2026-08-30. This line
+  # asserted `dirty > 0` — it made a dirty working tree a PRECONDITION of the
+  # gate passing — and that put it in direct contradiction with
+  # `00-delivery/quiet-board-sweep`, whose whole R1 is that the sweep runs
+  # with `git status --porcelain` CLEAN. The two requirements could not both
+  # be met: the sweep's own precondition guaranteed this gate failed, and it
+  # did, on both sweeps of 2026-08-30. Standalone on a dirty tree it passed
+  # all day, which is exactly how a contradiction like this stays hidden.
+  #
+  # The claim being demonstrated never needed the dirt. It is that
+  # `snapshot_paths`/`snapshot_changed` answer from FILE CONTENT and not from
+  # git — and the pair below proves that on any tree, because neither file it
+  # touches is in git at all. A dirty tree makes the demonstration more
+  # pointed, so the state is still printed; it is no longer a gate.
   local dirty A B_
   dirty="$(cd "$ROOT" && git status --porcelain | wc -l | tr -d ' ')"
-  echo "      git status --porcelain: $dirty lines (the working tree carries staged work no gate caused)"
-  chk_ok "guard: git is dirty throughout — the untouched-file proof cannot use it" test "$dirty" -gt 0
+  if [ "$dirty" -gt 0 ]; then
+    echo "      git status --porcelain: $dirty lines — the guard is about to disagree with git, which is the sharpest version of this proof"
+  else
+    echo "      git status --porcelain: clean — the proof below still holds, it is just less pointed: neither file it touches is tracked, so git has no opinion to borrow either way"
+  fi
   A="$T/untouched.txt"; B_="$T/mutated.txt"
   printf 'one\n' > "$A"; printf 'one\n' > "$B_"
+  # NEITHER FILE IS TRACKED, and that is asserted rather than assumed — it is
+  # the reason the proof is independent of the tree's state.
+  chk_ok "guard: the two proof files are outside git entirely (scratch, under $(basename "$T"))" \
+    bash -c 'cd "$1" && ! git ls-files --error-unmatch "$2" > /dev/null 2>&1' _ "$ROOT" "$A"
   snapshot_paths "$A" "$B_"
   chk_ok   "guard: the untouched-file guard is quiet on untouched files" snapshot_changed
   printf 'two\n' >> "$B_"
   echo "      MUTATION: appended a line to $B_"
-  chk_fail "guard: it fires on the mutated file, with git still dirty" snapshot_changed
+  chk_fail "guard: it fires on the mutated file — from content, not from git" snapshot_changed
 
   # 8. the live-config guard rehearsal: it fires on a mutated COPY, and
   #    refuses to touch the real config at all.
