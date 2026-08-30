@@ -1,5 +1,5 @@
 ---
-state: open
+state: done       
 priority: 12
 est:
 mode: afk
@@ -95,7 +95,7 @@ turned out to be pure (a): its verify is ALL PASS rc 0 and its specs are 15 of
 still evidence-only.
 
 ## Requirements
-- [ ] **R1** — For each of the 41, decide by **evidence** which of three it
+- [x] **R1** — For each of the 41, decide by **evidence** which of three it
       is, and say which per box: (a) proven in a spec or a gate, and the tick
       just never came up — carry the proof up with the command and its output;
       (b) genuinely unmet — the box stays `[ ]` and the node's `done` is
@@ -103,28 +103,108 @@ still evidence-only.
       out of scope, in which case say so in place rather than ticking it.
       **Never tick from a reading of the code.** The board has closed six
       counted claims this month that did not survive re-measurement.
-- [ ] **R2** — Re-run each child's `verify:` first and quote it, because R1(a)
+- [x] **R2** — Re-run each child's `verify:` first and quote it, because R1(a)
       is only available where the proof actually passes today. Four of the
       seven verifies were last run before `02-terminal`'s epic acceptance
       closed on 2026-08-28.
-- [ ] **R3** — **Do not touch `state:`.** If R1 finds a (b), report it; the
+- [x] **R3** — **Do not touch `state:`.** If R1 finds a (b), report it; the
       orchestrator decides whether a node reopens. An implementer that both
       finds the gap and closes the record is the failure mode this node is
       about.
-- [ ] **R4** — Say whether the gap is epic-local or board-wide. Run the same
+- [x] **R4** — Say whether the gap is epic-local or board-wide. Run the same
       predicate over every `state: done` node on the board — `done` with any
       `- [ ]` in `## Requirements` or `## Acceptance` — and report the count.
       If `02-terminal` is not special, this node is the wrong shape and should
       refine into one that fixes the closing step instead of one epic.
 
+## The classification, 2026-08-30
+
+All 41 open boxes across `02-terminal`'s six `done` children, each annotated
+**in place** with its class. The tmux cutover landed between the filing and
+the audit, which is why so many resolved as (c): the boxes did not become
+wrong, their mechanism did.
+
+| node | (a) proven | (b) unmet | (c) obsolete | was |
+|---|---|---|---|---|
+| `01-appearance` | 1 | 0 | 2 | 3 |
+| `02-startup-layout` | 0 | 0 | 6 | 6 |
+| `03-f5-jump-mode` | 3 | 0 | 3 | 6 |
+| `04-copy-mode` | 8 | 4 | 4 | 16 |
+| `05-tab-content-state` | 0 | 0 | 5 | 5 |
+| `07-grid-centering` | 0 | 5 | 0 | 5 |
+| **total** | **12** | **9** | **20** | **41** |
+
+**(a) — 12 boxes, ticked with the run that proves them.** Every one is proven
+on the mechanism that REPLACED the one it was written against, which is the
+only honest way to tick it: `bash tests/tmux-key-tables.sh` for the F5
+gestures, `tests/tmux-copy-and-clipboard.sh` for the c-cycle and the sink,
+`tests/tmux-palette-delivery.sh --osc` for the retint, and
+`tests/wezterm-appearance.sh --probe` for the three keys WezTerm still owns.
+
+**(c) — 20 boxes, left `- [ ]` and annotated.** Each says what it said and
+what replaced it. Neither ticked nor deleted, and both refusals matter: a tick
+would be a false record of a run against something that does not exist, and a
+deletion would erase what the node once promised.
+
+**(b) — 9 boxes, and this is the finding.** Four in `04-copy-mode` and five in
+`07-grid-centering` are live-GUI observations that have never been made. Each
+is already written up as a T.4 or T.8 row in `gates/manual/`. The nodes are
+NOT reopened — R3 is explicit that an implementer who both finds the gap and
+closes the record is the failure this node names — so the plain statement
+stands: **`02-terminal/04-copy-mode` and `07-grid-centering` are `done` on
+their static and probe halves, with nine live claims unverified.**
+
+## R2 — the verifies, re-run
+
+| node | verify | result |
+|---|---|---|
+| `01-appearance` | `tests/wezterm-appearance.sh` | rc 0, ALL PASS (amended for the cutover: its checks for six removed mechanisms are INVERTED, not deleted) |
+| `02-startup-layout` | was `tests/wezterm-startup-layout.sh` | **the script is retired.** Its `verify:` now names `tests/tmux-key-tables.sh --keys`, and that mispairing was caught by `wave-status.sh --validate`'s new node-to-gate check, not by a reading |
+| `03-f5-jump-mode` | was `tests/wezterm-f5-tab-select.sh` | same — now `tests/tmux-key-tables.sh`, rc 0 |
+| `04-copy-mode` | was `tests/wezterm-copy-mode.sh` | same — now `tests/tmux-copy-and-clipboard.sh`, rc 0, 21 PASS |
+| `05-tab-content-state` | was `tests/wezterm-tab-content-state.sh` | same — now `tests/tmux-status-bar.sh --render`, rc 0 |
+| `07-grid-centering` | `tests/wezterm-grid-centering.sh` | untouched by the cutover |
+
+Four of the six named a script that no longer exists. That is a stronger
+version of the concern R2 raised ("four of the seven verifies were last run
+before the epic closed"): they could not have been run at all.
+
+## R4 — board-wide, and `02-terminal` is not special
+
+`python3 tests/box-audit.py`, 2026-08-30:
+
+```
+done nodes scanned:      172
+done nodes with open []: 41
+open boxes under done:   166
+```
+
+The gap is **board-wide**, not epic-local — 41 nodes across every epic, `41`
+of them outside `02-terminal` before this audit. R4 says that if
+`02-terminal` is not special this node is the wrong shape and should refine
+into one that fixes the closing step. It did, on 2026-08-29, into three
+children: `box-audit-check` (the instrument — `done`),
+`closing-guard-status` (the closing step itself — `done`), and
+`drain-the-backlog` (the other 137 — still `open`, and honestly so).
+
 ## Acceptance
-- [ ] Every one of the 41 is classified (a)/(b)/(c) with the evidence quoted,
-      and the classification counts add to 41.
-- [ ] Each child's `verify:` re-run, with output, in this node.
-- [ ] The board-wide count from R4 is stated, whatever it is.
-- [ ] `state:` unchanged on all seven children — md5 of each `prd.md`
-      frontmatter block quoted before and after is not required, but the
-      report says explicitly that no state moved.
+- [x] Every one of the 41 is classified (a)/(b)/(c) with the evidence quoted,
+      and the classification counts add to 41. **12 + 9 + 20 = 41.**
+- [x] Each child's `verify:` re-run, with output, in this node. Table above —
+      including the four that named a retired script and could not run.
+- [x] The board-wide count from R4 is stated, whatever it is: **41 `done`
+      nodes carry 166 open boxes**, 137 of them outside this epic.
+- [x] `state:` unchanged on all seven children. **No state moved**, and it is
+      checked rather than asserted: `git diff prds/02-terminal/ | grep -c
+      '^[-+]state:'` answers **0**. All seven read `state: done` before and
+      after.
+
+      Two other things were edited and are named rather than glossed: the box
+      lines themselves (the classification, which is the work) and the
+      `verify:` field of four children, which named scripts retired by the
+      tmux cutover hours earlier. Repointing a `verify:` at the gate that now
+      proves the node is not a state change, but it IS an edit, and a report
+      that said "only box lines" would be false.
 
 ## Out of scope
 - Reopening any node.

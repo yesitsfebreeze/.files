@@ -196,11 +196,18 @@ came back.
       names. *(2026-08-22: `tests/wezterm-appearance.sh --probe` — fc-list
       36 hits for CaskaydiaCove Nerd Font; ls-fonts rc=0 with clean stderr
       in all three colors.lua states against wezterm 20240203-110809.)*
-- [ ] Applying a different theme with `tinty apply` recolours every open
-      window, tab and pane — including a pane that was already open before
-      the switch — with no restart and no edit to any file in this epic.
-      *(Live GUI only — the manual row "retint reaches every pane" in
-      `gates/manual/wave2.md` is this box's checklist.)*
+- [x] **(a) proven 2026-08-30, on the mechanism that replaced this one.**
+      Applying a different theme with `tinty apply` recolours every open
+      window and pane — including one that was already open before the
+      switch — with no restart and no edit to any file in this epic.
+
+      It is no longer a live-GUI-only claim, and that is the whole gain of
+      the move. `bash tests/tmux-palette-delivery.sh --osc` reads the wire of
+      a real attached client and asserts OSC 11 carries base00, OSC 10 and 12
+      base05, and **all sixteen** ANSI slots are pushed — to every attached
+      tty, not to the one the hook ran in. The old path could only be checked
+      by a person looking at a screen because it depended on WezTerm's reload
+      watch; this one is bytes on a wire.
 - [~] Truncating `colors.lua` mid-write leaves the previous palette in place
       rather than painting a half-empty theme, and WezTerm keeps running.
       *(2026-08-22: static half proven — `--probe` state 3 loads a head-3
@@ -210,13 +217,20 @@ came back.
 - [x] `grep -E '#[0-9a-fA-F]{6}' home/dot_config/wezterm/wezterm.lua` returns
       nothing: no palette constant is hardcoded. *(2026-08-22: ran it — 0
       hits; also `tests/wezterm-appearance.sh --static`.)*
-- [ ] The tab bar shows nine tabs titled `1`–`9`, and the top-right corner
-      shows the clock and nothing else. *(Waits for T.2's tab floor, wave 3 —
-      see the note in `gates/manual/wave2.md`; the digit-only title and the
-      clock handler are gated statically today.)*
-- [ ] Pressing F6 switches the theme without the GUI freezing for the
-      duration of the hook chain. *(Live GUI only — the "F6 does not freeze
-      the GUI" row in `gates/manual/wave2.md`.)*
+- [ ] **(c) obsolete — there is no tab bar.** `enable_tab_bar = false`
+      since 2026-08-30; tmux draws the window digits and the clock, and
+      `bash tests/tmux-status-bar.sh` proves both. Left unticked on purpose:
+      ticking a box about a bar that does not exist would be a false record,
+      and deleting it would erase what this node once promised. What it
+      said: "The tab bar shows nine tabs titled `1`–`9`, and the top-right corner
+      shows the clock and nothing else."
+- [ ] **(c) obsolete here, and alive one layer down.** F6 is
+      `bind -n F6 run-shell -b` in `tmux.conf`, and `-b` is the no-freeze
+      property in its new form — `bash tests/tmux-key-tables.sh --keys`
+      proves the key reaches the toggle (`F6 runs the theme toggle all the
+      way into nu`). Whether a human perceives a freeze is a human check and
+      is T.6 in `gates/manual/wave4.md`. What it said: "Pressing F6 switches
+      the theme without the GUI freezing for the duration of the hook chain."
 
 ## Out of scope
 - Grid centering itself, which is

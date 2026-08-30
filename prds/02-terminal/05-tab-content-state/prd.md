@@ -133,16 +133,31 @@ until that checklist is walked on the machine. Ticking any of them off the
 static gate would be a false record — the gate proves the code shape, not
 what the bar looks like.
 
-- [ ] Launching WezTerm: all nine tabs render in the `empty` colour, no
+**Every box below is class (c) — OBSOLETE, classified 2026-08-30 by
+[`done-nodes-with-unticked-boxes`](../../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md).**
+This node is SUPERSEDED by
+[`07-multiplexer/03-status-bar`](../../07-multiplexer/03-status-bar/prd.md).
+The CAPABILITY is ported and is an order of magnitude smaller — tmux exposes
+what this node had to infer, so the learned per-pane baseline map, its four
+event registrations and `tab_is_occupied` are all deleted in favour of one
+format string. It is proven behaviourally by
+`bash tests/tmux-status-bar.sh --render`: an idle window's digit is dimmed,
+the same window running `sleep` lights, and a second idle pane does not
+un-light a window whose other pane is busy.
+
+They stay `- [ ]` rather than ticked: every one names a tab, and there are no
+tabs.
+
+- [ ] *(c)* Launching WezTerm: all nine tabs render in the `empty` colour, no
       command having run in any of them yet.
-- [ ] Running a long-lived command in tab 3 flips tab 3 to `occupied` within
+- [ ] *(c)* Running a long-lived command in tab 3 flips tab 3 to `occupied` within
       one `status_update_interval`, and it returns to `empty` within one
       interval of the command exiting.
-- [ ] Splitting a tab and running a command in the new pane flips the *tab*
+- [ ] *(c)* Splitting a tab and running a command in the new pane flips the *tab*
       to occupied even though the sibling pane is still idle.
-- [ ] Killing a pane's process from outside WezTerm (`kill -9` on the shell
+- [ ] *(c)* Killing a pane's process from outside WezTerm (`kill -9` on the shell
       PID) flips the tab back to `empty` within one `status_update_interval`.
-- [ ] Switching the active theme recolours both states with no edit to this
+- [ ] *(c)* Switching the active theme recolours both states with no edit to this
       feature's code.
 
 ## Out of scope

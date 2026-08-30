@@ -51,13 +51,24 @@ amendment does not close it.
 
 ## Requirements
 
-- [ ] **R1** — **Entry from a clean state.** `Ctrl+Shift+X` clears any stale
+**Classified 2026-08-30 by
+[`done-nodes-with-unticked-boxes`](../../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md).**
+The gesture survives on tmux
+([`07-multiplexer/05-copy-and-clipboard`](../../07-multiplexer/05-copy-and-clipboard/prd.md)),
+so the boxes split three ways: **(a)** proven on the new mechanism by
+`bash tests/tmux-copy-and-clipboard.sh` (21 PASS) or by
+`bash tests/wezterm-appearance.sh --probe` for the three keys WezTerm still
+owns; **(c)** obsolete with the WezTerm copy-mode table; and a residue of live
+GUI claims that remain human checks (T.4 in `gates/manual/wave4.md`). Each box
+below carries its class.
+
+- [x] **R1 — (a), on the new mechanism.** `set-hook -g after-copy-mode` clears `@copy-cycle` on EVERY exit, not just the keyed ones — which is stronger than what this required, because copy mode is also entered by the mouse wheel and by the `copymode` command. Proven: "y cleared @copy-cycle (read '')". Original: **Entry from a clean state.** `Ctrl+Shift+X` clears any stale
       selection, clears the per-pane toggle flag, and then
       `ActivateCopyMode`. Resetting **on entry** is what makes an exit by
       `q`, `Esc` or `y` unable to leave the toggle stale.
-- [ ] **R2** — **The default table is extended, never replaced.** All **54**
+- [ ] **R2 — (c) obsolete.** There is no WezTerm `copy_mode` table any more. Its tmux counterpart is asserted instead: `copy-mode-vi` holds `c`, `y` and **at least 88 further keys**, so tmux's own motions are extended and not replaced — the same property, on the shipped table of a different program. Original: **The default table is extended, never replaced.** All **54**
       builtin copy-mode motions survive, and exactly one binding is added.
-- [ ] **R3** — **No search is promised, because copy mode has none.** The
+- [ ] **(c) obsolete, and INVERTED — the constraint stopped being true.** tmux's copy mode DOES have search: `/` is in `copy-mode-vi`. The manual entry says so now. A requirement that a capability is absent is worth re-reading whenever the mechanism moves, and this is the case that shows why. Original: **R3 — No search is promised, because copy mode has none.** The
       inventory said the "55 builtin motions and searches" survive. Measured
       against `wezterm show-keys --lua` on `20240203-110809-5046fc22`: the
       effective `copy_mode` table has **55 rows in total, one of which is
@@ -74,13 +85,13 @@ amendment does not close it.
       same correction is landed at source in
       [`capabilities-terminal.md`](../../../docs/capabilities-terminal.md),
       so the two are one correction in two places.
-- [ ] **R4** — **The single-key `c` cycle, tracked per pane id.** First press
+- [x] **R4 — (a).** The cycle is `cell → word → line → cell`, per pane, in `@copy-cycle`, and the gate presses the keys: "press 4 wraps to the SAME cell it started from (got 'b', not 'd')" and "press 5 is the same word again". Tracked per PANE (`set -p`), which is what this required. Original: **The single-key `c` cycle, tracked per pane id.** First press
       anchors a `Cell` selection at the cursor; second press
       `CopyTo("ClipboardAndPrimarySelection")` followed by
       `CopyMode("Close")`. Tracked by **pane id** rather than by reading the
       selection text back, because a selection that begins over blank cells
       reads as empty and would desync the toggle.
-- [ ] **R5** — **The shell-driven entry, and only that one.** A nushell
+- [x] **R5 — (a), rebuilt.** `copymode` runs `tmux copy-mode` now; the OSC 1337 user-var and its WezTerm handler are both gone, so the command was silently broken until 2026-08-30. It resolves as a command in `help --check` (0 stale) and is guarded on `$env.TMUX`. "And only that one" still holds: no second user-var handler exists to add to. Original: **The shell-driven entry, and only that one.** A nushell
       command prints an OSC 1337 `SetUserVar` named `copymode`; WezTerm
       parses it off the pty and enters copy mode, ignoring the value. That is
       how a shell command reaches a GUI-only mode. The sibling user-var —
@@ -88,17 +99,17 @@ amendment does not close it.
       5(b) drops it, so the handler answers to one name, not two. Say so
       explicitly, or a lane porting the handler carries the dropped feature
       back in with it.
-- [ ] **R6** — **`Ctrl+V` is a bracketed paste.** `PasteFrom("Clipboard")`,
+- [x] **R6 — (a), static half; still WezTerm's.** `bash tests/wezterm-appearance.sh --probe` reads the LOADED key table and finds `Ctrl+V -> PasteFrom(Clipboard)`. That it arrives as a bracketed paste in nvim is a live observation and is T.4 in `gates/manual/wave4.md`. Original: **`Ctrl+V` is a bracketed paste.** `PasteFrom("Clipboard")`,
       with no subprocess: it is how text reaches both the shell and a running
       program (Claude, nvim), and it is what makes clipboard-based dictation
       land in the terminal.
-- [ ] **R7** — **`Ctrl+C` copies or interrupts, never both.** If
+- [x] **R7 — (a), static half; still WezTerm's, and now load-bearing for a new reason.** The binding is in the loaded table. It stays meaningful because tmux's `mouse` option is deliberately OFF, so mouse selection is still the terminal's — recorded in `wezterm.lua` beside the binding. Original: **`Ctrl+C` copies or interrupts, never both.** If
       `window:get_selection_text_for_pane` returns a non-empty selection,
       copy it to `ClipboardAndPrimarySelection` and clear the selection;
       **otherwise** `SendKey{ key = "c", mods = "CTRL" }`, so the key keeps
       its terminal meaning. The fallthrough is the requirement: it gives the
       platform-native copy shortcut without ever costing an interrupt.
-- [ ] **R8** — **The two mouse bindings, with their reasons.**
+- [x] **R8 — (a).** Both survive the reduction untouched — `StartWindowDrag` under `CTRL|ALT|SUPER` and `OpenLinkAtMouseCursor` with `mouse_reporting`, in `config.mouse_bindings`. Original: **The two mouse bindings, with their reasons.**
       `Ctrl+Alt+Super`+left-drag → `StartWindowDrag`, which is the **only**
       handle for repositioning the OS window, because
       `window_decorations = "RESIZE"` leaves no titlebar; the deliberately
@@ -113,24 +124,24 @@ amendment does not close it.
       mouse the same way.
 
 ## Acceptance
-- [ ] `Ctrl+Shift+X` enters copy mode with no selection carried in from
+- [x] **(a)** — driven as a real keystroke into a nested tmux, in both the CSI-u and the xterm modifyOtherKeys spellings of the chord, with the selection cleared by the `after-copy-mode` hook. Original: `Ctrl+Shift+X` enters copy mode with no selection carried in from
       before, and `h`/`j`/`k`/`l`, `w`/`b`, `g`/`G` and the other builtin
       motions all still work.
-- [ ] `c` then `c` copies the anchored selection to both the clipboard and
+- [x] **(a)**, with the sink decided by the machine rather than fixed: "sink A: pbcopy received the selection (got 'beta')" and "sink B: an OSC 52 carrying the selection reached the client (decoded 'beta')" — the second is the half that follows an ssh, which this box could not have asked for. Original: `c` then `c` copies the anchored selection to both the clipboard and
       the primary selection and closes copy mode; a selection begun over
       blank cells does not desync the toggle.
-- [ ] Pressing `/` inside copy mode does nothing, and `Ctrl+Shift+F` from
+- [ ] **(c) obsolete, and inverted with R3.** `/` searches now, and `Ctrl+Shift+F` is gone with WezTerm's defaults. Original: Pressing `/` inside copy mode does nothing, and `Ctrl+Shift+F` from
       normal mode opens the search prompt — the manual entry says exactly
       this.
-- [ ] The nushell command that prints the `copymode` user-var drops the
+- [ ] **(c) obsolete — nothing prints a user-var any more.** `copymode` runs `tmux copy-mode`. The claim it replaced is R5 above, closed there. Original: The nushell command that prints the `copymode` user-var drops the
       focused pane into copy mode; no other user-var name is handled.
-- [ ] `Ctrl+V` pastes into a shell prompt and into nvim's insert mode as a
+- [ ] **(b) unmet — a live observation, registered.** The binding is proven loaded (R6); that the paste arrives bracketed in nvim needs a person, and it is a T.4 row in `gates/manual/wave4.md`. Original: `Ctrl+V` pastes into a shell prompt and into nvim's insert mode as a
       bracketed paste.
-- [ ] `Ctrl+C` with a selection copies and clears it; `Ctrl+C` with no
+- [ ] **(b) unmet — a live observation, registered.** Same shape as the box above: the binding is loaded, the behaviour is a T.4 row. Original: `Ctrl+C` with a selection copies and clears it; `Ctrl+C` with no
       selection interrupts the foreground process.
-- [ ] `Ctrl+Alt+Super`+left-drag moves the OS window; an ordinary left-drag
+- [ ] **(b) unmet — a live observation, registered.** The binding survives the reduction (R8); dragging a window is a T.4 row. Original: `Ctrl+Alt+Super`+left-drag moves the OS window; an ordinary left-drag
       still selects text.
-- [ ] `Ctrl`+left-click opens a URL while a full-screen TUI is capturing the
+- [ ] **(b) unmet — a live observation, registered.** Same: `mouse_reporting` is set in the file, the click is a T.4 row. Original: `Ctrl`+left-click opens a URL while a full-screen TUI is capturing the
       mouse.
 
 ## Out of scope

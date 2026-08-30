@@ -62,3 +62,6 @@
 {"from":"open","prd":"00-delivery/corrections/retired-phrases-mention-vs-use","t":"2026-08-30 04:00","to":"done"}
 {"from":"open","prd":"00-delivery/wave-registry-keying","t":"2026-08-30 04:00","to":"done"}
 {"from":"open","prd":"00-delivery/finish-line/drift-check-terminal-surface","t":"2026-08-30 04:00","to":"done"}
+{"from":"open","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes","t":"2026-08-30 05:00","to":"done"}
+{"from":"analyzing","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes/box-audit-check","t":"2026-08-30 05:00","to":"done"}
+{"from":"analyzing","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status","t":"2026-08-30 05:00","to":"done"}

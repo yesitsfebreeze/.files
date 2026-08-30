@@ -1,5 +1,5 @@
 ---
-state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done             # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: derived  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 12        # higher first
@@ -14,7 +14,6 @@ time:              # OPTIONAL. See @references/parts/order.md
   actual:          # a record. Nothing reads it
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 from: 07-multiplexer/01-session-and-windows
-claim: analyst 2026-08-29 21:50
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
@@ -66,3 +65,59 @@ Establish whether a `done` transition can today close a node with an open box, b
 <!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
+
+## The probe, 2026-08-30
+
+Run on a scratch board (`/tmp/cgprobe`, a real git repo with one node), never
+by reading history — which is the whole instruction, because the question is
+what the code does today.
+
+The fixture is chosen to separate the two readings that could disagree: the
+node's **spec** acceptance box is CLOSED and its **`prd.md`** body carries one
+open box. A guard that read only the specs would let it through.
+
+| path to `done` | what happened |
+|---|---|
+| `collect node-a` | **REFUSED**, and named the box: `node-a: open box in prds/node-a/prd.md: `- [ ] a box nobody closed`` |
+| `set node-a done` | **REFUSED** before the boxes are even read: "no command moves `claimed` → `done` — `set --force` is the escape hatch" |
+| `set node-a done --force` | **CLOSED IT.** And it printed `open 0/1 · 0%` in its own status line while doing so — the bypass SEES the open box and closes anyway |
+| `unblock node-a` | not a path to `done` at all: it transitions `blocked` → `specced` |
+
+## The answer: `collect`'s guard is sufficient, and every tool path shares it
+
+There is one guard — `planlib.standing()` requires `not
+body_has_open_box(prd)`, and `collect.open_boxes()` names what it saw across
+`prd.md` whole-file plus every spec's `## Acceptance`. `collect` is the only
+command that moves a node to `done`, so there is nothing to unify: the paths
+already share it because there is only one.
+
+`set --force` is a documented escape hatch and stays one. It is not a second
+closing path that forgot the guard; it is the deliberate override, and it says
+so on the line.
+
+## The hole the probe found, which is not in the tool
+
+**The board is FILES.** Every guard above lives in a program nobody is
+required to run. `sed -i` on a `state:` line closes a node with any number of
+open boxes and no tool ever sees it — and that is not hypothetical: this very
+session moved fourteen nodes to `done` by editing frontmatter directly.
+
+So the guard cannot be the control. The control is the one
+[`box-audit-check`](../box-audit-check/prd.md) built: `tests/box-audit.py`
+sweeps every `state: done` node for open boxes, reports rather than gates, and
+is registered in `gates/waves.tsv` so a sweep runs it. A guard prevents the
+defect on one path; the audit finds it on all of them, including the ones that
+are not paths at all.
+
+## Reported, not fixed: the `cmd_unblock` documentation defect
+
+`~/dev/infra/pearde/references/parts/handles.md` says of `unblock`:
+
+> re-runs only the open boxes; `done` when they close
+
+`transitions.py:cmd_unblock` does neither. It refuses anything that is not
+`blocked` and transitions to **`specced`** — it runs no box and reaches no
+`done`. The row describes a command that does not exist.
+
+Reported here rather than edited, per this node's own instruction: that file
+is in `~/dev/infra/pearde`, another repo, and this board does not own it.

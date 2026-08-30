@@ -175,18 +175,32 @@ extension.
 GUI-only: each box below is a `**T.2**` row in `gates/manual/wave3.md`, run
 by a human at the wave-3 gate. A box here ticks when its row passes.
 
-- [ ] A fresh launch yields one fullscreen window with tabs titled `1`–`9`
+**Every box below is class (c) — OBSOLETE, classified 2026-08-30 by
+[`done-nodes-with-unticked-boxes`](../../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md).**
+They describe the self-healing nine-tab floor, and there are no tabs: this
+node is SUPERSEDED by
+[`07-multiplexer/01-session-and-windows`](../../07-multiplexer/01-session-and-windows/prd.md)
+and [`02-key-tables`](../../07-multiplexer/02-key-tables/prd.md). tmux indices
+do not renumber, so nothing has to be seeded or repaired, and `F5 <digit>`
+creates the window when it is absent — `bash tests/tmux-key-tables.sh --keys`.
+
+They stay `- [ ]` rather than being ticked or deleted, and that is the
+classification rule doing its job: a tick would be a false record of a run
+against a mechanism that does not exist, and a deletion would erase what this
+node once promised and how the promise was met instead.
+
+- [ ] *(c)* A fresh launch yields one fullscreen window with tabs titled `1`–`9`
       and focus on tab 1 — never 16 tabs, and never the `1,0,2,3…` order.
-- [ ] Closing tab 3 and waiting one `status_update_interval` leaves nine
+- [ ] *(c)* Closing tab 3 and waiting one `status_update_interval` leaves nine
       tabs, with the replacement **at position 3**, and focus on the tab that
       was focused before rather than on the replacement.
-- [ ] `wezterm cli spawn --new-window` produces a window with nine tabs
+- [ ] *(c)* `wezterm cli spawn --new-window` produces a window with nine tabs
       without any key being pressed.
-- [ ] Opening a tenth tab by hand leaves ten tabs standing across at least
+- [ ] *(c)* Opening a tenth tab by hand leaves ten tabs standing across at least
       two ticks: extra tabs are adopted, not culled.
-- [ ] `Ctrl+Shift+Q` closes the whole window with no confirmation prompt and
+- [ ] *(c)* `Ctrl+Shift+Q` closes the whole window with no confirmation prompt and
       no tab refilling behind it.
-- [ ] Two windows open simultaneously each hold nine tabs and neither one
+- [ ] *(c)* Two windows open simultaneously each hold nine tabs and neither one
       spawns tabs into the other.
 
 ## Out of scope

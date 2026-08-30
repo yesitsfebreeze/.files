@@ -1,5 +1,5 @@
 ---
-state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done             # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: derived  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 12        # higher first
@@ -14,7 +14,6 @@ time:              # OPTIONAL. See @references/parts/order.md
   actual:          # a record. Nothing reads it
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 from: 07-multiplexer/01-session-and-windows
-claim: analyst 2026-08-29 21:50
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
@@ -66,3 +65,41 @@ Land `tests/box-audit.py` as a maintained check with its discriminating selftest
 <!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
+
+## Delivered 2026-08-30
+
+`tests/box-audit.py` is in the tree with the discriminating selftest this node
+asked for:
+
+```
+$ python3 tests/box-audit.py --selftest
+PASS selftest: sweep sees 171 done nodes
+PASS selftest: 02-terminal/04-copy-mode flagged as a defect
+PASS selftest: 02-terminal/06-launchd-path not flagged
+```
+
+Both halves matter and a one-sided selftest would have proved nothing: a
+sweep that flags everything and a sweep that flags nothing both pass "it
+found the defect".
+
+**Wired where a run will see it.** `gates/waves.tsv` wave 0 names
+`external python3 tests/box-audit.py --selftest`. It could not be registered
+before today — the node carries no `task:` id and the registry keyed only on
+those — so this is the first use of the path-keyed scheme
+[`wave-registry-keying`](../../../wave-registry-keying/prd.md) decided in the
+same session.
+
+**It reports and does not gate**, exactly as required. `--selftest` is what
+the wave row runs; the bare sweep prints the census and exits 0 whatever it
+finds. The `nushell-module-staging.sh` precedent is the reason: a check that
+starts red on 41 nodes gets switched off, and a switched-off check is worse
+than none because it looks like coverage.
+
+The census as of 2026-08-30, after this session's classification of
+`02-terminal`'s 41:
+
+```
+done nodes scanned:      172
+done nodes with open []: 41
+open boxes under done:   166
+```

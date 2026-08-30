@@ -111,16 +111,54 @@ extension.
 GUI-only: each box below is a `**T.3**` row in `gates/manual/wave3.md`, run
 by a human at the wave-3 gate. A box here ticks when its row passes.
 
-- [ ] `F5` then `3` activates tab 3, and the next keystroke types into that
+**Classified 2026-08-30 by
+[`done-nodes-with-unticked-boxes`](../../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md).**
+The gesture survives on tmux, so three of these six are class **(a)** —
+proven, on the new mechanism, by `bash tests/tmux-key-tables.sh` — and three
+are class **(c)**, obsolete with the WezTerm machinery they describe. The
+(c) boxes stay `- [ ]`: a tick would record a run against something that is
+not there.
+
+- [x] **(a)** — as `F5` then a digit selecting a WINDOW, and creating it when
+      absent. `bash tests/tmux-key-tables.sh --keys`: "F5 4 on a one-window
+      session creates window 4", "F5 4 leaves window 4 active", "F5 4 a second
+      time SELECTS — no duplicate window". The original box read: `F5` then
+      `3` activates tab 3, and the next keystroke types into that
       tab's pane normally — the mode has popped.
-- [ ] `F5` then a letter that maps to nothing leaves the mode with **no
+- [x] **(a)** — and it costs nothing on tmux, which is the better outcome.
+      A key with no binding in a pushed table is looked up once more in `root`
+      and DROPPED, so the 26 bare-cancel letters are unnecessary:
+      "five mistypes put NOT ONE BYTE on the pane's pty (od reads '\\n')".
+      The original box read: `F5` then a letter that maps to nothing leaves
+      the mode with **no
       character inserted** into the running program (checked against a shell
       prompt and against nvim in insert mode) and no bell.
-- [ ] `F5` then `Escape` leaves the mode with nothing activated.
-- [ ] `F5` and then nothing at all returns to normal input after 5 s.
-- [ ] `Ctrl+Shift+`arrow moves between panes of a split tab, unshadowed by
+- [x] **(a)**, on the equivalent keys. Any unbound key pops the table:
+      `bash tests/tmux-key-tables.sh --keys` proves `F5 z`, `F5 h`, `F5 0`
+      and `F5 q` each return the client to `root` with nothing activated.
+      Escape SPECIFICALLY is not asserted, and the reason is measured and
+      recorded in that gate's header (rule 5): a lone Escape delivered to an
+      attached tmux client shortly before a function key makes that key
+      arrive as literal bytes — a property of the client's input parsing,
+      which would fail a correct conf.
+- [ ] **(c) obsolete — there is no timeout, and none is possible or needed.**
+      WezTerm's `jump_mode` carried a 5 s `JUMP_TIMEOUT_MS` because its key
+      table persisted. A tmux table is popped by the very next keystroke
+      whatever it is, so the mode is at most one key deep. Recorded in
+      `tmux.conf` beside the bindings. What it said: "`F5` and then nothing
+      at all returns to normal input after 5 s."
+- [ ] **(c) obsolete — that binding is gone and the capability improved.**
+      `Ctrl+Shift+<arrow>` was a WezTerm DEFAULT this config left unshadowed,
+      and `disable_default_key_bindings = true` turned every default off.
+      Pane addressing is `F5 <letter>` now — the thing this node could not
+      have, because `PaneSelect` cannot be closed from Lua (I3). What it
+      said: "`Ctrl+Shift+`arrow moves between panes of a split tab, unshadowed by
       anything this epic binds.
-- [ ] No modal is ever left on screen, in a single-pane tab or a split one.
+- [ ] **(c) obsolete — there is no modal.** The box exists because I3
+      forbids `PaneSelect`, whose modal cannot be dismissed from Lua. tmux
+      addresses panes with nine `select-pane -t` lines and paints nothing.
+      What it said: "No modal is ever left on screen, in a single-pane tab or
+      a split one."
 
 ## Out of scope
 - Re-adding per-pane letters. Q2 is answered; a lane that wants them files a

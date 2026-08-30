@@ -132,6 +132,21 @@ able to check, and because the reduction deleted every OTHER
 
 ## Acceptance
 
+**Classified 2026-08-30 by
+[`done-nodes-with-unticked-boxes`](../../00-delivery/corrections/done-nodes-with-unticked-boxes/prd.md):
+all five open boxes are class (b) — genuinely unmet.** They are not obsolete
+(this node is the one part of `02-terminal` the tmux cutover did not touch —
+grid centering is local chrome and stays in `wezterm.lua` in full) and they
+are not proven anywhere. They are human GUI checks, each already written up
+as a `**T.8**` row in `gates/manual/wave3.md`, and none of those rows has been
+run.
+
+Reported, not fixed, and the node is NOT reopened — R3 of that correction is
+explicit that an implementer who both finds the gap and closes the record is
+the failure mode it exists to name. What the finding says plainly: this node's
+`done` rests on its static and probe halves, and five live-window claims stand
+unverified.
+
 The first five boxes need a human at a GUI: `center_grid` only fires on a
 live window, and `window:set_config_overrides` on a real session is exactly
 the disruption a gate must not cause. Each is written up as a `**T.8**` row
