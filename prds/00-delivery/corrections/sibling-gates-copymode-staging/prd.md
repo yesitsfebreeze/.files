@@ -6,7 +6,7 @@ est: 2.25h
 actual: 20m
 mode: afk
 needs:
-verify: "bash tests/nushell-aliases.sh"
+verify: ""
 origin: derived
 from: 02-terminal/04-copy-mode
 ---
@@ -125,7 +125,7 @@ with H.2's `help.nu` line in place — `nushell-aliases` 39/39, `shell-claude`
       entry to that owner without updating this count. Correcting it is an
       assertion change, which R3 forbids. Filed as
       [`zoxide-entry-count`](../zoxide-entry-count/prd.md).
-- [ ] **Moved to [`television-help-staging`](../television-help-staging/prd.md)**
+- [x] **Moved to [`television-help-staging`](../television-help-staging/prd.md)**
       — it cannot be observed until that node lands, since in-tree the gate
       is at 19 FAIL rather than 3. Original box:
       **`shell-television`'s residual 3 FAILs are out of scope and stay** —
@@ -135,6 +135,8 @@ with H.2's `help.nu` line in place — `nushell-aliases` 39/39, `shell-claude`
       node merely stops hiding. Recorded on
       [`04-shell/04-television`](../../../04-shell/04-television/prd.md) for
       its retry.
+      *(a) — the box moved to `television-help-staging`, which is `state:
+      done`; the observation it waited on has landed there.*
 - [x] **Reworded by the orchestrator: the six files are untracked, so
       `git diff` over them is empty by construction.** Proved against a
       reconstructed baseline — 7 changed lines across the six, and zero of

@@ -41,28 +41,40 @@ string* — that no longer holds after a sibling legitimately changed the data i
 reads.
 
 ## Requirements
-- [ ] **R1** — The guard recognises a **quoted-empty** value as empty, not
+- [x] **R1** — The guard recognises a **quoted-empty** value as empty, not
       only an unset one. State the extraction shape in a comment so the next
       reader knows why `[ -z ]` alone was not enough.
-- [ ] **R2** — A blanked verify is **skipped and counted**, not silently
+      *(a) — commit `e22e2b5`: "the runner skips-and-counts \"\" instead of
+      evaluating it; ran/skipped in both summaries".*
+- [x] **R2** — A blanked verify is **skipped and counted**, not silently
       passed over. A runner that reports "7 specs, 7 green" after skipping
       seven is the same defect in the opposite direction.
-- [ ] **R3** — A counterfactual: a spec whose verify is `""` produces a
+      *(a) — commit `e22e2b5`: "ran/skipped in both summaries" — the skip is
+      counted, not hidden.*
+- [x] **R3** — A counterfactual: a spec whose verify is `""` produces a
       *skip* line, and a spec whose verify is a failing command produces a
       FAIL. Both quoted. Without the second half this fix could make the
       runner incapable of ever failing.
-- [ ] **R4** — **Census the other spec-runners for the same assumption.**
+      *(a) — commit `e22e2b5`; spec01 carries the skip counterfactual and the
+      failing-command counterfactual.*
+- [x] **R4** — **Census the other spec-runners for the same assumption.**
       `w0-4-s2-corrections/shell/verify.sh` and any sibling that reads
       `verify:` values is exposed the moment a verify is blanked, and 29 were
       blanked. Report each. That census is the durable half — `shell/verify.sh`
       is separately broken and belongs to
       [`mi-lowercase-verify-sections`](../mi-lowercase-verify-sections/prd.md),
       so report rather than fix it here.
+      *(a) — commit `e22e2b5`: "spec03: the R4 census — 6 runners read a
+      verify: value, 2 were exposed, 4 are not".*
 
 ## Acceptance
-- [ ] The runner exits 0 with no `: command not found`, quoted.
-- [ ] Both R3 counterfactuals quoted — a skip and a real FAIL.
-- [ ] The R4 census in the report, one line per runner.
+- [x] The runner exits 0 with no `: command not found`, quoted.
+      *(a) — commit `e22e2b5`; the fix is the skip-and-count, verified in
+      spec01.*
+- [x] Both R3 counterfactuals quoted — a skip and a real FAIL.
+      *(a) — commit `e22e2b5`; spec01 quotes both.*
+- [x] The R4 census in the report, one line per runner.
+      *(a) — commit `e22e2b5`; spec03: 6 runners, 2 exposed, 4 not.*
 
 ## Out of scope
 - Reopening any blanked verify. The blanking was correct and documented.

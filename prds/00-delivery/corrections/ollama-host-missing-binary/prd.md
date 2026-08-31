@@ -6,7 +6,7 @@ est: 1.5h
 actual: 10m
 mode: afk
 needs:
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 ---
 

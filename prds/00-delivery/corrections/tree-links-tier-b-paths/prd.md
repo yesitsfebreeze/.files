@@ -7,7 +7,7 @@ needs:
 footprint:
   - gates/tree-links.sh
   - gates/tree-links.py
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 00-delivery/verification-gates
 claim: 

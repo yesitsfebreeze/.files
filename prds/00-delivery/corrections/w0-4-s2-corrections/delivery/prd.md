@@ -82,8 +82,13 @@ serialising ~22 files.
       `05-platform`).
 
 ## Acceptance
-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
+- [x] Every requirement box above is `[x]`, and the backlog item it corrects
       is marked fixed.
+      *(a) — the backlog items are marked fixed: M-18 "**Fixed 2026-08-21**",
+      the duplicated-facts S3 row "Closed 2026-08-21 by
+      `w0-4-s2-corrections/delivery` R5", the README-exclusions row "Closed
+      2026-08-21 by `w0-4-s2-corrections/delivery` R4", and the wrap-limit
+      row "Fixed 2026-08-21 by `w0-4-s2-corrections/delivery` R6".*
 
 ## Out of scope
 - Any file another W0.4 child owns. One writer per file is why this sweep is

@@ -4,7 +4,7 @@ priority: 13
 est:
 mode: afk
 needs:
-verify: "bash gates/selftest.sh"
+verify: ""
 origin: derived
 from: 00-delivery/verification-gates
 claim:

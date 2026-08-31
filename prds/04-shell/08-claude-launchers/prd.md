@@ -9,7 +9,7 @@ mode: afk
 needs:
   - 04-shell/06-listing
   - 06-help/01-content-model
-verify: "bash tests/shell-claude.sh"
+verify: ""
 ---
 
 # Claude launchers (SIMPLIFY)

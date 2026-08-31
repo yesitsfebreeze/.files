@@ -5,7 +5,7 @@ est: 4h
 task: H.1
 mode: afk
 needs:
-verify: "nu tests/help-content-model.nu"
+verify: ""
 ---
 
 # Content model

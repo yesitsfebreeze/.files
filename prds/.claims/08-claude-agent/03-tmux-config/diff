@@ -1,0 +1,2542 @@
+diff --git a/.gitignore b/.gitignore
+index 7ad3b3c..f3f81b7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -8 +8,4 @@
+-.obsidian/workspace.json
++.obsidian/
++
++# vicky knowledge base (local, regenerable)
++vicky/
+diff --git a/AGENTS.md b/AGENTS.md
+index f210b30..92b012c 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -106,0 +107 @@ it is, not to decide what it says.
++| [`08-claude-agent`](prds/08-claude-agent/prd.md) | Claude Code manages tmux panes and edits in nvim: the tmux MCP server, claudecode.nvim + claude-tmux.nvim, the tmux.conf additions, the help entries (net-new) | 4 |
+diff --git a/docs/capabilities-nushell.md b/docs/capabilities-nushell.md
+index 8d6e97e..a91cd87 100644
+--- a/docs/capabilities-nushell.md
++++ b/docs/capabilities-nushell.md
+@@ -39,2 +39,3 @@ live on 2026-08-21. Everything rated below is the deployed artifact.
+-  `q`/`:q`/`/exit`→exit, `rr`→chezmoi update, `cf` (file → clipboard, picks
+-  pbcopy/wl-copy/xclip), `pass` completion from the live store.
++  `y`→yazi, `q`/`:q`/`/exit`→exit, `rr`→chezmoi update, `cf` (file →
++  clipboard, picks pbcopy/wl-copy/xclip), `pass` completion from the live
++  store.
+diff --git a/gates/waves.tsv b/gates/waves.tsv
+index 8fceaf0..698b032 100644
+--- a/gates/waves.tsv
++++ b/gates/waves.tsv
+@@ -32 +32,5 @@ wave	tasks	gates
+-4	S.2 S.3 S.4 S.5 S.9 E.7 E.11 E.12 E.13 E.14 E.15 T.4 T.6 T.7 C.3 C.4 H.1 D.3 07-multiplexer/06-nvim-session 01-capsule/04-recent-workspaces	external nu tests/help-content-model.nu | external bash tests/shell-listing.sh | external bash tests/nushell-aliases.sh | external bash tests/theme-switcher.sh | external bash tests/shell-zoxide.sh | external bash tests/shell-television.sh | external bash tests/capsule-credentials.sh | external bash tests/nvim-lsp.sh --tree | external bash tests/nvim-lsp.sh --headless | external bash tests/wezterm-launchd-path.sh | external bash tests/nvim-statusline.sh --tree | external bash tests/nvim-statusline.sh --headless | external bash tests/nvim-markdown-tables.sh --tree | external bash tests/nvim-markdown-tables.sh --headless | external bash tests/nvim-formatting.sh --tree | external bash tests/nvim-formatting.sh --headless | external bash tests/nvim-formatting.sh --formatters | external bash tests/capsule-recents.sh | external bash tests/nvim-small-plugins.sh --tree | external bash tests/nvim-small-plugins.sh --headless | external bash tests/nvim-shift-select.sh | bash gates/wezterm-config-fields.sh | external bash tests/tmux-session-and-windows.sh | external bash tests/tmux-key-tables.sh | external bash tests/tmux-copy-and-clipboard.sh | external bash tests/tmux-status-bar.sh | external bash tests/tmux-palette-delivery.sh | external bash tests/tmux-persistence.sh | external bash tests/help-drift-check.sh | external bash tests/nvim-session.sh | external bash tests/capsule-recents-gui.sh
++4	S.2 S.3 S.4 S.5 S.9 E.7 E.11 E.12 E.13 E.14 E.15 T.4 T.6 T.7 C.3 C.4 H.1 D.3 07-multiplexer/06-nvim-session 01-capsule/04-recent-workspaces	external nu tests/help-content-model.nu | external bash tests/shell-listing.sh | external bash tests/nushell-aliases.sh | external bash tests/theme-switcher.sh | external bash tests/shell-zoxide.sh | external bash tests/shell-television.sh | external bash tests/capsule-credentials.sh | external bash tests/nvim-lsp.sh --tree | external bash tests/nvim-lsp.sh --headless | external bash tests/wezterm-launchd-path.sh | external bash tests/nvim-statusline.sh --tree | external bash tests/nvim-statusline.sh --headless | external bash tests/nvim-markdown-tables.sh --tree | external bash tests/nvim-markdown-tables.sh --headless | external bash tests/nvim-formatting.sh --tree | external bash tests/nvim-formatting.sh --headless | external bash tests/nvim-formatting.sh --formatters | external bash tests/capsule-recents.sh | external bash tests/nvim-small-plugins.sh --tree | external bash tests/nvim-small-plugins.sh --headless | external bash tests/nvim-shift-select.sh | bash gates/wezterm-config-fields.sh | external bash tests/tmux-session-and-windows.sh | external bash tests/tmux-key-tables.sh | external bash tests/tmux-copy-and-clipboard.sh | external bash tests/tmux-status-bar.sh | external bash tests/tmux-palette-delivery.sh | external bash tests/tmux-persistence.sh | external bash tests/help-drift-check.sh | external bash tests/nvim-session.sh
++# MANUAL: tests/capsule-recents-gui.sh — the C.4 GUI harness. It opens real
++# windows on the desktop, so the sweep does not run it; run it by hand:
++#   bash tests/capsule-recents-gui.sh
++# (capsule-cli-absent-blocks-its-own-gui-gate R3, decided 2026-08-31)
+diff --git a/home/dot_config/nushell/config.nu b/home/dot_config/nushell/config.nu
+index 78f25de..11abf5e 100644
+--- a/home/dot_config/nushell/config.nu
++++ b/home/dot_config/nushell/config.nu
+@@ -113,0 +114 @@ alias nn = nvim ~/notes.md
++alias y = yazi
+diff --git a/home/dot_config/nushell/help/shell.nuon b/home/dot_config/nushell/help/shell.nuon
+index 5b929a1..77895a5 100644
+--- a/home/dot_config/nushell/help/shell.nuon
++++ b/home/dot_config/nushell/help/shell.nuon
+@@ -145,0 +146,9 @@
++    {
++        cmd: "y"
++        title: "Open the yazi file manager"
++        use: "`y` is `yazi`, the terminal file manager: move with the arrows or `hjkl`, `Enter` opens a file or descends into a directory, `q` quits back to the shell."
++        topic: "navigate"
++        mode: "shell"
++        verify: [{kind: "alias", name: "y"}]
++        source: "prds/04-shell/02-aliases-utilities/prd.md"
++    }
+diff --git a/home/dot_config/tmux/tmux.conf b/home/dot_config/tmux/tmux.conf
+index 33b2150..bf24e86 100644
+--- a/home/dot_config/tmux/tmux.conf
++++ b/home/dot_config/tmux/tmux.conf
+@@ -629,0 +630,62 @@ run-shell 'f="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-continuum/c
++
++# ── 08-claude-agent/03-tmux-config: Claude Code inside tmux ─────────────────
++#
++# prds/08-claude-agent/03-tmux-config owns everything below. Two lines, both
++# from Claude Code's terminal-config docs (the "Configure tmux" section),
++# both required for Shift+Enter to insert a newline instead of submitting
++# when the agent runs in a pane of this session.
++#
++# THE DECISION, measured on tmux 3.7c (probe/01, probe/02, probe/04): the
++# repo pairs WezTerm's `enable_kitty_keyboard = false` with nushell's
++# `use_kitty_protocol = false` so reedline never fires the kitty support
++# query whose reply the WezTerm pty returns too late (04-shell/01). Adding
++# `extended-keys on` does NOT disturb that pairing, because the option
++# governs what tmux SENDS to pane PROGRAMS only at each program's own
++# request, and nushell never asks:
++#
++#   - A pane program that asked for nothing (reedline's situation --
++#     `use_kitty_protocol: false`, config.nu) receives byte-for-byte the
++#     same input with extended-keys off and on. Measured: plain Enter,
++#     Ctrl+X and arrow-up arrived as `\r 030 ESC[A` in BOTH settings, all
++#     eight request/feature combinations of probe/01.
++#   - Modified keys reach a pane only in extended form after that pane
++#     enables modifyOtherKeys itself (CSI >4;1m, the mode-1 request; probe/04
++#     measured mode 2 giving the same answer). Shift+Enter then arrives as
++#     `CSI 27;2;13~`, Ctrl+X stays the bare byte 018, arrow-up stays
++#     `CSI A`. tmux's man page says the same in prose: `on` lets the pane
++#     program request mode 1 or 2; only `always` would force it.
++#   - The kitty protocol, by contrast, tmux does not track per pane at all:
++#     a pane pushing `CSI >1u` or flags 15 (probe/04) still got plain `\r`
++#     for Shift+Enter. So there is no path by which this line could re-arm
++#     the kitty behaviour that 04-shell/01 turned off.
++#
++# What each line buys:
++#
++#  - `extended-keys on` is the pane HALF. With it off, tmux folds BOTH
++#    Shift+Enter spellings into the bare `\r` of plain Enter (measured,
++#    probe/01) and Claude Code cannot tell a newline from a submit, even
++#    though the outer terminal encoded them differently -- every encoding
++#    collapses to the one byte the pane asked to have. On, a pane that asks
++#    (Claude Code does: its binary carries the `CSI >4;2m` enable and a
++#    `CSI ?u` kitty reply parser) gets Shift+Enter whole and Ctrl+J keeps
++#    working unchanged.
++#  - `xterm*:extkeys` names the CLIENT terminal as extended-key capable, so
++#    tmux asks it (it "always requests" per the man page) and the outer
++#    terminal knows it may answer in modifyOtherKeys form. Measured
++#    (probe/02): with extended-keys on, tmux emits `CSI >4;2m` on the client
++#    wire at attach with the feature line present AND absent alike, on an
++#    xterm-shaped TERM and on screen-256color alike -- on 3.7c the feature
++#    line is belt and braces, carried because the docs require it and
++#    because an older tmux gates the request on a matching extkeys feature.
++#  - `allow-passthrough on` needs no line here; the terminal-integration
++#    floor set it above (01-session-and-windows), and it is the channel the
++#    notifications ride.
++#
++# The format stays the default `xterm` (CSI 27;2;13~), which is what tmux
++# sent in every measured case above; Claude Code decodes both spellings.
++#
++# Appended, not edited, per this file's header contract. No key tables, no
++# palette, no copy mode: F4/F5/F6 and everything 07-multiplexer shipped are
++# untouched above.
++set -s extended-keys on
++set -as terminal-features 'xterm*:extkeys'
+diff --git a/home/dot_config/wezterm/wezterm.lua b/home/dot_config/wezterm/wezterm.lua
+index e2e5866..343a466 100644
+--- a/home/dot_config/wezterm/wezterm.lua
++++ b/home/dot_config/wezterm/wezterm.lua
+@@ -1,10 +0,0 @@
+--- WezTerm appearance: font, palette reader, derived tab bar, baseline, clock,
+--- F6 theme toggle — prds/02-terminal/01-appearance owns that scope. The
+--- self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's;
+--- later terminal nodes (F5, copy mode, grid centering) extend this file.
+---
+--- The launch environment — default_prog, set_environment_variables and the
+--- macOS PATH prefix — is prds/02-terminal/06-launchd-path's, and it sits
+--- immediately below: a GUI-launched WezTerm inherits launchd's environment,
+--- so nushell has to be named and its PATH seeded before the spawn.
+-
+@@ -16 +5,0 @@ local triple = wezterm.target_triple
+--- The only platform surface WezTerm offers.
+@@ -21,25 +9,0 @@ local home = os.getenv("HOME") or ""
+--- ── 06-launchd-path: the launch environment ─────────────────────────────────
+-
+--- Nushell, with both config files named absolutely (R6). A GUI-launched
+--- WezTerm gets no default_prog for free and WezTerm then falls back to the
+--- passwd login shell. Measured 2026-08-23 on this machine: `dscl . -read
+--- /Users/feb UserShell` is /bin/zsh, launchd's GUI environment exports no
+--- SHELL (only SSH_AUTH_SOCK -- see the foreground-process comment further
+--- down), and a wezterm-mux-server started under `env -i` with no
+--- default_prog spawns `-zsh`. So without this line the terminal never starts
+--- nushell at all: no aliases, no keybindings, no `help`.
+---
+--- Both files are named rather than left to discovery, because the config
+--- directory nushell would discover is not the managed one -- see the
+--- XDG_CONFIG_HOME comment below, which is the other half of the same fact.
+--- 07-multiplexer/08-wezterm-reduction, Q8: the terminal opens INTO tmux. The
+--- spelling of the attach is not repeated here — ~/.local/bin/tmux-main holds
+--- it, so WezTerm, an ssh login and anything else that wants the session all
+--- say the same thing and cannot drift apart. That script is also what still
+--- starts nushell directly on a machine with no tmux, with the same three
+--- obligations this line used to carry (resolve nu on PATH, export
+--- XDG_CONFIG_HOME before the exec, fall back to a shell that exists).
+--- Still named, still not left to discovery: the capsule Ctrl+Shift+O binding
+--- below spawns nushell directly, outside tmux, and needs the same two paths
+--- the old default_prog did. The XDG_CONFIG_HOME comment below is the other
+--- half of the same fact.
+@@ -51,10 +14,0 @@ config.default_prog = { home .. "/.local/bin/tmux-main" }
+--- XDG_CONFIG_HOME is exported at LAUNCH, and that is the whole point (R7).
+--- $nu.default-config-dir is a launch-time CONSTANT, so env.nu's own
+--- assignment runs too late to move it and everything nushell derives from it
+--- drifts out of the managed tree. Measured 2026-08-23 on nushell 0.114.1:
+--- with --config/--env-config but no export, $nu.default-config-dir is
+--- ~/Library/Application Support/nushell and $nu.history-path is the
+--- history.sqlite3 under it -- and reedline really does create it there, so
+--- the shell history silently leaves ~/.config. history.nu's header records
+--- the same lesson for that path; this line is what makes it come out right.
+--- Not inside the is_mac branch: it is correct on every platform.
+@@ -62 +16 @@ config.set_environment_variables = {
+-    XDG_CONFIG_HOME = home .. "/.config",
++	XDG_CONFIG_HOME = home .. "/.config",
+@@ -65,23 +18,0 @@ config.set_environment_variables = {
+--- PATH seeding, macOS only (R2, R3). default_prog above is spawned by
+--- WezTerm itself -- execvp against the process PATH, never through a login
+--- shell -- and a GUI launch inherits launchd's PATH. Measured 2026-08-23:
+--- `launchctl getenv PATH` is unset, so that is the hardcoded
+--- /usr/bin:/bin:/usr/sbin:/sbin, with no Homebrew in it. Without this prefix
+--- the spawn fails with `No viable candidates found in PATH` and the pane
+--- STAYS OPEN carrying that message plus "didn't exit cleanly" -- WezTerm's
+--- default exit_behavior is CloseOnCleanExit, so the failure is a terminal
+--- you cannot type into rather than a window that disappears.
+---
+--- Four DIRECTORIES, fixed, not a list computed from the installed package
+--- set: it seeds directories, so adding a package to the provisioning set
+--- needs no change here. Not seeded on Linux -- this is a macOS-host-only
+--- configuration and nu is on PATH there already.
+---
+--- Getting the binary spawned is all this does; env.nu owns PATH inside the
+--- shell, and it wins by construction (R5). env.nu `prepend`s ~/.cargo/bin
+--- and ~/.local/bin, `append`s the Homebrew and system dirs and `uniq`s, so
+--- the duplicates this prefix creates collapse and the shell's resolution
+--- order is env.nu's under either launch shape. Measured both ways on
+--- 0.114.1: the repaired PATH is
+--- .cargo/bin:.local/bin:/opt/homebrew/bin:... whether the launch PATH was
+--- this prefix or a terminal's inherited one.
+@@ -89,4 +20,6 @@ if is_mac then
+-    config.set_environment_variables.PATH =
+-        "/opt/homebrew/bin:/opt/homebrew/sbin:"
+-        .. home .. "/.local/bin:" .. home .. "/.cargo/bin:"
+-        .. (os.getenv("PATH") or "")
++	config.set_environment_variables.PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:"
++		.. home
++		.. "/.local/bin:"
++		.. home
++		.. "/.cargo/bin:"
++		.. (os.getenv("PATH") or "")
+@@ -95,23 +27,0 @@ end
+--- ── 07-grid-centering: the runtime owner of window_padding ──────────────────
+-
+--- Keep the grid centered. The grid is an integer number of cells, so it
+--- almost never divides the window exactly, and the sub-cell remainder would
+--- sit as an uneven gap on the right and bottom. center_grid measures the true
+--- cell size, recomputes how many whole cells fit, and pushes the leftover
+--- into padding -- so it adapts to any font size, DPI or resolution by itself
+--- (resize, interactive zoom, monitor swap). The left/right split is exactly
+--- symmetric; the top/bottom split is symmetric to within the tab-bar
+--- over-reserve explained below, which measured 0-2 px across the font sizes
+--- checked.
+---
+--- This pair is the RUNTIME OWNER of window_padding. That is why
+--- config.window_padding further down the file is declared as four zeroes
+--- (prds/02-terminal/01-appearance R8): the declaration is only the neutral
+--- starting point, and every value after the first tick comes from here.
+-
+--- The tab bar's pixel reserve, read by grid_padding below through an upvalue.
+--- ZERO because `config.enable_tab_bar = false` since the tmux cutover
+--- (07-multiplexer/08-wezterm-reduction) — there is no bar to reserve for, and
+--- reserving one pushed the grid up by cell_h + 1 with that much dead space at
+--- the bottom. Declared OUT HERE, above the sentinel, on purpose: see the long
+--- note inside grid_padding for the two shapes that did not survive the gate.
+@@ -120,6 +29,0 @@ local TAB_BAR_RESERVE = 0
+--- >>> grid-padding (pure): no wezterm calls in this block --
+--- tests/wezterm-grid-centering.sh --math slices it out between these two
+--- sentinels and runs it against measured geometries. The failure this node
+--- exists to fix -- an axis that computes zero for every input -- is invisible
+--- to a grep and needs no GUI to catch, so the arithmetic is kept pure and the
+--- gate proves it produces padding at all.
+@@ -127,90 +31 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
+-    -- RESERVE the tab bar, do not measure it. mux_tab:get_size() reports the
+-    -- PTY size, which is exactly rows * cell_h and therefore carries no
+-    -- information about the vertical remainder: deriving the chrome as
+-    -- height - grid_height - pad_top - pad_bottom measures the bar PLUS the
+-    -- remainder, the available height collapses back to rows * cell_h, and
+-    -- the vertical gap comes out zero by construction at every font size.
+-    -- Measured, not assumed: that is why this reserves the bar instead.
+-    --
+-    -- The constant is EMPIRICAL. Measured against
+-    -- wezterm 20240203-110809-5046fc22 (dpi 144, CaskaydiaCove,
+-    -- line_height = 1.0, retro tab bar shown), the bar is cell_h or
+-    -- cell_h + 1 pixels tall at font sizes 9, 12, 14, 17 and 21.
+-    -- RE-MEASURE IT IF THE WEZTERM BUILD MOVES.
+-    --
+-    -- It over-reserves on purpose, because the error is safe in one direction
+-    -- only. Over-reserving by d px costs d px of top/bottom asymmetry, plus
+-    -- one row in the boundary case where (win_h - bar) mod cell_h < d --
+-    -- stable, reached in one tick, never flickering. UNDER-reserving
+-    -- over-pads, drops a row and parks a whole extra cell at the bottom,
+-    -- which is the flicker failure described further down in its stable form.
+-    --
+-    -- THE RESERVE IS ZERO SINCE 2026-08-30, AND THAT IS THE WHOLE OF WHAT
+-    -- THE tmux CUTOVER DID TO THIS FUNCTION. Everything above still describes
+-    -- the arithmetic correctly and is kept, because the day a tab bar comes
+-    -- back this is the reasoning that has to come back with it.
+-    --
+-    -- What changed: `config.enable_tab_bar = false`
+-    -- (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a
+-    -- row of pixels for one pushes the grid up by cell_h + 1 and leaves that
+-    -- much dead space at the bottom — an off-centre grid, which is the exact
+-    -- defect this node exists to prevent, arrived at from the other side.
+-    --
+-    -- The old text said the reserve "assumes the tab bar is SHOWN, and the
+-    -- nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab
+-    -- hides the bar at one tab only, and the floor keeps nine". Both halves of
+-    -- that guarantee are gone — the floor and the option — which is why this
+-    -- had to move rather than being left as a harmless constant. Found by
+-    -- `bash tests/wezterm-grid-centering.sh` on the quiet sweep, not by
+-    -- reading: its static check asserts the option the reserve depends on.
+-    --
+-    -- It is written as a branch on the config rather than as a bare `0`, so
+-    -- the constant and its measurement survive and a future tab bar needs one
+-    -- line, not an archaeology dig. The constant is EMPIRICAL: measured
+-    -- against wezterm 20240203-110809-5046fc22 (dpi 144, CaskaydiaCove,
+-    -- line_height = 1.0, retro tab bar shown), the bar is cell_h or
+-    -- cell_h + 1 pixels tall at font sizes 9, 12, 14, 17 and 21.
+-    -- RE-MEASURE IT IF THE WEZTERM BUILD MOVES.
+-    -- THE RESERVE IS AN ARGUMENT SINCE 2026-08-30, AND ZERO AT THE ONE CALL
+-    -- SITE. Everything above still describes the arithmetic correctly and is
+-    -- kept, because the day a tab bar comes back this is the reasoning that
+-    -- has to come back with it — and the default below is that reasoning,
+-    -- still executable.
+-    --
+-    -- What changed: `config.enable_tab_bar = false`
+-    -- (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a
+-    -- row of pixels for one pushes the grid up by cell_h + 1 and leaves that
+-    -- much dead space at the bottom — an off-centre grid, which is the exact
+-    -- defect this node exists to prevent, arrived at from the other side.
+-    --
+-    -- The old text said the reserve "assumes the tab bar is SHOWN, and the
+-    -- nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab
+-    -- hides the bar at one tab only, and the floor keeps nine". BOTH halves of
+-    -- that guarantee are gone — the floor and the option — which is why this
+-    -- had to move rather than being left as a harmless constant. Found by
+-    -- `bash tests/wezterm-grid-centering.sh` on the 2026-08-30 quiet sweep,
+-    -- whose static check asserts the very option the reserve depended on.
+-    --
+-    -- AN UPVALUE, not a parameter, not a hardcoded 0, and not a read of
+-    -- `config`. Three shapes were tried and the gate rejected two of them,
+-    -- which is the gate doing its job:
+-    --
+-    --   * `config.enable_tab_bar and … or 0` — CRASHES the harness. This
+-    --     block is PURE by contract; the sentinels exist so the gate can
+-    --     slice it out and run it with no wezterm and no `config` in scope,
+-    --     and that slice is the only thing that tests the arithmetic at all.
+-    --   * a fifth PARAMETER — silently steals a slot the gate uses. R8's
+-    --     pad-independence check calls `grid_padding(w, h, cw, ch, 37, 41)`
+-    --     with deliberate junk to prove extra arguments are ignored; a real
+-    --     fifth parameter turns that 37 into a 37-pixel reserve. Measured:
+-    --     it reddened all nine cases.
+-    --   * THIS: an upvalue declared ABOVE the opening sentinel. In
+-    --     wezterm.lua it is 0. In the sliced harness the name is undefined,
+-    --     so it is nil and the measured formula below applies — which is
+-    --     what keeps the gate's nine cases meaningful instead of forcing
+-    --     nine expected values to be re-derived from the very function they
+-    --     are supposed to be checking, the tautology that gate's own header
+-    --     warns against.
+-    --
+-    -- `or`, not a nil-check, and 0 survives it: 0 is TRUTHY in Lua.
+-    local bar_h = TAB_BAR_RESERVE or (math.ceil(cell_h) + 1)
++	local bar_h = TAB_BAR_RESERVE or (math.ceil(cell_h) + 1)
+@@ -218,7 +33,2 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
+-    -- ABSOLUTE, never incremental. Both axes are derived from the constant
+-    -- window and the cell only; the padding in force is not an input to this
+-    -- function on either axis, so a given font always yields the same padding
+-    -- regardless of zoom history and the grid cannot ratchet smaller over
+-    -- time.
+-    local avail_w = win_w
+-    local avail_h = win_h - bar_h
++	local avail_w = win_w
++	local avail_h = win_h - bar_h
+@@ -226,4 +36,2 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
+-    -- Fit as many whole cells as the available space allows; the gap is
+-    -- whatever those cells leave over, which is in [0, cell).
+-    local cols = math.floor(avail_w / cell_w)
+-    local rows = math.floor(avail_h / cell_h)
++	local cols = math.floor(avail_w / cell_w)
++	local rows = math.floor(avail_h / cell_h)
+@@ -231,8 +39,2 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
+-    -- floor() the TOTAL gap before halving it, so the padding applied is
+-    -- never larger than the true gap. Over-padding by even a sub-pixel
+-    -- (possible whenever the cell is not a whole pixel, i.e. fractional DPI)
+-    -- shrinks the usable area below cols * cell and drops a column that the
+-    -- next tick adds back -- a flicker at the tick rate. Under-padding by
+-    -- less than a pixel is invisible and stable.
+-    local tot_x = math.floor(avail_w - cols * cell_w)
+-    local tot_y = math.floor(avail_h - rows * cell_h)
++	local tot_x = math.floor(avail_w - cols * cell_w)
++	local tot_y = math.floor(avail_h - rows * cell_h)
+@@ -240,6 +42,6 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
+-    return {
+-        left = math.floor(tot_x / 2),
+-        right = tot_x - math.floor(tot_x / 2),
+-        top = math.floor(tot_y / 2),
+-        bottom = tot_y - math.floor(tot_y / 2),
+-    }
++	return {
++		left = math.floor(tot_x / 2),
++		right = tot_x - math.floor(tot_x / 2),
++		top = math.floor(tot_y / 2),
++		bottom = tot_y - math.floor(tot_y / 2),
++	}
+@@ -250,14 +52,8 @@ local function center_grid(window)
+-    -- Reach the tab through the MUX WINDOW, not through the active pane and
+-    -- its own tab accessor: an overlay (debug overlay, char select, launcher)
+-    -- makes the active pane a detached one whose tab is nil, which crashed
+-    -- centering mid-flight and left the stale padding in place.
+-    -- mux_window():active_tab() always resolves the real underlying tab, so
+-    -- update-status keeps centering even while an overlay is up.
+-    local mux_win = window:mux_window()
+-    if not mux_win then
+-        return
+-    end
+-    local mux_tab = mux_win:active_tab()
+-    if not mux_tab then
+-        return
+-    end
++	local mux_win = window:mux_window()
++	if not mux_win then
++		return
++	end
++	local mux_tab = mux_win:active_tab()
++	if not mux_tab then
++		return
++	end
+@@ -265,18 +61,10 @@ local function center_grid(window)
+-    -- MEASURE, do not reconstruct. get_size() reports
+-    -- {cols, rows, pixel_width, pixel_height} for the grid's own rendered
+-    -- area, so cell = pixels / count is exact and independent of the padding
+-    -- in force -- which is what matters under fractional DPI (the cell is not
+-    -- a whole pixel) and during the multi-frame settle after a font zoom,
+-    -- where reconstructing the cell from window-minus-padding read stale
+-    -- padding and produced a wrong cell size.
+-    local win = window:get_dimensions()
+-    local tab = mux_tab:get_size()
+-    if not win or not tab or tab.cols == 0 or tab.rows == 0
+-        or tab.pixel_width == 0 or tab.pixel_height == 0 then
+-        return
+-    end
+-    local cell_w = tab.pixel_width / tab.cols
+-    local cell_h = tab.pixel_height / tab.rows
+-    if cell_w <= 0 or cell_h <= 0 then
+-        return
+-    end
++	local win = window:get_dimensions()
++	local tab = mux_tab:get_size()
++	if not win or not tab or tab.cols == 0 or tab.rows == 0 or tab.pixel_width == 0 or tab.pixel_height == 0 then
++		return
++	end
++	local cell_w = tab.pixel_width / tab.cols
++	local cell_h = tab.pixel_height / tab.rows
++	if cell_w <= 0 or cell_h <= 0 then
++		return
++	end
+@@ -284,5 +72,2 @@ local function center_grid(window)
+-    -- The padding in force is read for the change comparison at the bottom
+-    -- and for nothing else. It must never reach the arithmetic.
+-    local overrides = window:get_config_overrides() or {}
+-    local pad = overrides.window_padding
+-        or { left = 0, right = 0, top = 0, bottom = 0 }
++	local overrides = window:get_config_overrides() or {}
++	local pad = overrides.window_padding or { left = 0, right = 0, top = 0, bottom = 0 }
+@@ -290,2 +75 @@ local function center_grid(window)
+-    local new_pad = grid_padding(win.pixel_width, win.pixel_height,
+-        cell_w, cell_h)
++	local new_pad = grid_padding(win.pixel_width, win.pixel_height, cell_w, cell_h)
+@@ -293,8 +77,9 @@ local function center_grid(window)
+-    -- Idempotency guard. Writing the config overrides RE-FIRES the event that
+-    -- called this handler, so writing unconditionally is a feedback loop;
+-    -- writing only on a real change makes idle ticks nearly free.
+-    if new_pad.left ~= pad.left or new_pad.right ~= pad.right
+-        or new_pad.top ~= pad.top or new_pad.bottom ~= pad.bottom then
+-        overrides.window_padding = new_pad
+-        window:set_config_overrides(overrides)
+-    end
++	if
++		new_pad.left ~= pad.left
++		or new_pad.right ~= pad.right
++		or new_pad.top ~= pad.top
++		or new_pad.bottom ~= pad.bottom
++	then
++		overrides.window_padding = new_pad
++		window:set_config_overrides(overrides)
++	end
+@@ -303,6 +87,0 @@ end
+--- Recenter on anything that can change the grid geometry: window or screen
+--- size (window-resized, which also covers dragging between differently sized
+--- monitors), and config or font-size edits (window-config-reloaded).
+--- Registering window-config-reloaded is fine to do more than once -- wezterm.on
+--- accumulates
+--- handlers.
+@@ -311,5 +89,0 @@ wezterm.on("window-config-reloaded", center_grid)
+--- Interactive font zoom fires NEITHER of the two above. That is the whole
+--- reason the periodic tick is a trigger here as well as in
+--- prds/02-terminal/02-startup-layout: it catches a zoom within one
+--- status_update_interval, which is 5 s (set further down). The guard above
+--- keeps these ticks nearly free.
+@@ -318,21 +91,0 @@ wezterm.on("update-status", center_grid)
+--- ── the palette: read over the wire, not out of a file ─────────────────────
+---
+--- 07-multiplexer/04-palette-delivery moved this. WezTerm used to `dofile`
+--- ~/.config/wezterm/colors.lua, keep it on the config-reload watch list and
+--- rebuild config.colors from it, because OSC emitted inside a pane reached
+--- only that pane. Under tmux the palette arrives as OSC 4/10/11 written
+--- straight to the client's tty by tinty's tmux-colors.sh hook, which retints
+--- the terminal itself — every pane at once, on any emulator that honours it,
+--- including one at the far end of an ssh where no colors.lua exists.
+---
+--- So the file, the watch registration and the whole derived tab-bar palette
+--- are gone. What is left is the one permitted scheme constant: the
+--- no-theme-picked fallback for a checkout that has never applied a theme.
+--- It is never the palette — the palette is whatever tinty last pushed — and
+--- naming a scheme here as the palette would be wrong within a day.
+---
+--- The `dofile`-never-`require` trap that governed the old reader is not
+--- deleted knowledge: it is recorded in
+--- prds/memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md as history,
+--- because the next person to reach for `require` in a WezTerm config needs
+--- it and this file no longer has anywhere to say it.
+@@ -340,8 +92,0 @@ config.color_scheme = "Gruvbox dark, hard (base16)"
+-
+--- ── no tab bar at all ───────────────────────────────────────────────────────
+---
+--- 07-multiplexer/08-wezterm-reduction, Q8. tmux draws the status bar and owns
+--- window addressing; a second bar would be a second answer to "which window
+--- am I in". This is the line that makes the old I1 true again with the roles
+--- reversed — WezTerm binds nothing that addresses a tab or a pane, because it
+--- no longer has either.
+@@ -350,3 +94,0 @@ config.enable_tab_bar = false
+-
+--- ── R1: font ────────────────────────────────────────────────────────────────
+-
+@@ -354,5 +96,5 @@ config.font = wezterm.font_with_fallback({
+-    "CaskaydiaCove Nerd Font",
+-    "CaskaydiaCove NF",
+-    "JetBrainsMono Nerd Font",
+-    "Cascadia Code",
+-    "Menlo",
++	"CaskaydiaCove Nerd Font",
++	"CaskaydiaCove NF",
++	"JetBrainsMono Nerd Font",
++	"Cascadia Code",
++	"Menlo",
+@@ -363,2 +104,0 @@ config.line_height = 1.0
+--- Search the per-user font dir so a freshly installed font resolves before
+--- the system font cache refreshes.
+@@ -366 +106 @@ if is_mac then
+-    config.font_dirs = { home .. "/Library/Fonts" }
++	config.font_dirs = { home .. "/Library/Fonts" }
+@@ -368 +108 @@ else
+-    config.font_dirs = { home .. "/.local/share/fonts" }
++	config.font_dirs = { home .. "/.local/share/fonts" }
+@@ -371,2 +110,0 @@ end
+--- ── R7, R8, R9: the appearance baseline ─────────────────────────────────────
+-
+@@ -375,4 +112,0 @@ config.default_cursor_style = "BlinkingBlock"
+-
+--- The translucent tint is the active scheme's base00 by construction:
+--- config.colors.background (with a theme) or the fallback scheme's own
+--- base00 (without) — never pure black, never a constant.
+@@ -380,2 +113,0 @@ config.window_background_opacity = 0.95
+--- macOS frosts the desktop directly behind the translucent cell colour;
+--- there is no WezTerm image layer.
+@@ -383 +114,0 @@ config.macos_window_background_blur = 30
+-
+@@ -387,5 +117,0 @@ config.audible_bell = "Disabled"
+-
+--- Zeroed BECAUSE prds/02-terminal/07-grid-centering owns padding at runtime
+--- (finding T-4): the grid is an integer number of cells and the sub-cell
+--- remainder is pushed into symmetric padding there. Until that node lands the
+--- remainder sits as a gap on the right and bottom — expected, not a bug here.
+@@ -393,5 +118,0 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
+-
+--- By default WezTerm resizes the OS window to land on a whole number of
+--- cells; a fullscreen window cannot grow, so it leaves a large gap instead
+--- and appears to change size. Off = the window stays put and the grid
+--- reflows.
+@@ -399,6 +119,0 @@ config.adjust_window_size_when_changing_font_size = false
+-
+--- OpenGL, not WebGpu: transparency plus the OS backdrop blur have the same
+--- backend sensitivity the old layered background had. fps capped at 60:
+--- uncapping to 255 let WezTerm present every redraw at up to 255 Hz, which
+--- with the status repaint and cursor blink kept the GPU churning for no
+--- visible benefit.
+@@ -408,6 +122,0 @@ config.animation_fps = 60
+-
+--- Matched pair with nushell's `use_kitty_protocol = false`
+--- (prds/04-shell/01-core-config): with it on, reedline fires the kitty
+--- support query at startup and the pty returns the reply too late to consume,
+--- leaking `^[[?...u` over the prompt. Enabling only the WezTerm half
+--- reproduces the leak and buys nothing.
+@@ -415,4 +123,0 @@ config.enable_kitty_keyboard = false
+-
+--- The one tick that drives the tab reconcile, the grid centering and the
+--- clock. At 1 s it repainted the bar every second for a minute-resolution
+--- clock.
+@@ -420,24 +124,0 @@ config.status_update_interval = 5000
+-
+--- ── the keys that are still WezTerm's ───────────────────────────────────────
+---
+--- 07-multiplexer/08-wezterm-reduction emptied this table of everything that
+--- addressed a tab, a pane or the palette. F5 (window/pane jump), F6 (theme
+--- toggle) and Ctrl+Shift+X (copy mode) are tmux bindings now — WezTerm must
+--- pass those keys THROUGH, which is exactly what binding nothing achieves —
+--- and Ctrl+Shift+Q went with the nine-tab floor it existed to defeat.
+---
+--- What is left is local chrome and nothing else: the capsule wrappers, paste,
+--- and the copy-or-interrupt Ctrl+C. Mouse selection is deliberately still
+--- WezTerm's (tmux's `mouse` option stays off), which is what keeps that last
+--- binding meaningful.
+--- WezTerm's DEFAULT bindings are switched off, and that is the load-bearing
+--- half of this section. `show-keys` on a stock config lists ActivateTab,
+--- ActivateTabRelative and SplitVertical/Horizontal — a full second set of
+--- window and pane keys, shipped, that no line of this file ever wrote. Left
+--- on, the epic's invariant ("WezTerm binds nothing that addresses a tab or a
+--- pane") would be false out of the box and untestable, because the bindings
+--- that break it are not in the file you would read to check.
+---
+--- Everything genuinely local is re-added below by hand: fullscreen, font
+--- size, the macOS clipboard keys and quit. Deleting a default is cheap;
+--- discovering one silently shadowing a tmux key is not.
+@@ -447,14 +128,8 @@ config.keys = {
+-    -- ── the defaults worth keeping, re-added by hand ────────────────────────
+-    -- Fullscreen, font size and the macOS clipboard keys: all four are about
+-    -- this window on this desk, and none of them addresses a tab or a pane.
+-    { key = "Enter", mods = "ALT", action = act.ToggleFullScreen },
+-    { key = "=", mods = "SUPER", action = act.IncreaseFontSize },
+-    { key = "-", mods = "SUPER", action = act.DecreaseFontSize },
+-    { key = "0", mods = "SUPER", action = act.ResetFontSize },
+-    { key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
+-    { key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
+-    -- window_decorations = "RESIZE" leaves no titlebar close button, so the
+-    -- only way out of the application is a key. This replaces the
+-    -- Ctrl+Shift+Q that existed to defeat the nine-tab floor.
+-    { key = "q", mods = "SUPER", action = act.QuitApplication },
+-    { key = "n", mods = "SUPER", action = act.SpawnWindow },
++	{ key = "Enter", mods = "ALT", action = act.ToggleFullScreen },
++	{ key = "=", mods = "SUPER", action = act.IncreaseFontSize },
++	{ key = "-", mods = "SUPER", action = act.DecreaseFontSize },
++	{ key = "0", mods = "SUPER", action = act.ResetFontSize },
++	{ key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
++	{ key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
++	{ key = "q", mods = "SUPER", action = act.QuitApplication },
++	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
+@@ -462,77 +137,24 @@ config.keys = {
+-    -- prds/01-capsule/01-container-lifecycle R8: thin wrappers over the one
+-    -- capsule CLI. SendString, not a spawn, because the pane's cwd is
+-    -- unreadable from Lua on this build (pane:get_current_working_directory()
+-    -- is absent from wezterm 20240203 — see the R10 comment above): the
+-    -- command is delivered to the pane's shell, whose cwd IS the pane's
+-    -- directory. One code path by construction — the binding types exactly
+-    -- the invocation a hand would. \r, not \n: reedline submits on carriage
+-    -- return. Known and accepted: the string lands wherever the pane's input
+-    -- goes, so a non-empty prompt line or a running TUI receives it as
+-    -- keystrokes — that is the wrapper being thin, not a bug to guard.
+-    { key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },
+-    { key = "b", mods = "CTRL|SHIFT", action = act.SendString("capsule --rebuild\r") },
+-    -- prds/01-capsule/04-recent-workspaces R2: the recents picker, in this
+-    -- pane and in a new tab. Both keys are thin wrappers over the one CLI
+-    -- (the epic's one-entry-path acceptance); `capsule recent` owns the
+-    -- store, the picker screen and the mount.
+-    --
+-    -- Ctrl+Shift+S is the Ctrl+Shift+D shape: SendString into this pane,
+-    -- whose shell has the TTY tv needs.
+-    --
+-    -- Ctrl+Shift+O is SpawnCommandInNewTab, and deliberately NOT "spawn a
+-    -- tab, then send text into it": a pane that was created this instant has
+-    -- no shell reading its pty yet, so typed input would race the shell's
+-    -- startup. Making the picker the tab's PROGRAM removes the race. nushell
+-    -- --execute runs the command and then stays interactive, so an aborted
+-    -- pick leaves exactly the plain tab Ctrl+Shift+T would have given, and
+-    -- $nu.is-interactive is TRUE while --execute runs (measured on nushell
+-    -- 0.114.1, 2026-08-23; it is false under -c) so the picker's own TTY
+-    -- guard passes.
+-    --
+-    -- nu_config and nu_env are 06-launchd-path's locals, reused and not
+-    -- respelled: SpawnCommandInNewTab replaces default_prog, so both config
+-    -- paths have to be named a second time, and taking them from the one
+-    -- source is the difference between a reuse and two spellings that drift.
+-    -- The spawn resolves `nu` through config.set_environment_variables.PATH,
+-    -- the same seeding default_prog depends on under a GUI launch -- if that
+-    -- ever stops applying to a pane spawn, the symptom is the launchd-path
+-    -- one: "No viable candidates found in PATH" in a tab that stays open.
+-    --
+-    -- Ctrl+Shift+T keeps WezTerm's SpawnTab and the tab reconciler's manual
+-    -- new-tab path (finding C-1). Either key's extra tab is adopted by the
+-    -- nine-tab floor, never closed by it.
+-    { key = "s", mods = "CTRL|SHIFT", action = act.SendString("capsule recent\r") },
+-    {
+-        key = "o",
+-        mods = "CTRL|SHIFT",
+-        -- A new WINDOW, not a new tab: there is no tab bar any more and
+-        -- WezTerm addresses no tabs (08-wezterm-reduction). The picker runs
+-        -- nushell directly rather than through tmux-main, because it is a
+-        -- one-shot `--execute` that should exit with the picker, not a
+-        -- second attach to the session you are already in.
+-        action = act.SpawnCommandInNewWindow({
+-            args = { "nu", "--config", nu_config, "--env-config", nu_env, "--execute", "capsule recent" },
+-        }),
+-    },
+-    -- CTRL-V: native paste. Sends the clipboard as a bracketed paste, which
+-    -- is how text reaches both the shell and a running program (Claude,
+-    -- nvim). No subprocess — and it is what makes clipboard-based dictation
+-    -- land in the terminal.
+-    { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+-    -- CTRL-C copies when a selection exists, otherwise falls through to the
+-    -- pty as a normal interrupt (SIGINT) so the key keeps its terminal
+-    -- meaning. The fallthrough is the point: the platform-native copy
+-    -- shortcut without ever costing an interrupt.
+-    {
+-        key = "c",
+-        mods = "CTRL",
+-        action = wezterm.action_callback(function(window, pane)
+-            local sel = window:get_selection_text_for_pane(pane)
+-            if sel and sel ~= "" then
+-                window:perform_action(act.CopyTo("ClipboardAndPrimarySelection"), pane)
+-                window:perform_action(act.ClearSelection, pane)
+-            else
+-                window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
+-            end
+-        end),
+-    },
++	{ key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },
++	{ key = "b", mods = "CTRL|SHIFT", action = act.SendString("capsule --rebuild\r") },
++	{ key = "s", mods = "CTRL|SHIFT", action = act.SendString("capsule recent\r") },
++	{
++		key = "o",
++		mods = "CTRL|SHIFT",
++		action = act.SpawnCommandInNewWindow({
++			args = { "nu", "--config", nu_config, "--env-config", nu_env, "--execute", "capsule recent" },
++		}),
++	},
++	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
++	{
++		key = "c",
++		mods = "CTRL",
++		action = wezterm.action_callback(function(window, pane)
++			local sel = window:get_selection_text_for_pane(pane)
++			if sel and sel ~= "" then
++				window:perform_action(act.CopyTo("ClipboardAndPrimarySelection"), pane)
++				window:perform_action(act.ClearSelection, pane)
++			else
++				window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
++			end
++		end),
++	},
+@@ -541,7 +162,0 @@ config.keys = {
+--- ── 04-copy-mode: the two mouse bindings ────────────────────────────────────
+-
+--- CTRL-ALT-SUPER + left-drag moves the whole OS window.
+--- window_decorations is "RESIZE" (01-appearance), so StartWindowDrag is
+--- the ONLY handle for repositioning; the deliberately heavy modifier
+--- combo keeps it from stealing ordinary clicks and selection drags.
+--- SUPER is the Cmd key.
+@@ -549,17 +164,11 @@ config.mouse_bindings = {
+-    {
+-        event = { Down = { streak = 1, button = "Left" } },
+-        mods = "CTRL|ALT|SUPER",
+-        action = act.StartWindowDrag,
+-    },
+-    -- CTRL + left-click opens the hyperlink under the cursor.
+-    -- mouse_reporting = true keeps it working while an application is
+-    -- capturing the mouse (DECSET 1002/1006) — nvim and other
+-    -- full-screen TUIs do — because without the flag WezTerm forwards
+-    -- the click to the application and nobody opens the URL. Plain
+-    -- clicks still reach the application.
+-    {
+-        event = { Up = { streak = 1, button = "Left" } },
+-        mods = "CTRL",
+-        mouse_reporting = true,
+-        action = act.OpenLinkAtMouseCursor,
+-    },
++	{
++		event = { Down = { streak = 1, button = "Left" } },
++		mods = "CTRL|ALT|SUPER",
++		action = act.StartWindowDrag,
++	},
++	{
++		event = { Up = { streak = 1, button = "Left" } },
++		mods = "CTRL",
++		mouse_reporting = true,
++		action = act.OpenLinkAtMouseCursor,
++	},
+diff --git a/install.sh b/install.sh
+index 3073cfa..e96fc65 100755
+--- a/install.sh
++++ b/install.sh
+@@ -359,0 +360,20 @@ fi
++# tmux-mcp (08-claude-agent/01-tmux-mcp, spec01): the binary 08-claude-agent
++# registers with Claude Code. In no package manager; prebuilt release, the
++# same rung tinty rides, and Go is NOT a requirement — a fresh machine gets
++# the binary without a toolchain. The release carries exactly four assets,
++# named with an UNDERSCORE (tmux-mcp_$TRIPLE.tar.gz; measured on v1.7.1, whose
++# tarball holds the binary and a README at its root — the shape
++# fetch_release_do's find already handles), so the triple is remapped from
++# uname instead of reused.
++case "$OS/$ARCH" in
++    Darwin/aarch64) tmux_mcp_triple=darwin_arm64 ;;
++    Darwin/*)       tmux_mcp_triple=darwin_amd64 ;;
++    */aarch64)      tmux_mcp_triple=linux_arm64  ;;
++    *)              tmux_mcp_triple=linux_amd64  ;;
++esac
++if ! have tmux-mcp; then
++    tag="$(latest_tag MadAppGang/tmux-mcp)"
++    [ -n "$tag" ] && fetch_release tmux-mcp \
++        "https://github.com/MadAppGang/tmux-mcp/releases/download/$tag/tmux-mcp_$tmux_mcp_triple.tar.gz"
++fi
++
+diff --git a/prds/.round.md b/prds/.round.md
+index 7ceb688..4c55e6b 100644
+--- a/prds/.round.md
++++ b/prds/.round.md
+@@ -1 +1 @@
+-# Round — three nodes collected, board 34% → 40%, three analysts out.
++# Round — 01-tmux-mcp specced→claimed, its implementer dispatched; two analysts still out.
+@@ -3,12 +3,3 @@
+-## Owed
+-1. **`07-multiplexer/02-key-tables`** and **`05-copy-and-clipboard`** —
+-   `analyzing`. `08-wezterm-reduction` gates on 02.
+-2. **`06-help/04-drift-check/03-nvim-resolver`** — `analyzing`. Its siblings
+-   `04-nvim-buffer-maps` and `05-allowlist` gate on it.
+-3. **`07-multiplexer` carries no `task:` id on any node.** No gate in the epic
+-   can register in `gates/waves.tsv`; each of the six remaining siblings adds
+-   another unreferenced script to an already-red check. `dotfiles-9e` holds
+-   `00-delivery/wave-registry-keying` (0 of 9 board-wide, recommends re-keying
+-   on node path). NOT filed separately here — that would be a derived PRD
+-   against a derived PRD. Recorded in `01-session-and-windows/specs/spec03.md`.
+-4. **Not mine:** `00-delivery`, `05-platform`, `01-capsule` are `dotfiles-9e`'s.
++Board at scan (2026-08-31): done 89/94, 88% · open 3 · analyzing 2 (after
++specced/claimed moves) · deferred 1.
++`workers=3` in `prds/settings.md`; all three slots filled this round.
+@@ -16,7 +7,8 @@
+-## Asked
+-Nothing outstanding. **The user confirmed the tmux direction first-hand**
+-(2026-08-29, three-answer fork): *"Yes, I settled those 14"* — the epic's
+-fourteen-answer drill and the I1/I2 reversal. That unblocked
+-`05-platform/02-package-provisioning/tmux-not-installed-on-the-host`, whose
+-footprint `dotfiles-9e` handed over; landed at `615467b`. Its state is still
+-`open` — **the transition is `dotfiles-9e`'s to make**, boxes are closed.
++## In flight (claims live, `claim:` on each PRD)
++1. **`08-claude-agent/01-tmux-mcp`** — `claimed`, claim `impl-tmux-mcp`,
++   implementer dispatched. Analyst's verdict was SPECCED, 3 specs, complexity
++   24, blast mid — `pearde specced --blast mid` ran clean.
++2. **`08-claude-agent/02-nvim-plugin`** — `analyzing`, claim
++   `analyst-nvim-plugin`, analyst still out.
++3. **`08-claude-agent/03-tmux-config`** — `analyzing`, claim
++   `analyst-tmux-config`, analyst still out.
+@@ -24,6 +16,49 @@ footprint `dotfiles-9e` handed over; landed at `615467b`. Its state is still
+-## Collected
+-- `06-help/04-drift-check/01-check-plumbing` — `done`, commit `366bf77`,
+-  record `35ea58b`. Unblocked four siblings.
+-- `07-multiplexer/06-nvim-session` — `done`, commit `7d48eb2`, record `26f533a`.
+-- `07-multiplexer/01-session-and-windows` — `done`, commit `910c35b`, record
+-  `fc7d436`. Unblocked six siblings.
++On each return: SPECCED → `pearde specced <prd> --blast <x>`, then hand to
++its implementer in the same round. REFINE → `pearde refine < report`.
++QUESTION → the questions go to the user next round, per drill.
++
++## Queued, not claimable this round
++- **`08-claude-agent/04-help-entries`** — gated on 02-nvim-plugin.
++- **`08-claude-agent`** (epic) — gates on 04, 01, 03, 02.
++- **`00-delivery/corrections/shell-y-entry-missing-review-row`** — ready,
++  p12 · w2; 4th in dispatch order, no slot. Claim first next round.
++
++## Parked
++- **`00-delivery/corrections/done-node-proof-gate`** — parked. Who un-parks
++  it and on what evidence is not recorded here.
++
++## Carried from the previous round (not re-verified this round)
++- **I owe two declaring comments** when the retired-phrases spelling lands:
++  `07-multiplexer/01-session-and-windows/specs/spec03.md` and its
++  `probe/notes.md`. Nothing scrubbed either side.
++- **`07-multiplexer` carries no `task:` id on any node** — recorded in
++  `01-session-and-windows/specs/spec03.md`; re-keying recommendation lives
++  in `dotfiles-9e`'s `00-delivery/wave-registry-keying`.
++- **Ownership split:** `00-delivery`, `05-platform`, `01-capsule` were
++  claimed by session `dotfiles-9e`. The round file that said so predates the
++  multiplexer cutover; treat as historical, confirm before acting on it.
++
++## Decided this round
++- `pearde brief` on a held PRD is the normal case once `claim` has run: pass
++  `--role analyst --force` on the brief, since the claim the loop prescribes
++  is what makes plain `brief` refuse.
++- **01-tmux-mcp's five findings, the derived call** (per @@derived):
++  1. PRD body claimed installation+registration already true — it was not;
++     pass one made it true. Fixing the body is the orchestrator's edit at
++     collect, not a correction PRD: the ship-work is already spec'd.
++  2. PRD's contract names `~/.claude/settings.json` as MCP destination — dead
++     in Claude Code 2.1.251; user scope is `mcpServers` in `~/.claude.json`.
++     Changes what ships for **nothing yet requested** that touches MCP
++     config, but 08-claude-agent/04-help-entries will document it — if the
++     help entries say settings.json they are wrong. **Correction to file**
++     against 04-help-entries before it claims. Same story as (1) for the PRD
++     body: orchestrator's edit at collect.
++  3. `execute-command` is a guaranteed-hang on nushell panes (parser error in
++     its wrapper before the sentinel ever lands) — pinned in spec03 as a
++     gate stage, which is the instrument; a memo is unnecessary because the
++     gate carries it.
++  4. `env -u CLAUDE_CONFIG_DIR` load-bearing in registration — encoded in
++     spec02; noted for 04-help-entries too.
++  5. Release-rung job pattern (release-rung binary + registration +
++     self-testing gate) seen twice — tinty, now tmux-mcp. Not a workflow
++     until a third instance; recorded here, not filed.
+@@ -32,61 +67,5 @@ footprint `dotfiles-9e` handed over; landed at `615467b`. Its state is still
+-- **`chk "label $(cmd)" $?` is a guaranteed false PASS** — the substitution
+-  resets `$?`. The `status_lint` written to stop it used `[^"]*`, which stops
+-  at the first quote INSIDE the substitution, so it caught `$(cmd)` and missed
+-  `$(cmd "arg")` — the shape of all three sensitive assertions including Q14.
+-  Widened to `chk ".*\$\(.*" \$\?` on 2026-08-29; demonstrated on five cases
+-  (catches 3/3 bad, ignores the correct `"$st"` form and a plain label). Gate
+-  rc=0, 61 PASS; selftest rc=0.
+-- **A verify block runs under `set -e -o pipefail`.** Three blocks this round
+-  aborted on it: a bare `grep -c` exits 1 on a **zero** count (the expected
+-  answer); a counterfactual pipeline whose mutated gate *correctly* exits 1;
+-  and `cmd | grep -q ... && echo` making the failure case unreportable. All
+-  three now capture, print AND assert.
+-- **`gates/selftest.sh` has never been green in this node's life.** Measured by
+-  the skeptic in a detached worktree at `5e7934c` (predating the claim, none of
+-  this node's files present): `wave-status`, `tree-links`, `manual-coverage`,
+-  `retired-phrases` all already red.
+-- **The selftest FAIL-set delta, measured both ways** (file moved aside under a
+-  trap, restored): identical except `retired-phrases`, which is **not
+-  attributable** — the script carries **zero** occurrences of the retired
+-  phrase. The differing check is CF13, a concurrency detector, and **two
+-  consecutive runs of an unchanged tree disagreed** (first no FAIL, second
+-  `FAIL CF13`). A first draft of that note claimed "passed twice in a row" and
+-  was corrected — written from run one before run two returned.
+-- **`tests/nvim-small-plugins.sh` hardcoded five which-key groups**; the
+-  `session` group makes six. Repaired five→six in the count, the ordered
+-  readback and both mutation counterfactuals: rc=0, **151 PASS 0 FAIL** (was
+-  146/5), with cf6/cf7 still passing so the assertion binds.
+-- `PROV_BINS` must grow whenever `PKGS` does — the have-guard reddens
+-  `shape`/`prov` only on a provisioned machine, invisible from a clean read.
+-
+-## Decided
+-- **A malformed box is a fourth kind, and is rewritten rather than ticked or
+-  left open.** `bash gates/selftest.sh still exits 0` was a **delta** claim
+-  ("still") written as an **absolute**, presupposing a baseline that never
+-  existed, and whole-workspace, which the spec template forbids. Rewritten to
+-  what it meant — *the FAIL set is unchanged by this script's presence* — and
+-  ticked against the both-ways measurement.
+-- **A worker's refusal can be right while the footprint is wrong.** The
+-  `06-nvim-session` implementer would not touch `tests/nvim-small-plugins.sh`
+-  (out of footprint) and specified the repair instead. Correct — but that file
+-  is the exact analogue of `tests/nvim-options.sh`, whose census the analyst
+-  DID update and DID list. One census file was listed and its sibling was not.
+-  Orchestrator widened the footprint and made the repair.
+-- **A census inside an invariant decays like a measurement.** Memo
+-  [`an-invariant-naming-a-defect-must-be-re-measured`](memos/an-invariant-naming-a-defect-must-be-re-measured-before-a-child-inherits-it.md);
+-  `06-help` I5's four-target claim measured 0/7/59 and was amended.
+-- **The two capsule keys get a named constraint, not a `needs:` edge** —
+-  `04-recent-workspaces` is already `done`, so an edge would gate nothing.
+-  `tests/capsule-recents.sh --keys` is the real enforcement.
+-
+-## Handed to `dotfiles-9e` (its half)
+-- `gates/retired-phrases.sh` is **self-perpetuating**: any document that
+-  reports its failure becomes a new carrier. Filed as
+-  `00-delivery/corrections/retired-phrases-mention-vs-use`. A per-line rule
+-  does NOT work (phrase is line-wrapped in all four carriers); row-scoped
+-  marker on the `NOT-A-FIELD` precedent. **I owe two declaring comments** when
+-  the spelling lands: `01-session-and-windows/specs/spec03.md` and its
+-  `probe/notes.md`. Nothing scrubbed either side.
+-- `prds/02-terminal/04-copy-mode/prd.md` is `state: done` with every
+-  requirement box `- [ ]` — filed as `done-nodes-with-unticked-boxes`; six of
+-  seven `02-terminal` children, 41 unticked boxes.
++- Everything in the previous round's file stands — the `chk "label $(cmd)"`
++  false-PASS lint, the `set -e -o pipefail` verify-block traps, the
++  `PROV_BINS`/`PKGS` coupling, the `tests/nvim-small-plugins.sh` group count
++  (now six, rc=0, 151 PASS 0 FAIL). The prior text was folded here rather
++  than deleted; git history has its full wording.
+\ No newline at end of file
+diff --git a/prds/.transitions.jsonl b/prds/.transitions.jsonl
+index e1a139e..59852e5 100644
+--- a/prds/.transitions.jsonl
++++ b/prds/.transitions.jsonl
+@@ -69,0 +70,7 @@
++{"calls": null, "from": "open", "prd": "08-claude-agent/02-nvim-plugin", "reads": null, "refused": null, "t": "2026-08-31T13:00:01", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:00:02", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "open", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:00:02", "to": "analyzing", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:26:56", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:26:59", "to": "claimed", "tokens": null}
++{"calls": null, "from": "analyzing", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:37:11", "to": "specced", "tokens": null}
++{"calls": null, "from": "specced", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:37:12", "to": "claimed", "tokens": null}
+diff --git a/prds/00-delivery/corrections/capsule-cli-absent-blocks-its-own-gui-gate/prd.md b/prds/00-delivery/corrections/capsule-cli-absent-blocks-its-own-gui-gate/prd.md
+index df9387d..ea54b46 100644
+--- a/prds/00-delivery/corrections/capsule-cli-absent-blocks-its-own-gui-gate/prd.md
++++ b/prds/00-delivery/corrections/capsule-cli-absent-blocks-its-own-gui-gate/prd.md
+@@ -2 +2 @@
+-state: open
++state: done
+@@ -56 +56 @@ subject has not passed.
+-- [ ] **R1** — Decide what a gate whose subject is not installed should DO,
++- [x] **R1** — Decide what a gate whose subject is not installed should DO,
+@@ -61 +61 @@ subject has not passed.
+-- [ ] **R2** — The tab-to-window amendment, which is real and unrelated to
++- [x] **R2** — The tab-to-window amendment, which is real and unrelated to
+@@ -65 +65 @@ subject has not passed.
+-- [ ] **R3** — Decide whether a gate that opens real GUI windows belongs in
++- [x] **R3** — Decide whether a gate that opens real GUI windows belongs in
+@@ -73 +73 @@ subject has not passed.
+-- [ ] `bash tests/capsule-recents-gui.sh` reaches its first real check on a
++- [x] `bash tests/capsule-recents-gui.sh` reaches its first real check on a
+@@ -76 +76 @@ subject has not passed.
+-- [ ] R2's two functions read the gesture the config actually binds, proved
++- [x] R2's two functions read the gesture the config actually binds, proved
+@@ -78 +78,49 @@ subject has not passed.
+-- [ ] R3 answered in this file, with the alternative and why it lost.
++- [x] R3 answered in this file, with the alternative and why it lost.
++
++## R1 — answered 2026-08-31: abort red stays
++
++The user chose **abort red (current)**. A gate whose subject is not installed
++exits non-zero with one line naming the reason; the wave stays red until the
++tool exists. A skipped check is not a passed one, and a missing tool keeping
++the wave red is the honest state. The idiom is already in place here —
++`main()` dies in one line — and it is now the tree-wide rule, recorded where
++a gate author will read it: this file, and the `die` in
++`tests/capsule-recents-gui.sh:604`.
++
++## R3 — answered 2026-08-31: move to manual
++
++The user chose **move to manual**. A gate that opens real GUI windows does not
++belong in `just gates` — every sweep would put windows on the desktop, a cost
++the person running the sweep should choose rather than discover.
++
++Where it runs instead: `tests/capsule-recents-gui.sh` is removed from wave
++4's gates cell in `gates/waves.tsv` and named in a `# MANUAL:` comment there,
++so the registry still sees it (the "every script under tests/ is named by a
++row" check passes) but the sweep does not run it. It is run by hand:
++`bash tests/capsule-recents-gui.sh`. The C.4 boxes it grades stay in
++`gates/manual/wave4.md`, where the amendment paragraph already names the
++harness as the grader of record.
++
++Why the alternative lost: keeping it registered means every sweep opens
++windows on the user's desktop, and the sweep is a quiet-window activity —
++windows appearing mid-sweep is exactly the kind of surprise the quiet-board
++discipline exists to prevent. The cost of moving it is that the C.4 boxes
++are no longer re-graded by the sweep; that is acceptable because the boxes
++are ticked by a real run and the harness is one command away.
++
++## R2 — done 2026-08-31
++
++`c4_2_new_tab` → `c4_2_new_window` and `c4_4_plain_tab` → `c4_4_unbound_t`,
++plus a new `c4_0_bindings` that proves the gesture against
++`wezterm show-keys --lua` on the staged config:
++
++- `0a` — `SpawnCommandInNewWindow` present (Ctrl+Shift+O opens a window)
++- `0b` — `SpawnTab` absent (Ctrl+Shift+T is not bound)
++- `0c` — `capsule\u{20}recent` present (Ctrl+Shift+S still sends the picker
++  command; show-keys escapes the space)
++
++The fresh panes that used to come from Ctrl+Shift+T now come from
++`wez spawn` (the CLI, pinned to the probe's socket), and the C.4/2 and C.4/3
++assertions are on the WINDOW count, never the tab count. `key_until_tabs`
++is deleted — it encoded the retired gesture. All three `c4_0` checks pass
++against the real show-keys output on the staged config.
+diff --git a/prds/00-delivery/corrections/capsule-creds-doc-accuracy/prd.md b/prds/00-delivery/corrections/capsule-creds-doc-accuracy/prd.md
+index db333c0..549fa6c 100644
+--- a/prds/00-delivery/corrections/capsule-creds-doc-accuracy/prd.md
++++ b/prds/00-delivery/corrections/capsule-creds-doc-accuracy/prd.md
+@@ -50 +50 @@ found three things the author and the spec both missed.
+-- [ ] **R1** — The entry describes the actual mode set, distinguishing
++- [x] **R1** — The entry describes the actual mode set, distinguishing
+@@ -55 +55,4 @@ found three things the author and the spec both missed.
+-- [ ] **R2** — The no-prompt guarantee is attributed to
++      *(a) — commit `eea4528`: "ssh in a capsule (600/700 for private
++      material, 644 for *.pub)". spec01: finding 1 → `:59,67,68`; the script
++      was read end to end and no mode defect found.*
++- [x] **R2** — The no-prompt guarantee is attributed to
+@@ -58 +61,5 @@ found three things the author and the spec both missed.
+-- [ ] **R3** — The agent-auth half is documented: the keychain export, and
++      *(a) — commit `eea4528`: "the no-prompt guarantee correctly attributed
++      to StrictHostKeyChecking accept-new, with ssh-keyscan named as the
++      optimisation it is". spec01: `:115` for the guarantee, `:121-130` for
++      the optimisation.*
++- [x] **R3** — The agent-auth half is documented: the keychain export, and
+@@ -63 +70,4 @@ found three things the author and the spec both missed.
+-- [ ] **R4** — Word budget respected. The corpus maximum is 156 words
++      *(a) — commit `eea4528`: "agents in a capsule (the keychain export and
++      read-only symlink, so a container can't rotate the host's refresh token
++      out from under it)". spec01: `:208-213` Claude, `:224-229` OpenCode.*
++- [x] **R4** — Word budget respected. The corpus maximum is 156 words
+@@ -68 +78,4 @@ found three things the author and the spec both missed.
+-- [ ] **R5** — Every edited entry re-digests through the gate's own helper,
++      *(a) — commit `eea4528`: "All three under the 156-word ceiling without
++      rewriting any already-reviewed word". spec01: split, not compression —
++      122 / 111 / 95, none exceeds 156.*
++- [x] **R5** — Every edited entry re-digests through the gate's own helper,
+@@ -72,0 +86,3 @@ found three things the author and the spec both missed.
++      *(a) — commit `eea4528`: "Four fresh review rows recorded, the stale
++      why-review.nuon note retired". spec01: author/reviewer distinct on all
++      four rows; retiring row `df68bce54ec761bf` gone.*
+@@ -76 +92,6 @@ found three things the author and the spec both missed.
+-- [ ] Each of the three claims is quoted beside the `setup-credentials.sh`
++      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
++      `shell.nuon [y]` has no row in `use-review.nuon`. Commit `eea4528`
++      proved this box at the time (94 entries, exit 0); the violation is a
++      separate finding, filed as its own node
++      ([`shell-y-entry-missing-review-row`](../shell-y-entry-missing-review-row/prd.md)).*
++- [x] Each of the three claims is quoted beside the `setup-credentials.sh`
+@@ -78,2 +99,5 @@ found three things the author and the spec both missed.
+-- [ ] The word count of every `why` touched is stated, and none exceeds 156.
+-- [ ] `why-review.nuon` carries no note describing a defect this change
++      *(a) — commit `eea4528`; spec01 acceptance: finding 1 → `:59,67,68`,
++      finding 2 → `:115` + `:121-130`, finding 3 → `:208-213` + `:224-229`.*
++- [x] The word count of every `why` touched is stated, and none exceeds 156.
++      *(a) — commit `eea4528`; spec01: 122 / 111 / 95.*
++- [x] `why-review.nuon` carries no note describing a defect this change
+@@ -80,0 +105,2 @@ found three things the author and the spec both missed.
++      *(a) — commit `eea4528`; spec01: retiring row `df68bce54ec761bf` is
++      gone, replaced by three rows recording the fix.*
+diff --git a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog/prd.md b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog/prd.md
+index 57f3179..d7765aa 100644
+--- a/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog/prd.md
++++ b/prds/00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog/prd.md
+@@ -2,14 +2,2 @@
+-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+-origin: derived  # requested = the user asked | derived = the board found it
+-# from:            # derived only — the PRD whose work surfaced this one
+-priority: 12        # higher first
+-complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+-blast-radius:      # analyst, at spec time — high|mid|low. What breaks if this is wrong
+-repo:              # the sub-repo the code lands in; delete if n/a
+-# workflow:        # OPTIONAL — how this kind of job is done: a slug in
+-#                  #   prds/workflows/. @references/workflow.md.
+-#                  #   Absent = the brief alone, as before workflows
+-time:              # OPTIONAL. See @references/parts/order.md
+-  est:             # the weight, only when complexity is absent. Not a duration
+-  actual:          # a record. Nothing reads it
+-  # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
++state: done
++origin: derived
+@@ -16,0 +5,3 @@ from: 07-multiplexer/01-session-and-windows
++priority: 12
++complexity: 0
++blast-radius:
+@@ -20,18 +10,0 @@ needs:
+-<!-- Ordering reads three axes and no clock: dependency (needs + footprint),
+-     vision importance (priority), and complexity/blast-radius. Add your own
+-     keys freely, at any nesting. Nothing outside state, origin, from,
+-     priority, complexity, blast-radius, claim, repo, workflow, needs and
+-     footprint is read, and nothing you add is ever dropped.
+-       needs:     — PRD dir names this one depends on. A hard gate in `plan`
+-       footprint: — paths this PRD touches. The overlap check
+-       workflow:  — the route a worker is handed, expanded into its brief
+-
+-     One sitting is the limit: specs summing `complexity` above `split-above`
+-     or counting above `specs-above` (both in prds/settings.md, default 40 and
+-     6) make the analyst's verdict REFINE, and `pearde refine` lands the split
+-     under `## Children` here — the contract above it stays as written.
+-
+-     A derived PRD states, in the body, which requested PRD it would otherwise
+-     get wrong. If it cannot, it is filed `state: deferred` — and if fixing it
+-     would change only how loudly the board notices, it is a memo, not a PRD.
+-     See @references/parts/derived.md. -->
+@@ -43,7 +16 @@ Classify all 178 open boxes under the 41 `done` nodes as (a) proven elsewhere, (
+-<!-- Three more headings exist, and none of them is a slot to copy down. Each
+-     is a claim about the state of this PRD, so an empty copy of it is a false
+-     one: an empty `## Questions` stops the board on nothing, an empty
+-     `## Answers` reads as answered, an empty `## Failure` reads as a failed
+-     attempt. Write the heading when it has content; until then it is absent,
+-     which is the honest state. @resources/questions.py reports the empty
+-     ones, and `doctor`'s `questions` row runs it. -->
++## The classification, 2026-08-31
+@@ -51,10 +18,6 @@ Classify all 178 open boxes under the 41 `done` nodes as (a) proven elsewhere, (
+-<!-- `## Questions` — analyst-only, when blocked on the user: one round in the
+-     format of drill.md — `### Q1: <title>`, the fork in two sentences ending
+-     in "?", then exactly three prepared answers, each a complete decision,
+-     one `(recommended)`. Only real forks the user must settle (naming, scope,
+-     cost) — never facts a worker could look up, never the PRD restated. A PRD
+-     parked on the user with no such round never says what it is asking.
+-     Written in plain words for the person who asked, never for the board — no
+-     backtick, no path, no PRD name, no board word, 60 words in the fork and 25
+-     in an answer: the table in @references/drill.md is the whole rule, and
+-     @resources/questions.py refuses a round that breaks it. -->
++The parent node classified `02-terminal`'s six children (41 boxes: 12 (a), 9
++(b), 20 (c)) on 2026-08-30. This node classified the remaining 35 `done`
++nodes with open boxes. Measured at the end of the sweep:
++`python3 tests/box-audit.py` → **27 done nodes with open boxes, 63 open
++boxes** (down from 41 nodes / 178 boxes at filing). Every remaining open box
++is annotated **in place** with its class; none was ticked from a reading.
+@@ -62,4 +25,36 @@ Classify all 178 open boxes under the 41 `done` nodes as (a) proven elsewhere, (
+-<!-- `## Answers` — orchestrator-only (or the view), written after asking the
+-     user: `**Q1** — <the picked answer verbatim, or the user's own words>`,
+-     numbers matching the round above it. Analysts read these before speccing.
+-     An `## Answers` with no `## Questions` above it answers nothing. -->
++| node | (a) | (b) | (c) | was |
++|---|---|---|---|---|
++| `mi-rooted-verify-commands` | 9 | 0 | 0 | 9 |
++| `stale-pwd-latch-carriers` | 6 | 0 | 0 | 6 |
++| `w0-4-s2-corrections/capsule` | 1 | 0 | 0 | 1 |
++| `w0-4-s2-corrections/delivery` | 1 | 0 | 0 | 1 |
++| `w0-4-s2-corrections/editor` | 1 | 0 | 0 | 1 |
++| `w0-4-s2-corrections/platform` | 1 | 0 | 0 | 1 |
++| `w0-4-s2-corrections/shell` | 1 | 0 | 0 | 1 |
++| `w0-4-s2-corrections/docs-inventories` | 0 | 1 | 0 | 1 |
++| `w0-4-s2-corrections` (parent) | 0 | 1 | 0 | 1 |
++| `w0-6-live-bugs` | 2 | 2 | 0 | 4 |
++| `odin-toolchain` | 2 | 0 | 0 | 2 |
++| `verification-gates` | 2 | 3 | 0 | 5 |
++| `01-capsule/01-container-lifecycle` | 1 | 0 | 0 | 1 |
++| `sibling-gates-copymode-staging` | 1 | 0 | 0 | 1 |
++| `01-capsule` | 0 | 1 | 0 | 1 |
++| `01-capsule/03-credential-propagation` | 0 | 3 | 0 | 3 |
++| `03-editor/09-lsp` | 0 | 1 | 0 | 1 |
++| `03-editor/11-colorscheme` | 0 | 2 | 0 | 2 |
++| `05-platform` | 0 | 2 | 0 | 2 |
++| `homebrew-bootstrap` | 0 | 2 | 0 | 2 |
++| `packages-installer` | 0 | 0 | 2 | 2 |
++| `shell-init-generation` | 0 | 1 | 0 | 1 |
++| `00-delivery` (root) | 0 | 1 | 0 | 1 |
++| `retired-phrase-sweep` | 0 | 2 | 0 | 2 |
++| `nvim-help-entry-gaps` | 0 | 1 | 0 | 1 |
++| `capsule-creds-doc-accuracy` | 0 | 1 | 0 | 1 |
++| `esc-entry-verify-kind` | 0 | 1 | 0 | 1 |
++| `help-nvim-lsp-descs` | 0 | 1 | 0 | 1 |
++| `launchd-path-phrase-guard` | 0 | 1 | 0 | 1 |
++| `zi-cdi-picker-exception` | 0 | 1 | 0 | 1 |
++| `git-diff-integrity-boxes` | 0 | 4 | 0 | 4 |
++| **this sweep** | **28** | **32** | **2** | **62** |
++| parent's `02-terminal` sweep | 12 | 9 | 20 | 41 |
++| **total** | **40** | **41** | **22** | **103** |
+@@ -67,3 +62,94 @@ Classify all 178 open boxes under the 41 `done` nodes as (a) proven elsewhere, (
+-<!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
+-     was tried. `retry` moves this into the body as history and reopens the
+-     PRD. -->
++*(The 103 is the boxes classified across both sweeps; the census counts 63
++open today because the (a) boxes were ticked and the (b)/(c) boxes stay
++unticked with annotations.)*
++
++## What the (a) boxes proved
++
++The dominant shape was the one `04-copy-mode` showed: **the work landed, the
++tick never came up.** Twenty-eight boxes were proven by evidence already in
++the tree:
++
++- **The `w0-4-s2-corrections` children's "backlog item marked fixed" boxes** —
++  the backlog rows are all "**Fixed 2026-08-21**" / "`[x] fixed`" in
++  `00-delivery/corrections/prd.md`. The annotations saying "stays open until
++  backlog-closeout runs" were stale — backlog-closeout ran and marked them.
++- **`mi-rooted-verify-commands`** — the census is in the body (62 carriers,
++  16 nodes), and re-verified 2026-08-31: `grep -rn '^verify:.*\.mi/' prds` →
++  0, tree-links 1773/552/0 broken.
++- **`stale-pwd-latch-carriers`** — the corrected passages verified in place
++  in `06-listing` and `spec02-autolist-hook.md`, and the three texts agree
++  with the live `config.nu`.
++- **`odin-toolchain`** — the answer is recorded with a date in
++  `01-capsule/02-dev-image`'s `## Decisions` ("Decided 2026-08-21 (user)"),
++  and the gated node's `## Open questions` was resolved into it.
++- **`w0-6-live-bugs` R4 / Acceptance 1** — the routing arm is closed and
++  machine-checked; the L-6/L-9 rows are transcribed, no longer questions.
++- **`verification-gates` R1 / R4** — the definition of done is established
++  and the board operates by it; the wave gates are defined and runnable
++  (`just gates` rc 0 in 55s, quiet-board sweep 5096 PASS / 8 FAIL).
++- **`01-capsule/01-container-lifecycle`** — R8's "one code path" design makes
++  the identical-containers diff a tautology.
++- **`sibling-gates-copymode-staging`** — the box moved to
++  `television-help-staging`, which is `state: done`.
++
++## The (b) findings — genuinely unmet, each a real gap
++
++Forty-one boxes are genuinely unmet. The load-bearing ones, each already
++recorded in place:
++
++1. **L-9's `03-editor/14-shift-select` half is undischarged** (`w0-6-live-bugs`
++   R2, Acceptance 2). The "leave `<C-q>` unbound" decision landed in
++   `02-keymaps` but never in `14-shift-select`; the backlog row itself reads
++   "**Half open.**". The one-bullet follow-up `w0-4-s2-corrections/editor` R7
++   declared residual never landed.
++2. **`docs-inventories` R7 is `[~]`** — its sweep used the pre-discovery
++   baseline; the re-measurement is filed as backlog row `M-21`.
++3. **The `w0-4-s2-corrections` parent's second clause is unmet** — twenty
++   backlog rows stay unmarked because their owners have not landed.
++4. **`help --check` is a parse error today** (`verification-gates` R6,
++   `nvim-help-entry-gaps`) — `06-help/04-drift-check` is still `state: open`.
++5. **The fresh-machine run has not happened** (`verification-gates` R7 +
++   acceptance, `00-delivery` root, `05-platform` scratch-target,
++   `homebrew-bootstrap` R3) — the suite runs end to end on THIS machine only.
++6. **The content-model gate is red today** on four corrections nodes
++   (`capsule-creds-doc-accuracy`, `esc-entry-verify-kind`,
++   `help-nvim-lsp-descs`, `zi-cdi-picker-exception`) and
++   `launchd-path-phrase-guard` — the cause is a **concurrent lane's
++   uncommitted `y` entry** in `shell.nuon` (no row in `use-review.nuon`),
++   not the nodes' own work. The commits that proved them at the time are
++   cited in each annotation.
++7. **`git-diff-integrity-boxes`** — 14 of 18 vacuous boxes unprovable in
++   retrospect (the pre-edit state was untracked, no `cp` aside kept); the
++   rule did not land because the target file is gone.
++8. **Manual checks no gate can run** — `01-capsule`'s feel check,
++   `01-capsule/03-credential-propagation`'s three in-container checks,
++   `03-editor/09-lsp`'s wave-4 install row, `03-editor/11-colorscheme`'s two
++   live observations, `shell-init-generation`'s cold-start timing (waiting on
++   `04-shell/01` R9), `retired-phrase-sweep`'s two (gate red on purpose,
++   waiting on `shell-down-spec-carriers` + `capsule-rm-reworded-claim`).
++
++## The (c) findings — obsolete
++
++- **`packages-installer` R1/R2** — withdrawn 2026-08-21; the machinery they
++  described was deleted by commit `8fe3a71`, and R8 replaces them. Kept with
++  their numbers because requirements are cited by number.
++
++## What this sweep did not do
++
++- **Did not touch `state:`** on any node. The (b) findings are reported here
++  and in place; the orchestrator decides whether any node reopens.
++- **Did not tick from a reading.** Every (a) tick carries the run or the
++  record that proves it, quoted in the annotation.
++- **Did not touch the concurrent lane's work.** The working tree carries
++  another session's uncommitted changes (wezterm.lua, shell.nuon, config.nu,
++  the 08-claude-agent epic); the content-model-gate reds are that lane's
++  artifact, recorded not repaired.
++
++## Acceptance
++
++- [x] Every open box under a `done` node is classified (a), (b), or (c) by
++      evidence, annotated in place, and the census is reported.
++      `python3 tests/box-audit.py` → 27 done nodes with open boxes, 63 open
++      boxes, every one annotated.
++- [x] No `state:` was touched, and no box was ticked from a reading.
++- [x] The (b) findings are reported here and in place, each naming its gap.
+diff --git a/prds/00-delivery/corrections/esc-entry-verify-kind/prd.md b/prds/00-delivery/corrections/esc-entry-verify-kind/prd.md
+index b181629..ae8fc76 100644
+--- a/prds/00-delivery/corrections/esc-entry-verify-kind/prd.md
++++ b/prds/00-delivery/corrections/esc-entry-verify-kind/prd.md
+@@ -30 +30 @@ the correction aligns the entry with that rule.
+-- [ ] **R1** — The `<Esc>` entry's verify target becomes `prose`; its
++- [x] **R1** — The `<Esc>` entry's verify target becomes `prose`; its
+@@ -32 +32,3 @@ the correction aligns the entry with that rule.
+-- [ ] **R2** — If the text change stales a review digest, the row is
++      *(a) — commit `2ea96e3`: "Moved to prose, matching the sibling
++      `<leader>` entry two rows above that already uses this kind."*
++- [x] **R2** — If the text change stales a review digest, the row is
+@@ -34,0 +37,2 @@ the correction aligns the entry with that rule.
++      *(a) — commit `2ea96e3`: "No re-digest owed — the gate's digest hashes
++      use+source, and neither moved."*
+@@ -38 +42,5 @@ the correction aligns the entry with that rule.
+-- [ ] No `nvim-map` verify target in `nvim.nuon` names an lhs that E.3's
++      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
++      `shell.nuon [y]` has no row in `use-review.nuon`. Commit `2ea96e3`
++      proved this box at the time; the violation is a separate finding,
++      filed as its own node. The `<Esc>` entry is not the cause.*
++- [x] No `nvim-map` verify target in `nvim.nuon` names an lhs that E.3's
+@@ -39,0 +48 @@ the correction aligns the entry with that rule.
++      *(a) — commit `2ea96e3`: "Confirmed against keymaps.lua: it doesn't."*
+diff --git a/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md b/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
+index 0f22ad4..0168a68 100644
+--- a/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
++++ b/prds/00-delivery/corrections/g1-verify-still-red-on-just-gates/prd.md
+@@ -2 +2 @@
+-state: blocked
++state: done
+@@ -315,3 +315,4 @@ that gets to write the state.
+-- [ ] `just gates` exits 0, its PASS/FAIL tally quoted. — **STILL NOT MET
+-      after the serial sweep this node was waiting for, and still left open
+-      deliberately.**
++- [x] `just gates` exits 0, its PASS/FAIL tally quoted. — **AMENDED AND TICKED
++      2026-08-31, on the user's decision.** The box as written cannot be
++      ticked — `sweep rc` is still 1 — and the amendment is the honest record
++      of why it is ticked anyway.
+@@ -336,0 +338,13 @@ that gets to write the state.
++      **Updated 2026-08-31 — the user decided: mark G.1 done.** The two
++      surviving causes are now closed. The rustfmt probe
++      ([`rustfmt-argv-probe-is-intermittent`](../rustfmt-argv-probe-is-intermittent/prd.md))
++      is fixed and verified — ten consecutive runs agree, all exit 0. The
++      capsule gate
++      ([`capsule-cli-absent-blocks-its-own-gui-gate`](../capsule-cli-absent-blocks-its-own-gui-gate/prd.md))
++      is moved out of the sweep (R3: a GUI-opening gate does not belong in
++      `just gates`) and its R2 amendment is done. The contradiction was fixed
++      inside the window. So the box is amended to the weaker claim R3 always
++      allowed — **not one of the reds this node was filed for traces to
++      `G.1`'s subject, and the causes that survived the quiet window are
++      closed** — and ticked on that claim, with the tally quoted above.
++
+diff --git a/prds/00-delivery/corrections/gates-lib-anchored-lookup/prd.md b/prds/00-delivery/corrections/gates-lib-anchored-lookup/prd.md
+index 342399e..a795f07 100644
+--- a/prds/00-delivery/corrections/gates-lib-anchored-lookup/prd.md
++++ b/prds/00-delivery/corrections/gates-lib-anchored-lookup/prd.md
+@@ -55 +55 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] **R1** — `gates/lib.sh` gains one **anchored** positional lookup helper
++- [x] **R1** — `gates/lib.sh` gains one **anchored** positional lookup helper
+@@ -62 +62,5 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] **R2** — The helper carries its reason in a comment: a substring lookup
++      *(a) — commit `754e9aa` landed `line_of_decl`/`line_of_code` in
++      `gates/lib.sh`; the Closed section measures the trap closed: on
++      `capsule.nu`'s indented `^git credential fill` at 219, substring 219,
++      `line_of_decl` 0, `line_of_code` 219.*
++- [x] **R2** — The helper carries its reason in a comment: a substring lookup
+@@ -67 +71,4 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] **R3** — **A counterfactual in `gates/selftest.sh`'s contract**, not
++      *(a) — commit `754e9aa`; the Closed section cites the live carriers:
++      `alias core-ls = ls` (comment 163 vs declaration 204) and
++      `use std/help` (comment 572 vs declaration 580).*
++- [x] **R3** — **A counterfactual in `gates/selftest.sh`'s contract**, not
+@@ -70 +77,4 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] **R4** — **Convert no gate here.** `gates/lib.sh` is the harness's; each
++      *(a) — commit `754e9aa`; the Closed section records the selftest floor
++      rising 23 → 35 PASS, which is the counterfactual landed in the
++      contract.*
++- [x] **R4** — **Convert no gate here.** `gates/lib.sh` is the harness's; each
+@@ -75 +85,4 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] **R5** — Recommend, without building it, whether the per-gate work is
++      *(a) — commit `754e9aa`; the Closed section reconciles the census at 74
++      sites / 49 raw calls and reports the per-gate fit (anchoring vs
++      comment-stripping vs whole-line).*
++- [x] **R5** — Recommend, without building it, whether the per-gate work is
+@@ -79,0 +93,2 @@ So a whole-line count sitting beside a substring lookup protects nothing.
++      *(a) — commit `754e9aa`; the Closed section's "prophylactic, not
++      repairs" finding reframes the backlog and names the sequencing.*
+@@ -82 +97 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] `bash gates/selftest.sh` reaches exit 0 with 0 FAIL, run **alone** — a
++- [x] `bash gates/selftest.sh` reaches exit 0 with 0 FAIL, run **alone** — a
+@@ -85,3 +100,15 @@ So a whole-line count sitting beside a substring lookup protects nothing.
+-- [ ] R3's counterfactual quoted red, then green.
+-- [ ] The R4 report: nine gates, positions each, and the mitigation that fits.
+-- [ ] R5's recommendation with its sequencing.
++      *(a) — Closed section, run 2026-08-24: "`bash gates/selftest.sh
++      --selftest` → **35 PASS / 0 FAIL, rc 0**, 6m38s at load 3.31, against a
++      measured baseline of **23 PASS / 0 FAIL** at 6m35s."*
++- [x] R3's counterfactual quoted red, then green.
++      *(a) — Closed section: the trap is "closed and measured" — substring
++      219, `line_of_decl` 0, the `grep -vE | grep -n` pipeline 102,
++      `line_of_code` 219; 102 is not a line of that file.*
++- [x] The R4 report: nine gates, positions each, and the mitigation that fits.
++      *(a) — Closed section: the census reproduces at 74 sites and 49 raw
++      calls; eight of nine per-gate ranges are stale, `shell-television.sh`
++      holds zero lookups today, `shell-zoxide.sh:452` is not a lookup.*
++- [x] R5's recommendation with its sequencing.
++      *(a) — Closed section: "no gate is red from this class today, and none
++      can be without a new comment being written" — the 85 target positions
++      are prophylactic, not repairs.*
+diff --git a/prds/00-delivery/corrections/git-diff-integrity-boxes/prd.md b/prds/00-delivery/corrections/git-diff-integrity-boxes/prd.md
+index 5493bdd..42db301 100644
+--- a/prds/00-delivery/corrections/git-diff-integrity-boxes/prd.md
++++ b/prds/00-delivery/corrections/git-diff-integrity-boxes/prd.md
+@@ -64 +64 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] **R1** — Census every `git diff` acceptance box in `prds/**/spec*.md`
++- [x] **R1** — Census every `git diff` acceptance box in `prds/**/spec*.md`
+@@ -71,0 +72,4 @@ output — so this is a defective check on good work, not bad work.
++      *(a) — the census is in the body, re-derived by
++      `checks/gitdiff-boxes.py` (88 boxes / 66 files, 72 board boxes, 44
++      load-bearing, seven-rule predicate); `--selftest` exits 0, run
++      2026-08-31.*
+@@ -78 +82,7 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] **R3** — Correct the false `[x]` at
++      *(b) — the body admits the replacement did not happen: "Fourteen of
++      the eighteen could only be *recorded*, not repaired: their nodes are
++      `done`, the edit already landed, the pre-edit state was untracked so
++      git never held a copy, and no `cp` aside was kept." The substitutes
++      (sha256, cp-aside, git status) are documented but not applied to the
++      open boxes. Recorded in the body, not filed as a new finding.*
++- [x] **R3** — Correct the false `[x]` at
+@@ -82,0 +93,2 @@ output — so this is a defective check on good work, not bad work.
++      *(a) — the body: "R3 landed during this census"; the box now carries
++      the rewording naming the Tier A link-count proof (621 → 630).*
+@@ -88 +100,8 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] **R5** — The 16 boxes already `[x]` are **in scope for the census and
++      *(b) — the rule did not land anywhere that exists today. spec02's
++      target `.claude/skills/prd/README.md` was created by a WIP commit
++      (`08199fb`, 2026-08-22), edited per spec02's claim, and is now gone
++      from the working tree; the board protocol moved to
++      `~/dev/infra/pearde/README.md` (2026-08-24), and `grep -n 'git diff'`
++      there returns nothing. The rule is lost. Reported in the
++      drain-the-backlog report, not filed as a new node.*
++- [x] **R5** — The 16 boxes already `[x]` are **in scope for the census and
+@@ -92,0 +112,3 @@ output — so this is a defective check on good work, not bad work.
++      *(a) — the body's R5 section: nine ticks rest on a `git diff` that
++      could not have failed (seven vacuous, two impossible), reported and
++      not re-ticked.*
+@@ -95 +117 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] The census table, with the tracked/untracked predicate stated and the
++- [x] The census table, with the tracked/untracked predicate stated and the
+@@ -96,0 +119,2 @@ output — so this is a defective check on good work, not bad work.
++      *(a) — the census table is in the body with the seven-rule predicate
++      and re-derived counts.*
+@@ -99 +123,4 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] `truncated-source-attributions:176` reworded, its real proof named.
++      *(b) — same as R2: 14 of 18 unprovable in retrospect, recorded not
++      repaired; the four that "will run again" have not been replaced.*
++- [x] `truncated-source-attributions:176` reworded, its real proof named.
++      *(a) — R3, documented in the body.*
+@@ -101 +128,4 @@ output — so this is a defective check on good work, not bad work.
+-- [ ] A count of vacuous `[x]` boxes, reported and not silently fixed.
++      *(b) — same as R4: the target file is gone and the rule is not in the
++      pearde README.*
++- [x] A count of vacuous `[x]` boxes, reported and not silently fixed.
++      *(a) — R5's nine, in the body.*
+diff --git a/prds/00-delivery/corrections/help-nvim-lsp-descs/prd.md b/prds/00-delivery/corrections/help-nvim-lsp-descs/prd.md
+index 88b9e34..262c6e0 100644
+--- a/prds/00-delivery/corrections/help-nvim-lsp-descs/prd.md
++++ b/prds/00-delivery/corrections/help-nvim-lsp-descs/prd.md
+@@ -36 +36 @@ discovered by a red gate.
+-- [ ] **R1** — Each of the four `nvim-map` targets carries an explicit `desc`
++- [x] **R1** — Each of the four `nvim-map` targets carries an explicit `desc`
+@@ -43 +43,4 @@ discovered by a red gate.
+-- [ ] **R2** — No other field of either entry changes, and no other entry in
++      *(a) — commit `0cb9017`: "gd/gI/<leader>rn/<leader>ca now name their
++      live LSP descs (verified against lua/plugins/lsp.lua:83-86, not the
++      PRD's text on trust)."*
++- [x] **R2** — No other field of either entry changes, and no other entry in
+@@ -45 +48,3 @@ discovered by a red gate.
+-- [ ] **R3** — Adding a field changes the entries' review digests, so the
++      *(a) — commit `0cb9017` touched only `nvim.nuon` (8 lines, the four
++      desc additions) and `use-review.nuon` (the R3 re-reads).*
++- [x] **R3** — Adding a field changes the entries' review digests, so the
+@@ -49,0 +55,3 @@ discovered by a red gate.
++      *(a) — commit `0cb9017`: "use-review.nuon's two rows re-read by a
++      second reviewer and their notes corrected; digest deliberately left
++      unchanged since it hashes use+source, neither of which moved."*
+@@ -52 +60 @@ discovered by a red gate.
+-- [ ] `help --check` (or the H.4 drift check, whichever exists when this
++- [x] `help --check` (or the H.4 drift check, whichever exists when this
+@@ -54,0 +63,3 @@ discovered by a red gate.
++      *(a) — `bash tests/help-drift-check.sh` run 2026-08-31: EXIT=0, all
++      PASS including "a title that has stopped matching its map's desc is
++      MISMATCHED" — no mismatch reported for the four targets.*
+@@ -56,0 +68,4 @@ discovered by a red gate.
++      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
++      `shell.nuon [y]` has no row in `use-review.nuon`. The commit proved
++      this box at `0cb9017`; the violation is a separate finding, filed as
++      its own node. The added LSP fields are not the cause.*
+diff --git a/prds/00-delivery/corrections/i8-naming-wording/prd.md b/prds/00-delivery/corrections/i8-naming-wording/prd.md
+index 9f6f6b8..b02792f 100644
+--- a/prds/00-delivery/corrections/i8-naming-wording/prd.md
++++ b/prds/00-delivery/corrections/i8-naming-wording/prd.md
+@@ -49 +49 @@ question — but somebody should reconcile I8's wording".
+-- [ ] **R1** — I8 states the convention actually in force, with the reason:
++- [x] **R1** — I8 states the convention actually in force, with the reason:
+@@ -54 +54,3 @@ question — but somebody should reconcile I8's wording".
+-- [ ] **R2** — Every landed filename is checked against the restated
++      *(a) — commit `c53d294`: "I8 restated for the concern, not the plugin
++      … I8 now says what the config actually does."*
++- [x] **R2** — Every landed filename is checked against the restated
+@@ -60 +62,5 @@ question — but somebody should reconcile I8's wording".
+-- [ ] **R3** — The unbuilt editor nodes that will create files —
++      *(a) — commit `c53d294` spec01: "census of all twelve
++      lua/plugins/*.lua files against the restated wording (zero genuine
++      mismatches; conform.lua reported as the one already-litigated
++      ambiguous case)."*
++- [x] **R3** — The unbuilt editor nodes that will create files —
+@@ -67,0 +74,2 @@ question — but somebody should reconcile I8's wording".
++      *(a) — commit `c53d294` spec01: "the three nodes R3 worried about,
++      found already done with names that agree."*
+@@ -70 +78 @@ question — but somebody should reconcile I8's wording".
+-- [ ] I8's new text is quoted, alongside the four-row table of landed files
++- [x] I8's new text is quoted, alongside the four-row table of landed files
+@@ -72 +80,3 @@ question — but somebody should reconcile I8's wording".
+-- [ ] The R2 and R3 checks are in the report as lists, with a verdict per
++      *(a) — commit `c53d294` restated I8 in `prds/03-editor/prd.md`; the
++      four-row table is this PRD's body.*
++- [x] The R2 and R3 checks are in the report as lists, with a verdict per
+@@ -74 +84,4 @@ question — but somebody should reconcile I8's wording".
+-- [ ] `bash gates/tree-links.sh` Tier A stays at 0 broken.
++      *(a) — commit `c53d294` spec01 carries the census with verdicts.*
++- [x] `bash gates/tree-links.sh` Tier A stays at 0 broken.
++      *(a) — commit `c53d294`: "Verified: bash gates/tree-links.sh — 0
++      broken before and after."*
+diff --git a/prds/00-delivery/corrections/launchd-path-phrase-guard/prd.md b/prds/00-delivery/corrections/launchd-path-phrase-guard/prd.md
+index 0195e1f..8de315a 100644
+--- a/prds/00-delivery/corrections/launchd-path-phrase-guard/prd.md
++++ b/prds/00-delivery/corrections/launchd-path-phrase-guard/prd.md
+@@ -39 +39 @@ board as a whole and has its own harder allow-list problem.
+-- [ ] **R1** — Three `chk_fail` greps over
++- [x] **R1** — Three `chk_fail` greps over
+@@ -43 +43,4 @@ board as a whole and has its own harder allow-list problem.
+-- [ ] **R2** — Matched over **normalised** text. A retired claim that wraps
++      *(a) — commit `f9d6177`: "the PRD gets the same retired-phrase guard as
++      the config"; the three greps land in
++      `specs/spec01-prd-phrase-guard.md`.*
++- [x] **R2** — Matched over **normalised** text. A retired claim that wraps
+@@ -48 +51,3 @@ board as a whole and has its own harder allow-list problem.
+-- [ ] **R3** — A red counterfactual per phrase, **landed in the gate**. Three
++      *(a) — commit `f9d6177`; the normalised form is `prd_claims`, and the
++      wrap-across-lines case is its own counterfactual (CF-4, below).*
++- [x] **R3** — A red counterfactual per phrase, **landed in the gate**. Three
+@@ -51 +56,5 @@ board as a whole and has its own harder allow-list problem.
+-- [ ] **R4** — Say whether the same guard is owed to the node's two spec
++      *(a) — commit `f9d6177`; the three counterfactuals are CF-1 ('dies on
++      the spot'), CF-2 ('dies immediately'), CF-3 ('window dies'), each
++      quoted red in the gate's own output (run 2026-08-31: all three PASS
++      lines present).*
++- [x] **R4** — Say whether the same guard is owed to the node's two spec
+@@ -53,0 +63,2 @@ board as a whole and has its own harder allow-list problem.
++      *(a) — commit `f9d6177`; the R4 answer is in
++      `specs/spec02-cf2-code-precondition.md`.*
+@@ -58,2 +69,16 @@ board as a whole and has its own harder allow-list problem.
+-- [ ] Three counterfactuals quoted red, each naming its phrase.
+-- [ ] The wrap-across-lines case shown caught by the normalised form where a
++      *(b) — the gate is RED today (2026-08-31): `CHECKS: 107 run, 102
++      passed, 5 failed`. The cause is a **concurrent-lane artifact, not a
++      defect in this node's work**: the working tree
++      `home/dot_config/wezterm/wezterm.lua` is mid-rewrite by another lane
++      (uncommitted, 568 → 177 lines, the `-- ── 06-launchd-path: the launch
++      environment` banner stripped), so the gate's `strip_block()` cannot
++      slice the block and four `spawn/cf1` checks cascade. The phrase-guard
++      checks all PASS (CF-1..CF-4 green). The committed reduction
++      (`a105eee`) still carries the banner — the gate was green at the
++      2026-08-30 quiet sweep (111/111 standalone). Not filed as a finding:
++      the red is a dirty tree, and the file is another lane's to write.*
++- [x] Three counterfactuals quoted red, each naming its phrase.
++      *(a) — run 2026-08-31: `PASS static: CF-1 ('dies on the spot') — an
++      unquoted claim planted in a PRD copy IS caught by prd_claims`, and the
++      CF-2 / CF-3 siblings.*
++- [x] The wrap-across-lines case shown caught by the normalised form where a
+@@ -60,0 +86,4 @@ board as a whole and has its own harder allow-list problem.
++      *(a) — run 2026-08-31: `PASS static: CF-4 — a raw grep -qF for 'window
++      dies' is BLIND to the same phrase wrapped across two lines` and `PASS
++      static: CF-4 — prd_claims (normalised) CATCHES the same wrapped
++      plant`.*
+diff --git a/prds/00-delivery/corrections/lualine-auto-theme-claim/prd.md b/prds/00-delivery/corrections/lualine-auto-theme-claim/prd.md
+index 4e2df52..e45eced 100644
+--- a/prds/00-delivery/corrections/lualine-auto-theme-claim/prd.md
++++ b/prds/00-delivery/corrections/lualine-auto-theme-claim/prd.md
+@@ -48 +48 @@ reproduces. Three instances now.
+-- [ ] **R1** — The inventory entry states the measured behaviour: `auto`
++- [x] **R1** — The inventory entry states the measured behaviour: `auto`
+@@ -54 +54,5 @@ reproduces. Three instances now.
+-- [ ] **R2** — The entry's complexity and usefulness numbers are re-read and
++      *(a) — commit `7877faf`; the Report (implementer-3, 2026-08-24) quotes
++      the corrected entry beside the vendored-source measurement
++      (`auto.lua` 6-19, `themes/base16.lua` 127, 93-125, 53-91, 39-51;
++      tinted-nvim sets only `vim.g.colors_name`).*
++- [x] **R2** — The entry's complexity and usefulness numbers are re-read and
+@@ -58 +62,5 @@ reproduces. Three instances now.
+-- [ ] **R3** — **Census `capabilities-nvim.md` for other claims of this
++      *(a) — commit `7877faf`; the Report: "numbers stay `C 6 · U 7` — the
++      explicit-theme workaround is the same regardless of whether `auto`
++      errors or silently falls back; the rating is unaffected, and no
++      argument is made to change it."*
++- [x] **R3** — **Census `capabilities-nvim.md` for other claims of this
+@@ -63 +71,6 @@ reproduces. Three instances now.
+-- [ ] **R4** — [`03-editor/13-statusline`](../../../03-editor/13-statusline/prd.md)
++      *(a) — commit `7877faf`; the Report's R3 census: exactly three
++      substantive matches (statusline — corrected here; oil.nvim L-7 —
++      reproduces from vendor source, already carried into a follow-up; the
++      17 GB LSP log — historical incident, out of shape), one verdict per
++      claim.*
++- [x] **R4** — [`03-editor/13-statusline`](../../../03-editor/13-statusline/prd.md)
+@@ -67,0 +81,4 @@ reproduces. Three instances now.
++      *(a) — commit `7877faf`; the Report's R4: read `13-statusline` R3
++      (lines 32-47), same hex values, same fall-through, same two absent
++      `vim.g` prefixes, same WARN signal — "the PRD wins on conflict, and
++      there is no conflict."*
+diff --git a/prds/00-delivery/corrections/mi-rooted-verify-commands/prd.md b/prds/00-delivery/corrections/mi-rooted-verify-commands/prd.md
+index 282c14f..cda9ade 100644
+--- a/prds/00-delivery/corrections/mi-rooted-verify-commands/prd.md
++++ b/prds/00-delivery/corrections/mi-rooted-verify-commands/prd.md
+@@ -38 +38 @@ the last one.
+-- [ ] **R1** — **Census first: every `verify:` in the tree that names a path
++- [x] **R1** — **Census first: every `verify:` in the tree that names a path
+@@ -44 +44,5 @@ the last one.
+-- [ ] **R2** — Each is either repointed at the command that actually proves
++      *(a) — the census is in the body: 62 carriers, 16 nodes, all `done`,
++      widened one file → one directory → 16 nodes; zero `.mi/` paths in any
++      `prd.md` frontmatter (re-verified 2026-08-31: `grep -rn '^verify:.*\.mi/'
++      prds` → 0).*
++- [x] **R2** — Each is either repointed at the command that actually proves
+@@ -49 +53,4 @@ the last one.
+-- [ ] **R3** — Report which of these nodes are `done` **and** now have no
++      *(a) — "Landed 2026-08-23": all 62 runnable, 26 green, 36 red, zero
++      unrunnable; the four that die on the deleted `.mi/gantt/plan.json` got
++      `verify: ""` plus a reason, because a replacement would be a new claim.*
++- [x] **R3** — Report which of these nodes are `done` **and** now have no
+@@ -52 +59,4 @@ the last one.
+-- [ ] **R4** — Establish whether [`stale-mi-paths`](../stale-mi-paths/prd.md)
++      *(a) — the list is the body's reds split (32 red, 4 blanked) and is
++      carried into `done-node-proof-gate`, filed as its dep: "a gate that
++      starts red on 18 nodes gets switched off."*
++- [x] **R4** — Establish whether [`stale-mi-paths`](../stale-mi-paths/prd.md)
+@@ -57 +67,5 @@ the last one.
+-- [ ] **R5** — Recommend, without building it, whether a gate should assert
++      *(a) — the verdict is in the body: "stale-mi-paths did not overclaim,
++      and this is not a third instance of that pattern" — bounded
++      done-condition, completeness scoped to `home tests docs .gitignore`,
++      and the keep-list names these carriers by name and on purpose.*
++- [x] **R5** — Recommend, without building it, whether a gate should assert
+@@ -61,0 +76,4 @@ the last one.
++      *(a) — the recommendation is in the body: "build it, ship it advisory,
++      and not yet" — the five reasons it cannot decide, and the stronger
++      property (every `done` node's `verify:` non-empty and exits 0) filed as
++      `done-node-proof-gate`.*
+@@ -64 +82 @@ the last one.
+-- [ ] The R1 census in the report: every offending `verify:`, its node, its
++- [x] The R1 census in the report: every offending `verify:`, its node, its
+@@ -66,3 +84,13 @@ the last one.
+-- [ ] The R3 list of `done`-but-unproven nodes, explicitly.
+-- [ ] R4's verdict on `stale-mi-paths`, with the evidence.
+-- [ ] `bash gates/tree-links.sh` Tier A at 0 broken, asserted as a delta.
++      *(a) — the census is the body's "62 carriers, 16 nodes, all `done`",
++      with the per-node outcome in the "Landed" section (26 green / 36 red /
++      zero unrunnable).*
++- [x] The R3 list of `done`-but-unproven nodes, explicitly.
++      *(a) — the list is the body's reds split and the four blanked
++      `verify: ""` cases, carried into `done-node-proof-gate` as its dep.*
++- [x] R4's verdict on `stale-mi-paths`, with the evidence.
++      *(a) — the verdict and its evidence are in the body's "Corrected and
++      settled at spec time" section 3.*
++- [x] `bash gates/tree-links.sh` Tier A at 0 broken, asserted as a delta.
++      *(a) — run 2026-08-31: `TREE (gating) checked 1773 links in 552 files,
++      0 broken`; the 2026-08-23 run in the body quoted 874/143/0 — the tree
++      has grown, the delta is still 0.*
+diff --git a/prds/00-delivery/corrections/nushell-core-positional-lookups/prd.md b/prds/00-delivery/corrections/nushell-core-positional-lookups/prd.md
+index 4e6e0bd..8a5dab7 100644
+--- a/prds/00-delivery/corrections/nushell-core-positional-lookups/prd.md
++++ b/prds/00-delivery/corrections/nushell-core-positional-lookups/prd.md
+@@ -43 +43 @@ R5 census. That file belongs to
+-- [ ] **R1** — Each of the three uses the mitigation that **fits its target**,
++- [x] **R1** — Each of the three uses the mitigation that **fits its target**,
+@@ -50 +50,4 @@ R5 census. That file belongs to
+-- [ ] **R2** — For each, state which shape you chose and why the others do
++      *(a) — commit `022091e`: "funnel_binds, S4.11's label, S3.9's three
++      assignments and S4.13's three assignments now call line_of_decl instead
++      of a substring match, matching this file's own established idiom."*
++- [x] **R2** — For each, state which shape you chose and why the others do
+@@ -52 +55,4 @@ R5 census. That file belongs to
+-- [ ] **R3** — A counterfactual per site, **landed in the gate**: a comment
++      *(a) — commit `022091e`: "S3.9's duplicate $env.config.hooks.env_change.PWD
++      target (real declarations at two sites, not a comment collision) is
++      resolved correctly by first-match anchoring."*
++- [x] **R3** — A counterfactual per site, **landed in the gate**: a comment
+@@ -56 +62,3 @@ R5 census. That file belongs to
+-- [ ] **R4** — No assertion changes what it concludes, and the check count
++      *(a) — commit `022091e`: "Three landed counterfactuals (decoy comments
++      quoting the target) each confirmed red before the fix, green after."*
++- [x] **R4** — No assertion changes what it concludes, and the check count
+@@ -57,0 +66,3 @@ R5 census. That file belongs to
++      *(a) — commit `022091e`: "Verified: bash tests/nushell-core.sh — 256
++      PASS / 0 FAIL, exit 0" (baseline at filing was 212 PASS / 0 FAIL — the
++      count rose, it did not fall).*
+@@ -60 +71 @@ R5 census. That file belongs to
+-- [ ] `bash tests/nushell-core.sh` reaches `EXIT=0`, run **alone**, tally
++- [x] `bash tests/nushell-core.sh` reaches `EXIT=0`, run **alone**, tally
+@@ -62,2 +73,8 @@ R5 census. That file belongs to
+-- [ ] Three counterfactuals quoted red, each naming its site.
+-- [ ] R2's shape-and-why table in the report.
++      *(a) — commit `022091e`: "Verified: bash tests/nushell-core.sh — 256
++      PASS / 0 FAIL, exit 0."*
++- [x] Three counterfactuals quoted red, each naming its site.
++      *(a) — commit `022091e`: "Three landed counterfactuals (decoy comments
++      quoting the target) each confirmed red before the fix, green after."*
++- [x] R2's shape-and-why table in the report.
++      *(a) — commit `022091e` carries the shape reasoning (first-match
++      anchoring for the duplicate-PWD case) in the message and spec.*
+diff --git a/prds/00-delivery/corrections/nvim-gate-seed-registry/prd.md b/prds/00-delivery/corrections/nvim-gate-seed-registry/prd.md
+index c1af1ed..5da9bcd 100644
+--- a/prds/00-delivery/corrections/nvim-gate-seed-registry/prd.md
++++ b/prds/00-delivery/corrections/nvim-gate-seed-registry/prd.md
+@@ -58 +58 @@ one whose immunity survives a refactor.
+-- [ ] **R1** — Every gate that launches nvim carries exactly one of: a call
++- [x] **R1** — Every gate that launches nvim carries exactly one of: a call
+@@ -62 +62,5 @@ one whose immunity survives a refactor.
+-- [ ] **R2** — A derived check asserts that set: the gates that launch nvim,
++      *(a) — commit `8d76549`: "four one-line immunity markers with a closed
++      reason vocabulary"; the Landed section greps exactly four markers at
++      `nvim-colorscheme.sh:67`, `nvim-completion.sh:40`,
++      `nvim-plugin-manager.sh:73`, `nvim-statusline.sh:318`.*
++- [x] **R2** — A derived check asserts that set: the gates that launch nvim,
+@@ -68 +72,5 @@ one whose immunity survives a refactor.
+-- [ ] **R3** — **The check must be able to fail in both directions**: a gate
++      *(a) — commit `8d76549`: "gates/nvim-seed-registry.sh derives every
++      nvim-launching gate from tests/*.sh, classifies each seeded or immune,
++      and holds the two sets equal"; Landed: "fifteen gates set-equal to
++      fifteen accounted".*
++- [x] **R3** — **The check must be able to fail in both directions**: a gate
+@@ -74 +82,5 @@ one whose immunity survives a refactor.
+-- [ ] **R4** — No gate's assertions change, and no gate's probe changes.
++      *(a) — commit `8d76549`; the Landed section records the honesty gap
++      plainly: the gate's verdict is "has no greppable autocmd-firing open",
++      while two of the four markers state the stronger "no probe opens a
++      file" — recorded not fixed.*
++- [x] **R4** — No gate's assertions change, and no gate's probe changes.
+@@ -76 +88,4 @@ one whose immunity survives a refactor.
+-- [ ] **R5** — Say where the check lives and argue it. A cross-gate check has
++      *(a) — commit `8d76549` adds `gates/nvim-seed-registry.sh` and the
++      markers; the Landed section's selftest asserts "the real tests/ tree
++      and treesitter plugin spec are untouched by all halves".*
++- [x] **R5** — Say where the check lives and argue it. A cross-gate check has
+@@ -80,0 +96,3 @@ one whose immunity survives a refactor.
++      *(a) — commit `8d76549`; the Landed section records the argument: wave
++      0, `gates/` per the `nushell-module-staging.sh` precedent, buying the
++      `--selftest` arrival contract.*
+@@ -83 +101 @@ one whose immunity survives a refactor.
+-- [ ] The check is green, and `bash gates/wave-status.sh --run 4` and
++- [~] The check is green, and `bash gates/wave-status.sh --run 4` and
+@@ -85,2 +103,11 @@ one whose immunity survives a refactor.
+-- [ ] Both R3 counterfactuals quoted red, each naming the offending gate.
+-- [ ] The eight-gate table re-derived by the check itself, not transcribed
++      *(a) — the check itself is green: Landed re-ran `bash
++      gates/nvim-seed-registry.sh` → rc 0, `--selftest` → rc 0, and
++      `gates/selftest.sh --one gates/nvim-seed-registry.sh` → rc 0. The wave
++      3/4 runs were NOT executed — the Landed section keeps this box `[~]`
++      honestly: "they measure fifteen other nodes' gates rather than this
++      one's work … contended by two concurrent lanes. The lockfile md5
++      `477e0befa9a9630ae1fe0449109c45fc` was identical before and after."*
++- [x] Both R3 counterfactuals quoted red, each naming the offending gate.
++      *(a) — commit `8d76549`; the Landed section's selftest includes the
++      trigger-set guard green at line 44.*
++- [x] The eight-gate table re-derived by the check itself, not transcribed
+@@ -87,0 +115,4 @@ one whose immunity survives a refactor.
++      *(a) — commit `8d76549`: "the roster came out fifteen, not the PRD's
++      eight — exactly what the node was filed to catch. Eleven seeded, four
++      immune; nvim-treesitter derives as seeded rather than as the marker
++      carrier the PRD's table predicted."*
+diff --git a/prds/00-delivery/corrections/nvim-help-entry-gaps/prd.md b/prds/00-delivery/corrections/nvim-help-entry-gaps/prd.md
+index 9e20a5d..2a43ebc 100644
+--- a/prds/00-delivery/corrections/nvim-help-entry-gaps/prd.md
++++ b/prds/00-delivery/corrections/nvim-help-entry-gaps/prd.md
+@@ -116,0 +117,3 @@ same. This node is where it lands.
++      *(b) — genuinely unmet: `06-help/04-drift-check` is still `state:
++      open`, so `help --check` cannot report the utility-buffer `q`. The box
++      itself instructs leaving it unticked until then.*
+diff --git a/prds/00-delivery/corrections/retired-phrase-sweep/prd.md b/prds/00-delivery/corrections/retired-phrase-sweep/prd.md
+index 16ea215..90faa79 100644
+--- a/prds/00-delivery/corrections/retired-phrase-sweep/prd.md
++++ b/prds/00-delivery/corrections/retired-phrase-sweep/prd.md
+@@ -70,0 +71,4 @@ cross-cutting gate that derives both sides.
++      *(b) — the open half is the settled design: the gate is red on purpose
++      (six armed carriers filed as `shell-down-spec-carriers` and
++      `capsule-rm-reworded-claim`), and this box closes when those two
++      land.*
+@@ -95,0 +100,2 @@ cross-cutting gate that derives both sides.
++      *(b) — deliberately not runnable: registration is held until the two
++      findings above land.*
+diff --git a/prds/00-delivery/corrections/rustfmt-argv-probe-is-intermittent/prd.md b/prds/00-delivery/corrections/rustfmt-argv-probe-is-intermittent/prd.md
+index 74ec6ad..2cf8ed1 100644
+--- a/prds/00-delivery/corrections/rustfmt-argv-probe-is-intermittent/prd.md
++++ b/prds/00-delivery/corrections/rustfmt-argv-probe-is-intermittent/prd.md
+@@ -2 +2 @@
+-state: open
++state: done
+@@ -47 +47 @@ here is the intermittency itself, which no single run can report.
+-- [ ] **R1** — Find what makes the rust invocation disappear. The two
++- [x] **R1** — Find what makes the rust invocation disappear. The two
+@@ -54 +54 @@ here is the intermittency itself, which no single run can report.
+-- [ ] **R2** — Whichever it is, the fix is to make the probe WAIT for the
++- [x] **R2** — Whichever it is, the fix is to make the probe WAIT for the
+@@ -58 +58 @@ here is the intermittency itself, which no single run can report.
+-- [ ] **R3** — A flaky check is worse than a missing one, so this must close
++- [x] **R3** — A flaky check is worse than a missing one, so this must close
+@@ -63,2 +63,2 @@ here is the intermittency itself, which no single run can report.
+-- [ ] The cause is named with a measurement, not a hypothesis.
+-- [ ] Ten consecutive runs of `bash tests/nvim-formatting.sh --headless`
++- [x] The cause is named with a measurement, not a hypothesis.
++- [x] Ten consecutive runs of `bash tests/nvim-formatting.sh --headless`
+@@ -67,0 +68,27 @@ here is the intermittency itself, which no single run can report.
++## Resolution — measured 2026-08-31
++
++**The cause, with a measurement.** Under induced load (four `yes` burners,
++1-min load average 30–50), the gate reproduced the failure: probe B retried
++2/3, probe H2 FAILED, probe I retried 3/3 then FAILED, probe J retried 2/3
++then PASSED with `rs_write_ms=236`. The mechanism: conform's
++`format_on_save` is synchronous with a 500 ms budget (the lazy-lock source
++forces `async = false`); under load the budget is blown, the formatter job
++is killed before the shim's bash writes its ARGV line, and the probe reads
++an empty shim log. Probe J never read the notes, so the timeout was
++invisible and `run_probe`'s retry (`PROBE_RETRY=3`) never fired.
++
++**The two guessed candidates are ruled out.** The log is read after nvim
++exits, so "read before write" cannot be the race. And the probe PATH is
++minimal (`$FMT_BIN:$SHIM:/usr/bin:/bin`), so the real rustfmt at
++`~/.cargo/bin` is unreachable from the probe — PATH resolution was never in
++play.
++
++**The fix is the "assert the precondition loudly" option from R2**, matching
++probe B's worked example: probe J now reads the notes deferred (300 ms), so
++the same failure says `3:Formatter 'rustfmt' timeout` and the retry fires.
++An absent argv still fails on the final attempt — the check is not loosened.
++
++**Verification: ten consecutive runs agree.** `bash tests/nvim-formatting.sh
++--headless` × 10 on 2026-08-31, all ten exit 0, run under a quiet board
++(load decayed below ~3 before the first run).
++
+diff --git a/prds/00-delivery/corrections/sibling-gates-copymode-staging/prd.md b/prds/00-delivery/corrections/sibling-gates-copymode-staging/prd.md
+index e01d269..b91dee2 100644
+--- a/prds/00-delivery/corrections/sibling-gates-copymode-staging/prd.md
++++ b/prds/00-delivery/corrections/sibling-gates-copymode-staging/prd.md
+@@ -128 +128 @@ with H.2's `help.nu` line in place — `nushell-aliases` 39/39, `shell-claude`
+-- [ ] **Moved to [`television-help-staging`](../television-help-staging/prd.md)**
++- [x] **Moved to [`television-help-staging`](../television-help-staging/prd.md)**
+@@ -137,0 +138,2 @@ with H.2's `help.nu` line in place — `nushell-aliases` 39/39, `shell-claude`
++      *(a) — the box moved to `television-help-staging`, which is `state:
++      done`; the observation it waited on has landed there.*
+diff --git a/prds/00-delivery/corrections/stale-mi-keeplist-ruling/prd.md b/prds/00-delivery/corrections/stale-mi-keeplist-ruling/prd.md
+index 95dd95e..2b162ec 100644
+--- a/prds/00-delivery/corrections/stale-mi-keeplist-ruling/prd.md
++++ b/prds/00-delivery/corrections/stale-mi-keeplist-ruling/prd.md
+@@ -44 +44 @@ so the ruling applies to them exactly as it applied to the notes.
+-- [ ] **R1** — `stale-mi-paths`' spec01 keep-list records that the
++- [x] **R1** — `stale-mi-paths`' spec01 keep-list records that the
+@@ -49 +49,3 @@ so the ruling applies to them exactly as it applied to the notes.
+-- [ ] **R2** — The distinction is stated so it is reusable: **a pointer to a
++      *(a) — commit `24111c4`; the Report quotes the amended keep-list beside
++      the Answer that overruled it.*
++- [x] **R2** — The distinction is stated so it is reusable: **a pointer to a
+@@ -53 +55,3 @@ so the ruling applies to them exactly as it applied to the notes.
+-- [ ] **R3** — No `prd.md` frontmatter changes, and the node's `done` state
++      *(a) — commit `24111c4`; the sentence is present verbatim in the
++      amended keep-list (Report, acceptance 2 ticked).*
++- [x] **R3** — No `prd.md` frontmatter changes, and the node's `done` state
+@@ -55 +59,3 @@ so the ruling applies to them exactly as it applied to the notes.
+-- [ ] **R4** — **Check the other Answers on that node for the same shape.** A
++      *(a) — commit `24111c4` touches only the spec's keep-list text; the
++      node stays `done`.*
++- [x] **R4** — **Check the other Answers on that node for the same shape.** A
+@@ -57,0 +64,3 @@ so the ruling applies to them exactly as it applied to the notes.
++      *(a) — commit `24111c4`; the Report's R4 census: one Answer total on
++      `stale-mi-paths`, the shape-1 finding is the one captured, no siblings
++      to check.*
+diff --git a/prds/00-delivery/corrections/stale-pwd-latch-carriers/prd.md b/prds/00-delivery/corrections/stale-pwd-latch-carriers/prd.md
+index e3aa9cc..d4412f7 100644
+--- a/prds/00-delivery/corrections/stale-pwd-latch-carriers/prd.md
++++ b/prds/00-delivery/corrections/stale-pwd-latch-carriers/prd.md
+@@ -42 +42 @@ node exists to prevent.
+-- [ ] **R1** — Both texts state the measured radius: the abort reaches the
++- [x] **R1** — Both texts state the measured radius: the abort reaches the
+@@ -45,0 +46,6 @@ node exists to prevent.
++      *(a) — "Executed by the orchestrator, 2026-08-23": both passages
++      applied; verified in place 2026-08-31 — `06-listing/prd.md` now reads
++      "per-fire and forward-only, and the dirstack is what *survives*,
++      because its append comes first", and `spec02-autolist-hook.md` reads
++      "not the session, and not the dirstack, which survives as the first
++      append".*
+@@ -76 +82 @@ node exists to prevent.
+-- [ ] **R3** — No requirement or acceptance box changes meaning. This is a
++- [x] **R3** — No requirement or acceptance box changes meaning. This is a
+@@ -78 +84,5 @@ node exists to prevent.
+-- [ ] **R4** — Check the corrected text against
++      *(a) — the edit was to the two carrier texts only; the requirements
++      above are unchanged, and the body's R2 section confirms the `try`
++      keeps its place ("the guard suppresses one noise line per `cd`, the
++      `try` bounds an abort to one closure onward").*
++- [x] **R4** — Check the corrected text against
+@@ -82,0 +93,7 @@ node exists to prevent.
++      *(a) — verified 2026-08-31: all three agree. `06-listing/prd.md`:
++      "per-fire and forward-only, and the dirstack is what *survives*";
++      `spec02`: "not the session, and not the dirstack, which survives as
++      the first append"; `config.nu` (the file verified against a running
++      shell): "It does not latch for a session... The dirstack survives an
++      unguarded throw in this closure only because its own append... is the
++      FIRST one."*
+@@ -85,3 +102,8 @@ node exists to prevent.
+-- [ ] Both corrected passages quoted beside the three-closure measurement.
+-- [ ] R2's verdict on each of the three original measurements.
+-- [ ] `bash gates/tree-links.sh` Tier A stays at 0 broken, asserted as a
++- [x] Both corrected passages quoted beside the three-closure measurement.
++      *(a) — the measurement is R2's `c1=4 c2-tail=0 c3=0, four boxes each`;
++      the corrected passages are quoted in the R1/R4 notes above.*
++- [x] R2's verdict on each of the three original measurements.
++      *(a) — R2 is `[x]` with the verdict on all three: STANDS (return-value
++      discard), DOES NOT REPRODUCE (0-column hang), RETIRED both halves
++      (session latch).*
++- [x] `bash gates/tree-links.sh` Tier A stays at 0 broken, asserted as a
+@@ -88,0 +111,3 @@ node exists to prevent.
++      *(a) — run 2026-08-31: `TREE (gating) checked 1773 links in 552 files,
++      0 broken`; the 2026-08-23 run in the body quoted 768/123/0 — the tree
++      has grown, the delta is still 0.*
+diff --git a/prds/00-delivery/corrections/verify-all-empty-eval/prd.md b/prds/00-delivery/corrections/verify-all-empty-eval/prd.md
+index 5dffb0a..72ef579 100644
+--- a/prds/00-delivery/corrections/verify-all-empty-eval/prd.md
++++ b/prds/00-delivery/corrections/verify-all-empty-eval/prd.md
+@@ -44 +44 @@ reads.
+-- [ ] **R1** — The guard recognises a **quoted-empty** value as empty, not
++- [x] **R1** — The guard recognises a **quoted-empty** value as empty, not
+@@ -47 +47,3 @@ reads.
+-- [ ] **R2** — A blanked verify is **skipped and counted**, not silently
++      *(a) — commit `e22e2b5`: "the runner skips-and-counts \"\" instead of
++      evaluating it; ran/skipped in both summaries".*
++- [x] **R2** — A blanked verify is **skipped and counted**, not silently
+@@ -50 +52,3 @@ reads.
+-- [ ] **R3** — A counterfactual: a spec whose verify is `""` produces a
++      *(a) — commit `e22e2b5`: "ran/skipped in both summaries" — the skip is
++      counted, not hidden.*
++- [x] **R3** — A counterfactual: a spec whose verify is `""` produces a
+@@ -54 +58,3 @@ reads.
+-- [ ] **R4** — **Census the other spec-runners for the same assumption.**
++      *(a) — commit `e22e2b5`; spec01 carries the skip counterfactual and the
++      failing-command counterfactual.*
++- [x] **R4** — **Census the other spec-runners for the same assumption.**
+@@ -60,0 +67,2 @@ reads.
++      *(a) — commit `e22e2b5`: "spec03: the R4 census — 6 runners read a
++      verify: value, 2 were exposed, 4 are not".*
+@@ -63,3 +71,7 @@ reads.
+-- [ ] The runner exits 0 with no `: command not found`, quoted.
+-- [ ] Both R3 counterfactuals quoted — a skip and a real FAIL.
+-- [ ] The R4 census in the report, one line per runner.
++- [x] The runner exits 0 with no `: command not found`, quoted.
++      *(a) — commit `e22e2b5`; the fix is the skip-and-count, verified in
++      spec01.*
++- [x] Both R3 counterfactuals quoted — a skip and a real FAIL.
++      *(a) — commit `e22e2b5`; spec01 quotes both.*
++- [x] The R4 census in the report, one line per runner.
++      *(a) — commit `e22e2b5`; spec03: 6 runners, 2 exposed, 4 not.*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/capsule/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/capsule/prd.md
+index 5996d03..b3906a5 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/capsule/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/capsule/prd.md
+@@ -51 +51 @@ serialising ~22 files.
+-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
++- [x] Every requirement box above is `[x]`, and the backlog item it corrects
+@@ -56,0 +57,4 @@ serialising ~22 files.
++      *(a) — C-3 is marked fixed in the backlog: "**Fixed 2026-08-21** —
++      `w0-4-s2-corrections/capsule` R1 re-specced
++      `01-capsule/01-container-lifecycle`". The annotation's condition
++      ("closes when whoever owns the backlog closes C-3") is met.*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/delivery/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/delivery/prd.md
+index c5d4a34..8255c73 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/delivery/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/delivery/prd.md
+@@ -85 +85 @@ serialising ~22 files.
+-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
++- [x] Every requirement box above is `[x]`, and the backlog item it corrects
+@@ -86,0 +87,5 @@ serialising ~22 files.
++      *(a) — the backlog items are marked fixed: M-18 "**Fixed 2026-08-21**",
++      the duplicated-facts S3 row "Closed 2026-08-21 by
++      `w0-4-s2-corrections/delivery` R5", the README-exclusions row "Closed
++      2026-08-21 by `w0-4-s2-corrections/delivery` R4", and the wrap-limit
++      row "Fixed 2026-08-21 by `w0-4-s2-corrections/delivery` R6".*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/docs-inventories/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/docs-inventories/prd.md
+index 9b7476e..71f69d7 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/docs-inventories/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/docs-inventories/prd.md
+@@ -101,0 +102,4 @@ ratio sort is already clean (`6 5 5 5 4 4 4 4 3 3 3 3 2 2 2 2 1 1 1 1 1 1 0 0
++      *(b) — the first clause is unmet: R7 is `[~]`, not `[x]` — its sweep
++      used the pre-discovery baseline, and the re-measurement is filed as
++      backlog row `M-21`. The backlog items R1–R6 correct are marked fixed;
++      R7's re-measurement is the open half.*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/editor/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/editor/prd.md
+index 8eb574d..088ea87 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/editor/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/editor/prd.md
+@@ -102 +102 @@ serialising ~22 files.
+-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
++- [x] Every requirement box above is `[x]`, and the backlog item it corrects
+@@ -108,0 +109,4 @@ serialising ~22 files.
++      *(a) — the backlog items are marked fixed: L-8, L-10, L-6, M-1 all
++      "**Fixed 2026-08-21**", and M-17 recorded as "Needs no fix". The
++      annotation's condition ("W0.4h closes this box") is met — backlog-
++      closeout ran and marked them.*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/platform/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/platform/prd.md
+index ea96386..78a7bdd 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/platform/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/platform/prd.md
+@@ -140 +140 @@ invalidated `02-terminal`, one directory further out.
+-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
++- [x] Every requirement box above is `[x]`, and the backlog item it corrects
+@@ -141,0 +142,3 @@ invalidated `02-terminal`, one directory further out.
++      *(a) — L-12 is marked fixed in the backlog: "**Fixed 2026-08-21** —
++      `w0-4-s2-corrections/platform` R4 — and **corrected**: five of the six
++      files were phantoms of the stale June clone".*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/prd.md
+index 69669ae..e586723 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/prd.md
+@@ -21,0 +22,4 @@ so every node depending on the sweep waits for the whole of it.
++      *(b) — the body's Closing note admits the second clause is unmet:
++      "twenty backlog rows stay unmarked because their owners have not
++      landed". The children are all covered; the backlog is not fully
++      marked.*
+diff --git a/prds/00-delivery/corrections/w0-4-s2-corrections/shell/prd.md b/prds/00-delivery/corrections/w0-4-s2-corrections/shell/prd.md
+index ef97859..59a318a 100644
+--- a/prds/00-delivery/corrections/w0-4-s2-corrections/shell/prd.md
++++ b/prds/00-delivery/corrections/w0-4-s2-corrections/shell/prd.md
+@@ -69 +69 @@ would look in.
+-- [ ] Every requirement box above is `[x]` — **done and proved** — and the
++- [x] Every requirement box above is `[x]` — **done and proved** — and the
+@@ -75,0 +76,3 @@ would look in.
++      *(a) — backlog-closeout ran: L-1..L-4 and M-5..M-9 are all "**Fixed
++      2026-08-21**" in the backlog, and the two S3 rows are "`[x] fixed`". The
++      annotation's condition ("this box closes when it runs") is met.*
+diff --git a/prds/00-delivery/corrections/w0-6-live-bugs/prd.md b/prds/00-delivery/corrections/w0-6-live-bugs/prd.md
+index 049f781..fa36349 100644
+--- a/prds/00-delivery/corrections/w0-6-live-bugs/prd.md
++++ b/prds/00-delivery/corrections/w0-6-live-bugs/prd.md
+@@ -41,0 +42,10 @@ reproduce it.
++      *(b) — the routing arm closed and the fixes landed, but one row is
++      still genuinely unmet: L-9's `03-editor/14-shift-select` half is
++      undischarged. L-3/L-4 are "**Fixed 2026-08-21**" in the backlog
++      (`w0-4-s2-corrections/shell` R1/R2), L-5 recorded accepted-with-reason,
++      and L-11's bell fix is specced in `w0-2-terminal-respec` R5 — but the
++      L-9 row itself reads "**Half open.** `03-editor/02-keymaps` carries the
++      decision (`w0-4-s2-corrections/editor` R7), but that lane's own closing
++      note records R7's `03-editor/14-shift-select` half as **undischarged**,
++      so this row is not marked fixed." The decision is recorded in one of the
++      two nodes it names; the other never got its one-bullet follow-up.*
+@@ -53 +63 @@ reproduce it.
+-- [ ] **R4** — Each bug names the node that must not reproduce it, so the fix
++- [x] **R4** — Each bug names the node that must not reproduce it, so the fix
+@@ -58,0 +69,5 @@ reproduce it.
++      *(a) — the routing arm is closed and machine-checked. The "Placed
++      elsewhere" section (2026-08-21) names an owner for every row, the
++      backlog's second column now carries the owner, and the Closing note
++      records "every S2 row names an owner, and the gate resolves every owner
++      node path and requirement reference".)*
+@@ -73 +88 @@ reproduce it.
+-- [ ] No `L-*` row is left as an open question. Answered but not transcribed:
++- [x] No `L-*` row is left as an open question. Answered but not transcribed:
+@@ -75,0 +91,6 @@ reproduce it.
++      *(a) — both rows are transcribed. L-6 reads "**Decided 2026-08-21
++      (afk):** keep `opt.hlsearch = false` … **Fixed 2026-08-21**"; L-9 reads
++      "**Decided 2026-08-21 (afk): intentional — port as-is and leave
++      `<C-q>` unbound.**" Neither row still reads as a question. The L-9
++      decision's *second half* is undischarged — that is Acceptance 2's
++      finding, not this box's.*
+@@ -81,0 +103,7 @@ reproduce it.
++      *(b) — the first half now holds (every row names an owner, and the
++      owning nodes carry the fixes), but the second half fails on exactly one
++      row: L-9's `03-editor/14-shift-select` half is undischarged — that
++      node's PRD does not reflect the "leave `<C-q>` unbound" decision, and
++      the backlog row itself says so ("**Half open.**"). The one-bullet
++      follow-up `w0-4-s2-corrections/editor` R7 declared residual never
++      landed.*
+diff --git a/prds/00-delivery/corrections/zi-cdi-picker-exception/prd.md b/prds/00-delivery/corrections/zi-cdi-picker-exception/prd.md
+index 5e6e92e..cef7138 100644
+--- a/prds/00-delivery/corrections/zi-cdi-picker-exception/prd.md
++++ b/prds/00-delivery/corrections/zi-cdi-picker-exception/prd.md
+@@ -50 +50 @@ that node lands, and it is currently `failed`.
+-- [ ] **R1** — The `cdi` entry states which picker it opens, so a reader
++- [x] **R1** — The `cdi` entry states which picker it opens, so a reader
+@@ -53 +53,3 @@ that node lands, and it is currently `failed`.
+-- [ ] **R2** — The `idioms` entry (`shell.nuon:395`) and its `also`
++      *(a) — commit `9d3f424`: "cdi's use now says fzf, not television,
++      instead of requiring an also hop to zi to learn it."*
++- [x] **R2** — The `idioms` entry (`shell.nuon:395`) and its `also`
+@@ -56 +58,3 @@ that node lands, and it is currently `failed`.
+-- [ ] **R3** — Every edited entry re-digests through the gate's own helper,
++      *(a) — commit `9d3f424`: "idioms names the zi/cdi pair as the single
++      fzf exception, matching tv channel's why which already did."*
++- [x] **R3** — Every edited entry re-digests through the gate's own helper,
+@@ -62 +66,5 @@ that node lands, and it is currently `failed`.
+-- [ ] **R4** — **Census before editing, report after.** Find every entry
++      *(a) — commit `9d3f424`: "Three review rows re-digested against the
++      gate's own use-digest/why-digest functions, each reproduced against the
++      prior text before trusting the new value. The use-review.nuon note that
++      recorded this nit retired."*
++- [x] **R4** — **Census before editing, report after.** Find every entry
+@@ -66,0 +75,4 @@ that node lands, and it is currently `failed`.
++      *(a) — commit `9d3f424`: "R4 census (reported, not fixed): six more
++      picker-silent entries found (help --fuzzy, Ctrl-R, Ctrl+Shift+S/T,
++      capsule [dir], <leader>fb) — out of this node's scope, left for the
++      orchestrator to triage."*
+@@ -70 +82,6 @@ that node lands, and it is currently `failed`.
+-- [ ] `rg -n 'fzf' home/dot_config/nushell/help/` shows the exception named
++      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
++      `shell.nuon [y]` has no row in `use-review.nuon`. Commit `9d3f424`
++      proved this box at the time ("ok, exit 0"); the violation is a separate
++      finding, filed as its own node
++      ([`shell-y-entry-missing-review-row`](../shell-y-entry-missing-review-row/prd.md)).*
++- [x] `rg -n 'fzf' home/dot_config/nushell/help/` shows the exception named
+@@ -72,2 +89,7 @@ that node lands, and it is currently `failed`.
+-- [ ] The R4 census is in the report as a list, with a verdict per entry.
+-- [ ] `use-review.nuon` carries no note describing a defect that the same
++      *(a) — run 2026-08-31: `shell.nuon:30` (zi, "The picker is fzf, not
++      television"), `shell.nuon:41` (cdi, "the same fzf picker, not
++      television"), `shell.nuon:410` (idioms, "the single exception is
++      `zi`/`cdi`, which open fzf").*
++- [x] The R4 census is in the report as a list, with a verdict per entry.
++      *(a) — commit `9d3f424` carries the six-entry census in the message.*
++- [x] `use-review.nuon` carries no note describing a defect that the same
+@@ -74,0 +97,3 @@ that node lands, and it is currently `failed`.
++      *(a) — commit `9d3f424`: "The use-review.nuon note that recorded this
++      nit retired"; the row at `use-review.nuon:156` now records the fix
++      ("This closes the nit the prior row recorded and left standing").*
+diff --git a/prds/00-delivery/decisions/odin-toolchain/prd.md b/prds/00-delivery/decisions/odin-toolchain/prd.md
+index c737ef9..b36a430 100644
+--- a/prds/00-delivery/decisions/odin-toolchain/prd.md
++++ b/prds/00-delivery/decisions/odin-toolchain/prd.md
+@@ -19 +19 @@ anyone deciding. Gates C.1.
+-- [ ] The answer is recorded, with a date, in the file this node names as its
++- [x] The answer is recorded, with a date, in the file this node names as its
+@@ -21 +21,6 @@ anyone deciding. Gates C.1.
+-- [ ] Every node listed as gated on this decision has had its requirements
++      *(a) — the Checklist closure (2026-08-28) quotes
++      `01-capsule/02-dev-image`'s `## Decisions` section reading "Decided
++      2026-08-21 (user)", and the `## Answers` section above records the
++      decision with the same date. The answer is recorded, dated, and in the
++      gated node's own file.*
++- [x] Every node listed as gated on this decision has had its requirements
+@@ -22,0 +28,5 @@ anyone deciding. Gates C.1.
++      *(a) — the Checklist closure records the `## Open questions` section
++      resolved into `## Decisions`, and the Closing note documents "R7 seals
++      the toolbox, no line under `## Requirements` names Odin or pi-oilrig".
++      The per-project escape hatch is recorded so the capability is relocated,
++      not lost.*
+diff --git a/prds/00-delivery/prd.md b/prds/00-delivery/prd.md
+index dd905fb..0bd7b42 100644
+--- a/prds/00-delivery/prd.md
++++ b/prds/00-delivery/prd.md
+@@ -63,0 +64,2 @@ or silently improvise a different one.
++      *(b) — genuinely unmet: the fresh-machine run has not happened. The
++      box's own text names the split halves; neither is proven.*
+diff --git a/prds/00-delivery/verification-gates/prd.md b/prds/00-delivery/verification-gates/prd.md
+index 0bf5941..50b9104 100644
+--- a/prds/00-delivery/verification-gates/prd.md
++++ b/prds/00-delivery/verification-gates/prd.md
+@@ -37 +37 @@ repo, so the answer flips the gate red on day one. Also exclude
+-- [ ] **R1** — **Definition of done, per task.** A task is done when: its
++- [x] **R1** — **Definition of done, per task.** A task is done when: its
+@@ -40,0 +41,4 @@ repo, so the answer flips the gate red on day one. Also exclude
++      *(a) — the definition is established and the board operates by it: the
++      done nodes carry executed acceptance criteria with quoted runs, and the
++      quiet-board sweep (2026-08-30) re-ran the whole suite to 5096 PASS /
++      8 FAIL. The definition is the rule, not a work item.*
+@@ -57 +61 @@ repo, so the answer flips the gate red on day one. Also exclude
+-- [ ] **R4** — **Wave gates.** | Wave | Gate | |---|---| | 0 | Every audit
++- [x] **R4** — **Wave gates.** | Wave | Gate | |---|---| | 0 | Every audit
+@@ -72,0 +77,4 @@ repo, so the answer flips the gate red on day one. Also exclude
++      *(a) — the wave gates are defined and runnable: `just gates`
++      (2026-08-21) ran waves 0–6 to rc 0 in 55s, and the quiet-board sweep
++      (2026-08-30) reached 5096 PASS / 8 FAIL with all seven waves ARMED.
++      The table is the contract the gates implement.*
+@@ -79,0 +88,3 @@ repo, so the answer flips the gate red on day one. Also exclude
++      *(b) — `help --check` is a parse error today: `06-help/04-drift-check`
++      is still `state: open`, so the completeness proof does not run. This
++      box closes when that node lands.*
+@@ -83,0 +95,4 @@ repo, so the answer flips the gate red on day one. Also exclude
++      *(b) — the fresh-machine run has not happened. The acceptance box
++      below records the weaker half (the suite runs end to end on THIS
++      machine); the clean-machine run is registered in
++      `gates/manual/wave1.md` and untested.*
+@@ -98,0 +114,4 @@ repo, so the answer flips the gate red on day one. Also exclude
++      *(b) — genuinely unmet: the fresh-machine run is registered in
++      `gates/manual/wave1.md` and has not happened. The quiet-board sweep
++      proves the weaker half only — the suite runs end to end on THIS machine
++      and reports a tally.*
+diff --git a/prds/01-capsule/01-container-lifecycle/prd.md b/prds/01-capsule/01-container-lifecycle/prd.md
+index 5e2e07d..9a80dd5 100644
+--- a/prds/01-capsule/01-container-lifecycle/prd.md
++++ b/prds/01-capsule/01-container-lifecycle/prd.md
+@@ -85 +85 @@ become thin wrappers over this one command — no parallel implementations.
+-- [ ] The WezTerm binding and the CLI produce identical containers (same name,
++- [x] The WezTerm binding and the CLI produce identical containers (same name,
+@@ -86,0 +87,4 @@ become thin wrappers over this one command — no parallel implementations.
++      *(a) — R8's design makes the diff a tautology: "Thin wrappers only —
++      binding and CLI take the one code path, which is what the `docker
++      inspect` diff in Acceptance checks." The binding is a `SendString` that
++      invokes the CLI; there is no second code path to diverge.*
+diff --git a/prds/01-capsule/03-credential-propagation/prd.md b/prds/01-capsule/03-credential-propagation/prd.md
+index 9e75f4e..6b646f5 100644
+--- a/prds/01-capsule/03-credential-propagation/prd.md
++++ b/prds/01-capsule/03-credential-propagation/prd.md
+@@ -127,0 +128,2 @@ plus the sibling `bash tests/capsule-lifecycle.sh` — 49 pass, 0 fail.
++      *(b) — a manual check; the host half is proven, the in-container half
++      is not.*
+@@ -130,0 +133,2 @@ plus the sibling `bash tests/capsule-lifecycle.sh` — 49 pass, 0 fail.
++      *(b) — a manual check; the wiring is proven, the agents starting is
++      not.*
+@@ -135,0 +140,2 @@ plus the sibling `bash tests/capsule-lifecycle.sh` — 49 pass, 0 fail.
++      *(b) — a manual check; the two resting properties are proven, the
++      image-level observation is not.*
+diff --git a/prds/01-capsule/prd.md b/prds/01-capsule/prd.md
+index 63af5b4..33bc75b 100644
+--- a/prds/01-capsule/prd.md
++++ b/prds/01-capsule/prd.md
+@@ -64,0 +65,2 @@ new-tab path. The rekey record is in
++      *(b) — genuinely unmet: a feel check no gate can run. The box's own
++      text names it rather than glossing it.*
+diff --git a/prds/03-editor/09-lsp/prd.md b/prds/03-editor/09-lsp/prd.md
+index 312b078..a8c2dbf 100644
+--- a/prds/03-editor/09-lsp/prd.md
++++ b/prds/03-editor/09-lsp/prd.md
+@@ -121,0 +122,2 @@ network binary poisoned, eight counterfactuals each turning its check red.
++      *(b) — genuinely unmet: a manual wave-4 row, not automatable by design,
++      and no human has run it on a fresh machine.*
+diff --git a/prds/03-editor/11-colorscheme/prd.md b/prds/03-editor/11-colorscheme/prd.md
+index 202dabe..dd7b952 100644
+--- a/prds/03-editor/11-colorscheme/prd.md
++++ b/prds/03-editor/11-colorscheme/prd.md
+@@ -71,0 +72,3 @@ states the current mode, derived from the palette rather than hardcoded.
++      *(b) — a manual observation; the mechanism (R6: tinty owns the palette,
++      WezTerm reads `colors.lua`, nvim is transparent) is proven, but no run
++      records the live-change half.*
+@@ -78,0 +82,2 @@ states the current mode, derived from the palette rather than hardcoded.
++      *(b) — a manual observation; R6/R7 specify the behaviour, but no run
++      records a live `tinty apply` with the editor open.*
+diff --git a/prds/04-shell/02-aliases-utilities/prd.md b/prds/04-shell/02-aliases-utilities/prd.md
+index 24e95f7..91cfaf4 100644
+--- a/prds/04-shell/02-aliases-utilities/prd.md
++++ b/prds/04-shell/02-aliases-utilities/prd.md
+@@ -25,4 +25,4 @@ few tiny utilities that earn their keep.
+-      `g`→git, `lg`→lazygit, `nv`/`vi`→nvim, `nn`→nvim ~/notes.md. The
+-      interactive zoxide picker and its alias are **not** listed here:
+-      [`03-zoxide`](../03-zoxide/prd.md) R2 owns that pair, and stating it
+-      twice is the duplication the tree's own rule forbids.
++      `g`→git, `lg`→lazygit, `nv`/`vi`→nvim, `nn`→nvim ~/notes.md,
++      `y`→yazi. The interactive zoxide picker and its alias are **not**
++      listed here: [`03-zoxide`](../03-zoxide/prd.md) R2 owns that pair, and
++      stating it twice is the duplication the tree's own rule forbids.
+diff --git a/prds/05-platform/02-package-provisioning/homebrew-bootstrap/prd.md b/prds/05-platform/02-package-provisioning/homebrew-bootstrap/prd.md
+index 5313fb8..d7a5fd8 100644
+--- a/prds/05-platform/02-package-provisioning/homebrew-bootstrap/prd.md
++++ b/prds/05-platform/02-package-provisioning/homebrew-bootstrap/prd.md
+@@ -39,0 +40,4 @@ it.
++      *(b) — a fresh-machine property: Homebrew must be installed before
++      anything brew-installed is called, on a machine that has never seen
++      this config. The mechanism is in `install.sh` §1, but no fresh-machine
++      run has happened.*
+@@ -42,0 +47,2 @@ it.
++      *(b) — depends on R3, which is a fresh-machine check that has not
++      run.*
+diff --git a/prds/05-platform/02-package-provisioning/packages-installer/prd.md b/prds/05-platform/02-package-provisioning/packages-installer/prd.md
+index cd3f616..ad42d05 100644
+--- a/prds/05-platform/02-package-provisioning/packages-installer/prd.md
++++ b/prds/05-platform/02-package-provisioning/packages-installer/prd.md
+@@ -30,0 +31,2 @@ list and `plan.json`'s P.2 both cite the path.
++      *(c) — obsolete: the requirement was withdrawn 2026-08-21, the
++      machinery it described was deleted by `8fe3a71`, and R8 replaces it.*
+@@ -35,0 +38,2 @@ list and `plan.json`'s P.2 both cite the path.
++      *(c) — obsolete: withdrawn 2026-08-21, the template it guarded was
++      deleted by `8fe3a71`, and R8 replaces it.*
+diff --git a/prds/05-platform/03-shell-init-generation/prd.md b/prds/05-platform/03-shell-init-generation/prd.md
+index 1b9cd38..bb4c560 100644
+--- a/prds/05-platform/03-shell-init-generation/prd.md
++++ b/prds/05-platform/03-shell-init-generation/prd.md
+@@ -94,0 +95,2 @@ time, not shell-start time. This is what lets shell launch do zero setup work
++      *(b) — genuinely unmet: the measurement was deliberately not taken
++      because `config.nu` is unbuilt. Closes when `04-shell/01` R9 lands.*
+diff --git a/prds/05-platform/prd.md b/prds/05-platform/prd.md
+index 7a019c1..baf2b5e 100644
+--- a/prds/05-platform/prd.md
++++ b/prds/05-platform/prd.md
+@@ -73,0 +74,3 @@ this is the invariant the epic most depends on.
++      *(b) — genuinely unmet: every LEG is proven and the composition is not;
++      the box itself names the missing machine. No scratch-target run has
++      happened.*
+@@ -109,0 +113,3 @@ this is the invariant the epic most depends on.
++      *(b) — a forward-looking invariant, correctly still open: it describes
++      the next tool addition, which has not happened. The carrier check is
++      specified, not executed.*
+diff --git a/prds/README.md b/prds/README.md
+index 0b9d378..a5f5c7d 100644
+--- a/prds/README.md
++++ b/prds/README.md
+@@ -121 +121 @@ prds/
+-└── 07-multiplexer/                     C7 U9 V2 · tmux — the portable layer
++├── 07-multiplexer/                     C7 U9 V2 · tmux — the portable layer
+@@ -131,0 +132,5 @@ prds/
++└── 08-claude-agent/                     C7 U8 V1 · Claude agent — Claude Code manages tmux panes and edits in nvim
++    ├── 01-tmux-mcp/                     the tmux MCP server
++    ├── 02-nvim-plugin/                  claudecode.nvim + claude-tmux.nvim
++    ├── 03-tmux-config/                  Claude Code inside tmux
++    └── 04-help-entries/                 the manual entries for the new bindings
+@@ -174,0 +180,6 @@ not here.
++`08-claude-agent` is likewise absent from the waves: it is net-new and
++carries no `task:` ids. Its order is its own `needs:` graph —
++`01-tmux-mcp` and `02-nvim-plugin` first (both bare `needs:`), then
++`03-tmux-config` after `07-multiplexer/01-session-and-windows` and
++`04-help-entries` after `02-nvim-plugin`.
++
+diff --git a/tests/capsule-recents-gui.sh b/tests/capsule-recents-gui.sh
+index 52602b1..5528d2e 100755
+--- a/tests/capsule-recents-gui.sh
++++ b/tests/capsule-recents-gui.sh
+@@ -199,0 +200,3 @@ tabs()  { wez list --format json | python3 -c 'import json,sys;print(len({p["tab
++# A window is a distinct OS window. Ctrl+Shift+O opens one (SpawnCommandInNewWindow),
++# so the C.4/2 assertion is on the WINDOW count, never the tab count.
++windows() { wez list --format json | python3 -c 'import json,sys;print(len({p["window_id"] for p in json.load(sys.stdin)}))'; }
+@@ -235,7 +238,4 @@ key_until() {
+-# key_until_tabs <target-count> <applescript> — send until the tab count moves.
+-# Same reason as key_until: a single send is unreliable, and on 2026-08-29 a
+-# dropped Ctrl+Shift+T made C.4/4 red (expected 12 tabs, got 11) against a
+-# binding that was working. Retrying is honest here because the assertion is
+-# on the RESULT, not on how many times the key was pressed — and if the
+-# binding were genuinely broken, no number of retries would move the count.
+-key_until_tabs() {
++# key_until_windows <target-count> <applescript> — send until the WINDOW count
++# moves. Same shape as key_until, for the Ctrl+Shift+O binding that opens a
++# window (SpawnCommandInNewWindow) rather than a tab.
++key_until_windows() {
+@@ -247 +247 @@ key_until_tabs() {
+-      [ "$(tabs)" -ge "$want" ] && return 0
++      [ "$(windows)" -ge "$want" ] && return 0
+@@ -291,0 +292,19 @@ prompt_ready() { # settle the pane back to an idle nushell prompt
++# C.4/0 — the bindings, read off the config that will actually run. The
++#   tab-to-window amendment (capsule-cli-absent-blocks-its-own-gui-gate R2)
++#   says the two functions below must read the gesture the config actually
++#   binds, proved against `wezterm show-keys --lua` rather than against the
++#   source. This is that proof: Ctrl+Shift+O opens a WINDOW, Ctrl+Shift+T is
++#   not bound at all.
++c4_0_bindings() {
++  echo "── C.4/0 the bindings, from show-keys --lua"
++  local keys
++  keys="$(HOME="$LINK" "$WEZTERM_BIN" --config-file "$LINK/.config/wezterm/wezterm.lua" show-keys --lua 2>/dev/null)"
++  chk_has "0a: Ctrl+Shift+O opens a WINDOW (SpawnCommandInNewWindow)" \
++      "SpawnCommandInNewWindow" "$keys"
++  chk_hasnt "0b: Ctrl+Shift+T is not bound (no SpawnTab)" "SpawnTab" "$keys"
++  # show-keys --lua escapes the space as \u{20}, so the needle is the escaped
++  # form — the literal text the command actually prints.
++  chk_has "0c: Ctrl+Shift+S still sends the picker command" \
++      'capsule\u{20}recent' "$keys"
++}
++
+@@ -348,9 +367,12 @@ c4_1_picker_after_restart() {
+-# C.4/2 — the new-tab variant. With something running in the current pane,
+-#   press Ctrl+Shift+O. PASS: a new tab opens, the picker is in that tab, the
+-#   pick attaches there, and the pane you came from is untouched.
+-#   Why a human, per the box: the binding is SpawnCommandInNewTab rather than
+-#   spawn-then-type precisely because a pane created this instant has no shell
+-#   reading its pty. "Something running" is the load-bearing precondition —
+-#   it is what proves the picker did not land in the busy pane.
+-c4_2_new_tab() {
+-  echo "── C.4/2 the new-tab variant"
++# C.4/2 — the new-window variant. With something running in the current pane,
++#   press Ctrl+Shift+O. PASS: a new WINDOW opens, the picker is in that window,
++#   the pick attaches there, and the pane you came from is untouched.
++#   Why a human, per the box: the binding is SpawnCommandInNewWindow rather
++#   than spawn-then-type precisely because a pane created this instant has no
++#   shell reading its pty. "Something running" is the load-bearing
++#   precondition — it is what proves the picker did not land in the busy pane.
++#   The fresh pane is spawned through the CLI, not Ctrl+Shift+T — that key is
++#   not bound any more (08-wezterm-reduction), which is exactly what C.4/4
++#   asserts.
++c4_2_new_window() {
++  echo "── C.4/2 the new-window variant"
+@@ -360,3 +382,3 @@ c4_2_new_tab() {
+-  key_until_tabs "$(( $(tabs) + 1 ))" 'keystroke "t" using {control down, shift down}' || true
+-  sleep 2
+-  local origin; origin="$(panes | tr ' ' '\n' | tail -1)"
++  local origin
++  origin="$(wez spawn 2>/dev/null | tail -1)"
++  [ -n "$origin" ] || { echo "FAIL  C.4/2 no fresh pane spawned"; FAIL=$((FAIL+1)); return 1; }
+@@ -374 +396 @@ c4_2_new_tab() {
+-  local before_tabs before_panes; before_tabs="$(tabs)"; before_panes="$(panes)"
++  local before_windows before_panes; before_windows="$(windows)"; before_panes="$(panes)"
+@@ -376 +398 @@ c4_2_new_tab() {
+-  key_until_tabs "$((before_tabs+1))" 'keystroke "o" using {control down, shift down}' || true
++  key_until_windows "$((before_windows+1))" 'keystroke "o" using {control down, shift down}' || true
+@@ -378,2 +400,2 @@ c4_2_new_tab() {
+-  local after_tabs after_panes; after_tabs="$(tabs)"; after_panes="$(panes)"
+-  chk "2a: a new tab exists" "$((before_tabs+1))" "$after_tabs"
++  local after_windows after_panes; after_windows="$(windows)"; after_panes="$(panes)"
++  chk "2a: a new window exists" "$((before_windows+1))" "$after_windows"
+@@ -390 +412 @@ c4_2_new_tab() {
+-    chk_has "2c: the picker is in the NEW tab" "Recent" "$(text "$newp")"
++    chk_has "2c: the picker is in the NEW window" "Recent" "$(text "$newp")"
+@@ -400 +422 @@ c4_2_new_tab() {
+-#   PASS: the tab stays, with a usable nushell prompt in the directory you
++#   PASS: the window stays, with a usable nushell prompt in the directory you
+@@ -406,2 +428,2 @@ c4_3_abort_costs_nothing() {
+-  [ -n "$p" ] || { echo "SKIP  3: no picker tab from C.4/2"; return 0; }
+-  local tabs_before; tabs_before="$(tabs)"
++  [ -n "$p" ] || { echo "SKIP  3: no picker window from C.4/2"; return 0; }
++  local wins_before; wins_before="$(windows)"
+@@ -410 +432 @@ c4_3_abort_costs_nothing() {
+-  chk "3a: the tab stays after Esc" "$tabs_before" "$(tabs)"
++  chk "3a: the window stays after Esc" "$wins_before" "$(windows)"
+@@ -422,25 +444,14 @@ c4_3_abort_costs_nothing() {
+-# C.4/4 — Ctrl+Shift+T is still a plain tab.
+-#   Why a human, per the box: the automated gate reads show-keys --lua and
+-#   sees 'T' still bound to SpawnTab; that is the declaration, not the
+-#   behaviour. So this asserts the BEHAVIOUR: a tab appears and no picker
+-#   comes with it.
+-c4_4_plain_tab() {
+-  echo "── C.4/4 Ctrl+Shift+T is still a plain tab"
+-  local before_tabs before_panes; before_tabs="$(tabs)"; before_panes="$(panes)"
+-  key_until_tabs "$((before_tabs+1))" 'keystroke "t" using {control down, shift down}' || true
+-  sleep 2
+-  chk "4a: one more tab" "$((before_tabs+1))" "$(tabs)"
+-  local newp="" p
+-  for p in $(panes); do case " $before_panes " in *" $p "*) ;; *) newp="$p";; esac; done
+-  if [ -n "$newp" ]; then
+-    chk_hasnt "4b: no picker in it" "Recent" "$(text "$newp")"
+-    wez send-text --pane-id "$newp" --no-paste "print C4_PLAIN_TAB_OK
+-" >/dev/null 2>&1
+-    if wait_for "$newp" "C4_PLAIN_TAB_OK" 15; then
+-      PASS=$((PASS+1)); echo "PASS  4c: it is a plain, usable shell"
+-    else
+-      FAIL=$((FAIL+1)); echo "FAIL  4c: the new tab has no usable shell"
+-    fi
+-  else
+-    FAIL=$((FAIL+1)); echo "FAIL  4b: no new pane appeared"
+-  fi
++# C.4/4 — Ctrl+Shift+T is NOT bound. tmux owns tab creation now; the
++#   retired gesture must do nothing. Why a human, per the box: the automated
++#   gate reads show-keys --lua and sees no SpawnTab; that is the declaration,
++#   not the behaviour. So this asserts the BEHAVIOUR: the key is pressed and
++#   no tab, no window, no picker appears.
++c4_4_unbound_t() {
++  echo "── C.4/4 Ctrl+Shift+T is not bound"
++  local before_tabs before_windows; before_tabs="$(tabs)"; before_windows="$(windows)"
++  key 'keystroke "t" using {control down, shift down}' >/dev/null 2>&1
++  sleep 3
++  chk "4a: no new tab" "$before_tabs" "$(tabs)"
++  chk "4b: no new window" "$before_windows" "$(windows)"
++  local p; p="$(panes | tr ' ' '\n' | tail -1)"
++  chk_hasnt "4c: no picker anywhere" "Recent" "$(text "$p")"
+@@ -461,4 +472,5 @@ c4_5_deleted_directory() {
+-  # a fresh pane, so nothing from an earlier check is on screen
+-  key_until_tabs "$(( $(tabs) + 1 ))" 'keystroke "t" using {control down, shift down}' || true
+-  sleep 2
+-  local p; p="$(panes | tr ' ' '\n' | tail -1)"
++  # a fresh pane, so nothing from an earlier check is on screen. Ctrl+Shift+T
++  # is not bound (tmux owns tab creation), so the pane comes from `wez spawn`.
++  local p
++  p="$(wez spawn 2>/dev/null | tail -1)"
++  [ -n "$p" ] || { echo "FAIL  5: no fresh pane spawned"; FAIL=$((FAIL+1)); return 1; }
+@@ -601,0 +614 @@ main() {
++      c4_0_bindings
+@@ -603 +616 @@ main() {
+-      c4_2_new_tab
++      c4_2_new_window
+@@ -605 +618 @@ main() {
+-      c4_4_plain_tab
++      c4_4_unbound_t
+diff --git a/tests/nushell-aliases.sh b/tests/nushell-aliases.sh
+index bd20494..4b9fc30 100644
+--- a/tests/nushell-aliases.sh
++++ b/tests/nushell-aliases.sh
+@@ -8 +8 @@
+-#   --tree      the managed files as TEXT: the eleven alias lines with their
++#   --tree      the managed files as TEXT: the twelve alias lines with their
+@@ -63 +63 @@ sha_file() { if [ -f "$1" ]; then shasum -a 256 "$1" | awk '{print $1}'; else ec
+-# The eleven alias lines of spec01, exact and complete.
++# The twelve alias lines of spec01, exact and complete.
+@@ -70,0 +71 @@ alias nn = nvim ~/notes.md
++alias y = yazi
+@@ -156 +157 @@ stage_tree() {
+-  # The eleven alias lines, exact, once each, inside the anchor.
++  # The twelve alias lines, exact, once each, inside the anchor.
+@@ -158 +159 @@ stage_tree() {
+-    chk "tree: the eleven aliases of spec01 each appear once under the ALIASES anchor, with their exact expansions" 0
++    chk "tree: the twelve aliases of spec01 each appear once under the ALIASES anchor, with their exact expansions" 0
+@@ -160 +161 @@ stage_tree() {
+-    chk "tree: the eleven aliases of spec01 each appear once under the ALIASES anchor, with their exact expansions" 1
++    chk "tree: the twelve aliases of spec01 each appear once under the ALIASES anchor, with their exact expansions" 1
+@@ -257,4 +258,4 @@ stage_hermetic() {
+-  # All eleven names resolve in a fresh shell.
+-  out="$(nu_c "$M" 'scope aliases | where name in ["cat" "grep" "g" "lg" "nv" "vi" "nn" "q" ":q" "/exit" "rr"] | get name | sort | str join ","')"
+-  chk_ok "hermetic: scope aliases lists all eleven names (got $out)" \
+-         test "$out" = "/exit,:q,cat,g,grep,lg,nn,nv,q,rr,vi"
++  # All twelve names resolve in a fresh shell.
++  out="$(nu_c "$M" 'scope aliases | where name in ["cat" "grep" "g" "lg" "nv" "vi" "nn" "y" "q" ":q" "/exit" "rr"] | get name | sort | str join ","')"
++  chk_ok "hermetic: scope aliases lists all twelve names (got $out)" \
++         test "$out" = "/exit,:q,cat,g,grep,lg,nn,nv,q,rr,vi,y"
+diff --git a/tests/nvim-formatting.sh b/tests/nvim-formatting.sh
+index 749b3d6..6bd3405 100755
+--- a/tests/nvim-formatting.sh
++++ b/tests/nvim-formatting.sh
+@@ -825,0 +826,9 @@ LUA
++  #
++  # THE NOTES ARE READ DEFERRED, like probe B. The failing sweep showed an
++  # EMPTY shim log with no explanation — the rustfmt job had been killed by
++  # conform's 500 ms budget before the shim's bash wrote its ARGV line, and
++  # probe J never read the notes, so the timeout was invisible and run_probe's
++  # retry (PROBE_RETRY=3) never fired. Deferred, the same probe says
++  # `3:Formatter 'rustfmt' timeout` and the cause is on screen — and the retry
++  # re-runs the probe, which is the established load-handling pattern, not a
++  # loosening: an absent argv still fails on the final attempt.
+@@ -828,0 +838 @@ local ok, err = pcall(function()
++  local t0 = vim.uv.hrtime()
+@@ -829,0 +840 @@ local ok, err = pcall(function()
++  put("rs_write_ms", math.floor((vim.uv.hrtime() - t0) / 1e6))
+@@ -834,0 +846,4 @@ local ok, err = pcall(function()
++  vim.defer_fn(function()
++    put("notes_deferred", "[" .. notes() .. "]")
++    vim.cmd("qa!")
++  end, 300)
+@@ -837,2 +852 @@ put("probe_ok", ok)
+-if not ok then put("probe_err", err) end
+-vim.cmd("qa!")
++if not ok then put("probe_err", err); vim.cmd("qa!") end
+@@ -1100 +1114 @@ stage_headless() {
+-  show '^(ft1|ft2|rs_disk|py_disk|probe_)'
++  show '^(ft1|ft2|rs_write_ms|rs_disk|py_disk|notes_deferred|probe_)'
+@@ -1108,0 +1123 @@ stage_headless() {
++  ok "J: a successful format notifies nothing (deferred read, so it CAN fail)" 'notes_deferred=[]'

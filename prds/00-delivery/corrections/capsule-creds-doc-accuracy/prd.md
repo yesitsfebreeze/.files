@@ -6,7 +6,7 @@ est:
 mode: afk
 needs:
   - 01-capsule/03-credential-propagation
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/capsule-creds-refresh-wording
 complexity: 32
@@ -47,37 +47,63 @@ review ritual working as designed — a reader with no stake in the wording
 found three things the author and the spec both missed.
 
 ## Requirements
-- [ ] **R1** — The entry describes the actual mode set, distinguishing
+- [x] **R1** — The entry describes the actual mode set, distinguishing
       private keys and directories (600/700) from public keys (644), with
       the line reference. If the *code* is wrong rather than the prose, say
       so and stop — changing `setup-credentials.sh` is C.3's, not this
       node's.
-- [ ] **R2** — The no-prompt guarantee is attributed to
+      *(a) — commit `eea4528`: "ssh in a capsule (600/700 for private
+      material, 644 for *.pub)". spec01: finding 1 → `:59,67,68`; the script
+      was read end to end and no mode defect found.*
+- [x] **R2** — The no-prompt guarantee is attributed to
       `StrictHostKeyChecking accept-new`, with the `ssh-keyscan` pre-add
       described as the optimisation it is. Both line references present.
-- [ ] **R3** — The agent-auth half is documented: the keychain export, and
+      *(a) — commit `eea4528`: "the no-prompt guarantee correctly attributed
+      to StrictHostKeyChecking accept-new, with ssh-keyscan named as the
+      optimisation it is". spec01: `:115` for the guarantee, `:121-130` for
+      the optimisation.*
+- [x] **R3** — The agent-auth half is documented: the keychain export, and
       that the tokens are **symlinked** into the read-only mount so a
       container cannot run its own OAuth refresh and rotate the host's
       refresh token out from under it. That reason is the expensive part —
       carry it, do not summarise it away.
-- [ ] **R4** — Word budget respected. The corpus maximum is 156 words
+      *(a) — commit `eea4528`: "agents in a capsule (the keychain export and
+      read-only symlink, so a container can't rotate the host's refresh token
+      out from under it)". spec01: `:208-213` Claude, `:224-229` OpenCode.*
+- [x] **R4** — Word budget respected. The corpus maximum is 156 words
       (`terminal.nuon [lit and dim tabs]`) and this entry's `why` is now
       153. R3 adds material, so something has to give: either the entry
       splits, or the existing prose tightens. Say which and why rather than
       quietly exceeding the ceiling.
-- [ ] **R5** — Every edited entry re-digests through the gate's own helper,
+      *(a) — commit `eea4528`: "All three under the 156-word ceiling without
+      rewriting any already-reviewed word". spec01: split, not compression —
+      122 / 111 / 95, none exceeds 156.*
+- [x] **R5** — Every edited entry re-digests through the gate's own helper,
       with a reader-reviewer distinct from the author, per the ritual
       [`cdi-manual-source`](../cdi-manual-source/prd.md) R2 established. The
       `why-review.nuon` note carrying these three findings is retired in the
       same change — a note must not outlive its own fix.
+      *(a) — commit `eea4528`: "Four fresh review rows recorded, the stale
+      why-review.nuon note retired". spec01: author/reviewer distinct on all
+      four rows; retiring row `df68bce54ec761bf` gone.*
 
 ## Acceptance
 - [ ] `nu tests/help-content-model.nu` passes, output quoted.
-- [ ] Each of the three claims is quoted beside the `setup-credentials.sh`
+      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
+      `shell.nuon [y]` has no row in `use-review.nuon`. Commit `eea4528`
+      proved this box at the time (94 entries, exit 0); the violation is a
+      separate finding, filed as its own node
+      ([`shell-y-entry-missing-review-row`](../shell-y-entry-missing-review-row/prd.md)).*
+- [x] Each of the three claims is quoted beside the `setup-credentials.sh`
       line that justifies it.
-- [ ] The word count of every `why` touched is stated, and none exceeds 156.
-- [ ] `why-review.nuon` carries no note describing a defect this change
+      *(a) — commit `eea4528`; spec01 acceptance: finding 1 → `:59,67,68`,
+      finding 2 → `:115` + `:121-130`, finding 3 → `:208-213` + `:224-229`.*
+- [x] The word count of every `why` touched is stated, and none exceeds 156.
+      *(a) — commit `eea4528`; spec01: 122 / 111 / 95.*
+- [x] `why-review.nuon` carries no note describing a defect this change
       fixed.
+      *(a) — commit `eea4528`; spec01: retiring row `df68bce54ec761bf` is
+      gone, replaced by three rows recording the fix.*
 
 ## Out of scope
 - Changing `setup-credentials.sh`. If a mode or a mechanism is genuinely

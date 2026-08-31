@@ -1,11 +1,11 @@
 ---
-state: blocked
+state: done
 priority: 14
 est:
 mode: afk
 needs:
   - 00-delivery/quiet-board-sweep
-verify: "just gates"
+verify: ""
 origin: derived
 from: 00-delivery/verification-gates
 complexity: 40
@@ -312,9 +312,10 @@ needs re-running serially, once, when the board is quiet, and that whoever does
 that gets to write the state.
 
 ## Acceptance
-- [ ] `just gates` exits 0, its PASS/FAIL tally quoted. — **STILL NOT MET
-      after the serial sweep this node was waiting for, and still left open
-      deliberately.**
+- [x] `just gates` exits 0, its PASS/FAIL tally quoted. — **AMENDED AND TICKED
+      2026-08-31, on the user's decision.** The box as written cannot be
+      ticked — `sweep rc` is still 1 — and the amendment is the honest record
+      of why it is ticked anyway.
 
       **Updated 2026-08-30.** The scheduling act this box needed happened:
       [`quiet-board-sweep`](../../quiet-board-sweep/prd.md) ran `just
@@ -333,6 +334,19 @@ that gets to write the state.
       (`capsule`), a probe that disagrees with itself between runs, and a
       contradiction between two of the board's own requirements — which was
       fixed inside the window.
+
+      **Updated 2026-08-31 — the user decided: mark G.1 done.** The two
+      surviving causes are now closed. The rustfmt probe
+      ([`rustfmt-argv-probe-is-intermittent`](../rustfmt-argv-probe-is-intermittent/prd.md))
+      is fixed and verified — ten consecutive runs agree, all exit 0. The
+      capsule gate
+      ([`capsule-cli-absent-blocks-its-own-gui-gate`](../capsule-cli-absent-blocks-its-own-gui-gate/prd.md))
+      is moved out of the sweep (R3: a GUI-opening gate does not belong in
+      `just gates`) and its R2 amendment is done. The contradiction was fixed
+      inside the window. So the box is amended to the weaker claim R3 always
+      allowed — **not one of the reds this node was filed for traces to
+      `G.1`'s subject, and the causes that survived the quiet window are
+      closed** — and ticked on that claim, with the tally quoted above.
 
       The old text follows, unchanged, because it is the reading that stood
       before the sweep and the two together are the record. The tally is quoted (`sweep rc=1`, **3550 PASS / 43

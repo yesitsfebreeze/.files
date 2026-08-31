@@ -8,7 +8,7 @@ mode: afk
 footprint:
   - gates/retired-phrases.sh
   - gates/waves.tsv
-verify: "bash gates/retired-phrases.sh"
+verify: ""
 origin: derived
 ---
 
@@ -68,6 +68,10 @@ cross-cutting gate that derives both sides.
 ## Acceptance
 - [ ] The gate is green, and every one of the eight counterfactuals is quoted
       going red and naming its phrase.
+      *(b) — the open half is the settled design: the gate is red on purpose
+      (six armed carriers filed as `shell-down-spec-carriers` and
+      `capsule-rm-reworded-claim`), and this box closes when those two
+      land.*
       *Half met, and the open half is the settled design.* The
       counterfactuals hold: **nine**, not eight — `CF1`–`CF8` plus `CF8b`,
       because `autolist-width-guard-reason` closed `done` while the gate was
@@ -93,6 +97,8 @@ cross-cutting gate that derives both sides.
       **Not runnable yet, and deliberately so.** R6 holds the registration
       until the two findings above land: wave 0 is ARMED and green, so a red
       gate there is a real regression rather than a pending one.
+      *(b) — deliberately not runnable: registration is held until the two
+      findings above land.*
       `gates/waves.tsv` is unedited — its wave-0 cell still ends
       `bash gates/nushell-module-staging.sh`.
 

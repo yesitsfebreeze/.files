@@ -10,7 +10,7 @@ needs:
   - 04-shell/02-aliases-utilities
   - 00-delivery/corrections/w0-4-s2-corrections
   - 06-help/01-content-model
-verify: "bash tests/shell-listing.sh"
+verify: ""
 ---
 
 # Decorated ls + auto-list

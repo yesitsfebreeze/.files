@@ -66,13 +66,16 @@ whole fix landed in `04-television` R2. Each is stated in the file a reader
 would look in.
 
 ## Acceptance
-- [ ] Every requirement box above is `[x]` — **done and proved** — and the
+- [x] Every requirement box above is `[x]` — **done and proved** — and the
       backlog item it corrects is marked fixed. **This box stays open on
       purpose:** `00-delivery/corrections/prd.md` is in no W0.4a–g child's
       footprint, so this ticket may not write it. The orchestrator created
       [`backlog-closeout`](../backlog-closeout/prd.md) (W0.4h) on 2026-08-21
       to own the corrections backlog; marking L-1..L-4, M-5..M-9 and the two
       S3 items fixed is that node's, and this box closes when it runs.
+      *(a) — backlog-closeout ran: L-1..L-4 and M-5..M-9 are all "**Fixed
+      2026-08-21**" in the backlog, and the two S3 rows are "`[x] fixed`". The
+      annotation's condition ("this box closes when it runs") is met.*
 
 ## Out of scope
 - Any file another W0.4 child owns. One writer per file is why this sweep is

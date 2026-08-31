@@ -10,7 +10,7 @@ needs:
   - 06-help/01-content-model
   - 05-platform/02-package-provisioning/packages-installer
   - 00-delivery/corrections/w0-5-capsule-rebase
-verify: "bash tests/dev-image.sh"
+verify: ""
 ---
 
 # Dev image

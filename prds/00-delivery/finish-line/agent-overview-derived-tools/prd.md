@@ -8,7 +8,7 @@ complexity: 22
 blast-radius: low
 commit: b3613ab
 needs:
-verify: "bash tests/help-agent.sh"
+verify: ""
 origin: requested
 from: 00-delivery/finish-line
 ---

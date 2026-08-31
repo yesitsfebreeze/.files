@@ -9,7 +9,7 @@ mode: afk
 needs:
   - 01-capsule/01-container-lifecycle
   - 06-help/01-content-model
-verify: "bash tests/capsule-credentials.sh"
+verify: ""
 ---
 
 # Credential propagation into containers
@@ -125,14 +125,20 @@ plus the sibling `bash tests/capsule-lifecycle.sh` — 49 pass, 0 fail.
       prompt.
       Manual. The HTTPS credential path is separately proven on the host (see
       R3); what is unproven is that it works from inside the container.
+      *(b) — a manual check; the host half is proven, the in-container half
+      is not.*
 - [ ] `claude` and `opencode` start authenticated.
       Manual. The exported material and its in-container wiring are proven;
       the agents starting is not.
+      *(b) — a manual check; the wiring is proven, the agents starting is
+      not.*
 - [ ] `docker history` of the image shows no credential material; `~/.ssh`
       inside the container is not writable back to the host copy.
       Manual. The two properties it rests on are proven without an image: the
       Dockerfile has no `COPY`/`ADD`, and every credential bind carries
       `:ro`.
+      *(b) — a manual check; the two resting properties are proven, the
+      image-level observation is not.*
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

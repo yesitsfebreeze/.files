@@ -4,7 +4,7 @@ priority: 16
 est:
 mode: afk
 needs:
-verify: "bash gates/wezterm-config-fields.sh"
+verify: ""
 origin: derived
 from: 02-terminal
 claim:

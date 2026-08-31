@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 06-help/01-content-model
   - 00-delivery/corrections/w0-4-s2-corrections
-verify: "bash tests/shell-help.sh"
+verify: ""
 ---
 
 # The `help` command

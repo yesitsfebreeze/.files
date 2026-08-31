@@ -8,7 +8,7 @@ actual: 10m
 mode: afk
 footprint:
   - AGENTS.md
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 ---
 

@@ -7,7 +7,7 @@ actual: 15m
 mode: afk
 needs:
   - 00-delivery/corrections/ollama-host-missing-binary
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/ollama-host-missing-binary
 ---

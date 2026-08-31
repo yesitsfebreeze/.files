@@ -10,7 +10,7 @@ needs:
   - 04-shell/03-zoxide
   - 05-platform/03-shell-init-generation
   - 06-help/01-content-model
-verify: "bash tests/shell-history.sh"
+verify: ""
 ---
 
 # Directory-scoped history

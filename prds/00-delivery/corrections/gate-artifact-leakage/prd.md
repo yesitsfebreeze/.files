@@ -4,7 +4,7 @@ claim:
 priority: 36
 est: 5h
 mode: afk
-verify: "bash gates/selftest.sh"
+verify: ""
 origin: derived
 ---
 

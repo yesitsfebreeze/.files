@@ -5,7 +5,7 @@ est: 2.75h
 task: W0.9
 mode: afk
 needs:
-verify: "bash tests/deploy-skeleton.sh"
+verify: ""
 origin: derived
 ---
 

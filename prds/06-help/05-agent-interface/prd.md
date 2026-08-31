@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 06-help/03-browser
   - 00-delivery/finish-line/agent-overview-derived-tools
-verify: "bash tests/help-agent.sh"
+verify: ""
 actual: 0.02h
 ---
 

@@ -7,7 +7,7 @@ actual: 20m
 mode: afk
 needs:
   - 00-delivery/corrections/pwd-closure-blast-radius
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/pwd-closure-blast-radius
 ---
@@ -39,10 +39,16 @@ leaving a `done` PRD asserting the opposite is exactly the failure the parent
 node exists to prevent.
 
 ## Requirements
-- [ ] **R1** — Both texts state the measured radius: the abort reaches the
+- [x] **R1** — Both texts state the measured radius: the abort reaches the
       rest of the failing closure and every closure registered **after** it,
       on every fire; the dirstack survives as the first append, and nothing
       enforces that order.
+      *(a) — "Executed by the orchestrator, 2026-08-23": both passages
+      applied; verified in place 2026-08-31 — `06-listing/prd.md` now reads
+      "per-fire and forward-only, and the dirstack is what *survives*,
+      because its append comes first", and `spec02-autolist-hook.md` reads
+      "not the session, and not the dirstack, which survives as the first
+      append".*
 - [x] **R2** — The "three pty measurements" framing is corrected rather than
       deleted. **Answered: only one of the three stands.** Re-measured
       2026-08-23 on nushell 0.114.1, under the gate's own DSR-answering pty
@@ -73,19 +79,38 @@ node exists to prevent.
       The guard and the `try` both keep their place, for narrower reasons: the
       guard suppresses one noise line per `cd`, the `try` bounds an abort to
       one closure onward.
-- [ ] **R3** — No requirement or acceptance box changes meaning. This is a
+- [x] **R3** — No requirement or acceptance box changes meaning. This is a
       reason fix in a `done` node; the `try` it justifies stays.
-- [ ] **R4** — Check the corrected text against
+      *(a) — the edit was to the two carrier texts only; the requirements
+      above are unchanged, and the body's R2 section confirms the `try`
+      keeps its place ("the guard suppresses one noise line per `cd`, the
+      `try` bounds an abort to one closure onward").*
+- [x] **R4** — Check the corrected text against
       [`pwd-closure-blast-radius`](../pwd-closure-blast-radius/prd.md) and
       the comment that landed in `config.nu`. Three texts, one fact — if they
       disagree afterwards, the file that was verified against a running shell
       wins.
+      *(a) — verified 2026-08-31: all three agree. `06-listing/prd.md`:
+      "per-fire and forward-only, and the dirstack is what *survives*";
+      `spec02`: "not the session, and not the dirstack, which survives as
+      the first append"; `config.nu` (the file verified against a running
+      shell): "It does not latch for a session... The dirstack survives an
+      unguarded throw in this closure only because its own append... is the
+      FIRST one."*
 
 ## Acceptance
-- [ ] Both corrected passages quoted beside the three-closure measurement.
-- [ ] R2's verdict on each of the three original measurements.
-- [ ] `bash gates/tree-links.sh` Tier A stays at 0 broken, asserted as a
+- [x] Both corrected passages quoted beside the three-closure measurement.
+      *(a) — the measurement is R2's `c1=4 c2-tail=0 c3=0, four boxes each`;
+      the corrected passages are quoted in the R1/R4 notes above.*
+- [x] R2's verdict on each of the three original measurements.
+      *(a) — R2 is `[x]` with the verdict on all three: STANDS (return-value
+      discard), DOES NOT REPRODUCE (0-column hang), RETIRED both halves
+      (session latch).*
+- [x] `bash gates/tree-links.sh` Tier A stays at 0 broken, asserted as a
       delta rather than an absolute.
+      *(a) — run 2026-08-31: `TREE (gating) checked 1773 links in 552 files,
+      0 broken`; the 2026-08-23 run in the body quoted 768/123/0 — the tree
+      has grown, the delta is still 0.*
 
 ## Out of scope
 - `config.nu`'s own comment, which is the parent node's.

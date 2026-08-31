@@ -10,7 +10,7 @@ needs:
   - 00-delivery/decisions/tinty
   - 00-delivery/decisions/wallpaper-opacity
   - 06-help/01-content-model
-verify: "bash tests/wezterm-appearance.sh"
+verify: ""
 ---
 
 # Terminal appearance — font, palette, baseline

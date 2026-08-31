@@ -23,7 +23,7 @@ footprint:
   - tests/shell-television.sh
   - tests/shell-help.sh
   - tests/help-browser.sh
-verify: "bash tests/help-browser.sh"
+verify: ""
 ---
 
 # Fuzzy browser

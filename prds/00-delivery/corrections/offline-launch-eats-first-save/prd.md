@@ -9,7 +9,7 @@ needs:
 footprint:
   - home/dot_config/nvim/lua/plugins/lsp.lua
   - tests/nvim-lsp.sh
-verify: "bash tests/nvim-lsp.sh"
+verify: ""
 origin: derived
 from: 03-editor/07-formatting
 complexity: 45

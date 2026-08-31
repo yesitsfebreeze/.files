@@ -61,7 +61,7 @@ are sound — every substantive box above this one is a real `grep` with quoted
 output — so this is a defective check on good work, not bad work.
 
 ## Requirements
-- [ ] **R1** — Census every `git diff` acceptance box in `prds/**/spec*.md`
+- [x] **R1** — Census every `git diff` acceptance box in `prds/**/spec*.md`
       and classify each by **whether its target is tracked**, resolved
       per-file with `git ls-files --error-unmatch`. Do **not** classify by
       directory — see the correction below; `gates/`, `tests/` and `home/`
@@ -69,36 +69,66 @@ output — so this is a defective check on good work, not bad work.
       vacuous as one over a `prd.md`. Report the count in each class with the
       predicate used, and do not assume the 25/6 split above is still
       current — re-derive it.
+      *(a) — the census is in the body, re-derived by
+      `checks/gitdiff-boxes.py` (88 boxes / 66 files, 72 board boxes, 44
+      load-bearing, seven-rule predicate); `--selftest` exits 0, run
+      2026-08-31.*
 - [ ] **R2** — Replace each vacuous box with a check that observes the file:
       hash or re-read the frontmatter block and assert each key's value.
       Untracked-ness is not a bug to fix — do **not** propose committing the
       tree to make the check work. The board's product being uncommitted
       between transitions is normal, and a check that only works after a
       commit is a check that does not work when it is run.
-- [ ] **R3** — Correct the false `[x]` at
+      *(b) — the body admits the replacement did not happen: "Fourteen of
+      the eighteen could only be *recorded*, not repaired: their nodes are
+      `done`, the edit already landed, the pre-edit state was untracked so
+      git never held a copy, and no `cp` aside was kept." The substitutes
+      (sha256, cp-aside, git status) are documented but not applied to the
+      open boxes. Recorded in the body, not filed as a new finding.*
+- [x] **R3** — Correct the false `[x]` at
       `truncated-source-attributions/specs/spec01.md:176` in place, in the
       established `**Reworded by the orchestrator: …**` form, and say what
       actually proves it. Do not silently re-tick it, and do not touch that
       node's other boxes — they are real.
+      *(a) — the body: "R3 landed during this census"; the box now carries
+      the rewording naming the Tier A link-count proof (621 → 630).*
 - [ ] **R4** — Write the rule where the next spec author will hit it: a
       sentence in `.claude/skills/prd/README.md`'s acceptance guidance saying
       that `git diff` proves nothing about a `prds/` path, with the 7-of-142
       number and its date. One place only — the cross-link rule forbids
       restating it in `AGENTS.md`.
-- [ ] **R5** — The 16 boxes already `[x]` are **in scope for the census and
+      *(b) — the rule did not land anywhere that exists today. spec02's
+      target `.claude/skills/prd/README.md` was created by a WIP commit
+      (`08199fb`, 2026-08-22), edited per spec02's claim, and is now gone
+      from the working tree; the board protocol moved to
+      `~/dev/infra/pearde/README.md` (2026-08-24), and `grep -n 'git diff'`
+      there returns nothing. The rule is lost. Reported in the
+      drain-the-backlog report, not filed as a new node.*
+- [x] **R5** — The 16 boxes already `[x]` are **in scope for the census and
       out of scope for re-ticking**, except R3's. Report which of them are
       vacuous; do not reopen a `done` node's boxes to fix a check that has
       already run. Say plainly how many `[x]` on this board rest on a
       `git diff` that could not have failed.
+      *(a) — the body's R5 section: nine ticks rest on a `git diff` that
+      could not have failed (seven vacuous, two impossible), reported and
+      not re-ticked.*
 
 ## Acceptance
-- [ ] The census table, with the tracked/untracked predicate stated and the
+- [x] The census table, with the tracked/untracked predicate stated and the
       counts re-derived rather than copied from this PRD.
+      *(a) — the census table is in the body with the seven-rule predicate
+      and re-derived counts.*
 - [ ] Every vacuous open box replaced, each with the content check that
       replaces it quoted.
-- [ ] `truncated-source-attributions:176` reworded, its real proof named.
+      *(b) — same as R2: 14 of 18 unprovable in retrospect, recorded not
+      repaired; the four that "will run again" have not been replaced.*
+- [x] `truncated-source-attributions:176` reworded, its real proof named.
+      *(a) — R3, documented in the body.*
 - [ ] The rule lands in the skill README, once, with its number and date.
-- [ ] A count of vacuous `[x]` boxes, reported and not silently fixed.
+      *(b) — same as R4: the target file is gone and the rule is not in the
+      pearde README.*
+- [x] A count of vacuous `[x]` boxes, reported and not silently fixed.
+      *(a) — R5's nine, in the body.*
 
 ## Out of scope
 - Committing `prds/` to make `git diff` meaningful. See R2.

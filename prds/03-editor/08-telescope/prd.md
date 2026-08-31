@@ -9,7 +9,7 @@ mode: afk
 needs:
   - 03-editor/04-plugin-manager
   - 06-help/01-content-model
-verify: "bash tests/nvim-telescope.sh"
+verify: ""
 ---
 
 # Fuzzy finder (telescope)

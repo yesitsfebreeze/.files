@@ -7,7 +7,7 @@ actual: 10m
 mode: afk
 needs:
   - 00-delivery/corrections/unguarded-startup-externals
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 ---
 

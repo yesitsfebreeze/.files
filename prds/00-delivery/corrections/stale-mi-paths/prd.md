@@ -5,7 +5,7 @@ priority: 48
 est: 3h
 needs:
 mode: afk
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 ---
 

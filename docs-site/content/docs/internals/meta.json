@@ -1,0 +1,14 @@
+{
+  "title": "Internals",
+  "pages": [
+    "index",
+    "nushell",
+    "tmux",
+    "neovim",
+    "wezterm",
+    "nushell-modules",
+    "help",
+    "capsule",
+    "unverified"
+  ]
+}

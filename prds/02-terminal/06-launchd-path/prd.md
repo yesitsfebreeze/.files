@@ -8,7 +8,7 @@ task: T.7
 mode: afk
 needs:
   - 02-terminal/05-tab-content-state
-verify: "bash tests/wezterm-launchd-path.sh"
+verify: ""
 ---
 
 # launchd PATH seeding

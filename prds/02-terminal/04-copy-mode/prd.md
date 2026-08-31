@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 02-terminal/03-f5-jump-mode
   - 06-help/01-content-model
-verify: "bash tests/tmux-copy-and-clipboard.sh"  # AMENDED 2026-08-30: the c-cycle moved to tmux copy-mode-vi
+verify: ""
 ---
 
 # Copy mode, paste, and the loose bindings

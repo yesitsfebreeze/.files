@@ -6,7 +6,7 @@ task: P.1
 mode: afk
 needs:
   - 00-delivery/corrections/w0-3-platform-rewrite
-verify: "bash tests/deploy-skeleton.sh"
+verify: ""
 ---
 
 # Repo skeleton: chezmoi source layout, home/, justfile

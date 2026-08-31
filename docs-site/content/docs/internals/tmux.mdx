@@ -1,0 +1,421 @@
+---
+title: tmux
+description: The multiplexer base — what each non-obvious line in tmux.conf is defending against.
+---
+
+`tmux.conf` is the portable half of the environment. Nothing in it may assume
+WezTerm, macOS or Homebrew: the whole point is that it is the same file on a
+box reached by ssh ten minutes ago.
+
+Everything below was measured on **tmux 3.7c** unless another version is named.
+
+## The terminal-integration floor
+
+### `default-terminal` is probed, not asserted
+
+`tmux-256color` is the correct entry and is **absent** on plenty of minimal
+hosts — Debian slim, Alpine, a container from a base image. A
+`default-terminal` naming a terminfo entry that does not exist is not a soft
+failure: **tmux refuses to create the session at all**. So the entry is probed
+at parse time and `screen-256color`, which every ncurses install carries, is
+the floor.
+
+`if-shell` in a config file runs **synchronously** — the branch is taken before
+the command line's `new-session` runs — which is what makes this safe to write
+as a conditional rather than a background job that lands too late.
+
+### Truecolour and undercurl are overrides, not reads
+
+`*:RGB` tells tmux the *client* terminal can take direct-colour SGR, so 24-bit
+colour set inside a pane survives the trip out. Without it every palette this
+environment ships is quantised to 256 colours.
+
+Undercurl (`Smulx`) and coloured undercurl (`Setulc`) have **no standard
+terminfo capability**, so both are declared as overrides against the outer
+terminal rather than read from its entry. Neovim draws diagnostics with them.
+
+### `escape-time 10`
+
+tmux waits this long after an `Esc` for the rest of an escape sequence.
+Anything larger is felt directly as a delay leaving insert mode in nvim. 3.7c
+already defaults to 10 (it was 500 for years) — it is stated anyway, because
+the conf must be right on the older tmux a minimal host actually ships.
+
+### `allow-passthrough` is a window option
+
+A DCS-wrapped sequence from inside a pane reaches the outer terminal. This is
+the channel both the palette's OSC 4/10/11 and the clipboard's OSC 52 ride,
+and it is **off** by default. Being a window option, `-g` sets the global
+window default and every window created afterwards inherits it.
+
+## Addressing
+
+### `renumber-windows off` is the whole scheme
+
+This is why the WezTerm reconciler died. Its slot ledger — ~320 lines and its
+own test — existed because WezTerm tab indices shift when a tab closes, so a
+digit was not a stable address without being *made* one. tmux indices are
+stable natively, and this line is what keeps them that way: with
+`renumber-windows on`, closing window 4 would slide 5–9 down and every digit
+would address different content.
+
+`off` is the default. It is stated because the entire addressing scheme
+depends on it.
+
+### Both indices start at 1
+
+A keyboard has no `0` next to the `1`, so `base-index` and `pane-base-index`
+are both 1 and the key matches the label.
+
+## Where a new window starts
+
+A lazily created window starts at `~`, deliberately **not** the `F4` split's
+rule, which inherits the active pane's cwd. The two gestures disagree on
+purpose: a split divides *this* work, a digit is a clean slate.
+
+Measured with the session path, the pane's cwd and the client's cwd all set to
+**different** directories — a first reading with two of them equal could not
+tell them apart and got this backwards. `new-window` with no `-c` resolves its
+directory from *who ran it*:
+
+| Invoked from | Resolves to |
+|---|---|
+| typed into a shell | the pane's cwd |
+| run from outside tmux | the client's cwd |
+| **a key binding** | **the session's working directory** |
+
+The last is the only one anybody presses. So the mechanism is the session being
+*created* at `$HOME`, which happens in `~/.local/bin/tmux-main`. `tmux.conf`
+cannot do it — tmux has had no `default-path` option since 1.9.
+
+## `default-command`: three things, each of which cost a day
+
+1. **Resolve `nu` on PATH, never by absolute path.** WezTerm's `default_prog`
+   could hardcode `/opt/homebrew/bin` because it only ever spawned on this
+   machine. This file is meant to be the same file over ssh, where nu is under
+   `~/.cargo/bin`, `/usr/local/bin`, or nowhere.
+2. **Fall back to something that works.** A `default-command` that fails does
+   not warn — the pane opens and closes again — so a host without nu must land
+   in `$SHELL` rather than in nothing.
+3. **Export `XDG_CONFIG_HOME` before the exec.** `$nu.default-config-dir` is a
+   **launch-time constant**; `env.nu` assigning it runs too late to move it.
+   Measured on nushell 0.114.1: with `--config`/`--env-config` but no export,
+   `$nu.default-config-dir` is `~/Library/Application Support/nushell` and
+   reedline really does write `history.sqlite3` there, outside the managed
+   tree. WezTerm did this in `set_environment_variables`; under tmux the pane
+   is spawned by the tmux *server*, whose environment came from whichever
+   client started it, so the export has to happen here or nowhere.
+
+`default-command` runs through `/bin/sh -c`, so it is POSIX sh, not nushell.
+`exec` in both arms keeps the pane's process the shell itself, which is what
+makes `#{pane_current_command}` read `nu` — the value the status bar tints
+occupied windows from.
+
+## Key tables
+
+### A pushed table falls back to `root`, then drops
+
+This is the property the whole design rests on and it is not documented
+anywhere obvious. A key with no binding in the pushed table is looked up **a
+second time** in `root`. If root does not bind it either, it is **dropped** —
+it does not reach the program in the pane.
+
+So a mistyped letter cancels the mode and types nothing. WezTerm needed all 26
+letters bound to a no-op to get this; on tmux those binds would be dead code.
+
+The same second lookup is why the double-tap needs an explicit binding. Without
+`bind -T jump F5 send-keys F5`, the second `F5` misses in `jump`, hits
+`bind -n F5` in `root`, and silently **re-arms** the table instead of
+forwarding anything.
+
+No timeout is needed or possible. WezTerm's jump mode carried a 5 s timeout
+because its key table persisted; a tmux table is popped by the very next
+keystroke whatever it is, so the mode is at most one key deep.
+
+### The delimiter must not be a glob metacharacter
+
+The window-existence test loops the window list and matches the index inside
+delimiters:
+
+```
+#{W:|#{window_index}|}   →  |1||4||7|
+```
+
+`#{m:}` is **fnmatch**, and `[` opens a character class. So the natural
+`#{m:*[1]*,#{W:[#{window_index}]}}` answers **true for window 11** when asked
+about window 1, and the binding then selects a window that does not exist.
+Measured. `|` is inert to fnmatch.
+
+The same trap governs the status bar's occupancy test, where the pane's command
+becomes the pattern and the shell list is the string: the bracket form answers
+true for `nushell` when asked about `nu`.
+
+`if-shell -F` tests a *format*, so no `/bin/sh` is spawned per keypress.
+
+### Pane letters are only honest with the border
+
+tmux **renumbers panes** when one is killed, so a letter does not keep its pane
+for life. The status bar's `pane-border-format` prints the letter derived from
+the *same index the key uses*, so it is right the instant after a renumber
+rather than describing where the pane used to be. The key binding and the
+border are one design, not two features.
+
+`#{a:N}` is the character with numeric value N and `#{e|+|:96,N}` is integer
+addition, so pane 1 reads `a` and pane 9 reads `i`. No shell, no lookup table.
+
+### `F6` is never forwarded
+
+`F6` gets no table and no `send-keys` anywhere, deliberately: the palette
+belongs to the **outermost** terminal, because that is the process that owns
+the ANSI colours and reads the OSC. An `F6` forwarded into a nested session
+could only retint a session that does not own them.
+
+It is bound in the multiplexer rather than the shell because a full-screen TUI
+would swallow a shell-level binding. `-b` so the tmux server is not blocked for
+the length of a `tinty apply`.
+
+`sh -lc` is a **login** shell on purpose: `/etc/profile` runs `path_helper`,
+which reads `/etc/paths.d/homebrew` and puts Homebrew's bin on PATH by itself,
+so this file names no Homebrew path. Measured 2026-08-23:
+
+```sh
+env -i HOME=$HOME PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  /bin/sh -lc 'command -v nu; command -v tinty'
+```
+
+answers `/opt/homebrew/bin/nu`, and `tinty: NOT FOUND`. Note what
+`/etc/paths.d/homebrew` names: `bin` only, never `sbin`. The two prepended
+directories are the ones no login shell adds — tinty lives in `~/.local/bin` —
+and both are `$HOME`-relative, so they are inert where they do not exist. Do
+**not** drop the prefix on the grounds that `nu` resolves without it: the
+toggle would then fail one layer deeper, on `tinty`, where the cause is far
+harder to see than a missing shell.
+
+## Copy mode
+
+### `Ctrl+Shift+X` only exists on an extended-key terminal
+
+A terminal cannot express `Ctrl+Shift+X` in the legacy encoding — both `Ctrl+X`
+and `Ctrl+Shift+X` are the single byte `0x18`. The key only arrives as
+something distinguishable when the terminal speaks an extended-key protocol.
+
+tmux 3.7c **decodes both spellings** — `CSI 120;6u` (kitty/CSI-u) and
+`CSI 27;6;120~` (xterm modifyOtherKeys) — into `C-S-x`, and it does so with
+`extended-keys` off, on and always alike: that option governs what tmux
+**sends**, never what it accepts.
+
+Binding `C-S-x` costs plain `C-x` nothing: measured, with only `C-S-x` bound a
+plain `Ctrl+X` still reaches the pane as `0x18`, so nvim's `i_CTRL-X`
+completion prefix and every readline binding are untouched. Binding `C-x`
+instead — the byte that actually arrives on a legacy terminal — would have
+taken them all.
+
+`C-b [` is the entry that works on every terminal ever.
+
+### The cycle's anchor, and why it is an option
+
+`select-word` leaves the cursor at the **end** of the word and `select-line` at
+the end of the line, so a naive cycle wrapping back to cell anchors on wherever
+the last selection *ended*. On `alpha beta gamma delta` with the cursor on
+`beta`, cell/word/line read `b` / `beta` / the whole line, and the next `c`
+without a restore reads `delta`.
+
+`set-mark` on the first press records the anchor; `jump-to-mark` then `set-mark`
+on the wrap restores it and puts the mark back — `jump-to-mark` **swaps** cursor
+and mark, it does not copy.
+
+The position is tracked in an option rather than by reading the selection back,
+because a one-cell selection reads `#{selection_present}` 0 while
+`#{selection_active}` is 1, so a state machine driven off the selection desyncs
+on its own first step.
+
+`jump-to-mark` with no mark set does not stay put — it moves the cursor to line
+2 column 0. The cycle only ever jumps in its `line` state, which is reachable
+only after the state that sets the mark. The `after-copy-mode` hook clears the
+toggle on **every** entry, because copy mode is also entered by the mouse wheel
+and by `copy-mode` typed as a command.
+
+### `set-option` before a copy command silently kills the OSC 52
+
+**The order is load-bearing and the failure is silent.** A `set-option`
+anywhere in a key binding *before* a copy command suppresses the OSC 52 that
+`set-clipboard on` would otherwise emit. The paste buffer is still set,
+`show-buffer` reads the right text, and nothing is logged — so on a remote host
+the copy looks like it worked and the clipboard never moves.
+
+Three shapes, one fixture:
+
+```
+{ set -pu @o ; send -X copy-selection-and-cancel }    buffer set, NO OSC 52
+{ set -p @o x ; send -X copy-selection-and-cancel }   buffer set, NO OSC 52
+{ send -X copy-selection-and-cancel ; set -pu @o }    buffer set, OSC 52 out
+```
+
+The reset in the `y` binding is redundant — `after-copy-mode` clears the toggle
+on the next entry — and it is kept anyway, so a reader who moves it back to the
+top finds something here saying why it must not be moved.
+
+### The sink is chosen by where the panes are
+
+`pbcopy` writes the clipboard of the machine the **tmux server** runs on, which
+is the machine the panes are on. That is the right clipboard when the server is
+this desk and the wrong one — or no one at all — when you have ssh'd somewhere
+and started tmux there. OSC 52 is the opposite: it travels out through the
+client's terminal, so it reaches the clipboard of the machine you are *sitting*
+at.
+
+The two arms are **exclusive**, and that is what `set-clipboard off` buys on the
+local arm: `copy-pipe-and-cancel pbcopy` under `set-clipboard on` puts the text
+on the clipboard **and** emits an OSC 52 for the same text, so "picks its sink"
+would have been two sinks.
+
+`off` costs nothing here: an OSC 52 written by an *application* inside a pane
+(remote nvim's osc52 provider on the far end of an ssh) is forwarded to the
+outer terminal under `off`, `external` and `on` alike. **The manual is wrong
+about that on this version** — do not restore `on` locally on the strength of
+the man page without re-measuring.
+
+The case this gets wrong, named rather than hidden: a tmux server on *this*
+machine attached from somewhere else over ssh copies to this desk's clipboard,
+not to the one in front of you. Copying out is the direction this environment is
+built for; copying in was not bought.
+
+### `mode-keys vi` is stated, not inherited
+
+tmux picks `mode-keys` from `$EDITOR`/`$VISUAL` when it is not set, so on a host
+where `EDITOR` is unset or emacs-shaped the whole copy cycle would sit on top of
+a table whose motions are emacs bindings.
+
+## The status bar
+
+Colours are **ANSI slots, not hex**. `colour0` is base00 and `colour7` is base05
+after tinted-shell's OSC 4, so they follow a `tinty apply` for free on any
+terminal that honours it. The one value with no ANSI slot is base02 (the active
+label's background); `colour8`/base03 stands in until `colors.conf` sets the
+exact style.
+
+The digit's **background** says which window has focus and its **foreground**
+says which windows are busy, so the two signals never compete for one channel.
+
+The active label's colours live in a style *option*, not inline in the format,
+because a later `source-file` can replace a style option and cannot replace a
+format's embedded `#[…]`.
+
+`status-interval` is 5 s. The clock is `HH:MM`, so a faster tick would repaint
+the bar sixty times for one visible change.
+
+"Local" cannot be read from the format language — tmux does not know where the
+client is — so the hostname segment is decided once at parse time from the
+**server's** environment: a tmux started over ssh inherits `SSH_CONNECTION`, one
+started from a terminal on this desk does not.
+
+`#{s|^$HOME|~|:pane_current_path}` is a format substitution, not a shell — no
+process per tick. `$HOME` is expanded by tmux at parse time, so the pattern is a
+literal path by the time a tick reads it.
+
+A one-pane window has nothing to address, so the border is hidden there rather
+than spending a row of the grid saying `a` about the only pane there is. The
+`window-layout-changed` hook fires on every split, kill and layout change —
+every event that can change the count.
+
+## Palette delivery
+
+`~/.config/tmux/colors.conf` holds **style options only**, never formats, so a
+scheme change can never move a segment of the bar. It is sourced **last**, so it
+overrides the ANSI-slot defaults; a checkout that has never applied a theme has
+no such file and keeps them.
+
+**`-q` is the existence test.** The natural spelling —
+
+```
+if-shell '[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/colors.conf" ]' …
+```
+
+— does not survive: tmux performs its own `${…}` expansion on the string and has
+**no `:-` default form**, so it rejects the line with "invalid environment
+variable" at load. `-q` suppresses the missing-file error, which is the whole of
+what the `if-shell` was for, and costs no shell.
+
+Both spellings of the config root are sourced because tmux itself looks in both
+for this file, and the hook writes to `$XDG_CONFIG_HOME`. Sourcing the same
+options twice is a no-op; sourcing neither would leave a themed machine on the
+fallback slots.
+
+## Persistence
+
+**No tpm.** tpm exists to install and update plugins and to give a config a
+place to declare them; `install.sh` clones them and two `run-shell` lines
+declare them, so tpm would be a third mechanism doing a finished job.
+
+**The guard and the run are one shell command, and that shape is forced.** The
+natural spelling —
+
+```
+if-shell '[ -f "…/resurrect.tmux" ]' 'run-shell "…/resurrect.tmux"'
+```
+
+— **loads silently and runs nothing**. `run-shell`'s argument is a tmux command
+string, so tmux performs its own `${…}` expansion on it first and has no `:-`
+default form; the expansion fails, `if-shell` swallows the error, and the plugin
+never starts with no message anywhere. Inside `run-shell '<sh>'` the whole
+string is handed to `/bin/sh` and `${XDG_DATA_HOME:-$HOME/.local/share}` is the
+*shell's* expansion, which works.
+
+**What the `-x` guard is honestly worth:** without it, `run-shell` on a missing
+file produces **no error anywhere** — not on stderr at load, not in
+`show-messages`. So the guard does not save you from a broken config; it saves
+you from spawning a shell that fails silently. A machine where `install.sh` has
+not run gets a fully working tmux either way, minus persistence. That is the
+honest degradation, and it is why nothing here aborts.
+
+**Continuum goes last**, and that is a documented requirement of the plugin: its
+init reads the `@continuum-*` options and schedules the save loop, so anything
+set after it is not seen by the loop it started. `-b` is **not** used — a
+plugin's init has to have run before the options it reads are used.
+
+Saved state lives under `$XDG_STATE_HOME`, not `$XDG_DATA_HOME`: a session
+snapshot is state a machine can lose without losing anything you chose.
+
+`@resurrect-strategy-nvim 'session'` is **not** used. That strategy restores
+with `nvim -S` only when a literal `Session.vim` sits in the pane's cwd — which
+would mean writing an untracked file into every working tree the editor was ever
+opened in. The **inline** strategy takes a custom restore command instead, split
+on the `->` token, so persistence.nvim's session file stays in the state
+directory where it belongs.
+
+Pane **contents** are not saved. What comes back is the shape of the work —
+where each pane was and what it was running — not a screenshot of its
+scrollback, which would put the output of every command on disk in plaintext and
+grow without bound.
+
+## Claude Code in a pane
+
+Two lines, both required for `Shift+Enter` to insert a newline instead of
+submitting.
+
+The repo pairs WezTerm's `enable_kitty_keyboard = false` with nushell's
+`use_kitty_protocol = false` so reedline never fires the kitty support query
+whose reply the WezTerm pty returns too late. Adding `extended-keys on` does
+**not** disturb that pairing, because the option governs what tmux *sends* to
+pane programs only at each program's own request, and nushell never asks:
+
+- A pane program that asked for nothing receives **byte-for-byte the same
+  input** with `extended-keys` off and on. Measured: plain Enter, `Ctrl+X` and
+  arrow-up arrived as `\r`, `030`, `ESC[A` in both settings, across all eight
+  request/feature combinations probed.
+- Modified keys reach a pane only in extended form **after that pane enables
+  modifyOtherKeys itself** (`CSI >4;1m`). `Shift+Enter` then arrives as
+  `CSI 27;2;13~`, `Ctrl+X` stays the bare byte `018`, arrow-up stays `CSI A`.
+- The kitty protocol tmux does not track per pane at all: a pane pushing
+  `CSI >1u` still got plain `\r` for `Shift+Enter`. There is no path by which
+  this line could re-arm the kitty behaviour that was turned off.
+
+With `extended-keys` off, tmux folds **both** `Shift+Enter` spellings into the
+bare `\r` of plain Enter, and Claude Code cannot tell a newline from a submit
+even though the outer terminal encoded them differently.
+
+`xterm*:extkeys` names the client terminal as extended-key capable. Measured:
+with `extended-keys on`, tmux emits `CSI >4;2m` on the client wire at attach
+with the feature line present **and** absent alike — on 3.7c the feature line is
+belt and braces, carried because the docs require it and because an older tmux
+gates the request on a matching `extkeys` feature.

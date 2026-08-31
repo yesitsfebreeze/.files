@@ -5,7 +5,7 @@ est:
 mode: afk
 claim: 
 needs:
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 03-editor
 complexity: 12
@@ -46,18 +46,24 @@ Found by E.11's analyst, 2026-08-23, which called it "decidable, not a
 question — but somebody should reconcile I8's wording".
 
 ## Requirements
-- [ ] **R1** — I8 states the convention actually in force, with the reason:
+- [x] **R1** — I8 states the convention actually in force, with the reason:
       one file per plugin, **named for the concern it delivers**, because a
       concern name survives replacing the plugin behind it. The
       no-catch-all clause and the `lua/plugins/editor.lua` history it records
       are correct and stay.
-- [ ] **R2** — Every landed filename is checked against the restated
+      *(a) — commit `c53d294`: "I8 restated for the concern, not the plugin
+      … I8 now says what the config actually does."*
+- [x] **R2** — Every landed filename is checked against the restated
       invariant, and any genuine mismatch is **reported, not renamed**.
       Renaming a deployed file changes the plugin census in
       `tests/nvim-options.sh` and every gate that greps it — far beyond a
       wording fix, and it would collide with whichever editor node holds
       that census at the time.
-- [ ] **R3** — The unbuilt editor nodes that will create files —
+      *(a) — commit `c53d294` spec01: "census of all twelve
+      lua/plugins/*.lua files against the restated wording (zero genuine
+      mismatches; conform.lua reported as the one already-litigated
+      ambiguous case)."*
+- [x] **R3** — The unbuilt editor nodes that will create files —
       [`12-small-plugins`](../../../03-editor/12-small-plugins/prd.md),
       [`13-statusline`](../../../03-editor/13-statusline/prd.md),
       [`15-markdown-tables`](../../../03-editor/15-markdown-tables/prd.md) —
@@ -65,13 +71,20 @@ question — but somebody should reconcile I8's wording".
       conflict is reported. `12-small-plugins` R4 already names three files;
       if the restatement disagrees with them, **that node's names win** —
       they were settled by a correction — and I8 accommodates them.
+      *(a) — commit `c53d294` spec01: "the three nodes R3 worried about,
+      found already done with names that agree."*
 
 ## Acceptance
-- [ ] I8's new text is quoted, alongside the four-row table of landed files
+- [x] I8's new text is quoted, alongside the four-row table of landed files
       that motivated it.
-- [ ] The R2 and R3 checks are in the report as lists, with a verdict per
+      *(a) — commit `c53d294` restated I8 in `prds/03-editor/prd.md`; the
+      four-row table is this PRD's body.*
+- [x] The R2 and R3 checks are in the report as lists, with a verdict per
       file: agrees, mismatched-and-reported, or not yet created.
-- [ ] `bash gates/tree-links.sh` Tier A stays at 0 broken.
+      *(a) — commit `c53d294` spec01 carries the census with verdicts.*
+- [x] `bash gates/tree-links.sh` Tier A stays at 0 broken.
+      *(a) — commit `c53d294`: "Verified: bash gates/tree-links.sh — 0
+      broken before and after."*
 
 ## Out of scope
 - Renaming any file, deployed or specced. R2 makes a mismatch a reported

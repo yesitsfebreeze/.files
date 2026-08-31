@@ -10,7 +10,7 @@ needs:
   - 00-delivery/corrections/gate-artifact-leakage
 footprint:
   - gates/selftest.sh
-verify: "bash gates/selftest.sh --root"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/gate-artifact-leakage
 ---

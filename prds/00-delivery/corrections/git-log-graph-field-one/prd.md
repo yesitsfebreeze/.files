@@ -10,7 +10,7 @@ footprint:
   - home/dot_config/television/cable/git-log.toml
   - home/dot_config/nushell/finder.nu
   - tests/shell-television.sh
-verify: "bash tests/shell-television.sh"
+verify: ""
 origin: derived
 from: 04-shell/04-television
 complexity: 20

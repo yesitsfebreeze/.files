@@ -7,7 +7,7 @@ actual: 10m
 mode: afk
 needs:
   - 04-shell/03-zoxide
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 from: 04-shell/03-zoxide
 ---

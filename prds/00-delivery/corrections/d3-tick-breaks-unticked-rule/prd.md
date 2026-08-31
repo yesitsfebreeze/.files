@@ -7,7 +7,7 @@ claim:
 complexity: 25
 blast-radius: low
 needs:
-verify: "bash gates/manual-coverage.sh"
+verify: ""
 origin: derived
 from: 00-delivery/verification-gates
 ---

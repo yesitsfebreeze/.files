@@ -1,0 +1,25 @@
+---
+title: This environment
+description: Every key, command and alias in the dotfiles, and why each one is the way it is.
+---
+
+The manual for this machine: nushell as the shell, tmux as the multiplexer,
+Neovim as the editor, WezTerm as the chrome, and capsule for containers.
+
+<Cards>
+  <Card title="Manual" href="/docs/manual/navigate" description="102 entries — every key, command and alias, grouped by what you are trying to do." />
+  <Card title="Internals" href="/docs/internals" description="The constraints the configuration is built around, and what each was measured against." />
+</Cards>
+
+## How to read this
+
+**Manual** answers *what do I press*. It is generated from the same four
+`.nuon` surface files that `help` reads in the shell, so the site and the
+shell manual cannot disagree — one set of entries, two renderers.
+
+**Internals** answers *why is the config written that way*. These are the
+constraints that cost a day each to find: a terminfo entry that is absent on
+minimal hosts, a tmux format delimiter that must not be a glob metacharacter,
+an option assignment that silently suppresses an OSC 52.
+
+Use the search (`⌘K`) — it indexes both.

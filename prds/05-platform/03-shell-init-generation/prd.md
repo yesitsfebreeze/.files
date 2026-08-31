@@ -6,7 +6,7 @@ task: P.4
 mode: afk
 needs:
   - 05-platform/02-package-provisioning/packages-installer
-verify: "bash tests/shell-init.sh"
+verify: ""
 ---
 
 # Shell-init generation
@@ -92,6 +92,8 @@ time, not shell-start time. This is what lets shell launch do zero setup work
       yet. Structurally the generator is a chezmoi `run_after` script and is
       invoked by nothing at shell start, but the box asks for a measurement
       and none was taken.*
+      *(b) — genuinely unmet: the measurement was deliberately not taken
+      because `config.nu` is unbuilt. Closes when `04-shell/01` R9 lands.*
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

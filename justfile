@@ -1,6 +1,6 @@
-# Deploy recipes. Gate recipes live in gates/justfile and are imported when
-# that file exists, so this file has one writer and the gates have another.
-import? 'gates/justfile'
+# Deploy recipes. The gate recipes this file used to import were deleted on
+# 2026-08-31 along with tests/ and gates/ — see
+# prds/memos/tests-and-gates-retire-a-dev-setup-is-not-a-product.md
 
 repo := justfile_directory()
 
@@ -29,3 +29,14 @@ push message="dotfiles: update":
 cutover:
     chezmoi init --source "{{ repo }}" --force
     chezmoi apply --force
+
+# Serve the manual at http://localhost:3000. Regenerates from the .nuon
+# surfaces first, so it always matches what `help` prints in the shell.
+[doc('Serve the searchable manual on :3000.')]
+docs:
+    cd "{{ repo }}/docs-site" && npm run dev
+
+# Regenerate the manual pages from the .nuon surfaces without serving.
+[doc('Regenerate the manual pages from the .nuon surfaces.')]
+docs-generate:
+    cd "{{ repo }}/docs-site" && npm run generate

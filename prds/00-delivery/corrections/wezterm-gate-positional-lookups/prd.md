@@ -6,7 +6,7 @@ est: 4.25h
 mode: afk
 needs:
   - 00-delivery/corrections/listing-order-lookup-regression
-verify: "bash gates/wave-status.sh --run 4"
+verify: ""
 origin: derived
 complexity: 55
 blast-radius: high

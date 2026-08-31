@@ -37,9 +37,15 @@ it.
       *"Simplify dotfiles: drop theme/pi/data-driven machinery, minimal
       chezmoi, one plain install.sh"*), so R3 is kept rather than
       withdrawn.
+      *(b) — a fresh-machine property: Homebrew must be installed before
+      anything brew-installed is called, on a machine that has never seen
+      this config. The mechanism is in `install.sh` §1, but no fresh-machine
+      run has happened.*
 
 ## Acceptance
 - [ ] Every requirement box above is `[x]` against the real thing.
+      *(b) — depends on R3, which is a fresh-machine check that has not
+      run.*
 
 ## Out of scope
 - The sibling node's requirements. This document held two contracts and was split;

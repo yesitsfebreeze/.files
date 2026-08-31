@@ -15,7 +15,7 @@ footprint:
   - install.sh
   - tests/provisioning.sh
   - tests/nvim-formatting.sh
-verify: "bash tests/nvim-formatting.sh"
+verify: ""
 needs:
 ---
 

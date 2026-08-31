@@ -7,7 +7,7 @@ mode: afk
 needs:
   - 05-platform/01-deploy-mechanism/repo-skeleton
   - 00-delivery/decisions/fzf
-verify: "bash tests/provisioning.sh"
+verify: ""
 ---
 
 # Tool installer (install.sh)
@@ -28,11 +28,15 @@ list and `plan.json`'s P.2 both cite the path.
       chezmoi, one plain install.sh"*) deleted both. Kept here with its
       number rather than deleted, because requirements are cited by number
       and a renumber reads as an error. See R8 for what replaces it.
+      *(c) — obsolete: the requirement was withdrawn 2026-08-21, the
+      machinery it described was deleted by `8fe3a71`, and R8 replaces it.*
 - [ ] **R2** — **Re-run only on change.** *Withdrawn 2026-08-21.* This
       required a content-hash comment in the installer so chezmoi's
       change-detecting script stage re-ran it when — and only when — the list
       changed. The 486-line template it guarded went out with `8fe3a71`. See
       R8.
+      *(c) — obsolete: withdrawn 2026-08-21, the template it guarded was
+      deleted by `8fe3a71`, and R8 replaces it.*
 - [x] **R4** — **macOS path is the supported one.** brew for everything
       available there. The Linux ladder (distro package → prebuilt GitHub
       release tarball → cargo) exists for capsule containers; keep it, but

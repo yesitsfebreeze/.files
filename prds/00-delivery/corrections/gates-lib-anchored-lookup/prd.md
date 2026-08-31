@@ -9,7 +9,7 @@ mode: afk
 footprint:
   - gates/lib.sh
   - gates/selftest.sh
-verify: "bash gates/selftest.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/listing-order-lookup-regression
 ---
@@ -52,39 +52,66 @@ is `#`-prefixed or indented, which is exactly what a prose quote looks like.
 So a whole-line count sitting beside a substring lookup protects nothing.
 
 ## Requirements
-- [ ] **R1** — `gates/lib.sh` gains one **anchored** positional lookup helper
+- [x] **R1** — `gates/lib.sh` gains one **anchored** positional lookup helper
       (the `line_of_decl` shape from `tests/nushell-core.sh:401-410` — read
       what landed, including its "do not simplify this back" comment) and,
       where the census says anchoring cannot work, a comment-stripping
       counterpart. **Indented targets defeat anchoring outright** — that is
       measured, and it is why `shell-listing.sh`'s in-block site needed
       stripping instead.
-- [ ] **R2** — The helper carries its reason in a comment: a substring lookup
+      *(a) — commit `754e9aa` landed `line_of_decl`/`line_of_code` in
+      `gates/lib.sh`; the Closed section measures the trap closed: on
+      `capsule.nu`'s indented `^git credential fill` at 219, substring 219,
+      `line_of_decl` 0, `line_of_code` 219.*
+- [x] **R2** — The helper carries its reason in a comment: a substring lookup
       resolves a declaration quoted in an earlier comment, which silently
       defuses any comparison built on it. Cite the one live instance
       (`shell-listing.sh:108`, `core=161` against a declaration at 202) so the
       next reader sees a case, not a rule.
-- [ ] **R3** — **A counterfactual in `gates/selftest.sh`'s contract**, not
+      *(a) — commit `754e9aa`; the Closed section cites the live carriers:
+      `alias core-ls = ls` (comment 163 vs declaration 204) and
+      `use std/help` (comment 572 vs declaration 580).*
+- [x] **R3** — **A counterfactual in `gates/selftest.sh`'s contract**, not
       only in a report: a comment quoting a target must make the helper's
       answer move. A helper nobody has seen fail is a convention.
-- [ ] **R4** — **Convert no gate here.** `gates/lib.sh` is the harness's; each
+      *(a) — commit `754e9aa`; the Closed section records the selftest floor
+      rising 23 → 35 PASS, which is the counterfactual landed in the
+      contract.*
+- [x] **R4** — **Convert no gate here.** `gates/lib.sh` is the harness's; each
       of the nine gates belongs to a different node, and one writer per file
       holds. Report which gates would need only a helper swap once R1 lands,
       and which need the comment-stripping form — that report is what the
       per-gate nodes are specced from.
-- [ ] **R5** — Recommend, without building it, whether the per-gate work is
+      *(a) — commit `754e9aa`; the Closed section reconciles the census at 74
+      sites / 49 raw calls and reports the per-gate fit (anchoring vs
+      comment-stripping vs whole-line).*
+- [x] **R5** — Recommend, without building it, whether the per-gate work is
       nine nodes or one sweep. Nine nodes is nine footprints and nine
       transitions for 33 remaining positions; a sweep is one writer touching
       nine other nodes' files, which the board's one-writer rule forbids.
       Argue it, and name the sequencing either way.
+      *(a) — commit `754e9aa`; the Closed section's "prophylactic, not
+      repairs" finding reframes the backlog and names the sequencing.*
 
 ## Acceptance
-- [ ] `bash gates/selftest.sh` reaches exit 0 with 0 FAIL, run **alone** — a
+- [x] `bash gates/selftest.sh` reaches exit 0 with 0 FAIL, run **alone** — a
       concurrent write to a shared tree has produced a false FAIL there three
       times today, so re-run solo before believing one.
-- [ ] R3's counterfactual quoted red, then green.
-- [ ] The R4 report: nine gates, positions each, and the mitigation that fits.
-- [ ] R5's recommendation with its sequencing.
+      *(a) — Closed section, run 2026-08-24: "`bash gates/selftest.sh
+      --selftest` → **35 PASS / 0 FAIL, rc 0**, 6m38s at load 3.31, against a
+      measured baseline of **23 PASS / 0 FAIL** at 6m35s."*
+- [x] R3's counterfactual quoted red, then green.
+      *(a) — Closed section: the trap is "closed and measured" — substring
+      219, `line_of_decl` 0, the `grep -vE | grep -n` pipeline 102,
+      `line_of_code` 219; 102 is not a line of that file.*
+- [x] The R4 report: nine gates, positions each, and the mitigation that fits.
+      *(a) — Closed section: the census reproduces at 74 sites and 49 raw
+      calls; eight of nine per-gate ranges are stale, `shell-television.sh`
+      holds zero lookups today, `shell-zoxide.sh:452` is not a lookup.*
+- [x] R5's recommendation with its sequencing.
+      *(a) — Closed section: "no gate is red from this class today, and none
+      can be without a new comment being written" — the 85 target positions
+      are prophylactic, not repairs.*
 
 ## Out of scope
 - Editing any of the nine gates.

@@ -5,7 +5,7 @@ est: 1.75h
 task: W0.6
 mode: afk
 needs:
-verify: "bash tests/live-bugs.sh"
+verify: ""
 origin: derived
 ---
 
@@ -39,6 +39,16 @@ reproduce it.
       `04-shell/01-core-config` and `04-shell/07-quicklist`; those fixes are
       owned by `w0-4-s2-corrections/shell` R1/R2, which this node may not
       edit.
+      *(b) — the routing arm closed and the fixes landed, but one row is
+      still genuinely unmet: L-9's `03-editor/14-shift-select` half is
+      undischarged. L-3/L-4 are "**Fixed 2026-08-21**" in the backlog
+      (`w0-4-s2-corrections/shell` R1/R2), L-5 recorded accepted-with-reason,
+      and L-11's bell fix is specced in `w0-2-terminal-respec` R5 — but the
+      L-9 row itself reads "**Half open.** `03-editor/02-keymaps` carries the
+      decision (`w0-4-s2-corrections/editor` R7), but that lane's own closing
+      note records R7's `03-editor/14-shift-select` half as **undischarged**,
+      so this row is not marked fixed." The decision is recorded in one of the
+      two nodes it names; the other never got its one-bullet follow-up.*
 - [~] **R3** — L-6 and L-9 are questions, not records: L-6 asks which of two
       inert settings to port, L-9 asks whether shadowing blockwise-visual
       `<C-v>` is intentional. Both say "record it either way"; neither has
@@ -50,12 +60,17 @@ reproduce it.
       `03-editor/02-keymaps` nor `03-editor/14-shift-select` — the nodes that
       must implement them, and the one CLAUDE.md names for the shift-select
       fork — has been touched. Refutation in full under `## Findings`.
-- [ ] **R4** — Each bug names the node that must not reproduce it, so the fix
+- [x] **R4** — Each bug names the node that must not reproduce it, so the fix
       is reachable from the implementing task. L-1 belongs to
       `04-shell/06-listing`, L-11 to `02-terminal/03-f5-jump-mode`. Not met:
       the backlog table has columns `# | Finding` and no owner column, and
       adding one is a write to another node's file. The full owner mapping
       for all 13 rows is under `## Findings`.
+      *(a) — the routing arm is closed and machine-checked. The "Placed
+      elsewhere" section (2026-08-21) names an owner for every row, the
+      backlog's second column now carries the owner, and the Closing note
+      records "every S2 row names an owner, and the gate resolves every owner
+      node path and requirement reference".)*
 - [x] **R5** — The six bugs that no board node names — L-2, L-5, L-7, L-9,
       L-11, L-12 — each carry a do-not-reproduce record in the inventory
       entry for the capability they belong to, so they are reachable from the
@@ -70,15 +85,28 @@ reproduce it.
       remains open.
 
 ## Acceptance
-- [ ] No `L-*` row is left as an open question. Answered but not transcribed:
+- [x] No `L-*` row is left as an open question. Answered but not transcribed:
       L-6 and L-9 have decisions (`## Decisions`), the rows still say
       "Intentional?" and "Port one or the other, not both."
+      *(a) — both rows are transcribed. L-6 reads "**Decided 2026-08-21
+      (afk):** keep `opt.hlsearch = false` … **Fixed 2026-08-21**"; L-9 reads
+      "**Decided 2026-08-21 (afk): intentional — port as-is and leave
+      `<C-q>` unbound.**" Neither row still reads as a question. The L-9
+      decision's *second half* is undischarged — that is Acceptance 2's
+      finding, not this box's.*
 - [ ] Every `L-*` row names the node that owns its fix, and that node's PRD
       reflects it. Neither half holds: no row names a node, and none of
       `04-shell/04-television`, `04-shell/07-quicklist`,
       `03-editor/02-keymaps`, `03-editor/01-options`,
       `03-editor/06-explorer`, `02-terminal/03-f5-jump-mode` or
       `05-platform/01-deploy-mechanism/managed-config` has been corrected.
+      *(b) — the first half now holds (every row names an owner, and the
+      owning nodes carry the fixes), but the second half fails on exactly one
+      row: L-9's `03-editor/14-shift-select` half is undischarged — that
+      node's PRD does not reflect the "leave `<C-q>` unbound" decision, and
+      the backlog row itself says so ("**Half open.**"). The one-bullet
+      follow-up `w0-4-s2-corrections/editor` R7 declared residual never
+      landed.*
 
 ## Out of scope
 - Implementing the fixes. This node routes them; the S, E and T nodes apply

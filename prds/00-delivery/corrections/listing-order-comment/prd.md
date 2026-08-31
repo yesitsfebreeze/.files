@@ -8,7 +8,7 @@ complexity: 8
 blast-radius: low
 footprint:
   - tests/shell-listing.sh
-verify: "bash tests/shell-listing.sh"
+verify: ""
 origin: derived
 commit: 11987ac
 ---

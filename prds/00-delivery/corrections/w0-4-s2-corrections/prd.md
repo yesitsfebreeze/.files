@@ -19,6 +19,10 @@ so every node depending on the sweep waits for the whole of it.
 ## Acceptance
 - [ ] Every child is covered, and no S2 or S3 item is left unmarked in the
       backlog.
+      *(b) — the body's Closing note admits the second clause is unmet:
+      "twenty backlog rows stay unmarked because their owners have not
+      landed". The children are all covered; the backlog is not fully
+      marked.*
 
 ## Out of scope
 - Any single epic's corrections. The children own those.

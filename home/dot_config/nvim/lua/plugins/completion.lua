@@ -1,15 +1,13 @@
--- Completion: blink.cmp — one batteries-included engine (LSP, snippets, path,
--- buffer, signature help, fuzzy matching) replacing the nvim-cmp + LuaSnip +
--- cmp-* stack. Faster per-keystroke and far fewer plugins.
+-- lua/plugins/completion.lua
+-- Why this file is shaped the way it is:
+--   docs-site → Internals → Neovim
+
 return {
   "saghen/blink.cmp",
   event = "InsertEnter",
   version = "1.*", -- tagged release so the prebuilt rust fuzzy lib is fetched
   dependencies = { "rafamadriz/friendly-snippets" },
   opts = {
-    -- super-tab: <Tab> selects/accepts and jumps snippets, <S-Tab> reverses,
-    -- <C-n>/<C-p> cycle, <C-Space> toggles, <C-e> hides. Closest to the old
-    -- nvim-cmp Tab-driven flow.
     keymap = {
       preset = "super-tab",
       ["<CR>"] = { "accept", "fallback" },

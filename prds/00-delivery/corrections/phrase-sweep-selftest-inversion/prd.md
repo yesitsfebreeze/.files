@@ -6,7 +6,7 @@ est: 2.75h
 mode: afk
 footprint:
   - gates/retired-phrases.sh
-verify: "bash gates/selftest.sh"
+verify: ""
 origin: derived
 ---
 

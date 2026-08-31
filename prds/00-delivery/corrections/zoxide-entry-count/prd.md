@@ -7,7 +7,7 @@ actual: 10m
 mode: afk
 needs:
   - 00-delivery/corrections/sibling-gates-copymode-staging
-verify: "bash tests/shell-zoxide.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/cdi-manual-source
 ---

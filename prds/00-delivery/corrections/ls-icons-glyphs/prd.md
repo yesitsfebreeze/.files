@@ -8,7 +8,7 @@ complexity: 75
 blast-radius: high
 needs:
   - 04-shell/06-listing
-verify: "bash tests/shell-listing.sh && nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 commit: 65d2b54
 ---

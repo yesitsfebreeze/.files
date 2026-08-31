@@ -11,7 +11,7 @@ needs:
   - 00-delivery/corrections/w0-4-s2-corrections
   - 00-delivery/decisions/tinty
   - 06-help/01-content-model
-verify: "bash tests/nvim-colorscheme.sh"
+verify: ""
 ---
 
 # Colorscheme + mode-aware cursor
@@ -69,6 +69,9 @@ states the current mode, derived from the palette rather than hardcoded.
 ## Acceptance
 - [ ] The editor background matches the terminal's, including after a live
       background change in the terminal.
+      *(b) — a manual observation; the mechanism (R6: tinty owns the palette,
+      WezTerm reads `colors.lua`, nvim is transparent) is proven, but no run
+      records the live-change half.*
 - [x] Cursor is using the same colors as the mode (blue in normal, green and
       thin in insert, magenta in visual, a red underline in replace).
 - [x] `:colorscheme <other-base16>` re-derives all six highlights, no stale
@@ -76,6 +79,8 @@ states the current mode, derived from the palette rather than hardcoded.
 - [ ] With the editor open, `tinty apply` a different base16 scheme: the
       background follows the terminal and the syntax colors do not. Both
       halves of that are the specified behaviour (R6, R7).
+      *(b) — a manual observation; R6/R7 specify the behaviour, but no run
+      records a live `tinty apply` with the editor open.*
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

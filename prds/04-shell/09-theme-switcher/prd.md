@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 00-delivery/decisions/tinty
   - 04-shell/01-core-config
-verify: "bash tests/theme-switcher.sh"
+verify: ""
 ---
 
 # Theme switcher

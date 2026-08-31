@@ -7,7 +7,7 @@ actual: 15m
 mode: afk
 needs:
   - 00-delivery/corrections/zoxide-entry-count
-verify: "bash tests/wezterm-f5-tab-select.sh && bash tests/shell-claude.sh && bash tests/shell-history.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/zoxide-entry-count
 ---

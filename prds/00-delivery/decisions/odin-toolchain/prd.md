@@ -16,10 +16,20 @@ agent would have silently taken the recommendation and closed the fork without
 anyone deciding. Gates C.1.
 
 ## Acceptance
-- [ ] The answer is recorded, with a date, in the file this node names as its
+- [x] The answer is recorded, with a date, in the file this node names as its
       spec.
-- [ ] Every node listed as gated on this decision has had its requirements
+      *(a) — the Checklist closure (2026-08-28) quotes
+      `01-capsule/02-dev-image`'s `## Decisions` section reading "Decided
+      2026-08-21 (user)", and the `## Answers` section above records the
+      decision with the same date. The answer is recorded, dated, and in the
+      gated node's own file.*
+- [x] Every node listed as gated on this decision has had its requirements
       reconciled with the answer.
+      *(a) — the Checklist closure records the `## Open questions` section
+      resolved into `## Decisions`, and the Closing note documents "R7 seals
+      the toolbox, no line under `## Requirements` names Odin or pi-oilrig".
+      The per-project escape hatch is recorded so the capability is relocated,
+      not lost.*
 
 ## Answers
 

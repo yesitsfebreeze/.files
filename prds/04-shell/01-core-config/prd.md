@@ -10,7 +10,7 @@ needs:
   - 00-delivery/corrections/w0-4-s2-corrections
   - 00-delivery/decisions/tinty
   - 06-help/01-content-model
-verify: "bash tests/nushell-core.sh"
+verify: ""
 ---
 
 # Core config

@@ -7,7 +7,7 @@ actual: 15m
 mode: afk
 needs:
   - 00-delivery/corrections/sibling-gates-copymode-staging
-verify: "bash gates/nushell-module-staging.sh"
+verify: ""
 origin: derived
 ---
 

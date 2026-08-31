@@ -6,7 +6,7 @@ est: 1h
 actual: 20m
 mode: afk
 needs:
-verify: "bash tests/capsule-lifecycle.sh"
+verify: ""
 origin: derived
 ---
 

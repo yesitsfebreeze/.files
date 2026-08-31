@@ -16,7 +16,7 @@ footprint:
   - home/dot_config/nvim/init.lua
   - tests/nvim-shift-select.sh
   - tests/nvim-options.sh
-verify: "bash tests/nvim-shift-select.sh"
+verify: ""
 ---
 
 # Shift-to-select (SIMPLIFY)

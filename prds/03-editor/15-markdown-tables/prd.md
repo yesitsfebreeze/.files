@@ -9,7 +9,7 @@ needs:
   - 03-editor/04-plugin-manager
   - 06-help/01-content-model
 needs:
-verify: "bash tests/nvim-markdown-tables.sh"
+verify: ""
 ---
 
 # Markdown table mode

@@ -62,6 +62,8 @@ new-tab path. The rekey record is in
 - [ ] **Unmet, and named rather than glossed.** Reconnecting to a running
       capsule feels instant; cold start is dominated by docker itself, not by
       the tool.
+      *(b) — genuinely unmet: a feel check no gate can run. The box's own
+      text names it rather than glossing it.*
 
       A stopwatch claim about a live container, and no gate makes it. It is a
       C.4 row in `gates/manual/wave4.md`, unrun. The epic closes on the other

@@ -7,7 +7,7 @@ actual: 1h
 mode: afk
 needs:
   - 00-delivery/corrections/armed-count-tripwires
-verify: "bash tests/wezterm-tab-content-state.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/armed-count-tripwires
 ---

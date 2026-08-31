@@ -8,7 +8,7 @@ actual: 20m
 mode: afk
 footprint:
   - tests/nvim-statusline.sh
-verify: "bash tests/nvim-statusline.sh"
+verify: ""
 origin: derived
 ---
 

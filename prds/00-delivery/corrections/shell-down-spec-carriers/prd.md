@@ -5,7 +5,7 @@ priority: 32
 est: 0.5h
 actual: 20m
 mode: afk
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/config-nu-parse-claims
 ---

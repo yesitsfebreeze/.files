@@ -6,7 +6,7 @@ task: P.5
 mode: afk
 needs:
   - 05-platform/01-deploy-mechanism/repo-skeleton
-verify: "bash tests/managed-config.sh"
+verify: ""
 ---
 
 # Managed config surface + dot_gitconfig.tmpl

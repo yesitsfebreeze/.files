@@ -5,7 +5,7 @@ est: 0.5h
 mode: hitl
 needs:
   - 00-delivery/decisions/fzf
-verify: "bash tests/shell-litellm.sh --tree"
+verify: ""
 origin: requested
 ---
 

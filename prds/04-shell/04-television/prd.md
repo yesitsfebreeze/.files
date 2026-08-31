@@ -25,7 +25,7 @@ footprint:
   - home/dot_config/nushell/help/shell.nuon
   - home/dot_config/nushell/help/use-review.nuon
   - home/dot_config/nushell/help/why-review.nuon
-verify: "bash tests/shell-television.sh"
+verify: ""
 ---
 
 # Television finder

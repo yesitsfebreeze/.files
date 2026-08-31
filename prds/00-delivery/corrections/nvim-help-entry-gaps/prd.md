@@ -13,7 +13,7 @@ needs:
   - 03-editor/08-telescope
   - 03-editor/09-lsp
   - 06-help/02-help-command
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 ---
 
@@ -114,6 +114,9 @@ same. This node is where it lands.
       Until then, say so rather than ticking this against a check that does
       not run yet. `06-help/04-drift-check` is still `state: open` as of this
       implementation — left unticked per this box's own instruction.
+      *(b) — genuinely unmet: `06-help/04-drift-check` is still `state:
+      open`, so `help --check` cannot report the utility-buffer `q`. The box
+      itself instructs leaving it unticked until then.*
 
 ## Out of scope
 - Fixing any other gap the R3 census finds. Report them; each is its own

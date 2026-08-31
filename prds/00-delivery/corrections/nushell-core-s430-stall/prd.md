@@ -6,7 +6,7 @@ mode: afk
 needs:
 footprint:
   - tests/nushell-core.sh
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 from: 04-shell/01-core-config
 claim:

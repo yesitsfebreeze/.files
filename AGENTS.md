@@ -26,22 +26,27 @@ paragraph said "planning only … no configuration has been implemented yet",
 which was true when written and has been false for a while. Measured on
 2026-08-24: **50 of 65 requested nodes are `done` (94% by est)**, and the
 chezmoi source under `home/` carries the shipped WezTerm, Neovim, nushell,
-television and capsule configuration, with a gate per node under `tests/` and
-`gates/`. The editor epic is complete. Run
+television and capsule configuration. The editor epic is complete. Run
 `python3 ~/dev/infra/pearde/resources/board/plan.py plan` for today's number rather
 than trusting this sentence — a count in prose is a reading of the day it was
 taken, and this board has corrected six of them in six documents on
 2026-08-24 alone.
 
-What is **not** built, so nobody reads the above as "finished": `help --check`
-is a **parse error today** — `06-help/04-drift-check` is still `open` — so the
-`help --check` sentence further down this file describes the intended end
-state, not something running now. `01-capsule/04-recent-workspaces` is
-`blocked` on five human checks in `gates/manual/wave4.md`, and two taste
-verdicts on prettier and StyLua wait there too. `just cutover` has not run,
-so `chezmoi source-path` still answers with the pre-rebuild repo rather than
-this one — ask it, per the live-sources rule below, rather than assuming a
-path.
+What is **not** built, so nobody reads the above as "finished": the whole of
+[`08-claude-agent`](prds/08-claude-agent/prd.md) is `open` or `analyzing`, and
+so is the board root. Measured 2026-08-31: **191 of 196 nodes `done`**, with 73
+unticked `- [ ]` boxes and 43 `[~]` stubs still in the tree. `just cutover` has
+**not** run, so `chezmoi source-path` still answers with the pre-rebuild repo
+rather than this one — which means the `home/` tree here is not what this
+machine is running. Ask it, per the live-sources rule below, rather than
+assuming a path.
+
+**There are no tests.** `tests/` and `gates/` were deleted on 2026-08-31 —
+every `verify:` that pointed into them now reads `""`, the contract's value for
+*unproven*, and 81 interactive checks were never run. The reasoning is in
+[the memo](prds/memos/tests-and-gates-retire-a-dev-setup-is-not-a-product.md);
+the 81 open checks are preserved at `docs-site` → Internals → Never verified by
+a person. A change is verified by deploying it and using it.
 
 The PRD tree was converted to board node form on 2026-08-20 so work can
 actually be claimed; see the next section.
@@ -58,6 +63,7 @@ schedule, its history — lives in the PRD itself; there is no side file.
 | `prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
 | `.claude/skills/pearde/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what. A symlink: the skill lives in its own repo (`~/dev/infra/pearde`) and is not vendored here |
 | `prds/README.md` | Index, build order, and the canonical exclusion list |
+| `docs-site/` | The searchable manual — a fumadocs site. `content/docs/manual/` is **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs`; `content/docs/internals/` is hand-written and holds the constraints the configs used to carry as comments |
 | `docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
 | `docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
 | `docs/capabilities-nvim.md` | Rated inventory of the live Neovim config |
@@ -104,6 +110,7 @@ it is, not to decide what it says.
 | [`05-platform`](prds/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
 | [`06-help`](prds/06-help/prd.md) | `help` — the environment manual (net-new) | 5 (+1) |
 | [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
+| [`08-claude-agent`](prds/08-claude-agent/prd.md) | Claude Code manages tmux panes and edits in nvim: the tmux MCP server, claudecode.nvim + claude-tmux.nvim, the tmux.conf additions, the help entries (net-new) | 4 |
 
 Counts are direct children, with grandchildren in parentheses.
 `find prds -name prd.md` is the index, because node membership is by existence
@@ -258,21 +265,23 @@ worth more as a record of how it closed than as a blank space.*
   findings T-1 to T-11 that motivated it are in the
   [corrections backlog](prds/00-delivery/corrections/prd.md), where the
   history lives. What remains on that epic is **human verification, not
-  work**: T.4, T.6 and T.7 in `gates/manual/wave4.md`.
+  work**: T.4, T.6 and T.7, now listed under `docs-site` → Internals → Never
+  verified by a person.
 - **`03-editor/14` (shift-to-select) is built, and the fork stays settled.**
   Corrected 2026-08-24. This bullet said "specified but unbuilt" and that
   E.14 had not been implemented; both were false by the time they were read.
   The node is `done` at `f9cb54b`, the code is
-  `home/dot_config/nvim/lua/config/shift-select.lua`, and
-  `bash tests/nvim-shift-select.sh` exits 0 with all fifteen spec boxes
-  closed. The fork itself is unchanged and still binding: decided 2026-08-21,
+  `home/dot_config/nvim/lua/config/shift-select.lua`, and the fifteen spec
+  boxes were closed against the test that used to live at
+  `tests/nvim-shift-select.sh` before the suite was deleted. The fork itself
+  is unchanged and still binding: decided 2026-08-21,
   full port *with* the tests, simplification declined on the record — so
   collapse-on-motion (R6) is not optional and the rating stays `C 7 · U 7`.
   See [`decisions/shift-select-scope`](prds/00-delivery/decisions/shift-select-scope/prd.md).
   An agent finding the tests burdensome does **not** get to re-take the fork;
-  it files a correction. What remains is E.14 in `gates/manual/wave4.md` — a
-  human watching the collapse under real keyboard timing, which no gate can
-  do.
+  it files a correction. What remains is E.14, now under `docs-site` →
+  Internals → Never verified by a person — a human watching the collapse under
+  real keyboard timing, which no gate could ever have done.
 
 ## How to write a PRD
 

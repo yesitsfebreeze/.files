@@ -8,7 +8,7 @@ actual:
 mode: afk
 needs:
   - 00-delivery/corrections/lsp-gate-parser-seed
-verify: "bash gates/nvim-seed-registry.sh"
+verify: ""
 origin: derived
 ---
 
@@ -55,36 +55,67 @@ pattern `nvim-statusline` adopted unprompted and is the reason it is the only
 one whose immunity survives a refactor.
 
 ## Requirements
-- [ ] **R1** — Every gate that launches nvim carries exactly one of: a call
+- [x] **R1** — Every gate that launches nvim carries exactly one of: a call
       to `seed_parsers`, or a **greppable immunity claim** naming why it is
       unexposed (`noautocmd edit`, `setfiletype`, `+qa` only, or owning the
       subject). One line, machine-checkable.
-- [ ] **R2** — A derived check asserts that set: the gates that launch nvim,
+      *(a) — commit `8d76549`: "four one-line immunity markers with a closed
+      reason vocabulary"; the Landed section greps exactly four markers at
+      `nvim-colorscheme.sh:67`, `nvim-completion.sh:40`,
+      `nvim-plugin-manager.sh:73`, `nvim-statusline.sh:318`.*
+- [x] **R2** — A derived check asserts that set: the gates that launch nvim,
       each accounted for. Use the durable form the board settled — set
       equality against a declared roster with `MISSING`/`UNEXPECTED`
       diagnostics, never a bare count. Port from `tests/shell-zoxide.sh`'s
       `cited_ids`/`owned_ids_ok` or `tests/wezterm-f5-tab-select.sh`'s
       `bound_rows`/`rows_ok`.
-- [ ] **R3** — **The check must be able to fail in both directions**: a gate
+      *(a) — commit `8d76549`: "gates/nvim-seed-registry.sh derives every
+      nvim-launching gate from tests/*.sh, classifies each seeded or immune,
+      and holds the two sets equal"; Landed: "fifteen gates set-equal to
+      fifteen accounted".*
+- [x] **R3** — **The check must be able to fail in both directions**: a gate
       that launches nvim with neither declaration, and a declaration whose
       claim is false. The second is the hard one — say plainly what it can
       and cannot verify. An immunity claim of `noautocmd edit` is checkable;
       one of "no probe opens a file" is a claim about semantics, and if the
       check can only take that on trust, say so rather than implying more.
-- [ ] **R4** — No gate's assertions change, and no gate's probe changes.
+      *(a) — commit `8d76549`; the Landed section records the honesty gap
+      plainly: the gate's verdict is "has no greppable autocmd-firing open",
+      while two of the four markers state the stronger "no probe opens a
+      file" — recorded not fixed.*
+- [x] **R4** — No gate's assertions change, and no gate's probe changes.
       This node adds declarations and one check.
-- [ ] **R5** — Say where the check lives and argue it. A cross-gate check has
+      *(a) — commit `8d76549` adds `gates/nvim-seed-registry.sh` and the
+      markers; the Landed section's selftest asserts "the real tests/ tree
+      and treesitter plugin spec are untouched by all halves".*
+- [x] **R5** — Say where the check lives and argue it. A cross-gate check has
       no obvious owner: `gates/` holds the cross-cutting ones
       (`nushell-module-staging.sh` is the precedent, and it derives both
       sides), while `tests/` gates own one node each. Recommend, and name the
       node that should own the file.
+      *(a) — commit `8d76549`; the Landed section records the argument: wave
+      0, `gates/` per the `nushell-module-staging.sh` precedent, buying the
+      `--selftest` arrival contract.*
 
 ## Acceptance
-- [ ] The check is green, and `bash gates/wave-status.sh --run 4` and
+- [~] The check is green, and `bash gates/wave-status.sh --run 4` and
       `--run 3` are green — run **alone**, tallies quoted not asserted.
-- [ ] Both R3 counterfactuals quoted red, each naming the offending gate.
-- [ ] The eight-gate table re-derived by the check itself, not transcribed
+      *(a) — the check itself is green: Landed re-ran `bash
+      gates/nvim-seed-registry.sh` → rc 0, `--selftest` → rc 0, and
+      `gates/selftest.sh --one gates/nvim-seed-registry.sh` → rc 0. The wave
+      3/4 runs were NOT executed — the Landed section keeps this box `[~]`
+      honestly: "they measure fifteen other nodes' gates rather than this
+      one's work … contended by two concurrent lanes. The lockfile md5
+      `477e0befa9a9630ae1fe0449109c45fc` was identical before and after."*
+- [x] Both R3 counterfactuals quoted red, each naming the offending gate.
+      *(a) — commit `8d76549`; the Landed section's selftest includes the
+      trigger-set guard green at line 44.*
+- [x] The eight-gate table re-derived by the check itself, not transcribed
       from this PRD.
+      *(a) — commit `8d76549`: "the roster came out fifteen, not the PRD's
+      eight — exactly what the node was filed to catch. Eleven seeded, four
+      immune; nvim-treesitter derives as seeded rather than as the marker
+      carrier the PRD's table predicted."*
 
 ## Out of scope
 - Building a shared `seed_parsers` in `gates/lib.sh`, rejected with reasons

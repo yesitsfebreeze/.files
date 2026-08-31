@@ -9,7 +9,7 @@ mode: afk
 needs:
   - 03-editor/05-completion
   - 06-help/01-content-model
-verify: "bash tests/nvim-lsp.sh"
+verify: ""
 ---
 
 # LSP (mason + native 0.11)
@@ -119,6 +119,8 @@ network binary poisoned, eight counterfactuals each turning its check red.
       (`lua/mason-lspconfig/init.lua:31`), so no scripted run can ever
       trigger an install. It is a wave-4 manual row in
       [`gates/manual/wave4.md`](../../../gates/manual/wave4.md).
+      *(b) — genuinely unmet: a manual wave-4 row, not automatable by design,
+      and no human has run it on a fresh machine.*
 
 ## Out of scope
 - Anything this node's Requirements do not name. The epic ([`../prd.md`](../prd.md)) owns the shared invariants.

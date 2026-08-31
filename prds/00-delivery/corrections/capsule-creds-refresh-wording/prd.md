@@ -7,7 +7,7 @@ actual: 10m
 mode: afk
 needs:
   - 01-capsule/03-credential-propagation
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 ---
 

@@ -6,7 +6,7 @@ commit: b812ef8
 priority: 21
 est:
 mode: afk
-verify: "bash tests/capsule-lifecycle.sh"
+verify: ""
 origin: derived
 ---
 

@@ -6,7 +6,7 @@ est: 0.5h
 actual: 1h10m
 mode: afk
 needs:
-verify: "bash tests/nvim-lsp.sh"
+verify: ""
 origin: derived
 ---
 

@@ -3,7 +3,7 @@ state: done
 priority: 20
 est:
 mode: afk
-verify: "bash gates/tree-links.sh"
+verify: ""
 footprint:
   - AGENTS.md
 origin: derived

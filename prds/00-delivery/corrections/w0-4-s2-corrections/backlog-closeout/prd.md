@@ -13,7 +13,7 @@ needs:
   - 00-delivery/corrections/w0-4-s2-corrections/platform
   - 00-delivery/corrections/w0-4-s2-corrections/shell
   - 00-delivery/corrections/w0-4-s2-corrections/provisioning-rerate
-verify: "bash tests/live-bugs.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/w0-4-s2-corrections
 ---

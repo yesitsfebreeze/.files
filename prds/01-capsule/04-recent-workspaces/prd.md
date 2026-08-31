@@ -11,7 +11,7 @@ needs:
   - 05-platform/01-deploy-mechanism/managed-config
   - 06-help/01-content-model
   - 01-capsule/03-credential-propagation
-verify: "bash tests/capsule-recents.sh"
+verify: ""
 actual: 0.11h
 commit: 6151ae5
 ---

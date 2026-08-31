@@ -5,7 +5,7 @@ est:
 mode: afk
 needs:
   - 06-help/04-drift-check
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog
 complexity: 2

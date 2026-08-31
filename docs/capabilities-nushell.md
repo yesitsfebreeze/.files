@@ -36,8 +36,9 @@ live on 2026-08-21. Everything rated below is the deployed artifact.
 ----
 ## Aliases and small utilities
 - `cat`→bat, `grep`→rg, `g`→git, `lg`→lazygit, `nv`/`vi`→nvim, `nn` (notes),
-  `q`/`:q`/`/exit`→exit, `rr`→chezmoi update, `cf` (file → clipboard, picks
-  pbcopy/wl-copy/xclip), `pass` completion from the live store.
+  `y`→yazi, `q`/`:q`/`/exit`→exit, `rr`→chezmoi update, `cf` (file →
+  clipboard, picks pbcopy/wl-copy/xclip), `pass` completion from the live
+  store.
 - **`bb`/`ba` are excluded, not overlooked.** The live `config.nu` defines
   `alias bb = brr` and `alias ba = brr --attach`; both invoke **`brr`**, not
   `burrito` (M-7 — both binaries exist, so a search for "burrito" misses

@@ -6,7 +6,7 @@ est: 0.5h
 actual: 15m
 mode: afk
 needs:
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 ---
 

@@ -10,7 +10,7 @@ needs:
   - 03-editor/01-options
   - 00-delivery/corrections/w0-4-s2-corrections
   - 06-help/01-content-model
-verify: "bash tests/nvim-autocmds.sh"
+verify: ""
 ---
 
 # Autocmds

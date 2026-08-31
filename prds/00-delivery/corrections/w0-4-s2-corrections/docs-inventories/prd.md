@@ -99,6 +99,10 @@ ratio sort is already clean (`6 5 5 5 4 4 4 4 3 3 3 3 2 2 2 2 1 1 1 1 1 1 0 0
 ## Acceptance
 - [ ] Every requirement box above is `[x]`, and the backlog item it corrects
       is marked fixed.
+      *(b) — the first clause is unmet: R7 is `[~]`, not `[x]` — its sweep
+      used the pre-discovery baseline, and the re-measurement is filed as
+      backlog row `M-21`. The backlog items R1–R6 correct are marked fixed;
+      R7's re-measurement is the open half.*
 
 ## Out of scope
 - Any file another W0.4 child owns. One writer per file is why this sweep is

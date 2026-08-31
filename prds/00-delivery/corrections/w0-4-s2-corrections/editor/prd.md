@@ -99,13 +99,17 @@ serialising ~22 files.
       follow-up pointing its R7 at this decision. Check: `PASS spec08`.
 
 ## Acceptance
-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
+- [x] Every requirement box above is `[x]`, and the backlog item it corrects
       is marked fixed. **R1–R7 are all `[x]`; this box stays OPEN on its
       second clause only.** Marking the backlog items fixed means editing
       `.mi/prds/00-delivery/corrections/prd.md`, which is
       `backlog-closeout`'s (W0.4h) file and is pinned by
       `tests/live-bugs.sh` — one writer per file, so this ticket must not
       touch it. W0.4h closes this box.
+      *(a) — the backlog items are marked fixed: L-8, L-10, L-6, M-1 all
+      "**Fixed 2026-08-21**", and M-17 recorded as "Needs no fix". The
+      annotation's condition ("W0.4h closes this box") is met — backlog-
+      closeout ran and marked them.*
 
 ## Verification
 

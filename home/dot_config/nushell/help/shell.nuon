@@ -143,6 +143,15 @@
         verify: [{kind: "command", name: "l"}, {kind: "command", name: "ll"}, {kind: "command", name: "la"}]
         source: "prds/04-shell/06-listing/prd.md"
     }
+    {
+        cmd: "y"
+        title: "Open the yazi file manager"
+        use: "`y` is `yazi`, the terminal file manager: move with the arrows or `hjkl`, `Enter` opens a file or descends into a directory, `q` quits back to the shell."
+        topic: "navigate"
+        mode: "shell"
+        verify: [{kind: "alias", name: "y"}]
+        source: "prds/04-shell/02-aliases-utilities/prd.md"
+    }
 
     # -------------------------------------------------------------------- find
     {

@@ -5,7 +5,10 @@
 .pi/kern/
 
 # Obsidian workspace (machine-local state)
-.obsidian/workspace.json
+.obsidian/
+
+# vicky knowledge base (local, regenerable)
+vicky/
 
 # claude local state
 .claude/settings.local.json

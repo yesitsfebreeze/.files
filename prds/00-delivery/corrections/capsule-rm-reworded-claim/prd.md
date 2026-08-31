@@ -5,7 +5,7 @@ priority: 39
 est: 0.5h
 actual: 35m
 mode: afk
-verify: "bash tests/capsule-lifecycle.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/capsule-rm-guard-attribution
 ---

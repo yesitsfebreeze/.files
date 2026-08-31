@@ -9,7 +9,7 @@ mode: afk
 claim: 
 needs:
   - 04-shell/04-television
-verify: "nu tests/help-content-model.nu"
+verify: ""
 origin: derived
 from: 04-shell/03-zoxide
 ---
@@ -47,31 +47,56 @@ because the wording has to match which surfaces television actually owns once
 that node lands, and it is currently `failed`.
 
 ## Requirements
-- [ ] **R1** — The `cdi` entry states which picker it opens, so a reader
+- [x] **R1** — The `cdi` entry states which picker it opens, so a reader
       landing on it needs no `also` hop to learn it is fzf and not
       television.
-- [ ] **R2** — The `idioms` entry (`shell.nuon:395`) and its `also`
+      *(a) — commit `9d3f424`: "cdi's use now says fzf, not television,
+      instead of requiring an also hop to zi to learn it."*
+- [x] **R2** — The `idioms` entry (`shell.nuon:395`) and its `also`
       (`:398`) name the `zi`/`cdi` pair, matching `04-shell/03-zoxide` R2
       and `tv channel`'s `why` at `:194`.
-- [ ] **R3** — Every edited entry re-digests through the gate's own helper,
+      *(a) — commit `9d3f424`: "idioms names the zi/cdi pair as the single
+      fzf exception, matching tv channel's why which already did."*
+- [x] **R3** — Every edited entry re-digests through the gate's own helper,
       with a reader-reviewer distinct from the author, per the corpus's
       review ritual — the same shape
       [`cdi-manual-source`](../cdi-manual-source/prd.md) R2 established. The
       `use-review.nuon:156` note that recorded this nit is retired in the
       same change, not left standing beside its own fix.
-- [ ] **R4** — **Census before editing, report after.** Find every entry
+      *(a) — commit `9d3f424`: "Three review rows re-digested against the
+      gate's own use-digest/why-digest functions, each reproduced against the
+      prior text before trusting the new value. The use-review.nuon note that
+      recorded this nit retired."*
+- [x] **R4** — **Census before editing, report after.** Find every entry
       whose `use` or `why` implies a picker without naming it. Two were
       found by accident, from a node about something else; the question is
       how many there are. Gaps outside R1 and R2 are reported, not fixed
       here.
+      *(a) — commit `9d3f424`: "R4 census (reported, not fixed): six more
+      picker-silent entries found (help --fuzzy, Ctrl-R, Ctrl+Shift+S/T,
+      capsule [dir], <leader>fb) — out of this node's scope, left for the
+      orchestrator to triage."*
 
 ## Acceptance
 - [ ] `nu tests/help-content-model.nu` passes, output quoted.
-- [ ] `rg -n 'fzf' home/dot_config/nushell/help/` shows the exception named
+      *(b) — the gate is RED today (2026-08-31) on an unrelated entry:
+      `shell.nuon [y]` has no row in `use-review.nuon`. Commit `9d3f424`
+      proved this box at the time ("ok, exit 0"); the violation is a separate
+      finding, filed as its own node
+      ([`shell-y-entry-missing-review-row`](../shell-y-entry-missing-review-row/prd.md)).*
+- [x] `rg -n 'fzf' home/dot_config/nushell/help/` shows the exception named
       at `cdi`, at `zi`, and in `idioms`, quoted.
-- [ ] The R4 census is in the report as a list, with a verdict per entry.
-- [ ] `use-review.nuon` carries no note describing a defect that the same
+      *(a) — run 2026-08-31: `shell.nuon:30` (zi, "The picker is fzf, not
+      television"), `shell.nuon:41` (cdi, "the same fzf picker, not
+      television"), `shell.nuon:410` (idioms, "the single exception is
+      `zi`/`cdi`, which open fzf").*
+- [x] The R4 census is in the report as a list, with a verdict per entry.
+      *(a) — commit `9d3f424` carries the six-entry census in the message.*
+- [x] `use-review.nuon` carries no note describing a defect that the same
       commit fixed — checked by reading the notes this change touches.
+      *(a) — commit `9d3f424`: "The use-review.nuon note that recorded this
+      nit retired"; the row at `use-review.nuon:156` now records the fix
+      ("This closes the nit the prior row recorded and left standing").*
 
 ## Out of scope
 - Changing which picker `zi`/`cdi` use. That is

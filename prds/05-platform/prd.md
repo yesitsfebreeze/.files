@@ -71,6 +71,9 @@ this is the invariant the epic most depends on.
       one is not.** clone → `./install.sh` → a machine on which every tool the
       other five epics assume resolves on `PATH`, with no manual step between
       the clone and the working shell.
+      *(b) — genuinely unmet: every LEG is proven and the composition is not;
+      the box itself names the missing machine. No scratch-target run has
+      happened.*
 
       Every LEG is proven and the composition is not: `bash
       tests/provisioning.sh` (rc 0) holds the installer's shape and its
@@ -107,6 +110,9 @@ this is the invariant the epic most depends on.
       `05-platform` is implemented; an implementer reaching for `git diff`
       here measures nothing. (I2 — this box used to prove I3, which is
       withdrawn.)
+      *(b) — a forward-looking invariant, correctly still open: it describes
+      the next tool addition, which has not happened. The carrier check is
+      specified, not executed.*
 - [x] Apply survives a hostile machine: with one package made unresolvable,
       the run still exits 0 and the remaining tools are installed. (I4)
 

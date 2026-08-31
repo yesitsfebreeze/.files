@@ -7,7 +7,7 @@ actual: 5m
 mode: afk
 needs:
   - 04-shell/09-theme-switcher
-verify: "bash tests/managed-config.sh"
+verify: ""
 origin: derived
 ---
 

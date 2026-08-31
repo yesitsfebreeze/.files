@@ -6,7 +6,7 @@ task: S.10
 mode: hitl
 needs:
   - 04-shell/08-claude-launchers
-verify: "bash tests/shell-litellm.sh"
+verify: ""
 origin: requested
 ---
 

@@ -9,7 +9,7 @@ needs:
   - 03-editor/04-plugin-manager
   - 00-delivery/corrections/w0-4-s2-corrections
   - 06-help/01-content-model
-verify: "bash tests/nvim-small-plugins.sh"
+verify: ""
 ---
 
 # Git signs, discovery, autopairs

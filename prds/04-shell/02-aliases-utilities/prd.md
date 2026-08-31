@@ -8,7 +8,7 @@ mode: afk
 needs:
   - 04-shell/01-core-config
   - 06-help/01-content-model
-verify: "bash tests/nushell-aliases.sh"
+verify: ""
 ---
 
 # Aliases and small utilities
@@ -22,10 +22,10 @@ few tiny utilities that earn their keep.
 
 ## Requirements
 - [x] **R1** — **Tool aliases.** `cat`→`bat --paging=never`, `grep`→`rg`,
-      `g`→git, `lg`→lazygit, `nv`/`vi`→nvim, `nn`→nvim ~/notes.md. The
-      interactive zoxide picker and its alias are **not** listed here:
-      [`03-zoxide`](../03-zoxide/prd.md) R2 owns that pair, and stating it
-      twice is the duplication the tree's own rule forbids.
+      `g`→git, `lg`→lazygit, `nv`/`vi`→nvim, `nn`→nvim ~/notes.md,
+      `y`→yazi. The interactive zoxide picker and its alias are **not**
+      listed here: [`03-zoxide`](../03-zoxide/prd.md) R2 owns that pair, and
+      stating it twice is the duplication the tree's own rule forbids.
 - [x] **R2** — **Quit muscle memory.** `q`, `:q`, `/exit` → exit.
 - [x] **R3** — **Dotfiles sync.** `rr` → `chezmoi update --force`. Stated as
       requirement 4 of

@@ -1,0 +1,339 @@
+---
+title: Nushell
+description: Parse-time binding, the PWD hook, and the measurements the shell config is built on.
+---
+
+Everything below was measured on the pinned **nushell 0.114.1** unless another
+version is named.
+
+## The one rule everything else follows from
+
+Nushell binds names at **parse** time, and it binds three kinds of name
+differently. Almost every ordering constraint in `config.nu` is a consequence.
+
+| Kind | When it binds | Order matters? |
+|---|---|---|
+| `def` | predeclared for the whole block before any body is parsed | **No** — a closure may call a `def` written below it |
+| `alias` | where the parser meets the `alias` line | **Yes** |
+| `source` | the sourced names enter scope from that line downwards | **Yes** |
+
+Measured both directions:
+
+- A PWD closure calling `la` with `def la` written **below** it ran fine on the
+  first `cd` — zero parser errors.
+- `alias core-ls = ls` **must** precede `def ls`. Alias first: the shadow ran.
+  Alias after the def: `Command core-ls not found` on the first `ls` — loud, not
+  silent, and **not** recursion, because the alias then points at *our* `ls`
+  while the body's `core-ls` was never in scope.
+
+So: a closure calling a **def** is order-free; a closure calling an **alias** is
+not.
+
+### `alias cd = mkcd` must come before the zoxide init
+
+And getting it wrong **fails silently**. The generated
+`~/.cache/nushell/init/zoxide.nu` calls `cd` in two places, and nushell binds
+those calls when it parses *that* file.
+
+Two otherwise identical configs, same zoxide jump:
+
+- alias **before** the source — the funnel ran.
+- alias **after** — the jump still landed in the right place and printed
+  **nothing**. No error, no warning. `startdir.txt` and the dirstack simply
+  never updated for zoxide jumps.
+
+The navigation-funnel invariant dies quietly.
+
+The alias is also written **after** `def mkcd`, and that ordering is
+load-bearing in the other direction: the `cd $target` inside `mkcd` binds to the
+**builtin** and does not recurse.
+
+## A missing `source` discards the entire file
+
+`source` of a missing file is `nu::parser::sourced_file_not_found` — a **parse**
+error. The radius is not "the shell refuses to start". It is worse, because it
+is quieter.
+
+**Interactively the shell starts and the whole file is discarded.** With one bad
+`source` at the top, nu printed the error, reached a prompt, and every command
+the file defines was gone — the ones **above** the failing line as well as
+below. Four probes, two above and two below: all four answered
+`Command not found`; with the `source` line removed all four ran.
+
+**Non-interactively it fails the other way round**: `nu -c` prints the error,
+never runs the command, exits 1.
+
+So the failure to fear is **a working but naked REPL** — nothing looks broken,
+everything is merely absent.
+
+Two consequences:
+- A module and its `source` line land in the **same** change, so chezmoi deploys
+  the pair atomically.
+- The shell-init generator writes an **empty** file when a tool is missing or
+  failing, rather than no file. That guarantee is load-bearing, not a nicety.
+
+### Module order has a real cycle in it
+
+`quicklist` ships **two** modules, not one. `zoxide.nu` and `finder.nu` both
+call `_recents_add`, so the log must parse **above** both; the quicklist runner
+calls `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`, so it must
+parse **below** `finder.nu`. One file cannot sit on both sides. So `recents.nu`
+goes above `zoxide.nu` and `quicklist.nu` directly below `finder.nu`.
+
+### `help` cannot be shadowed in one file
+
+`use std/help` and `def help` in **one** file fail at parse with
+`nu::parser::unknown_flag` into `std/help/mod.nu`. Nushell predeclares a block's
+defs, so std's `@example {help --find char}` resolves `help` against *our*
+signature, which has no `--find`.
+
+A `source`d file is its own block, so the `use` and the alias live in
+`config.nu` and only the `def` lives in `help.nu`. `core-help` must be an
+**alias** and must come **before** the shadow — the `core-ls` precedent.
+
+## Terminal integration
+
+### `use_kitty_protocol: false`
+
+With it on, reedline fires the kitty support query twice at startup and the
+WezTerm pty returns the reply too late to consume, so it leaks as a literal
+`^[[?0u` above the prompt.
+
+**What turning it off costs:** shift is lost on control+letter, so
+`Ctrl-Shift-R` is indistinguishable from `Ctrl-R`. That is exactly why the
+global history picker is bound to **Alt-R** instead.
+
+### `osc133: false`, `osc633: false`, `osc7: true`
+
+starship's prompt here is two lines, and reedline re-emits the prompt-start mark
+on every repaint; the terminal renders each one as a **phantom blank line**
+above the input. Nothing in this environment uses the terminal's semantic-zone
+features, so the markers are a clean cut.
+
+`osc7` stays **on**, and it is stated so the two disables are not mistaken for
+turning all terminal integration off: OSC 7 reports the cwd to the host
+terminal, which is what `#{pane_current_path}` ultimately reads. Both are on by
+default — a bare `nu -n` REPL under a pty emits `ESC]7;file://…` and
+`ESC]133;D;0`.
+
+## The PWD hook
+
+`hooks.env_change.PWD` is declared **empty** and is a **list**: two different
+appends push a closure onto it. Two appends to a list cannot conflict the way
+two edits to one fused closure body can.
+
+All appends carry the same three guards: `$before != null` skips the startup
+fire, `$after != $before` skips a non-move, and `$nu.is-interactive` keeps a
+scripted `nu -c` from writing to the recency stack.
+
+### An error aborts its own closure and every later one
+
+Measured with a three-closure config — a logger, a thrower, a second logger —
+driven twice: once with `error make`, once with a **missing external**. The two
+runs are **indistinguishable**.
+
+- The logger appended **before** the thrower recorded every fire.
+- The thrower's own tail and the logger appended **after** it recorded
+  **nothing, ever**.
+- One error box arrived **per fire** — four fires, four boxes.
+
+So it is **not** a session-wide latch: the failing closure re-fires and re-errors
+at each `cd`. The damage is bounded only by **order**.
+
+Measured against this very file with one extra PWD closure whose body is a
+missing external: appended **ahead** of the dirstack push, `dirs.txt` is never
+created at all; appended **after** both, it recorded every move. Same error,
+opposite outcome, decided only by position.
+
+**The dirstack append must stay first.** A failed listing must never take the
+dirstack down with it, and a later node appending a PWD closure ahead of it
+would move the damage without touching a line of the auto-list block.
+
+### The width guard is a hang guard
+
+`try { la | print }` behind `(term size).columns > 0`. Every piece is
+load-bearing.
+
+**The hook runner discards a closure's return value.** A bare `la` computes the
+table and displays nothing, with no error. The explicit `print` is what makes
+the listing appear at all.
+
+At **0 columns** there are three outcomes:
+
+| Case | Behaviour |
+|---|---|
+| Non-empty directory | one message per `cd` — `Couldn't fit table into 0 columns!` — and the session carries on |
+| **Empty directory** | **the shell spins at 100% CPU**: no message, no prompt, the next `cd` never read, state `R` until killed |
+| With or without `try` | **neither outcome changes** — neither is a catchable error |
+
+The spin is **the empty table at zero width, not `la`**. `[] | print` and
+`print ([] | table)` spin identically at 0 columns; `[{a: 1}] | print` prints the
+message and returns. Every route behaves the same — a typed bare `la` and
+`nu -e 'la'` both spin on an empty directory.
+
+So `(term size).columns > 0` is a hang guard and a noise guard at once, and the
+only thing that stops either. The `try` cannot.
+
+### `which stty`, because the redirect is not a guard
+
+`e> /dev/null` does **not** suppress a not-found error: there is no child process
+whose stderr could be redirected, so nushell raises
+`nu::shell::external_command` **before any spawn happens**. Measured with `$PATH`
+narrowed so `stty` does not resolve: one full error box per `cd`.
+
+`try { ^stty sane e> /dev/null }` would contain the error and is deliberately
+**not** the fix — it would equally swallow a *real* stty failure. `which` says
+what it means and is the tree's settled idiom.
+
+Cost of the lookup: 100 lookups of an **absent** name take 410 µs (~4 µs each),
+100 of a present one 929 µs (~9 µs each) — three orders of magnitude under the
+spawn it gates.
+
+`^stty sane` runs **first** in the closure. A `cd` can arrive via a full-screen
+TUI that crashed mid-render and left the pty half-raw; with `onlcr` off the
+table's `\n` drops a row without returning to column 0 and the listing
+staircases. Sane mode is a no-op in the normal case.
+
+## `ls`
+
+### `du -sk`, never `du -b`
+
+The live config asked `du` for bytes with `-b` and discarded stderr. **macOS
+`du` has no `-b`**: it prints `invalid option` plus a usage banner, straight into
+`/dev/null`. `parse -r` then found no rows, the size map came back empty, and the
+`default $row.size` fallback quietly restored the very inode sizes the flag
+exists to replace — so `ls -D` *looked* like it worked.
+
+`-sk` (allocated 1024-byte blocks, × 1024) is also the right number: `-b` is
+apparent size and this column is on-disk size. Not `gdu` either — it is not in
+the required package set.
+
+The constraint that outranks the flag: **a failing `du` surfaces once**, via
+`print -e` so the table pipeline stays clean, instead of degrading silently back
+to inode sizes.
+
+### The glyphs are machine-copied, never hand-typed
+
+Hexdump over every revision of the live repo's `config.nu` found the icon map's
+values were **empty in every version that ever existed** — despite a comment
+claiming the map was carried "verbatim" from a live source that itself had
+nothing to carry.
+
+Every value is now read straight out of this repo's own pinned dependency,
+nvim-web-devicons at commit `2ae6958d`, by a script that copies the exact UTF-8
+bytes of each `icon` field and never retypes one, cross-checked against an
+independently-implemented reader before the file was written.
+
+`tar` has no entry in that table (checked, genuinely absent), so it carries an
+**explicit key** holding the default glyph's bytes — not a fallback at lookup
+time. Identical output, different mechanism, and the distinction matters to
+anyone regenerating the map.
+
+**Directories carry no icon** — checked and deliberate, not the empty-map bug
+recurring. Neither nvim-web-devicons nor oil.nvim vendors a directory glyph
+anywhere in this repo's dependency tree, and hand-picking one from elsewhere
+would reintroduce the exact retyping risk this removes.
+
+### Flags are redeclared, not `--wrapped`
+
+So the builtin reparses them as flags rather than paths. An empty pattern becomes
+`["."]` because the builtin's empty spread returns nothing rather than the cwd.
+
+Two deliberate letter deviations: `-D` here is *our* du decoration (the builtin
+spells `--directory` `-D`; here that is `-d`), and the builtin's own `--du` is
+not exposed at all.
+
+`~` is expanded in the wrapper because the builtin does not expand it inside a
+string **variable**, only in a directly typed bare word. Only a leading `~` is
+touched — a full `path expand` would absolutize `.` and turn every plain-`ls`
+name column into absolute paths.
+
+## `mkcd`, the navigation funnel
+
+Every kind of move lands here: real `cd`, zoxide jumps, picker jumps and the
+bare-word fallback. That is what makes it the one place the new-shell start dir
+is recorded.
+
+**Confirm semantics:** a **blank** keypress confirms (Enter, and also Space or
+Tab — the test is for a non-blank key, not for Enter specifically) and **any**
+non-blank key, including the reflex `y`, prints `aborted` and returns without
+moving.
+
+**The confirm binding is `let reply`, not `ans`.** On nushell 0.115 `ans` became
+a **builtin variable name**; an agent upgrading nushell hit the collision and
+broke this machine's login shell. The pinned version is 0.114.1, where the old
+name still works — the point is that avoiding it costs nothing and keeping it
+cost a login shell.
+
+## `is-terminal --stdout` is not usable as a condition
+
+Measured under a real pty, where a `/bin/sh -c '[ -t 1 ]'` spawned from inside nu
+answers yes:
+
+```
+if (is-terminal --stdout) { ... }   ->  SKIPPED interactively, SKIPPED under nu -c
+if $nu.is-interactive     { ... }   ->  FIRED   interactively, SKIPPED under nu -c
+```
+
+`is-terminal --stdout` reports the redirection state of the **current pipeline**,
+and a parenthesised sub-expression captures stdout — so as an `if` condition it
+is false unconditionally, on a terminal or off one. The live config guards the
+palette re-assert on it, which is why that re-assert **has never actually
+fired**.
+
+`$nu.is-interactive` draws exactly the line these guards want.
+
+## The palette re-assert
+
+WezTerm's own `color_scheme` is only the **base** palette. tinty persists the
+pick in `current_scheme` and tinted-shell delivers it as OSC sequences the
+terminal applies at runtime. Nothing re-emitted those at shell start, which is
+why every new terminal came up looking like plain gruvbox no matter what had
+been applied.
+
+**The artifact is sourced, not `tinty init`.** The artifact is the very file
+`tinty init` sources, but `init` also spawns the tinty binary and its whole hook
+chain for hooks that are no-ops on an unchanged scheme. Five runs each: sourcing
+the artifact is **~5 ms**, `tinty init` is **~128 ms** — on every shell start.
+`init` survives only as the fresh-machine fallback.
+
+The artifact writes its escapes to `$TTY` itself and no-ops when that is not a
+writable terminal, so this is already inert under `nu -c`. The guard exists to
+skip the **spawn**.
+
+This is the one deliberate exception to "generated integrations are produced at
+apply time": the active scheme changes at **runtime**, so nothing generated at
+apply time could carry it.
+
+## Keybindings go last
+
+Reedline resolves a duplicate `(modifier, keycode)` pair to the **later** entry.
+The keybinding block sits after the generated integrations, so it beats the
+`Ctrl-T` and `Ctrl-R` the generated television init binds. Anything appended
+there wins.
+
+Each arrow tries `menuup`/`menudown` **first** — the `until` members no-op with
+no menu open — so completion menus keep the arrows.
+
+`esc_clear` is an **unconditional** `edit: clear`: the line goes whether or not a
+completion or history menu is open. `edit: clear` has no menu-close branch, so
+the two-stage "close the menu first, then clear" behaviour is not what the code
+does.
+
+**`name: quicklist` is not free choice**: the shipped manual entry for `Ctrl-Q`
+carries `verify: [{kind: "keybinding", name: "quicklist"}]` and resolves that
+name against this record. Renaming it breaks a manual entry.
+
+Nothing competes for `Ctrl-Q`, measured rather than assumed: on 0.114.1
+`keybindings default | where ($it.code | str contains "q")` returns an **empty**
+list, so there is no reedline default to override. `tv init nu` binds only
+`char_t` and `char_r`, and WezTerm's only `q` key is `CTRL|SHIFT+q`.
+
+## Clipboard: `cf`
+
+The display-var guards on `$env.WAYLAND_DISPLAY?` and `$env.DISPLAY?` are what
+make this safe headless: `wl-copy` and `xclip` **hang forever** waiting for a
+compositor or X server when none is attached, so a `which` hit alone must never
+select them.
+
+The `path`-typed argument gives filesystem tab-completion for free.

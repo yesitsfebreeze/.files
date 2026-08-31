@@ -10,7 +10,7 @@ footprint:
   - docs/capabilities-terminal.md
   - prds/02-terminal/02-startup-layout/prd.md
   - prds/00-delivery/corrections/w0-2-terminal-respec/specs/spec03.md
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 ---
 

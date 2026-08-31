@@ -6,7 +6,7 @@ est: 0h
 kind: epic
 mode: afk
 needs:
-verify: "sh -c 'n=$(grep -L \"^state: done\" prds/02-terminal/*/prd.md | wc -l | tr -d \" \"); echo \"children not done: $n\"; test \"$n\" -eq 0' && bash gates/wezterm-config-fields.sh"
+verify: ""
 ---
 
 # Epic: Terminal (WezTerm)

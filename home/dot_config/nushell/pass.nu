@@ -1,17 +1,7 @@
-# pass.nu — Nushell completion for `pass` (the unix password manager).
-# Sourced by config.nu at the MODULES anchor. `pass` ships bash/zsh/fish
-# completions but none for Nushell, so this declares a known-external
-# signature whose rest-arg completer offers both the subcommands and the live
-# entry names from the store. Declaring `extern` only adds completion;
-# undeclared flags (e.g. `pass generate -n -c`) still pass straight through
-# to the real binary.
+# pass.nu
+# Why this file is shaped the way it is:
+#   docs-site → Internals → Nushell modules
 
-# Entry names = every *.gpg under the store, with the store prefix and the
-# .gpg suffix stripped (so `email/personal.gpg` completes as
-# `email/personal`). The subcommands let `pass <tab>` also surface the verbs.
-# The store is $env.PASSWORD_STORE_DIR when the environment provides one,
-# else the documented default ~/.password-store. A store that does not exist
-# completes the verbs alone.
 def "nu-complete pass" [] {
     let store = ($env.PASSWORD_STORE_DIR? | default ($nu.home-dir | path join ".password-store"))
     let entries = (if ($store | path exists) {

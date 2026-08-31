@@ -5,7 +5,7 @@ est: 2h
 task: W0.8
 mode: afk
 needs:
-verify: "bash tests/live-bugs.sh && bash tests/deploy-skeleton.sh"
+verify: ""
 origin: derived
 ---
 

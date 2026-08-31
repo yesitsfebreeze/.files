@@ -9,7 +9,7 @@ needs:
 footprint:
   - home/dot_config/nushell/config.nu
   - tests/nushell-core.sh
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 ---
 

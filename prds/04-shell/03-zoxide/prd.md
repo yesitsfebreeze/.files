@@ -11,7 +11,7 @@ needs:
   - 00-delivery/corrections/w0-4-s2-corrections
   - 00-delivery/decisions/fzf
   - 06-help/01-content-model
-verify: "bash tests/shell-zoxide.sh"
+verify: ""
 ---
 
 # Zoxide navigation

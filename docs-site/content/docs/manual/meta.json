@@ -1,0 +1,15 @@
+{
+  "title": "Manual",
+  "description": "Every key, command and alias",
+  "pages": [
+    "navigate",
+    "find",
+    "history",
+    "edit",
+    "git",
+    "containers",
+    "terminal",
+    "agents",
+    "config"
+  ]
+}

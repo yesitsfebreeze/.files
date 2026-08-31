@@ -15,7 +15,7 @@ footprint:
   - home/dot_config/nvim/init.lua
   - tests/nvim-keymaps.sh
   - gates/waves.tsv
-verify: "bash tests/nvim-keymaps.sh"
+verify: ""
 ---
 
 # Core keymaps

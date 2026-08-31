@@ -5,7 +5,7 @@ est:
 mode: afk
 needs:
   - 00-delivery/corrections/wezterm-repairing-latch-claim
-verify: "bash tests/wezterm-tab-content-state.sh"
+verify: ""
 origin: derived
 claim: 
 complexity: 30

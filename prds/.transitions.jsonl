@@ -67,3 +67,16 @@
 {"from":"analyzing","prd":"00-delivery/corrections/done-nodes-with-unticked-boxes/closing-guard-status","t":"2026-08-30 05:00","to":"done"}
 {"from":"open","prd":"00-delivery/corrections/questions-check-red-only-on-history","t":"2026-08-30 05:30","to":"done"}
 {"from":"open","prd":"00-delivery/quiet-board-sweep","t":"2026-08-30 10:05","to":"done"}
+{"calls": null, "from": "open", "prd": "08-claude-agent/02-nvim-plugin", "reads": null, "refused": null, "t": "2026-08-31T13:00:01", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:00:02", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "open", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:00:02", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:26:56", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "08-claude-agent/01-tmux-mcp", "reads": null, "refused": null, "t": "2026-08-31T13:26:59", "to": "claimed", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:37:11", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "08-claude-agent/03-tmux-config", "reads": null, "refused": null, "t": "2026-08-31T13:37:12", "to": "claimed", "tokens": null}
+{"from": "claimed", "prd": "08-claude-agent/03-tmux-config", "t": "2026-08-31 13:54", "to": "done"}
+{"from": "claimed", "prd": "08-claude-agent/01-tmux-mcp", "t": "2026-08-31 14:07", "to": "done"}
+{"calls": null, "from": "open", "prd": "00-delivery/corrections/shell-y-entry-missing-review-row", "reads": null, "refused": null, "t": "2026-08-31T14:09:38", "to": "analyzing", "tokens": null}
+{"calls": null, "from": "analyzing", "prd": "00-delivery/corrections/shell-y-entry-missing-review-row", "reads": null, "refused": null, "t": "2026-08-31T14:13:48", "to": "specced", "tokens": null}
+{"calls": null, "from": "specced", "prd": "00-delivery/corrections/shell-y-entry-missing-review-row", "reads": null, "refused": null, "t": "2026-08-31T14:13:49", "to": "claimed", "tokens": null}
+{"from": "claimed", "prd": "00-delivery/corrections/shell-y-entry-missing-review-row", "t": "2026-08-31 14:13", "to": "done"}

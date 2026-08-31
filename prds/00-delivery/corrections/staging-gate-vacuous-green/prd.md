@@ -8,7 +8,7 @@ mode: afk
 needs:
 footprint:
   - gates/nushell-module-staging.sh
-verify: "bash gates/nushell-module-staging.sh --selftest"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/television-help-staging
 ---

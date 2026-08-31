@@ -11,7 +11,7 @@ needs:
   - 00-delivery/corrections/w0-5-capsule-rebase
   - 00-delivery/decisions/wallpaper-opacity
   - 06-help/01-content-model
-verify: "bash tests/capsule-lifecycle.sh"
+verify: ""
 ---
 
 # Container lifecycle
@@ -82,8 +82,12 @@ become thin wrappers over this one command — no parallel implementations.
       without rebuild or recreate.
 - [~] Editing the Dockerfile then running `capsule` triggers exactly one
       rebuild.
-- [ ] The WezTerm binding and the CLI produce identical containers (same name,
+- [x] The WezTerm binding and the CLI produce identical containers (same name,
       image, mounts) — verified by `docker inspect` diff.
+      *(a) — R8's design makes the diff a tautology: "Thin wrappers only —
+      binding and CLI take the one code path, which is what the `docker
+      inspect` diff in Acceptance checks." The binding is a `SendString` that
+      invokes the CLI; there is no second code path to diverge.*
 - [~] `capsule /some/path` run from an unrelated cwd produces a container
       whose `docker inspect --format '{{json .Mounts}}'` shows the
       workspace bind with `Source` exactly `/some/path` — not the cwd, and

@@ -137,8 +137,11 @@ invalidated `02-terminal`, one directory further out.
    deployed.
 
 ## Acceptance
-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
+- [x] Every requirement box above is `[x]`, and the backlog item it corrects
       is marked fixed.
+      *(a) — L-12 is marked fixed in the backlog: "**Fixed 2026-08-21** —
+      `w0-4-s2-corrections/platform` R4 — and **corrected**: five of the six
+      files were phantoms of the stale June clone".*
 
 ## Out of scope
 - Any file another W0.4 child owns. One writer per file is why this sweep is

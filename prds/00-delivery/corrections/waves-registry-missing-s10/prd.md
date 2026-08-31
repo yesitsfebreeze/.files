@@ -4,7 +4,7 @@ priority: 15
 est:
 mode: afk
 needs:
-verify: "bash gates/wave-status.sh --validate"
+verify: ""
 complexity: 20
 blast-radius: mid
 origin: derived

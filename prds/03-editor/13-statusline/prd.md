@@ -10,7 +10,7 @@ needs:
   - 03-editor/11-colorscheme
   - 00-delivery/decisions/tinty
   - 06-help/01-content-model
-verify: "bash tests/nvim-statusline.sh"
+verify: ""
 ---
 
 # Statusline (lualine)

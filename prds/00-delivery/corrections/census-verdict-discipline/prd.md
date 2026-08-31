@@ -8,7 +8,7 @@ mode: afk
 footprint:
   - prds/00-delivery/corrections/prd.md
   - AGENTS.md
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 ---
 

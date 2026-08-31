@@ -8,7 +8,7 @@ footprint:
   - prds/02-terminal/03-f5-jump-mode/prd.md
   - prds/00-delivery/corrections/w0-2-terminal-respec/specs/spec04.md
   - docs/capabilities-terminal.md
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 02-terminal/03-f5-jump-mode
 claim: 

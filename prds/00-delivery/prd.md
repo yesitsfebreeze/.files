@@ -61,6 +61,8 @@ or silently improvise a different one.
 - [ ] **A fresh macOS machine reaches the full daily driver from a clone plus
       one apply, with every wave gate passing.** Unmet, and split so the two
       halves are not confused with each other.
+      *(b) — genuinely unmet: the fresh-machine run has not happened. The
+      box's own text names the split halves; neither is proven.*
 
       **Every wave gate passing:** measured 2026-08-30 by
       [`quiet-board-sweep`](quiet-board-sweep/prd.md) — all seven waves ARMED,

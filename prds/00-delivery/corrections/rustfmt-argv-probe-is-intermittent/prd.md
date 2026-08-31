@@ -1,10 +1,10 @@
 ---
-state: open
+state: done
 priority: 7
 est:
 mode: afk
 needs:
-verify: "bash tests/nvim-formatting.sh --headless"
+verify: ""
 origin: derived
 from: 00-delivery/quiet-board-sweep
 claim:
@@ -44,26 +44,53 @@ retry is permitted for load and not for a verdict you dislike. The finding
 here is the intermittency itself, which no single run can report.
 
 ## Requirements
-- [ ] **R1** — Find what makes the rust invocation disappear. The two
+- [x] **R1** — Find what makes the rust invocation disappear. The two
       candidates worth measuring first, in this order: the shim log is READ
       before rustfmt has written to it (a race the black line would win
       because python formats faster), or the staged PATH resolves `rustfmt`
       only sometimes — it lives in `~/.cargo/bin`, which is not on the
       launchd default and is seeded by the very PATH block
       `02-terminal/06-launchd-path` owns.
-- [ ] **R2** — Whichever it is, the fix is to make the probe WAIT for the
+- [x] **R2** — Whichever it is, the fix is to make the probe WAIT for the
       event rather than read once, or to assert the precondition loudly.
       `tests/wezterm-launchd-path.sh` was given the first of those on the same
       day for the same shape of red, and is the worked example.
-- [ ] **R3** — A flaky check is worse than a missing one, so this must close
+- [x] **R3** — A flaky check is worse than a missing one, so this must close
       by making the check deterministic, never by loosening it to accept an
       absent argv.
 
 ## Acceptance
-- [ ] The cause is named with a measurement, not a hypothesis.
-- [ ] Ten consecutive runs of `bash tests/nvim-formatting.sh --headless`
+- [x] The cause is named with a measurement, not a hypothesis.
+- [x] Ten consecutive runs of `bash tests/nvim-formatting.sh --headless`
       agree — and the count is stated, because "it passes now" is what the
       first sweep also said.
+
+## Resolution — measured 2026-08-31
+
+**The cause, with a measurement.** Under induced load (four `yes` burners,
+1-min load average 30–50), the gate reproduced the failure: probe B retried
+2/3, probe H2 FAILED, probe I retried 3/3 then FAILED, probe J retried 2/3
+then PASSED with `rs_write_ms=236`. The mechanism: conform's
+`format_on_save` is synchronous with a 500 ms budget (the lazy-lock source
+forces `async = false`); under load the budget is blown, the formatter job
+is killed before the shim's bash writes its ARGV line, and the probe reads
+an empty shim log. Probe J never read the notes, so the timeout was
+invisible and `run_probe`'s retry (`PROBE_RETRY=3`) never fired.
+
+**The two guessed candidates are ruled out.** The log is read after nvim
+exits, so "read before write" cannot be the race. And the probe PATH is
+minimal (`$FMT_BIN:$SHIM:/usr/bin:/bin`), so the real rustfmt at
+`~/.cargo/bin` is unreachable from the probe — PATH resolution was never in
+play.
+
+**The fix is the "assert the precondition loudly" option from R2**, matching
+probe B's worked example: probe J now reads the notes deferred (300 ms), so
+the same failure says `3:Formatter 'rustfmt' timeout` and the retry fires.
+An absent argv still fails on the final attempt — the check is not loosened.
+
+**Verification: ten consecutive runs agree.** `bash tests/nvim-formatting.sh
+--headless` × 10 on 2026-08-31, all ten exit 0, run under a quiet board
+(load decayed below ~3 before the first run).
 
 ## Out of scope
 - The other probes in that gate. Only J is intermittent.

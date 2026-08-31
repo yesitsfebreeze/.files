@@ -7,7 +7,7 @@ priority: 15
 est:
 mode: afk
 needs:
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 ---
 
@@ -45,26 +45,43 @@ Same class as
 reproduces. Three instances now.
 
 ## Requirements
-- [ ] **R1** — The inventory entry states the measured behaviour: `auto`
+- [x] **R1** — The inventory entry states the measured behaviour: `auto`
       resolves, exits 0, and paints a hardcoded Tomorrow-Night fallback,
       with the three-step fall-through named and the two `vim.g` prefixes
       tinted-nvim does **not** set. The observable signal — a deferred WARN
       and `:LualineNotices` — is part of the reason, because it is the only
       thing a user would notice.
-- [ ] **R2** — The entry's complexity and usefulness numbers are re-read and
+      *(a) — commit `7877faf`; the Report (implementer-3, 2026-08-24) quotes
+      the corrected entry beside the vendored-source measurement
+      (`auto.lua` 6-19, `themes/base16.lua` 127, 93-125, 53-91, 39-51;
+      tinted-nvim sets only `vim.g.colors_name`).*
+- [x] **R2** — The entry's complexity and usefulness numbers are re-read and
       left alone unless the correction genuinely changes them. It almost
       certainly does not: the workaround is the same explicit theme either
       way. If they do change, make the argument explicitly.
-- [ ] **R3** — **Census `capabilities-nvim.md` for other claims of this
+      *(a) — commit `7877faf`; the Report: "numbers stay `C 6 · U 7` — the
+      explicit-theme workaround is the same regardless of whether `auto`
+      errors or silently falls back; the rating is unaffected, and no
+      argument is made to change it."*
+- [x] **R3** — **Census `capabilities-nvim.md` for other claims of this
       shape** — a stated failure mode that has not been run since the
       version pairing moved. Report each with what it claims, what
       reproduces, and how you measured. This file was written against a
       lualine and a tinted-nvim that have both moved since.
-- [ ] **R4** — [`03-editor/13-statusline`](../../../03-editor/13-statusline/prd.md)
+      *(a) — commit `7877faf`; the Report's R3 census: exactly three
+      substantive matches (statusline — corrected here; oil.nvim L-7 —
+      reproduces from vendor source, already carried into a follow-up; the
+      17 GB LSP log — historical incident, out of shape), one verdict per
+      claim.*
+- [x] **R4** — [`03-editor/13-statusline`](../../../03-editor/13-statusline/prd.md)
       R3 already carries the corrected mechanism, written by the
       orchestrator. Read it rather than re-deriving, and keep the two texts
       in agreement — if they disagree after this edit, the PRD is the one
       that was verified against a running editor.
+      *(a) — commit `7877faf`; the Report's R4: read `13-statusline` R3
+      (lines 32-47), same hex values, same fall-through, same two absent
+      `vim.g` prefixes, same WARN signal — "the PRD wins on conflict, and
+      there is no conflict."*
 
 ## Acceptance
 - [x] The corrected entry is quoted beside the measurement that justifies it,

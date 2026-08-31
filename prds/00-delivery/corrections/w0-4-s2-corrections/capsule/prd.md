@@ -48,12 +48,16 @@ serialising ~22 files.
       verbatim — RED at 6 FAILs before, `OK` / exit 0 after.
 
 ## Acceptance
-- [ ] Every requirement box above is `[x]`, and the backlog item it corrects
+- [x] Every requirement box above is `[x]`, and the backlog item it corrects
       is marked fixed. **R1–R3 are `[x]`; the second clause is deliberately
       left open.** Marking C-3 fixed means writing
       [`00-delivery/corrections/prd.md`](../../prd.md), which is in no W0.4
       child's footprint — see the Out of scope bullet below. This box closes
       when whoever owns the backlog closes C-3.
+      *(a) — C-3 is marked fixed in the backlog: "**Fixed 2026-08-21** —
+      `w0-4-s2-corrections/capsule` R1 re-specced
+      `01-capsule/01-container-lifecycle`". The annotation's condition
+      ("closes when whoever owns the backlog closes C-3") is met.*
 
 ## Out of scope
 - Any file another W0.4 child owns. One writer per file is why this sweep is

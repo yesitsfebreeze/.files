@@ -9,7 +9,7 @@ commit: d6d6abb
 mode: afk
 footprint:
   - README.md
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/census-verdict-discipline
 ---

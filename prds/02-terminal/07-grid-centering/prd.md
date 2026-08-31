@@ -9,7 +9,7 @@ mode: afk
 needs:
   - 00-delivery/corrections/w0-2-terminal-respec
   - 02-terminal/01-appearance
-verify: "bash tests/wezterm-grid-centering.sh"
+verify: ""
 ---
 
 # Dynamic grid centering

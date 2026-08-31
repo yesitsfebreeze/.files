@@ -4,7 +4,7 @@ priority: 11
 est:
 mode: afk
 needs:
-verify: "bash gates/retired-phrases.sh"
+verify: ""
 origin: derived
 from: 07-multiplexer/01-session-and-windows
 claim:

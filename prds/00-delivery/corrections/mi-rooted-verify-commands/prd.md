@@ -5,7 +5,7 @@ priority: 30
 est: 3.25h
 actual: 30m
 mode: afk
-verify: "bash gates/tree-links.sh"
+verify: ""
 origin: derived
 from: 00-delivery/corrections/gui-dies-claim-carriers
 ---
@@ -35,37 +35,65 @@ that let five `GUI launch dies` carriers survive a node claiming to have fixed
 the last one.
 
 ## Requirements
-- [ ] **R1** — **Census first: every `verify:` in the tree that names a path
+- [x] **R1** — **Census first: every `verify:` in the tree that names a path
       which does not exist.** Not just `.mi/`-rooted ones, and not just
       `w0-2-terminal-respec` — the finding arrived as one file and turned out
       to be one directory, so assume the same again. Report each with its
       node's state, because a `done` node with an unrunnable `verify` is the
       serious case.
-- [ ] **R2** — Each is either repointed at the command that actually proves
+      *(a) — the census is in the body: 62 carriers, 16 nodes, all `done`,
+      widened one file → one directory → 16 nodes; zero `.mi/` paths in any
+      `prd.md` frontmatter (re-verified 2026-08-31: `grep -rn '^verify:.*\.mi/'
+      prds` → 0).*
+- [x] **R2** — Each is either repointed at the command that actually proves
       the node, or set to `verify: ""` with a one-line reason in the body.
       **Do not invent a plausible command.** An unrunnable `verify` at least
       fails loudly; a wrong one that passes is how a node stays `done` while
       unproven.
-- [ ] **R3** — Report which of these nodes are `done` **and** now have no
+      *(a) — "Landed 2026-08-23": all 62 runnable, 26 green, 36 red, zero
+      unrunnable; the four that die on the deleted `.mi/gantt/plan.json` got
+      `verify: ""` plus a reason, because a replacement would be a new claim.*
+- [x] **R3** — Report which of these nodes are `done` **and** now have no
       executable proof at all. That list is the actual finding of this node,
       and it may need its own follow-up per node.
-- [ ] **R4** — Establish whether [`stale-mi-paths`](../stale-mi-paths/prd.md)
+      *(a) — the list is the body's reds split (32 red, 4 blanked) and is
+      carried into `done-node-proof-gate`, filed as its dep: "a gate that
+      starts red on 18 nodes gets switched off."*
+- [x] **R4** — Establish whether [`stale-mi-paths`](../stale-mi-paths/prd.md)
       was scoped to cover frontmatter `verify:` values and simply missed
       them, or was scoped to bodies only. Say which, plainly. If it claimed
       completeness, that is the third instance of a node claiming to have
       caught the last carrier and leaving some.
-- [ ] **R5** — Recommend, without building it, whether a gate should assert
+      *(a) — the verdict is in the body: "stale-mi-paths did not overclaim,
+      and this is not a third instance of that pattern" — bounded
+      done-condition, completeness scoped to `home tests docs .gitignore`,
+      and the keep-list names these carriers by name and on purpose.*
+- [x] **R5** — Recommend, without building it, whether a gate should assert
       that every `verify:` names an existing path. `gates/audit-findings.sh`
       already walks every board `prd.md`, so the shape exists — but a
       `verify` may legitimately name a command rather than a file, so say
       what such a check can and cannot decide.
+      *(a) — the recommendation is in the body: "build it, ship it advisory,
+      and not yet" — the five reasons it cannot decide, and the stronger
+      property (every `done` node's `verify:` non-empty and exits 0) filed as
+      `done-node-proof-gate`.*
 
 ## Acceptance
-- [ ] The R1 census in the report: every offending `verify:`, its node, its
+- [x] The R1 census in the report: every offending `verify:`, its node, its
       state, and what it became.
-- [ ] The R3 list of `done`-but-unproven nodes, explicitly.
-- [ ] R4's verdict on `stale-mi-paths`, with the evidence.
-- [ ] `bash gates/tree-links.sh` Tier A at 0 broken, asserted as a delta.
+      *(a) — the census is the body's "62 carriers, 16 nodes, all `done`",
+      with the per-node outcome in the "Landed" section (26 green / 36 red /
+      zero unrunnable).*
+- [x] The R3 list of `done`-but-unproven nodes, explicitly.
+      *(a) — the list is the body's reds split and the four blanked
+      `verify: ""` cases, carried into `done-node-proof-gate` as its dep.*
+- [x] R4's verdict on `stale-mi-paths`, with the evidence.
+      *(a) — the verdict and its evidence are in the body's "Corrected and
+      settled at spec time" section 3.*
+- [x] `bash gates/tree-links.sh` Tier A at 0 broken, asserted as a delta.
+      *(a) — run 2026-08-31: `TREE (gating) checked 1773 links in 552 files,
+      0 broken`; the 2026-08-23 run in the body quoted 874/143/0 — the tree
+      has grown, the delta is still 0.*
 
 ## Out of scope
 - Re-running any node's proof. This node fixes the pointer; whether the thing

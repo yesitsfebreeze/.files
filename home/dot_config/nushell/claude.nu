@@ -1,26 +1,7 @@
-# claude.nu — the Claude Code launchers `cc` and `cr` (04-shell/08).
-# Sourced by config.nu at the MODULES anchor.
-#
-# THE PROFILE MODEL, AND WHY THE MACHINERY BELOW IS DORMANT (R3). A login
-# profile is a subdir of ~/.claude carrying its own settings.json. With no
-# such subdir, `cc` launches Claude directly and touches nothing — no
-# picker, no CLAUDE_CONFIG_DIR, no read or write of .last-login — so the
-# single-login case pays nothing for the machinery. Creating a second login
-# is OUT-OF-BAND, not an in-picker entry: `mkdir ~/.claude/<name>` and copy
-# ~/.claude/settings.json into it — the copy is what makes detection see
-# it. From then on `cc` offers the picker (last-used first, bare Enter
-# relaunches it) and the first pick of the new name completes the seeding
-# via _claude_share.
+# claude.nu
+# Why this file is shaped the way it is:
+#   docs-site → Internals → Nushell modules
 
-# _claude_share — an account profile isolates only credentials + settings;
-# the heavy, meant-to-be-shared state (plugins, project/session history,
-# caches…) is symlinked back to the top-level ~/.claude so it stays
-# reachable from every login. .claude.json / settings are seeded once from
-# the default so a new account starts configured (enabled plugins, MCP
-# servers, project trust) but then diverges. The credentials file is never
-# copied — that is what makes a new profile log in fresh. Links and copies
-# that already exist are skipped, so this is idempotent and runs on every
-# non-default pick.
 def _claude_share [root: path, name: string] {
     let profile = ($root | path join $name)
     mkdir $profile
@@ -45,18 +26,6 @@ def _claude_share [root: path, name: string] {
     }
 }
 
-# _claude_profiles — the subdir profile names: [] when ~/.claude does not
-# exist, else the basenames of subdirs carrying a settings.json, sorted,
-# `default` filtered out (the top-level ~/.claude is always offered as
-# "default" by the picker). Claude's own internal dirs (projects, sessions,
-# cache…) never carry a settings.json, so they self-filter.
-#
-# Detection is by settings.json, NOT the credentials file: on macOS Claude
-# keeps credentials in the login Keychain (service "Claude Code-credentials"
-# plus a per-CLAUDE_CONFIG_DIR hashed entry), so no per-profile credentials
-# file is ever written — the old check found nothing and the picker came up
-# empty on Mac. settings.json is seeded by _claude_share for every profile
-# and works on both Linux (file creds) and macOS (Keychain).
 def _claude_profiles [] {
     let root = ($env.HOME | path join ".claude")
     if not ($root | path exists) { return [] }
@@ -66,16 +35,6 @@ def _claude_profiles [] {
     | sort
 }
 
-# _claude_login — multi-profile only: pick a login and return its
-# CLAUDE_CONFIG_DIR (~/.claude for "default"). The last-used name (recorded
-# in ~/.claude/.last-login) is listed first, so a bare Enter relaunches it.
-# Returns null on cancel (Esc / empty selection).
-#
-# The picker is tv (epic invariant I3: tv owns every picker screen), as an
-# AD-HOC channel: --source-command emits the ordered names, --no-sort keeps
-# that order (last-used stays first), --input-header labels it, --inline
-# keeps it at the prompt line. No cable file and no read of the television
-# config — those belong to 04-television.
 def _claude_login [profiles: list<string>] {
     let root = ($env.HOME | path join ".claude")
     let last_file = ($root | path join ".last-login")
@@ -99,8 +58,6 @@ def _claude_login [profiles: list<string>] {
     $dir
 }
 
-# _claude_run — the R3 fork: with zero subdir profiles launch directly and
-# touch nothing; otherwise pick a login and scope Claude to it.
 def _claude_run [args: list<string>] {
     let profiles = (_claude_profiles)
     if ($profiles | is-empty) {
@@ -114,13 +71,6 @@ def _claude_run [args: list<string>] {
     }
 }
 
-# `--wrapped`, and the live plain `def` is a defect not to copy: measured on
-# the pinned nu 0.114.1, `def f [...args: string]` rejects `f --foo bar`
-# with nu::parser::unknown_flag, so the live `cc` could not pass any
-# flag-shaped argument at all. --wrapped delivers them intact — `cc --model
-# opus`, `cc -p …`, `cc --resume` all reach claude — which is what makes
-# the manual's "Arguments pass straight through" true.
 def --wrapped cc [...args: string] { _claude_run $args }
 
-# cr — like cc, but resume a session within the chosen profile.
 def --wrapped cr [...args: string] { _claude_run (["--resume"] ++ $args) }

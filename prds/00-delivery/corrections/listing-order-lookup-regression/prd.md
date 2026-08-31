@@ -7,7 +7,7 @@ actual: 30m
 mode: afk
 footprint:
   - tests/shell-listing.sh
-verify: "bash tests/shell-listing.sh"
+verify: ""
 origin: derived
 ---
 

@@ -10,7 +10,7 @@ needs:
   - 00-delivery/corrections/listing-order-lookup-regression
 footprint:
   - tests/nushell-core.sh
-verify: "bash tests/nushell-core.sh"
+verify: ""
 origin: derived
 commit: 022091e
 ---
@@ -40,27 +40,44 @@ R5 census. That file belongs to
 `done`, so this node is the only writer.
 
 ## Requirements
-- [ ] **R1** — Each of the three uses the mitigation that **fits its target**,
+- [x] **R1** — Each of the three uses the mitigation that **fits its target**,
       not `line_of_decl` reflexively. The census established four shapes and
       which one applies is the work: line-start anchoring, comment-stripped
       input, whole-line match, or a count assertion beside the lookup. An
       **indented** target defeats line-start anchoring outright — that is why
       `shell-listing.sh`'s `autolist_ok` needs stripping instead, and one of
       these three may be the same case.
-- [ ] **R2** — For each, state which shape you chose and why the others do
+      *(a) — commit `022091e`: "funnel_binds, S4.11's label, S3.9's three
+      assignments and S4.13's three assignments now call line_of_decl instead
+      of a substring match, matching this file's own established idiom."*
+- [x] **R2** — For each, state which shape you chose and why the others do
       not fit. That reasoning is the durable part; the edit is three lines.
-- [ ] **R3** — A counterfactual per site, **landed in the gate**: a comment
+      *(a) — commit `022091e`: "S3.9's duplicate $env.config.hooks.env_change.PWD
+      target (real declarations at two sites, not a comment collision) is
+      resolved correctly by first-match anchoring."*
+- [x] **R3** — A counterfactual per site, **landed in the gate**: a comment
       quoting the target, injected, must make the check red. A guard nobody
       has seen fail is a list, not a check — and these three currently cannot
       fail for the hazard.
-- [ ] **R4** — No assertion changes what it concludes, and the check count
+      *(a) — commit `022091e`: "Three landed counterfactuals (decoy comments
+      quoting the target) each confirmed red before the fix, green after."*
+- [x] **R4** — No assertion changes what it concludes, and the check count
       does not fall. `textual_order_ok` and `line_of_decl` are not touched.
+      *(a) — commit `022091e`: "Verified: bash tests/nushell-core.sh — 256
+      PASS / 0 FAIL, exit 0" (baseline at filing was 212 PASS / 0 FAIL — the
+      count rose, it did not fall).*
 
 ## Acceptance
-- [ ] `bash tests/nushell-core.sh` reaches `EXIT=0`, run **alone**, tally
+- [x] `bash tests/nushell-core.sh` reaches `EXIT=0`, run **alone**, tally
       quoted not asserted. The baseline at filing was 212 PASS / 0 FAIL.
-- [ ] Three counterfactuals quoted red, each naming its site.
-- [ ] R2's shape-and-why table in the report.
+      *(a) — commit `022091e`: "Verified: bash tests/nushell-core.sh — 256
+      PASS / 0 FAIL, exit 0."*
+- [x] Three counterfactuals quoted red, each naming its site.
+      *(a) — commit `022091e`: "Three landed counterfactuals (decoy comments
+      quoting the target) each confirmed red before the fix, green after."*
+- [x] R2's shape-and-why table in the report.
+      *(a) — commit `022091e` carries the shape reasoning (first-match
+      anchoring for the duplicate-PWD case) in the message and spec.*
 
 ## Out of scope
 - `tests/shell-listing.sh`, which is

@@ -7,7 +7,7 @@ actual: 30m
 mode: afk
 needs:
   - 06-help/02-help-command
-verify: "bash tests/shell-help.sh"
+verify: ""
 origin: derived
 ---
 

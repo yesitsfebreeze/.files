@@ -118,7 +118,7 @@ prds/
 │   ├── 03-browser/                     C3 U7 V4 · Fuzzy browser
 │   ├── 04-drift-check/                 C5 U8 V3 · Drift check
 │   └── 05-agent-interface/             C3 U8 V5 · Agent interface
-└── 07-multiplexer/                     C7 U9 V2 · tmux — the portable layer
+├── 07-multiplexer/                     C7 U9 V2 · tmux — the portable layer
     ├── 01-session-and-windows/         one `main` session, stable indices, the
     │                                   terminal-integration floor
     ├── 02-key-tables/                  F4 split · F5 window/pane · F6 theme
@@ -129,6 +129,11 @@ prds/
     ├── 07-persistence/                 resurrect + continuum, cloned by install.sh
     ├── 08-wezterm-reduction/           the cutover; WezTerm keeps local chrome
     └── 09-manual-entries/              terminal.nuon on tmux bindings
+└── 08-claude-agent/                     C7 U8 V1 · Claude agent — Claude Code manages tmux panes and edits in nvim
+    ├── 01-tmux-mcp/                     the tmux MCP server
+    ├── 02-nvim-plugin/                  claudecode.nvim + claude-tmux.nvim
+    ├── 03-tmux-config/                  Claude Code inside tmux
+    └── 04-help-entries/                 the manual entries for the new bindings
 ```
 
 ## Build order
@@ -171,6 +176,12 @@ answer for the whole board. The epic reverses `02-terminal` **I1** and half of
 **I2**; the argument is in
 [`memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome`](memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md),
 not here.
+
+`08-claude-agent` is likewise absent from the waves: it is net-new and
+carries no `task:` ids. Its order is its own `needs:` graph —
+`01-tmux-mcp` and `02-nvim-plugin` first (both bare `needs:`), then
+`03-tmux-config` after `07-multiplexer/01-session-and-windows` and
+`04-help-entries` after `02-nvim-plugin`.
 
 ## Excluded
 
