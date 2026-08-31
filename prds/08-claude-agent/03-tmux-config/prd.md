@@ -15,6 +15,7 @@ time:              # OPTIONAL. See @references/parts/order.md
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 needs:
   - 07-multiplexer/01-session-and-windows
+commit: 7afecbb
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
