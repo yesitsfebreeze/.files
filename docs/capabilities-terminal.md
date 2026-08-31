@@ -28,7 +28,7 @@ the no-theme-picked fallback. Do not trust a font or hex from any other file.
 
 **Drift found while reading.** Not capabilities and carrying no rating —
 findings that belong in
-[`corrections`](../prds/00-delivery/corrections/prd.md) if they are not there
+[`corrections`](../.pearde/prds/00-delivery/corrections/prd.md) if they are not there
 already, recorded here because this is where they surfaced.
 
 - **`colors.lua` is still tracked in the chezmoi source.** The generator's own
@@ -423,7 +423,7 @@ knowledge, and every entry below that depends on one names it.
 **Split by decision, 2026-08-21 (user).** This entry rates *both* halves — the
 digit tab-select and the self-painted pane-letter overlay — at C 9 / U 8. The
 overlay was dropped; only the digit half was ported. The node that carries it,
-[`02-terminal/03-f5-jump-mode`](../prds/02-terminal/03-f5-jump-mode/prd.md),
+[`02-terminal/03-f5-jump-mode`](../.pearde/prds/02-terminal/03-f5-jump-mode/prd.md),
 therefore reads **C 6 / U 8**: complexity falls because the overlay was the
 expensive half, usefulness does not move because the inventory itself called
 the surviving half "a handful of lines [carrying] most of the value". The

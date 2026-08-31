@@ -18,7 +18,10 @@ vicky/
 # pearde lives in its own repo (~/dev/infra/pearde); this is a local symlink
 .claude/skills/pearde
 # pearde view state — regenerable, rewritten continuously by the live service
-prds/.history.jsonl
-prds/.plan.json
-prds/.view.html
+.pearde/.state/
+.pearde/.history.jsonl
+.pearde/.plan.json
+.pearde/.view.html
+.pearde/.claims/
+board/
 __pycache__/

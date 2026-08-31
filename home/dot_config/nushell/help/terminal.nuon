@@ -17,9 +17,12 @@
 #     `wezterm show-keys --lua`. A tmux-key target names `key`, `mods` and an
 #     optional `table` (`root` when absent) — the same shape as the WezTerm
 #     kind, against a different reader.
-#   - Entries for `F4 <arrow>` and the pane letters are new: neither gesture
-#     existed before, because WezTerm could not address a pane by letter
-#     without a self-painted overlay (I3).
+#   - Entries for the pane letters and the split-by-arrow are newer than the
+#     first rewrite: neither gesture existed in the WezTerm era, because
+#     WezTerm could not address a pane by letter without a self-painted
+#     overlay (I3).
+#   - 2026-08-31: F4 and F5 merged into one table on F5 — the arrows split,
+#     the digits and letters move. There is no F4 any more.
 #   - `nine tabs`, `lit and dim tabs` and `Ctrl+Shift+Q` described the WezTerm
 #     floor and are gone or replaced. Windows are created on demand now, the
 #     tint moved to tmux's status bar, and the window-closing key went with
@@ -41,15 +44,16 @@
     {
         key: "F5 <digit>"
         title: "Jump to a window by its number"
-        use: "Press `F5`, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. The mode is over the moment you press the second key — the next thing you type goes into the pane. Any unbound key cancels."
+        use: "Press `F5` to enter the switcher, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. The switcher stays on after each pick — keep hopping between tabs — and `Escape` leaves it, as does any key the switcher doesn't use."
         topic: "terminal"
         task: "windows"
         step: 1
         mode: "terminal"
-        also: ["F5 <letter>", "F4 <arrow>", "F5 F5"]
-        why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. A key with no binding in the pushed table is looked up once more in the root table and dropped if it misses, so a mistyped letter ends the mode and types nothing, with no bindings needed to arrange it. A lazily created window starts at `~` and NOT at the current directory — that disagrees with `F4` on purpose: a digit is a clean slate, a split is a division of the work in front of you."
+        also: ["F5 <letter>", "F5 <arrow>", "F5 F5"]
+        why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. A key with no binding in the pushed table is looked up once more in the root table and dropped if it misses, so a mistyped letter ends the mode and types nothing, with no bindings needed to arrange it. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you."
         verify: [
             {kind: "tmux-key", key: "F5", mods: "NONE"}
+            {kind: "tmux-key", key: "Escape", mods: "NONE", table: "jump"}
             {kind: "tmux-key", key: "1", mods: "NONE", table: "jump"}
             {kind: "tmux-key", key: "2", mods: "NONE", table: "jump"}
             {kind: "tmux-key", key: "3", mods: "NONE", table: "jump"}
@@ -65,13 +69,13 @@
     {
         key: "F5 <letter>"
         title: "Jump to a pane by its letter"
-        use: "Press `F5`, let go, then `a` to `i`: focus moves to that pane. The letters are printed on the pane borders whenever a window has more than one pane, so the label you are reading is the key you press."
+        use: "Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane. Every pane carries its letter in a video-inverse chip on the border above it — the label you are reading is the key you press. The switcher stays on after each pick, and `Escape` leaves it."
         topic: "terminal"
         task: "windows"
         step: 2
         mode: "terminal"
-        also: ["F5 <digit>", "F4 <arrow>", "the status bar"]
-        why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. That is exactly why the border prints it: the label is derived from the same index the key uses, so it is right the instant after a renumber rather than describing where a pane used to be. The two halves are one design and neither is honest without the other. This is the capability WezTerm refused: `PaneSelect` cannot be closed from Lua, so letter addressing there would have meant painting an overlay by hand — nine `select-pane -t` lines do it here."
+        also: ["F5 <digit>", "F5 <arrow>", "the status bar"]
+        why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The chip rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The chip is shown whenever the window has more than one pane, not only while the switcher is armed — the letter is a property of the pane, not of the mode."
         verify: [
             {kind: "tmux-key", key: "a", mods: "NONE", table: "jump"}
             {kind: "tmux-key", key: "b", mods: "NONE", table: "jump"}
@@ -86,37 +90,36 @@
         source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
-        key: "F4 <arrow>"
+        key: "F5 <arrow>"
         title: "Split the view in a direction"
-        use: "Press `F4`, let go, then an arrow: the pane splits that way and the new pane opens in the directory the old one was in. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it."
+        use: "Press `F5`, let go, then an arrow: the pane splits that way and the new pane opens in the directory the old one was in. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. The switcher stays on — stack another split — and `Escape` leaves it."
         topic: "terminal"
         task: "windows"
         step: 3
         mode: "terminal"
         also: ["F5 <letter>", "F5 <digit>"]
-        why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The directory comes from the shell's OSC 7 report, which is why `config.nu` keeps `osc7: true` — its neighbour `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
+        why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The arrows, digits and letters share one table — one `F5` arms all three — so there is no second key to remember. The directory comes from the shell's OSC 7 report, which is why `config.nu` keeps `osc7: true` — its neighbour `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
         verify: [
-            {kind: "tmux-key", key: "F4", mods: "NONE"}
-            {kind: "tmux-key", key: "Left", mods: "NONE", table: "split"}
-            {kind: "tmux-key", key: "Right", mods: "NONE", table: "split"}
-            {kind: "tmux-key", key: "Up", mods: "NONE", table: "split"}
-            {kind: "tmux-key", key: "Down", mods: "NONE", table: "split"}
+            {kind: "tmux-key", key: "F5", mods: "NONE"}
+            {kind: "tmux-key", key: "Left", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "Right", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "Up", mods: "NONE", table: "jump"}
+            {kind: "tmux-key", key: "Down", mods: "NONE", table: "jump"}
         ]
         source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F5 F5"
-        title: "Send F5 or F4 through to a nested session"
-        use: "Press the key twice — `F5 F5`, or `F4 F4` — and the second press is sent to whatever is running in the pane instead of being handled here. That is how you reach the window and split keys of a tmux you have ssh'd into: the outer session gets the first press, the inner one gets the second."
+        title: "Send F5 through to a nested session"
+        use: "Press the key twice — `F5 F5` — and the second press is sent to whatever is running in the pane instead of being handled here. That is how you reach the window, pane and split keys of a tmux you have ssh'd into: the outer session gets the first press, the inner one gets the second."
         topic: "terminal"
         task: "windows"
         step: 6
         mode: "terminal"
-        also: ["F5 <digit>", "F4 <arrow>", "F6"]
-        why: "These keys are bound without a prefix, so the outermost session eats them always — which is the portability case biting itself the moment you ssh somewhere that also runs tmux. The double tap needs an explicit binding and does not fall out for free: without it the second press misses in the pushed table, is looked up again in the root table, finds the same key there and silently re-arms the mode. `F6` is deliberately NOT forwardable: the palette belongs to the outermost terminal, because that is the process that owns the colours and reads the escape sequence."
+        also: ["F5 <digit>", "F5 <arrow>", "F6"]
+        why: "This key is bound without a prefix, so the outermost session eats it always — which is the portability case biting itself the moment you ssh somewhere that also runs tmux. The double tap needs an explicit binding and does not fall out for free: without it the second press misses in the pushed table, is looked up again in the root table, finds the same key there and silently re-arms the mode. `F6` is deliberately NOT forwardable: the palette belongs to the outermost terminal, because that is the process that owns the colours and reads the escape sequence."
         verify: [
             {kind: "tmux-key", key: "F5", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "F4", mods: "NONE", table: "split"}
         ]
         source: "prds/07-multiplexer/02-key-tables/prd.md"
     }

@@ -13,7 +13,7 @@ Source of truth: the deployed tree at `~/.config/nushell/` — `env.nu`,
 
 **Decision 4 (2026-08-21) makes the deployed tree canonical** and the chezmoi
 source abandoned — see
-[the corrections backlog](../prds/00-delivery/corrections/prd.md). That is not
+[the corrections backlog](../.pearde/prds/00-delivery/corrections/prd.md). That is not
 a formality for this file: the chezmoi source at
 `~/.local/share/chezmoi/home/dot_config/nushell/` holds only `cl.py`,
 `config.nu`, `env.nu`, `finder.nu`, `pass.nu` and `theme.nu` — so
@@ -148,7 +148,7 @@ live on 2026-08-21. Everything rated below is the deployed artifact.
   liked sets, background override ladder/tuner.
   **Decided 2026-08-21 (user): tinty stays as palette owner and the `DEFER`
   "cosmetic" verdict is withdrawn** — see open decision 2 in
-  [the corrections backlog](../prds/00-delivery/corrections/prd.md). It is
+  [the corrections backlog](../.pearde/prds/00-delivery/corrections/prd.md). It is
   infrastructure: `tinty apply` is what writes both the WezTerm palette
   (`~/.config/wezterm/colors.lua`) and the tinted-shell artifact a new shell
   re-asserts, so dropping it would leave WezTerm, Neovim, tv and the shell

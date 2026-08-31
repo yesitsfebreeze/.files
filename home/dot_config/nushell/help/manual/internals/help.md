@@ -1,0 +1,691 @@
+# The help command
+
+> How `help` and `help --check` are built.
+
+The manual renders from the same `.nuon` surfaces this site generates from.
+
+## `help.nu`
+
+```
+def _help_dir [] {
+```
+
+help.nu — the renderer for this environment's manual. Covers 06-help/02-help-command R1–R10. DEFS ONLY: no write to the shell's config record, no keybinding append, no hook — the history.nu precedent, so this file parses standalone under `nu -n`. The gate greps this file for a config write and for a keybinding upsert, so neither spelling appears here at all and a hit is proof of a regression.
+
+LAYOUT ONLY, NEVER CONTENT (epic I1). Every renderer below reads the corpus under `~/.config/nushell/help` — see THE CORPUS below for why that spelling and no other — and holds nothing but shape. No description of a binding, a command or an idiom is written here; a phrase that reads like manual prose in this file is a bug, because it would be a second source for something the corpus already says once.
+
+THE `std/help` CAPTURE IS IN config.nu, AND IT CANNOT MOVE HERE. Measured on the pinned 0.114.1: `use std/help` and `def help` in ONE file fail at PARSE with `nu::parser::unknown_flag` pointing into std/help/mod.nu:795 — in either order. Nushell predeclares a block's `def`s before parsing its statements, so the `use` resolves std's `@example {help --find char}` attribute against OUR predeclared signature, which has no `--find`. A `source`d file is its own block, so config.nu holds
+
+```
+  use std/help
+  alias core-help = help
+  source ~/.config/nushell/help.nu
+```
+
+and this file holds only the `def`. `core-help` is an ALIAS on purpose: alias targets bind at parse time (the `core-ls` precedent), so it stays bound to std's `help` after our `def` shadows the name and the wrapper cannot recurse. The delegation target is std's implementation, not the builtin — the builtin's `--find` returns an empty list where std's finds hits.
+
+WHAT THE SHADOW DOES NOT TAKE. Nushell sanctions a custom `help` and routes `<cmd> --help` to it, so `ls --help` arrives here as `help` with rest `["ls"]` — INDISTINGUISHABLE from a typed `help ls`, which is why both must resolve identically and why anything we do not document is forwarded to `core-help` untouched. Externals are exempt by construction: nushell passes an external's flags through, so `git --help` never reaches this file. Longest-match parsing also keeps std's own subcommands (`help commands`, `help aliases`, `help modules`, `help externs`, `help operators`, `help escapes`) out of this `def` entirely — none of the nine topic ids collides with one, and defining `help <topic>` subcommands would shadow that free behaviour and re-fight the parser.
+
+NO ANSI, EVER, FROM THIS FILE (R7, epic I4). Every render is a plain string or a plain table value: no colour codes, no pager, no TUI. A TTY branch is not writable anyway — as config.nu's PALETTE comment records, `(is-terminal --stdout)` inside a subexpression captures stdout and is false unconditionally. Interactive styling comes free, because nu's own table theme renders a returned table.
+
+READS THE CORPUS AND NOTHING ELSE (R8). No process is spawned, no editor, no terminal query, no git: `help` is typed to find something out, so it has to be instant. Checking the manual against a live configuration is 06-help/04-drift-check's `--check`, which runs on demand. ── the corpus ────────────────────────────────────────────────────────────── THE CORPUS IS ADDRESSED BY THE SAME `~`-LITERAL config.nu USES TO SOURCE THIS FILE: `$nu.home-dir | path join ".config" "nushell"`, and nothing else. config.nu holds `source ~/.config/nushell/help.nu`, so the renderer is always read from THAT directory; addressing the corpus the same way is config.nu's own GENERATED rule one level down — one hardcoded path on both sides cannot diverge. env.nu and dirstack.nu mirror `startdir.txt` the same way, and the gate keeps both spellings in step.
+
+THE TWO REJECTED CANDIDATES ARE KEPT OUT OF THIS FILE ENTIRELY, comment included, so a grep for either spelling is proof of a regression — the history.nu discipline. They are the launch-time config-dir constant (`default-config-dir`) and the loaded config file's dirname (`config-path | path dirname`). Measured on the pinned 0.114.1, 2026-08-23, every run under `env -i` with HOME and PATH only; D is the constant, P is the dirname, H is the home-dir expression above, and `~/.config` in the last three columns is short for `~/.config/nushell`:
+
+```
+launch shape                          D          P          H
+plain nu, no XDG_CONFIG_HOME          ~/Library  ~/Library  ~/.config
+plain nu, XDG_CONFIG_HOME exported    ~/.config  ~/.config  ~/.config
+nu --config ~/.config/…, no export    ~/Library  ~/.config  ~/.config
+nu --config <other tree>/…, export    the export <other>    ~/.config
+```
+
+Three facts settle the choice.
+
+1. ROW THREE IS THE DEFECT, AND IT IS THE DEPLOYED SHAPE. With --config naming our tree and no export, D resolved to ~/Library/Application Support/nushell and `help` died with nushell's raw file_not_found, rc 1. Not an empty manual — a stack trace. 2. P IS NOT CORRECT BY CONSTRUCTION. config.nu sources every module by a `~`-literal, so --config pointed at another tree still loads $HOME/.config/nushell/help.nu — measured with a marker `def` in each of two trees, and the marker that ran was the home one. So P can name a directory that did NOT supply the running help.nu (row four), and then the renderer and its corpus come from different trees: a manual that renders, exits 0, and describes a different machine. 3. H AGREES WITH THAT LITERAL IN EVERY SHAPE, and it is exactly the directory this file was itself read from.
+
+$env.XDG_CONFIG_HOME is rejected for a second reason: env.nu assigns it unconditionally, so it is a copy of `$nu.home-dir/.config` wherever env.nu ran and nothing at all where it did not.
+
+NO FALLBACK CHAIN. One resolution, never "if it is not there, try elsewhere". A fallback is precisely what turns "not found" into "found somewhere wrong", and row four is what that costs.
+
+OUT OF THIS FILE'S REACH, ON PURPOSE. Row one — plain `nu` with no export, which is a GUI-launched WezTerm today, since wezterm.lua deliberately carries no default_prog — loads ~/Library/Application Support/nushell/ config.nu. That file does not exist, so NONE of this repo's nushell configuration loads and `help` is nushell's builtin welcome text. No line here can change that, because this file is never sourced in that shape. That half belongs to 02-terminal/06-launchd-path.
+
+THE OTHER CONSTANT, WHICH GENUINELY CANNOT MOVE: `$nu.history-path`. Same launch-time lesson, recorded in history.nu's header — reedline reads and writes wherever the launch environment puts it, so there the constant IS the right answer and a literal would be the wrong one. Cross-referenced, not re-fixed.
+
+EVERY FAILURE HERE IS LOUD. A corpus that is absent or degenerate RAISES; it never renders an empty manual. Measured: a zero-byte topics.nuon opens as `nothing`, and `help` then printed `Topics:` with nothing under it, `First keys:` with nothing under it, and exited 0 with an empty stderr. An empty manual reads as "this environment has no custom bindings", which is the most expensive wrong answer `help` can give, so every length check below is explicit — finder.nu's empty-decode rule, applied to a read instead of a decode. Every message starts `help: `, names the resolved path, names `chezmoi apply`, and names the escape hatch.
+
+THE TRADE, RECORDED RATHER THAN SOFTENED. Clauses 6 and 7 read the corpus, so with the corpus gone `ls --help` raises instead of delegating (measured: rc 1). That is intended — a missing corpus is a broken deploy, and a `--help` that quietly fell through to std's would hide it. The escape hatch stays open: `help --delegate <name>` returns at clause 1, before any corpus read (measured: rc 0 with the corpus renamed away). The one resolution. Absent means a broken deploy, so say so rather than letting the first `open` throw nushell's raw file_not_found.
+
+```
+def _help_topics [] {
+```
+
+The spine: the nine topics in reading order. Every render that groups or sorts by topic uses THIS order, never alphabetical. A spine that opens to anything other than a non-empty list raises: that is the render-empty defect, and only an explicit length check catches it.
+
+```
+if (not (($spine | describe) =~ '^(list|table)')) or (($spine | length) == 0) {
+```
+
+A .nuon list of records opens as a `table`, a bare `[]` as a `list` and a zero-byte file as `nothing`; `length` on the last is 0, so the shape test and the length test together cover all three.
+
+```
+def _help_rank [] {
+```
+
+Topic id -> its position in the spine, as one record, so a sort does not re-scan the spine per row.
+
+```
+def _help_corpus [] {
+```
+
+The four surface files flattened into one entry list, each entry given an `id` — its `key` or its `cmd`, whichever it carries. The two review files are deliberately absent: they are records of who read what, not content.
+
+A missing surface file and an empty flattened list both raise, for the spine's reason: an overview whose topics all count zero is the empty manual. A file that opens to something other than a list contributes nothing, so the length check catches a zero-byte one too.
+
+```
+def _help_by_mode [rows: list, m: string] {
+```
+
+The `--mode` filter, shared by every table render. An entry's `mode` is either the bare surface (`shell`, `terminal`, `container`) or a surface with a sub-mode (`nvim:normal`), so a filter matches equality or the `<m>:` prefix.
+
+```
+def _help_curated [corpus: list, ids: list] {
+```
+
+── the renders ─────────────────────────────────────────────────────────────
+
+Column names are an interface (06-help/05-agent-interface R1). Renaming one is a breaking change, not a tidy-up. THE SAME BINDS THE JSON KEYS `_help_norm` publishes, and harder: `help --json` is consumed by programs, so renaming one of its eleven keys is a breaking change that has to be recorded in that node's field list. Spec: prds/06-help/05-agent-interface/specs/spec01-json-and-markdown-renders.md. The curated-id render, and it is ONE def because the overview now has TWO curated blocks. Each id renders as `<id> — <its corpus title>`, so neither block writes a sentence of its own — the LAYOUT ONLY rule at the top of this file, held at the one place a hand-written line would be tempting.
+
+AN ID ABSENT FROM THE CORPUS DROPS SILENTLY, and that is 06-help/02's behaviour, unchanged here: renaming an entry shrinks a block without a word of complaint. tests/help-agent.sh pins it from OUTSIDE instead — it renames the `idioms` entry in a scratch corpus and asserts the block loses that line — because making the render loud is 06-help/02's call, not this render's.
+
+```
+def _help_overview [] {
+```
+
+The overview: the spine with per-topic counts, the handful of keys worth knowing first, the handful of lines an AGENT needs, the ways to go deeper, and the sentence that tells a reader where everything we do NOT document went. Counts are computed, so the manual growing never leaves a number behind.
+
+WHY THE `For agents:` BLOCK IS HERE AND NOT BEHIND A FLAG (06-help/05-agent-interface R5). Measured before this node landed: bare `help` printed the topics with counts, the four first keys and the go-deeper line, and NEVER NAMED `idioms` — the entry that says search with `rg` and find with `fd` rather than `grep`/`find`, and pick with television. AGENTS.md tells an agent to run `help`, so `--json` and `--md` do nothing for the reader that matters: the rule was satisfied in the corpus and invisible in the render. This block is the fix; the two data renders are the optimisation.
+
+```
+def _help_topic_table [id: string, m: string] {
+```
+
+One topic as a table. `key` carries the entry's id, so `help find | where key =~ 'ctrl'` composes like any other nu pipeline (R2).
+
+```
+def _help_search_table [q: string, m: string] {
+```
+
+A query across the manual: case-insensitive substring over `key`/`cmd` (both reach here as `id`), `title` and `use`, in spine order so the result reads grouped by topic while staying one composable value (R3).
+
+```
+def _help_spine_grouped [m: string] {
+```
+
+THE SPINE WALK, AND IT IS SHARED BY EVERY WHOLE-MANUAL RENDER. `_help_spine_grouped` walks topics.nuon's order once and returns one record per topic — the spine row itself, plus that topic's `--mode`-filtered entries in corpus order. `_help_spine` is the same walk flattened.
+
+`--all`, `--json` and `--md` all go through these two, which is what makes them agree BY CONSTRUCTION rather than by three sorts that happen to match today (06-help/05-agent-interface R1/R2). A render that re-walks the corpus on its own is the defect this def exists to prevent.
+
+```
+def _help_all_table [m: string] {
+```
+
+The whole manual as one spine-ordered table (R5): topics in spine order, entries in corpus order within each. A table composes and is what 06-help/05-agent-interface reads; document form is that node's `--md`.
+
+```
+def _help_norm [] {
+```
+
+_help_norm — the ONE row shape both data renders publish, and the canonical field list (06-help/05-agent-interface R1). Eleven keys, in this order:
+
+id key cmd title use topic mode also why verify source
+
+EVERY OPTIONAL CORPUS FIELD IS MATERIALISED WITH AN EMPTY DEFAULT, NEVER OMITTED. `jq '.entries[].why'` must not hit a missing key: a consumer that has to tell absent from empty is reading a dump, not an interface. `key` and `cmd` are BOTH emitted for the same reason and because which one an entry carries is itself information — a non-empty `key` means the entry is a keystroke, a non-empty `cmd` means it is an invocation, and `id` is the one `_help_corpus` already derived from them.
+
+NO CORPUS ROW INDEX IS PUBLISHED. `_help_rows` needs one because tv substitutes a template field textually and one live id carries an apostrophe; but an index shifts whenever an entry is added, and an unstable handle inside a stable interface is worse than no handle. The JSON is COMPLETE instead, so an agent never has to send an id back through a shell to learn anything about it.
+
+```
+def _help_json [m: string] {
+```
+
+_help_json — the whole manual as ONE JSON document (R1). `to json` returns TEXT, so a caller gets one document whether it pipes to `jq` or back through `from json`.
+
+Shape: {topics: <topics.nuon verbatim>, entries: [<_help_norm rows>]}.
+
+NO per-topic entry count and NO `version` key. Both are derivable from `entries`, and a stored count is exactly the stale-number shape this board keeps correcting — six were struck in one session. `topics` is the spine verbatim whatever `--mode` says, so a filtered document still names the topics its entries claim.
+
+```
+def _help_hash [n: int] { 1..$n | each { char hash } | str join }
+```
+
+The markdown heading marker, BUILT rather than written, and the reason is a gate rather than taste: tests/shell-help.sh drops from the first `#` on a line before looking for a spawn, and the claim that makes safe is that the only ones in this file are the flag comments in `def help`'s signature. A literal markdown heading would put a `#` inside a string and make that claim false.
+
+```
+def _help_host_only [mode: string] {
+```
+
+The host-only marker: ONE literal, shared by every render that shows an entry's mode (R9, and 06-help/05-agent-interface R6). A `terminal`-mode entry is MARKED rather than hidden, so a reader inside a capsule learns the key exists and does not work there. Retyping the sentence in a second render is exactly how the two would drift.
+
+```
+def _help_md [m: string] {
+```
+
+_help_md — the whole manual as one markdown document (R2), grouped by topic in spine order, entries in corpus order, a topic emptied by `--mode` skipped whole.
+
+NO `std/help` TAIL, EVER, and for two measured reasons. The one `_help_preview`'s header records: the delegation target is an ALIAS defined in config.nu, so under `nu -n` the name binds as an external at parse time. And one that is this render's own: it covers every `command`-kind entry at once, so a tail would shell out 28 times for one document.
+
+The entry id goes in the H3 UNQUOTED and UNBACKTICKED — one live id carries an apostrophe, and no id needs fencing to survive markdown.
+
+```
+def _help_entry_detail [id: string] {
+```
+
+One entry in full (R4): the gesture, the reason, the neighbours, the surface, and the PRD that specifies it. A `terminal`-mode entry is MARKED host-only rather than hidden, so a reader inside a capsule learns the key exists and does not work there (R9).
+
+When the entry documents a command, the render ENDS with that command's own `std/help` output. That is what makes winning a name collision free: `ls --help` arrives here as `help ls`, and the reader still gets the flags they came for.
+
+```
+def _help_rows [--mode: string] {
+```
+
+── the browser (06-help/03-browser) ────────────────────────────────────────
+
+THE CHANNEL IS NAMED `manual`, NOT `help`, and the reason is tv's own CLI: `help` is a clap SUBCOMMAND of `tv`, so `tv help` prints tv's usage at rc 0 and never opens the channel. cable/manual.toml's header carries the full measurement and the one cost (the Ctrl-Space remote cannot be reached by typing "help", because `_finder_pick_channel` matches channel names only).
+
+THREE DEFS, AND THE FIRST TWO ARE CALLED BY THE CABLE FILE UNDER `nu -n` WITH NO CONFIG LOADED. That is the constraint that shapes them: anything config.nu defines is not in scope there. `_help_browse` is the exception — it only ever runs inside the configured interactive shell, which is why it may call finder.nu's `_finder_parse` (sourced above this file at MODULES). _help_rows: one TAB row per entry for the cable's source — topic, id, title, and the entry's INDEX. Joined without a trailing newline, as `_recents_lines` does and as the deployed quicklist channel proves tv accepts.
+
+THE INDEX IS THE ENTRY'S POSITION IN THE FULL CORPUS, COMPUTED BEFORE THE `--mode` FILTER — `enumerate` first, `_help_by_mode` second, and swapping them is the one mistake in this file that would still look correct. The cable's PREVIEW command is fixed while its SOURCE command is overridden per call (`_help_browse` passes `--source-command … --mode <m>`), so an index counted over a filtered subset would make the preview name a different entry than the row being previewed.
+
+Why an index at all, and not the id: tv substitutes a template field TEXTUALLY into the line it hands to $SHELL, and one live id is `Neovim's own LSP keys` — an apostrophe that closes the quote around it. An integer has no shell-hostile character. The runner still identifies entries by id, which is why the row carries both.
+
+```
+def _help_preview [i: int] {
+```
+
+_help_preview: the focused entry in full, for the cable's preview pane — R2's four fields (title, use, why, related) plus the source PRD.
+
+IT MUST NOT REUSE `_help_entry_detail`, and that is measured rather than a style preference: that def ends a `command`-kind entry with `(core-help $name)`, and `core-help` is an ALIAS defined in config.nu. Under the cable's `nu -n` no config is loaded, so the name binds as an EXTERNAL at parse time and the preview pane dies at runtime with a command-not-found instead of showing the entry.
+
+An out-of-range index RETURNS one line rather than raising — a preview pane is not a place to read a stack trace. This is the one deliberate exception to this file's "every failure is loud" rule, and it is bounded: the index comes from our own row, so an out-of-range one means the source and preview commands disagreed, which the gate asserts against directly.
+
+```
+def _help_browse [q: string, m: string] {
+```
+
+_help_browse: the runner. Guard on tv's presence, ONE tv invocation, dispatch on the pressed key.
+
+The interactive guard is NOT here: clause order lives in the `--fuzzy` branch below, so this def is only ever called interactively. tv REQUIRES a TTY (finder.nu's limitation (a)) and panics without one.
+
+The un-hijack rides this invocation like every other (finder.nu's header): our own cable file binds no `enter`, but the flag costs nothing and survives someone adding one. `--expect ctrl-o` is what makes stdout line 1 the pressed key (limitation (c)); `_finder_parse` is the shared reader of that contract and is reused verbatim rather than re-derived.
+
+`--input` prefills the prompt, so `help --fuzzy select` narrows interactively and filters non-interactively — ONE meaning for the argument. `--source-command` overrides the channel's source per call, which is `_finder_pick_channel`'s own idiom; it is the only way `--mode` can reach a cable file whose source line is fixed.
+
+`ctrl-o`'S REPO RESOLUTION IS ONE RESOLUTION, WITH NO FALLBACK CHAIN — this file's rule at THE CORPUS above, applied to the repo instead of the config dir. Entry `source` values are repo-root relative (`prds/04-shell/03-zoxide/prd.md`) and the deployed corpus does not know where the repo is, so the root is `chezmoi source-path | path dirname`: `.chezmoiroot` is `home`, so `source-path` reports `<repo>/home`, and `just cutover` (`chezmoi init --source "<repo>"`) is what makes that this repo. `chezmoi` is in install.sh's required set, so its absence is a broken machine — say so and stop.
+
+AND THE RESOLVED FILE MUST EXIST BEFORE THE EDITOR IS SPAWNED, because today it does not: measured 2026-08-24, `chezmoi source-path` still reports the LEGACY source repo's `home` directory on this machine — `just cutover` has not run — and that repo holds no `prds/`, so every entry's `source` resolves to a path that is not there. So print the resolved path and `just cutover`, and return. A fallback is refused for the same reason it is refused for the corpus: it turns "not found" into "found somewhere wrong". (No literal developer path appears in this file — the gate greps for one, because a deployed file carrying one works on exactly one machine.)
+
+THIS DEF IS THE ONLY ONE IN THIS FILE THAT SPAWNS ANYTHING, and that is what keeps R8 true where it means something: the RENDER path still reads the corpus and nothing else. `tests/shell-help.sh` asserts exactly that shape — help.nu with this body excised names no `tv`, no `chezmoi` and no `$env.EDITOR` — rather than the old whole-file absence, which this node's arrival would otherwise have made a false label.
+
+```
+let id = ($row | split row (char tab) | get -o 1 | default "" | str trim)
+```
+
+Field 1 is the id. The row is `output = "{}"` — the WHOLE row — so the id is recoverable even though `display` is what the reader saw.
+
+```
+_help_entry_detail $id
+```
+
+RETURNING the string is what leaves the detail in the scrollback after tv exits, and it reuses 02's renderer so a `command` entry still ends with its `std/help` tail. That reuse is safe HERE and not in `_help_preview`: this def runs inside the configured shell, where `core-help` is bound.
+
+```
+def help [
+```
+
+── the command ─────────────────────────────────────────────────────────────
+
+Resolution order, first hit wins. `--entry` and a bare `help <entry>` call the SAME helper, because `ls --help` and `help --entry ls` are indistinguishable at the call site and so cannot be allowed to diverge (R10).
+
+Clause 8 is the load-bearing one: a name that is not ours is forwarded to `core-help` UNCHANGED. A regression there breaks `--help` for every nu-resolvable name in the shell, which is the whole cost of being allowed to own this name.
+
+```
+let render = (if $json { "--json" } else if $md { "--md" } else { "" })
+```
+
+THE TWO DATA RENDERS TAKE `--mode` AND NOTHING ELSE, AND SAYING SO IS THE POINT (06-help/05-agent-interface R1/R2). Their subject is the WHOLE manual, so there is nothing for a query or a second selector to filter TO — and an interface that silently drops an argument is how an agent comes to trust a wrong answer. Every message names the offending flag.
+
+```
+if $check { return (_help_check) }
+```
+
+0 — the drift check (06-help/04-drift-check). FIRST, and it delegates to help-check.nu rather than doing the work here: this file carries R8's no-spawn guarantee and the check spawns `nvim --headless`, so every line that spawns lives in the other file and only the flag lives here. config.nu sources help-check.nu ABOVE this file, because a def calling a def from a LATER source fails at run time with `Command not found`.
+
+```
+let deleg = ($delegate | default "")
+```
+
+1 — nushell's own help, addressed explicitly.
+
+```
+if $json { return (_help_json $m) }
+```
+
+1a, 1b — the whole manual as data (06-help/05-agent-interface R1, R2).
+
+THEY SIT HERE, DIRECTLY UNDER CLAUSE 1, AND THE EXISTING NUMBERS DO NOT MOVE. Clause 1 stays first because it is the corpus-free escape hatch and has to keep working when the corpus is gone; these two read the corpus and so raise without it, like every other render. The numbering is cited by number from this file's own header and from tests/shell-help.sh, so these two are lettered rather than inserted — the same way the `--fuzzy` branch was.
+
+```
+let ent = ($entry | default "")
+```
+
+2, 3 — the manual, addressed explicitly.
+
+```
+if $all and (not $fuzzy) { return (_help_all_table $m) }
+```
+
+4 — everything.
+
+```
+if $fuzzy {
+```
+
+The browser (06-help/03-browser). The flag parses because the overview names it, and an overview naming a flag the command rejects is a false line.
+
+CLAUSE ORDER IS LOAD-BEARING. The interactive clause is FIRST, so `_help_browse` is the only thing that ever reaches tv — which requires a TTY and panics without one (finder.nu's limitation (a)). The two lines below it are R5's degrade to `help <query>`, unchanged from before the browser landed, and they are what keeps the shipped `help --fuzzy` manual entry's last sentence true.
+
+```
+if ($query | is-empty) { return (_help_overview) }
+```
+
+5 — the overview.
+
+```
+let want = ($name | str lowercase)
+```
+
+6 — one of our topics. This is what sends `help find`, `help history` and `help config` to OUR topics rather than the nushell builtins of the same name.
+
+```
+if ((_help_corpus | where {|e| ($e.id | str lowercase) == $want } | is-not-empty)) {
+```
+
+7 — one of our entries, exact against `key`/`cmd`. `help ls`, `help ctrl-r` and a typed `ls --help` all land here.
+
+```
+if ((which $name | is-not-empty) or (scope commands | where name == $name | is-not-empty)) {
+```
+
+8 — not ours, but the shell knows it: forward untouched.
+
+```
+let hits = (_help_search_table $name $m)
+```
+
+9 — a query across the manual.
+
+```
+core-help --find $name
+```
+
+10 — nothing here, so let nushell's own search have it: `help <nu-word>` still lands somewhere.
+
+## `help-check.nu`
+
+```
+def _hc_dir [] {
+```
+
+help-check.nu — `help --check`, the manual's drift check (06-help/04-drift-check).
+
+WHY THIS IS NOT IN help.nu, AND CANNOT BE. help.nu carries R8's no-spawn guarantee, and tests/shell-help.sh enforces it twice: `render_no_spawn_ok` greps the whole file (with `_help_browse`'s body excised) for `nvim`, `wezterm`, `git`, `tv` or `chezmoi` in command position, and `browse_only_spawner_ok` asserts `_help_browse` is the ONLY def in that file naming a spawn target. This check spawns `nvim --headless`, so a single line of it inside help.nu turns both gates red. The flag lives on `def help`; every line that spawns lives here.
+
+SOURCED BEFORE help.nu, NOT AFTER. Measured on the pinned 0.114.1: a `def` in one sourced file calling a `def` from a file sourced LATER fails at run time with `nu::shell::external_command — Command not found`, because each `source` is its own block and predeclaration does not cross it. So config.nu holds `source ~/.config/nushell/help-check.nu` above `source ~/.config/nushell/help.nu`, and the order is gated.
+
+EXIT CODE IS `error make`, NOT `exit` (R7). `exit 1` inside a def closes the INTERACTIVE shell — `help --check` typed at a prompt would end the session. `error make` gives rc 1 under `nu -c` (which is what a commit hook or CI runs) and prints an error at a prompt without killing it. The report is printed before the raise, so a failing run still shows what drifted. ── the corpus ──────────────────────────────────────────────────────────────
+
+Addressed by the SAME `~`-literal help.nu uses, for help.nu's own recorded reason (its THE CORPUS header): the renderer and the checker must read the same tree or the check certifies a manual nobody renders.
+
+```
+def _hc_targets [] {
+```
+
+Every verify target in the corpus, flattened, each carrying the id and title of the entry it came from so a report names the entry a reader can look up.
+
+```
+{
+```
+
+`desc` is THREE-STATE (epic I5), so absence is recorded as a boolean here and never collapsed into null: a target that OMITS desc compares against the title, one that writes `desc: null` asserts existence only. `open` on a heterogeneous .nuon keeps the records heterogeneous, which is the only reason `"desc" in ($t | columns)` can tell them apart at all.
+
+```
+key: ($t.key? | default "")
+```
+
+tmux-key and wezterm-key. `table` defaults to each reader's own root: tmux calls it `root`, WezTerm has no name for it at all and prints it first, which is why the empty string is the WezTerm default rather than a borrowed word.
+
+```
+def _hc_norm_lhs [lhs: string] {
+```
+
+── nvim lhs normalization (R2) ─────────────────────────────────────────────
+
+`nvim_get_keymap` does NOT return the lhs you wrote. The corpus holds the written form because the manual has to show what you press, so every comparison goes through here. Measured against Neovim 0.12.4 with the repo's config staged, 2026-08-29 — WITHOUT this, 30 of 66 targets resolve; WITH it, 58. The 36 false "stale" reports are silent and look exactly like a real regression, which is why this is a table and not a guess.
+
+```
+written          returned
+<leader>ff       "  ff"      leader is <Space> in this config
+<space>          " "         the seventh rule, and it is NOT in the
+                             corpus README's six-row table — found by
+                             `<leader><space>`, which returns "  " and
+                             was the single global miss after the other six
+<C-h>            <C-H>       the letter upper-cases
+<A-j>            <M-j>       alt is reported as meta
+<S-h>            H           shift on a LETTER folds into the letter
+<S-Right>        <S-Right>   shift on a NAMED key does not fold
+<                <lt>
+```
+
+```
+for c in ([a b c d e f g h i j k l m n o p q r s t u v w x y z]) {
+```
+
+nushell's regex replace has no case operator, so the upper-casing of a control letter is done by hand over the alphabet rather than pretended.
+
+```
+def _hc_shell_live [] {
+```
+
+── the shell surface (R1) ──────────────────────────────────────────────────
+
+INTROSPECTION MUST RUN IN A CONFIGURED SHELL. A bare `nu -c` has no config loaded and reports zero keybindings and zero of our aliases — measured: the live `$env.config.keybindings` is empty under `nu -c` and holds 11 named entries under the repo's config.nu. This def runs INSIDE the configured shell by construction, because it is sourced by that config; nothing is spawned to reach it.
+
+```
+def _hc_nvim_live [] {
+```
+
+── the Neovim surface (R2) ─────────────────────────────────────────────────
+
+One headless spawn for the whole check, never one per target: the process is the cost. Every mode the schema admits is dumped in that one run.
+
+THE SPAWN OBSERVES, IT NEVER PROVISIONS (R2). A start that installs is a start that changes the answer it is being asked for. Measured 2026-08-29: lazy.nvim git-cloned persistence.nvim from the network in the middle of a check because the lockfile named it and the store did not have it, and the clone chatter on stdout killed the JSON parse. `HELP_CHECK=1` turns lazy's `install.missing` and its update `checker` off (home/dot_config/nvim/lua/config/lazy.lua) — and the dump READS THAT SETTING BACK, so the guard is proven in force on every run instead of assumed.
+
+AND EVERY WAY THE DUMP CAN BE DEGRADED RAISES, because a degraded dump is indistinguishable from drift and reads as OUR bug. Four of them, each with its own message: no config at all (Neovim answers with its own 123 defaults — 54 false stales, measured), lazy.nvim not loaded, the install guard not in force, and any declared plugin absent from the store (its maps are simply not there, so every map it provides reads as stale).
+
+```
+let dump = (mktemp -t "help-check-nvim-XXXXXX")
+```
+
+THE DUMP GOES TO A FILE, NEVER TO STDOUT. Anything the config or a plugin prints at startup shares stdout with the payload, and the check then dies in `from json` on someone else's chatter — which is how the clone above was found. A file the spawn is handed by env cannot be written into by a plugin that does not know its name.
+
+```
+let probe_base = (mktemp -t "help-check-buf-XXXXXX")
+```
+
+A REAL FILE ON DISK, WITH A REAL EXTENSION, created here rather than in the Lua: the buffer-local dump needs FileType to have fired, and a scratch buffer with `setfiletype` fires it without the rest of the pipeline that plugins actually hang off.
+
+```
+let init = ($nu.home-dir | path join ".config" "nvim" "init.lua")
+```
+
+THE CONFIG MUST BE THERE, AND ITS ABSENCE MUST RAISE. Measured 2026-08-29: with no config on the machine, `nvim --headless` starts anyway and `nvim_get_keymap` returns Neovim's OWN defaults — 123 maps against the 214 a configured start reports. The check then declared 54 of our maps stale and one mismatched, every one of them false, and it exited non-zero for the wrong reason. A missing config is not drift.
+
+```
+let spawnlog = (mktemp -t "help-check-nvim-log-XXXXXX")
+```
+
+NO `--clean`, AND NO `--noplugin`. Either one skips the plugin and site directories, which is the same silent degradation by a second route: 123 maps instead of the config's own count, and every plugin-provided map we document reads as stale. The install guard is an env variable precisely because the command-line flags that stop plugins loading also stop them being seen. `complete` captures stdout, stderr and the code together, so nvim's startup chatter never reaches the report. It must wrap the external DIRECTLY — a redirection in between makes it "only works on external commands". THE SPAWN'S OUTPUT GOES TO A FILE, NOT THROUGH A PIPE. Measured 2026-08-30: `^nvim … | complete` died with exit -13 — SIGPIPE — on runs where the spawn lived long enough to write anything to stdout, which is every run now that the dump waits for a language server to attach. A redirection has no reader to go away.
+
+```
+let rc = (with-env {HELP_CHECK: "1", HELP_CHECK_DUMP: $dump, HELP_CHECK_PROBE: $probe} {
+```
+
+`complete` only wraps an external directly, and a redirection is not one — so the exit status is taken from `$env.LAST_EXIT_CODE` after a `do -i` that cannot itself raise.
+
+```
+{global: $j.maps, buffer: ($j.buf_maps? | default []), lsp_clients: ($j.lsp_clients? | default 0)}
+```
+
+The buffer dump rides along with the global one — same spawn, so the process cost is unchanged. Returned as a record rather than a bare list because the resolver needs the LSP measurement too.
+
+```
+def _hc_tmux_live [] {
+```
+
+── the tmux surface (07-multiplexer/09, resolver by 06-help/04/07) ─────────
+
+ONE HEADLESS SERVER FOR THE WHOLE CHECK, ON ITS OWN SOCKET, KILLED AFTER. `-L help-check` is not tidiness: without it this reads the DEVELOPER'S live server, so a key they bound by hand this morning would resolve and a key the conf lost would still be found. The whole point is to measure the FILE.
+
+`list-keys -T <table>` prints the LOADED table, which is the only reading worth making — a grep of the conf's bytes passes on a line tmux rejected. The four tables are the ones this config writes into; tmux's other default tables hold nothing of ours.
+
+THE CONF IS ADDRESSED BY THE SAME `~`-LITERAL THE CORPUS IS, for the same recorded reason: the checker must read the file the machine runs, not a copy in a repo that may not even be deployed.
+
+```
+let conf = ($env.HELP_CHECK_TMUX_CONF? | default "~/.config/tmux/tmux.conf" | path expand)
+```
+
+$HELP_CHECK_TMUX_CONF overrides the deployed path, and it exists for exactly one caller: tests/help-drift-check.sh, which has to point the resolver at a MUTATED copy to prove the check can go red. A gate that can only ever read the real file cannot demonstrate a finding, and one that reimplements the resolver to get around that is testing itself. It is never set in normal use, and the default is the deployed file.
+
+```
+do -i { ^tmux -L $sock kill-server err> /dev/null } | ignore
+```
+
+A leftover server from an interrupted run would answer with a stale conf, which is drift the check would invent. Kill first, always.
+
+`err> /dev/null`: killing a server that is not there writes "error connecting to …" to stderr, which is the normal case here.
+
+```
+let probe_conf = (mktemp -t "help-check-tmux-XXXXXX")
+```
+
+THE SENTINEL, and why the probe loads a COPY of the conf.
+
+`new-session -d` returns before the config has finished being applied. Measured 2026-08-30 on a loaded machine: `list-keys -T root` answered with tmux's 24 SHIPPED defaults and `list-keys -T jump` with "table jump doesn't exist", on a server whose conf binds both — every documented key then reads STALE, which is the worst failure a drift check has: confident, specific, and blaming the manual for the checker's own race. Waiting for the reading to stop changing does not fix it either: the pre-config reading is stable, so it settles on the defaults.
+
+So the probe appends one line to a copy and waits for THAT line to take effect. tmux applies a config's commands in order, so the sentinel being set means every binding above it has been. (A non-`-F` `if-shell` forks and its BODY may still land later — the clipboard sink is the only one, and it binds no keys.) The copy is the conf plus one line and nothing else, which is why this does not weaken "the checker reads the file the machine runs".
+
+```
+let up = (do -i { ^tmux -L $sock -f /dev/null new-session -d -s help-check cat } | complete)
+```
+
+THE SESSION RUNS `cat`, NOT THE CONFIGURED SHELL, and that is the second half of the same bug. With `default-command` in force the pane starts nushell; in a scratch HOME that shell can exit immediately, the session goes with it, THE SERVER EXITS — and the very next `tmux -L … list-keys` silently STARTS A NEW SERVER with no `-f` at all. Measured 2026-08-30: the first reading answered 28 root keys and 19 jump keys, and every reading after it answered tmux 3.7c's 24 shipped defaults and "table jump doesn't exist". `cat` on a pty blocks forever and cannot exit, so the server the probe configured is the server every reading reaches.
+
+THE CONF IS LOADED WITH `source-file`, NOT WITH `-f`, AND THAT IS HOW ITS ERRORS ARE HEARD. Measured 2026-08-30: `tmux -f <conf-with-a-bad-line> new-session` exits 0, writes nothing to stderr and logs nothing to `show-messages` — the bad line is simply skipped. The same file through `source-file` answers "conf:1: unknown command: …". A checker that cannot hear that reports every key the skipped lines would have bound as STALE, which is the manual being blamed for the config.
+
+```
+let f = ($l | split row -r '\s+' | where {|x| $x | is-not-empty })
+```
+
+`bind-key    -T <table> <key>  <command…>` — the key is the fourth field, taken POSITIONALLY rather than by a pattern, because a tmux key can be a bracket, a brace or a backslash-escaped `#`, and every one of those breaks a regex written for letters.
+
+```
+let still = (do -i { ^tmux -L $sock show -gv @hc-loaded } | complete)
+```
+
+AND THE SERVER MUST STILL BE OURS. If it died mid-read, tmux started a fresh default one under us and the reading above is of tmux's shipped defaults — which reads as every documented key being stale. The sentinel is the proof of identity, not just of load order.
+
+```
+def _hc_wezterm_live [] {
+```
+
+── the WezTerm surface (R3) ────────────────────────────────────────────────
+
+Three keys are still WezTerm's after the tmux cutover and they were going UNCHECKED — `wezterm-key` targets fell through the resolver silently, which is the worst of both worlds: documented, and unverified without saying so.
+
+`show-keys --lua` prints a Lua table; it is read with a line regex rather than parsed, because the only fields wanted are `key` and `mods` and pulling in a Lua parser to read two strings would be the more fragile choice.
+
+THE SPAWN NEEDS THE CONFIG NAMED. `wezterm --config-file <path> show-keys` against the DEPLOYED file, for the corpus's reason. And note what this command does NOT tell you: a config that fails to load falls back to WezTerm's defaults SILENTLY and prints a plausible table — so the reader asserts one of our own bindings is present and raises if not, rather than certifying a default table as ours.
+
+```
+let conf = ($env.HELP_CHECK_WEZTERM_CONF? | default "~/.config/wezterm/wezterm.lua" | path expand)
+```
+
+Same seam, same single caller. See _hc_tmux_live.
+
+```
+if (($rows_all | where {|r| $r.action =~ 'ActivateTab'}) | is-not-empty) {
+```
+
+THE SILENT-FALLBACK GUARD. Measured 2026-08-30: a Lua error in wezterm.lua makes `show-keys` print WezTerm's stock table with exit 0, and every one of our keys then reads stale.
+
+THE SENTINEL IS AN ABSENCE, NOT A PRESENCE, and that distinction is the whole of it. Asserting "one of our bindings is there" was tried first and it convicted a legitimate finding: unbind the very key the guard names and the checker raises "the config failed to load" instead of reporting a stale entry, which is the case the check exists for.
+
+This config sets `disable_default_key_bindings = true`, so ActivateTab cannot appear in a table it produced — while WezTerm's fallback table is full of them (46, measured). No single binding of ours is load-bearing for the guard, so any one of them can go stale and be reported.
+
+```
+const HC_ALLOW = {
+```
+
+── the allowlist (R6) ──────────────────────────────────────────────────────
+
+NOT OURS TO DOCUMENT, AND SAID EXPLICITLY RATHER THAN SILENTLY SKIPPED. Measured 2026-08-29 against the repo's staged config: the reverse direction reports 156 live Neovim maps and 120 live nushell commands with no manual entry. Almost all are Neovim's own defaults and plugin internals, or private `_`-prefixed helpers. This constant is a STUB holding only the classes the core build proved out; the full classification is its own unit.
+
+```
+alias: ["core-help" "core-ls"]
+```
+
+help.nu's own delegation aliases — machinery, not manual surface.
+
+```
+command: ["help aliases" "help commands" "help externs" "help modules" "help operators" "help escapes" "banner" "pwd"
+```
+
+std/help's subcommands arrive in `scope commands` because config.nu does `use std/help`. They are nushell's, and epic I2 says delegate never shadow, so documenting them here would be the shadow.
+
+The four below are THIS CONFIG'S machinery: a handle exists because something else has to call it, not because a person types it. decorate-ls        the `ls` pipeline's inner stage; `ls` is documented tv_finder          the television channel provider behind `finder` tv_history_local   the provider behind the history channel tv_remote          the Ctrl-Space dispatcher; the KEY is documented Each is reachable only from something that IS in the manual, which is the test applied: a handle nobody can usefully type is not a gap.
+
+```
+keybinding: ["completion_menu" "ide_completion_menu" "completion_previous"
+```
+
+NUSHELL'S OWN KEYBINDINGS, not ours. Measured 2026-08-30: `nu -n`, with no configuration whatsoever, reports exactly these eight in `$env.config.keybindings`. Documenting them would be documenting nushell, and the manual is about what THIS configuration adds.
+
+```
+def _hc_nvim_defaults [] {
+```
+
+── the Neovim classification (R6) ──────────────────────────────────────────
+
+217 live maps, 61 documented targets. Listing the other 156 by `lhs` would be a list nobody could maintain and nobody could disagree with in one place, so they are classified by RULE instead, and the rules are here where a reader can argue with them.
+
+```
+1. `desc` begins ":help " — Neovim's own shipped default, and it says so
+   in its own words. `Y`, `&`, the `[`/`]` family, gx, gcc.
+2. no `desc` at all — a plugin's internal map or a Neovim default that
+   never carried one. This config's own maps all set `desc`; that is what
+   makes the rule safe here, and it is asserted by tests/nvim-keymaps.sh
+   rather than assumed.
+3. `desc` EQUALS THE TITLE OF A DOCUMENTED ENTRY — the same gesture in
+   another mode. The manual documents a gesture once and names the modes
+   in prose; twenty of the shift-select maps are one entry, and listing
+   each (mode, lhs) pair would be a manual written for the introspection
+   API rather than for a person.
+```
+
+Rule 3 is the load-bearing one and it is deliberately narrow: it matches on the exact title string, so a map with a description of its own still shows up as a gap. NEOVIM'S OWN DEFAULTS ARE MEASURED, NOT LISTED. `nvim --clean` loads no configuration and no plugin, so every map it reports is one Neovim ships. Subtracting that set is what makes rule 4 below a fact instead of a maintained list that goes stale the first time Neovim adds a default — which it does: the `[`/`]` bracket family, `gc`, `gcc`, `gx`, the `gr*` LSP maps and the snippet `<Tab>` all arrived in 0.10 and 0.11, and a hand-kept list would have called every one of them a gap in our manual.
+
+`--clean` also skips shada and the user's plugin store, so this spawn is cheap and cannot be perturbed by the machine it runs on.
+
+```
+let cleanlog = (mktemp -t "help-check-clean-log-XXXXXX")
+```
+
+Redirected, never piped — see _hc_nvim_live for the SIGPIPE this avoids.
+
+```
+if $"($m.mode)\u{1f}($m.lhs)" in $defaults { return false }
+```
+
+4. Neovim ships it — measured against `nvim --clean`, above.
+
+```
+def _hc_is_private [name: string] { $name | str starts-with "_" }
+```
+
+A `_`-prefixed nushell command is private by this repo's convention — 99 of the 120 undocumented ones are that. The rule is written here, not spread through the report, so a reader can disagree with it in one place.
+
+```
+def _hc_resolve [] {
+```
+
+── the resolver ────────────────────────────────────────────────────────────
+
+THREE CLASSES, AND THE SECOND IS THE DANGEROUS ONE (R4). Undocumented is the common failure; stale sends a reader — or an agent — to a key that does nothing; mismatched is a title that has quietly stopped describing its map.
+
+```
+let tkeys = (if ($tmux_targets | is-empty) { [] } else { _hc_tmux_live })
+```
+
+Each surface is read only when something documents it, so a machine missing one tool can still check the others.
+
+```
+mut findings = []
+```
+
+stale + mismatched, per kind
+
+```
+if $t.scope == "buffer" {
+```
+
+A buffer-local map (the LSP aliases attach on LspAttach, oil and the table plugin attach per filetype) is NOT in the global dump, so the global lookup would report every one of them stale. Eight targets are in this class today. They are reported as UNRESOLVED, never as stale: a check that cannot see a surface must say so rather than guess.
+
+```
+let want_b = (_hc_norm_lhs $t.lhs)
+```
+
+RESOLVED WHERE THE EVENT COULD BE FIRED. The dump opens a real file, so FileType and BufEnter have run and the maps that attach on those are there to be found — which is a real check, not a shrug.
+
+```
+$findings = ($findings | append {class: "unresolved", surface: "nvim", kind: "nvim-map", id: $t.id, detail: $"($t.mode) ($t.lhs) — buffer-local, and not on the probe buffer \(a lua file, ($nvim_dump.lsp_clients) LSP client\(s\) attached, ($nvim_dump.buffer | length) buffer maps\). It attaches on an event this dump does not fire — InsertEnter, or a filetype other than lua"})
+```
+
+And unresolved WITH THE MEASUREMENT where it could not: the number of LSP clients that attached says which case this is. Zero means the server never started, which is the documented cost of not installing one inside a check.
+
+```
+$findings = ($findings | append {class: "stale", surface: "nvim", kind: "nvim-map", id: $t.id, detail: $"($t.mode) ($t.lhs) -> looked up as '($want)', not in the live dump"})
+```
+
+The normalized form is QUOTED in the report because leader normalizes to a space: an unquoted `<leader>w -> " w"` renders as a stray gap and reads like a formatting bug rather than the key actually looked up.
+
+```
+if $t.has_desc and ($t.desc == null) { continue }
+```
+
+desc three-state (epic I5): `desc: null` asserts existence only, an explicit string must equal the live one, and an OMITTED desc compares against the entry's title.
+
+```
+for t in $tmux_targets {
+```
+
+tmux keys. A target's `table` defaults to `root`, which is where the three unprefixed keys live; the rest name `jump`, `split` or `copy-mode-vi`. Only STALE is possible here — there is no description to mismatch against, because a tmux binding carries none.
+
+```
+let doc_tkeys = ($tmux_targets | each {|t| $"(if ($t.table | is-empty) { 'root' } else { $t.table })\u{1f}($t.key)" })
+```
+
+UNDOCUMENTED, ON THE TABLES THIS CONFIG OWNS ONLY. `jump` and `split` exist because this conf created them, so every key in them is ours and an undocumented one is a real gap. `root` and `copy-mode-vi` are tmux's own tables carrying dozens of default and mouse bindings, so the reverse direction there would report tmux's shipped defaults as our omission — the noise class the allowlist exists to avoid, avoided here by not generating it.
+
+```
+let doc = {
+```
+
+undocumented, both surfaces
+
+```
+let doc_maps = ($nvim_targets | each {|t|
+```
+
+`v` IS NOT A MODE, IT IS TWO. A map created for mode "v" is returned by `nvim_get_keymap` under BOTH "x" (visual) and "s" (select), so the six shift-select maps documented once as "v" appear three times in the live dump and the two extra copies read as undocumented gaps. Measured 2026-08-30: twelve findings, every one of them a map the manual does document. The expansion is here rather than in the corpus because the manual should say what a person presses, not what an introspection API returns for it.
+
+```
+if not (_hc_nvim_is_ours $m $doc_titles $nvim_defaults) { continue }
+```
+
+The three classification rules live in _hc_nvim_is_ours, beside the reasoning. A map that is not ours is not a gap in our manual.
+
+```
+def _help_check [--json] {
+```
+
+── the report (R4, R5, R7) ─────────────────────────────────────────────────

@@ -32,7 +32,7 @@ labelled as such (Decision 4(a), as replaced).
 **Correction it forces.** `capabilities.md`'s "Cross-platform dependency
 bootstrap" (the WezTerm-Lua checker that installs zoxide/docker and stamps
 `.cache/.bootstrap`) is **superseded** by the entries below. It should not be
-ported; see [`05-platform`](../prds/05-platform/prd.md).
+ported; see [`05-platform`](../.pearde/prds/05-platform/prd.md).
 
 ## Shell-init generation (`run_after_generate-shell-init.sh`)
 - Regenerates the integration files Nushell only *sources*: starship →
@@ -55,7 +55,7 @@ ported; see [`05-platform`](../prds/05-platform/prd.md).
   `just cutover`, because a recipe typed daily for its git half was silently
   repointing the machine's chezmoi source. Decided by the user 2026-08-21;
   the settled contract is
-  [`repo-skeleton`](../prds/05-platform/01-deploy-mechanism/repo-skeleton/prd.md)
+  [`repo-skeleton`](../.pearde/prds/05-platform/01-deploy-mechanism/repo-skeleton/prd.md)
   R5. What it replaced — a `push` recipe that also ran `chezmoi init
   --source` and `chezmoi apply --force` before committing — is the shape the
   user rejected, and is what the live `justfile` still does.
@@ -80,7 +80,7 @@ ported; see [`05-platform`](../prds/05-platform/prd.md).
   rest of the data-driven machinery, and `install.sh` §3 builds burrito from
   a git clone instead. burrito is `DO NOT PORT`, decided 2026-08-20 because
   it is no longer used and WezTerm's nine-tab floor owns panes and tabs; see
-  the exclusion list in [the board README](../prds/README.md). Neither the
+  the exclusion list in [the board README](../.pearde/prds/README.md). Neither the
   config dir nor the build carries into the rebuilt surface.
 - **Live bug L-12 is corrected, not confirmed — and the reading that
   produced it is the thing not to reproduce.** Five of its six files are
@@ -130,9 +130,9 @@ ported; see [`05-platform`](../prds/05-platform/prd.md).
   the artifact WezTerm `dofile`s — exists and is gitignored in the source.
   By Decision 4 the capability is therefore live and canonical; only its
   chezmoi management lapsed. tinty stays the palette owner
-  ([`decisions/tinty`](../prds/00-delivery/decisions/tinty/prd.md), settled
+  ([`decisions/tinty`](../.pearde/prds/00-delivery/decisions/tinty/prd.md), settled
   2026-08-21), and re-managing the directory is forward-looking scope in
-  [`managed-config`](../prds/05-platform/01-deploy-mechanism/managed-config/prd.md)
+  [`managed-config`](../.pearde/prds/05-platform/01-deploy-mechanism/managed-config/prd.md)
   R2.
 - 2
 - 7
@@ -197,7 +197,7 @@ ported; see [`05-platform`](../prds/05-platform/prd.md).
 ## Published docs site (`docs/`)  DEFER
 - `docs/build.py` + `index.html` generate a static page from the repo's docs.
   Real, but orthogonal to the daily driver — and overlapping in purpose with
-  [`06-help`](../prds/06-help/prd.md), which should be built first and then
+  [`06-help`](../.pearde/prds/06-help/prd.md), which should be built first and then
   reconsidered as the source for any published page.
 - 4
 - 4

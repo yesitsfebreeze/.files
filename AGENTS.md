@@ -10,15 +10,15 @@ still works as a good daily-driver basis.
 
 Nothing is ported because it exists. Everything is ported because a rating
 says it earns its place. A few things are net-new because the rebuild needs
-them: [`06-help`](prds/06-help/prd.md) and the
-[`00-delivery`](prds/00-delivery/prd.md) meta-epic.
+them: [`06-help`](.pearde/prds/06-help/prd.md) and the
+[`00-delivery`](.pearde/prds/00-delivery/prd.md) meta-epic.
 
 **Verify against the live config, always.** A four-agent audit on 2026-08-20
 found that the terminal epic had been specced entirely from the legacy
 inventory and was wrong in almost every requirement, and that several
 behaviors the PRDs described as working are in fact broken upstream
 (macOS `du -sb`, the git-log commit decoder, the `rcwd` channel name). Read
-[`04-corrections-backlog`](prds/00-delivery/corrections/prd.md)
+[`04-corrections-backlog`](.pearde/prds/00-delivery/corrections/prd.md)
 before trusting any PRD you did not just check yourself.
 
 **Current state: the port is mostly built.** Corrected 2026-08-24 — this
@@ -33,37 +33,38 @@ taken, and this board has corrected six of them in six documents on
 2026-08-24 alone.
 
 What is **not** built, so nobody reads the above as "finished": the whole of
-[`08-claude-agent`](prds/08-claude-agent/prd.md) is `open` or `analyzing`, and
+[`08-claude-agent`](.pearde/prds/08-claude-agent/prd.md) is `open` or `analyzing`, and
 so is the board root. Measured 2026-08-31: **191 of 196 nodes `done`**, with 73
-unticked `- [ ]` boxes and 43 `[~]` stubs still in the tree. `just cutover` has
-**not** run, so `chezmoi source-path` still answers with the pre-rebuild repo
-rather than this one — which means the `home/` tree here is not what this
-machine is running. Ask it, per the live-sources rule below, rather than
-assuming a path.
+unticked `- [ ]` boxes and 43 `[~]` stubs still in the tree. `just cutover` **has
+run** — corrected 2026-08-31: `chezmoi source-path` now answers
+`/Users/feb/dev/dotfiles/home`, and `chezmoi managed` lists the deployed
+`~/.config/wezterm/wezterm.lua` from this tree. The earlier sentence said the
+cutover had not run and pointed at the pre-rebuild answer; still true: ask
+`chezmoi source-path` rather than assuming a path.
 
 **There are no tests.** `tests/` and `gates/` were deleted on 2026-08-31 —
 every `verify:` that pointed into them now reads `""`, the contract's value for
 *unproven*, and 81 interactive checks were never run. The reasoning is in
-[the memo](prds/memos/tests-and-gates-retire-a-dev-setup-is-not-a-product.md);
-the 81 open checks are preserved at `docs-site` → Internals → Never verified by
-a person. A change is verified by deploying it and using it.
+[the memo](.pearde/memos/tests-and-gates-retire-a-dev-setup-is-not-a-product.md);
+the 81 open checks are preserved at `manual → internals/unverified`. A
+change is verified by deploying it and using it.
 
 The PRD tree was converted to board node form on 2026-08-20 so work can
 actually be claimed; see the next section.
 
 ## Where things live
 
-The split is strict: **`prds/` holds PRDs and nothing else; every other
+The split is strict: **`.pearde/prds/` holds PRDs and nothing else; every other
 markdown document goes in `docs/`.** Everything about a PRD — its state, its
 schedule, its history — lives in the PRD itself; there is no side file.
 
 | Path | What it is |
 |---|---|
-| `prds/` | The board — a tree of `<node>/prd.md` files. The path is the id and the parent link |
-| `prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
+| `.pearde/` | The board — `prds/` (a tree of `<node>/prd.md` files; the path is the id and the parent link), `settings.md`, `vision.md`, `memos/`, `workflows/` |
+| `.pearde/prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
 | `.claude/skills/pearde/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what. A symlink: the skill lives in its own repo (`~/dev/infra/pearde`) and is not vendored here |
-| `prds/README.md` | Index, build order, and the canonical exclusion list |
-| `docs-site/` | The searchable manual — a fumadocs site. `content/docs/guide/` (task order, from `tasks.nuon`) and `content/docs/reference/` (subject order, from `topics.nuon`) are both **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs`, so the site and `help` cannot drift; `content/docs/internals/` is hand-written and holds the constraints the configs used to carry as comments |
+| `.pearde/prds/README.md` | Index, build order, and the canonical exclusion list |
+| `home/dot_config/nushell/help/manual/` | The manual, as plain markdown shipped with the shell. `guide/` (task order, from `tasks.nuon`) and `reference/` (subject order, from `topics.nuon`) are both **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs` (`just manual`), so the pages and `help` cannot drift; `internals/` is hand-written and holds the constraints the configs used to carry as comments. Read it with `?` in the shell — the `docs` television channel greps every line and opens the hit in Neovim. There is no site: `docs-site/` was deleted on 2026-08-31 |
 | `docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
 | `docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
 | `docs/capabilities-nvim.md` | Rated inventory of the live Neovim config |
@@ -102,15 +103,15 @@ it is, not to decide what it says.
 
 | Epic | Covers | Children |
 |---|---|---|
-| [`00-delivery`](prds/00-delivery/prd.md) | Meta: work breakdown, waves, gates, and the open decisions | 5 (+19) |
-| [`01-capsule`](prds/01-capsule/prd.md) | One consolidated dev-container tool | 4 |
-| [`02-terminal`](prds/02-terminal/prd.md) | WezTerm — local chrome only since the 2026-08-30 cutover: appearance, launchd PATH, grid centering. Tabs, jump mode and copy mode moved to `07-multiplexer` | 7 |
-| [`03-editor`](prds/03-editor/prd.md) | Neovim (lazy.nvim stack) | 15 |
-| [`04-shell`](prds/04-shell/prd.md) | Nushell daily driver | 9 |
-| [`05-platform`](prds/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
-| [`06-help`](prds/06-help/prd.md) | `help` — the environment manual (net-new) | 5 (+1) |
-| [`07-multiplexer`](prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
-| [`08-claude-agent`](prds/08-claude-agent/prd.md) | Claude Code manages tmux panes and edits in nvim: the tmux MCP server, claudecode.nvim + claude-tmux.nvim, the tmux.conf additions, the help entries (net-new) | 4 |
+| [`00-delivery`](.pearde/prds/00-delivery/prd.md) | Meta: work breakdown, waves, gates, and the open decisions | 5 (+19) |
+| [`01-capsule`](.pearde/prds/01-capsule/prd.md) | One consolidated dev-container tool | 4 |
+| [`02-terminal`](.pearde/prds/02-terminal/prd.md) | WezTerm — local chrome only since the 2026-08-30 cutover: appearance, launchd PATH, grid centering. Tabs, jump mode and copy mode moved to `07-multiplexer` | 7 |
+| [`03-editor`](.pearde/prds/03-editor/prd.md) | Neovim (lazy.nvim stack) | 15 |
+| [`04-shell`](.pearde/prds/04-shell/prd.md) | Nushell daily driver | 9 |
+| [`05-platform`](.pearde/prds/05-platform/prd.md) | chezmoi provisioning: deploy, packages, shell-init | 3 (+4) |
+| [`06-help`](.pearde/prds/06-help/prd.md) | `help` — the environment manual, and `?` — the same manual as markdown, grepped (net-new) | 6 (+1) |
+| [`07-multiplexer`](.pearde/prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
+| [`08-claude-agent`](.pearde/prds/08-claude-agent/prd.md) | Claude Code manages tmux panes and edits in nvim: the tmux MCP server, claudecode.nvim + claude-tmux.nvim, the tmux.conf additions, the help entries (net-new) | 4 |
 
 Counts are direct children, with grandchildren in parentheses.
 `find prds -name prd.md` is the index, because node membership is by existence
@@ -119,13 +120,13 @@ had.** Corrected 2026-08-29: this paragraph opened "85 nodes in all" while
 `find` answered **173**, so the sentence warning that a maintained count goes
 stale was carrying one that had. No total is written here now; run the `find`.
 
-**Working on the build?** [`00-delivery`](prds/00-delivery/prd.md) is
+**Working on the build?** [`00-delivery`](.pearde/prds/00-delivery/prd.md) is
 the operational plan: every task with its size, files, and dependencies in
 its frontmatter; the dep graph that says what runs in parallel; and the gates
 that must pass. Its rules bind you — one writer per file, one PRD per agent,
 and a task is done only when its acceptance criteria have been *executed*. If
 you find a PRD wrong, stop and file it in
-[`04-corrections-backlog`](prds/00-delivery/corrections/prd.md)
+[`04-corrections-backlog`](.pearde/prds/00-delivery/corrections/prd.md)
 rather than implementing the wrong thing.
 
 The README's build order is the human summary; the frontmatter dep graph is
@@ -133,7 +134,7 @@ the operational one. Start here for "how do I work in this repo".
 
 ## `help` — read the environment before acting on it
 
-Once [`06-help`](prds/06-help/prd.md) is built, **`help` is the manual
+Once [`06-help`](.pearde/prds/06-help/prd.md) is built, **`help` is the manual
 for this environment** — every custom keybinding, command, alias, and idiom,
 with what it does and how to use it. `help --json` gives the same content as
 structured data.
@@ -176,7 +177,7 @@ Four rules for keeping ratings honest across the tree:
   never a range.
 - **A PRD that merges several entries** carries the dominant entry's rating
   and lists every source with its own numbers (see
-  [`01-capsule/01`](prds/01-capsule/01-container-lifecycle/prd.md)).
+  [`01-capsule/01`](.pearde/prds/01-capsule/01-container-lifecycle/prd.md)).
 - **A PRD that splits one entry** — where a recorded scope decision removed
   part of what the inventory rated — may carry numbers differing from its
   source, on three conditions: the node holds a **rating note** naming the
@@ -185,14 +186,14 @@ Four rules for keeping ratings honest across the tree:
   so a reader arriving from the inventory is not left with the pre-decision
   numbers and a stale verdict marker. Without the third, the divergence is
   invisible from the side people actually read first. The worked case is
-  [`02-terminal/03-f5-jump-mode`](prds/02-terminal/03-f5-jump-mode/prd.md):
+  [`02-terminal/03-f5-jump-mode`](.pearde/prds/02-terminal/03-f5-jump-mode/prd.md):
   the 2026-08-21 answer took the digit half and dropped the self-painted
   pane-letter overlay, so `C` falls 9 → 6 and `U` does not move. Added
   2026-08-28 — the rules covered merging and not splitting, which left
   `02-terminal`'s acceptance with no honest tick available.
 - **Net-new capabilities** have no inventory entry. Rate them in the PRD
   header and write `net-new` where other PRDs name their source.
-- **Meta-epics are exempt.** [`00-delivery`](prds/00-delivery/prd.md)
+- **Meta-epics are exempt.** [`00-delivery`](.pearde/prds/00-delivery/prd.md)
   plans the work rather than describing a capability, so its PRDs carry no
   C/U.
 
@@ -211,17 +212,17 @@ Four rules for keeping ratings honest across the tree:
   is the one being ported. Expect the same trap elsewhere — verify against
   `~/.config` before trusting a legacy entry.
 - **Two finders, deliberately.** television in the shell
-  ([`04-shell/04`](prds/04-shell/04-television/prd.md)), telescope in the
-  editor ([`03-editor/08`](prds/03-editor/08-telescope/prd.md)). They are not
+  ([`04-shell/04`](.pearde/prds/04-shell/04-television/prd.md)), telescope in the
+  editor ([`03-editor/08`](.pearde/prds/03-editor/08-telescope/prd.md)). They are not
   to be unified. **fzf is a third picker and the one accepted exception** to
   "tv owns every picker screen": `zi`/`cdi` reach it through
   `zoxide query --interactive`, and owning that screen would mean owning
   zoxide's frecency ranking. Decided 2026-08-21 — see
-  [`decisions/fzf`](prds/00-delivery/decisions/fzf/prd.md) and the invariant
-  it amends, [`04-shell`](prds/04-shell/prd.md) I3.
+  [`decisions/fzf`](.pearde/prds/00-delivery/decisions/fzf/prd.md) and the invariant
+  it amends, [`04-shell`](.pearde/prds/04-shell/prd.md) I3.
 - **tmux is the multiplexer; WezTerm keeps only the local chrome.**
   Reversed 2026-08-30 and carried by
-  [the memo](prds/memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md).
+  [the memo](.pearde/memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md).
   The terminal opens into one tmux session `main` through
   `~/.local/bin/tmux-main`; tmux owns windows, panes, addressing, splits,
   copy, the status bar and persistence, and `wezterm.lua` binds nothing that
@@ -248,7 +249,7 @@ Four rules for keeping ratings honest across the tree:
   holds: tinty owns it.
 - **Minimal base first.** Cosmetic and WIP surfaces are out of the initial
   cut. The canonical list of what's excluded and why is the exclusion section
-  of [`prds/README.md`](prds/README.md) — don't duplicate it here.
+  of [`prds/README.md`](.pearde/prds/README.md) — don't duplicate it here.
 
 ## Known gaps
 
@@ -261,12 +262,12 @@ worth more as a record of how it closed than as a blank space.*
 - **`02-terminal` was invalid as written; the re-spec landed.** Corrected
   2026-08-24. This bullet said the epic was invalid and the from-scratch
   re-spec was still task W0.2. `w0-2-terminal-respec` is `done`, and all
-  seven children of [`02-terminal`](prds/02-terminal/prd.md) are `done`. The
+  seven children of [`02-terminal`](.pearde/prds/02-terminal/prd.md) are `done`. The
   findings T-1 to T-11 that motivated it are in the
-  [corrections backlog](prds/00-delivery/corrections/prd.md), where the
+  [corrections backlog](.pearde/prds/00-delivery/corrections/prd.md), where the
   history lives. What remains on that epic is **human verification, not
-  work**: T.4, T.6 and T.7, now listed under `docs-site` → Internals → Never
-  verified by a person.
+  work**: T.4, T.6 and T.7, now listed under
+  `manual → internals/unverified`.
 - **`03-editor/14` (shift-to-select) is built, and the fork stays settled.**
   Corrected 2026-08-24. This bullet said "specified but unbuilt" and that
   E.14 had not been implemented; both were false by the time they were read.
@@ -277,10 +278,10 @@ worth more as a record of how it closed than as a blank space.*
   is unchanged and still binding: decided 2026-08-21,
   full port *with* the tests, simplification declined on the record — so
   collapse-on-motion (R6) is not optional and the rating stays `C 7 · U 7`.
-  See [`decisions/shift-select-scope`](prds/00-delivery/decisions/shift-select-scope/prd.md).
+  See [`decisions/shift-select-scope`](.pearde/prds/00-delivery/decisions/shift-select-scope/prd.md).
   An agent finding the tests burdensome does **not** get to re-take the fork;
-  it files a correction. What remains is E.14, now under `docs-site` →
-  Internals → Never verified by a person — a human watching the collapse under
+  it files a correction. What remains is E.14, now under
+  `manual → internals/unverified` — a human watching the collapse under
   real keyboard timing, which no gate could ever have done.
 
 ## How to write a PRD
@@ -343,7 +344,7 @@ Rules that keep this tree useful:
   the fixture it was measured on: record the fixture, never write that a
   mechanism is "exact", and run a cheap claim twice with a different input.
   Eight reasons on this board did not reproduce as stated — the rules are in
-  the [corrections backlog](prds/00-delivery/corrections/prd.md).
+  the [corrections backlog](.pearde/prds/00-delivery/corrections/prd.md).
 - **Cross-link, don't duplicate.** Relative links between PRDs; each fact
   lives in exactly one file.
 - **`from: tbd` is a value, not a blank.** A derived PRD names the PRD whose
@@ -353,7 +354,7 @@ Rules that keep this tree useful:
   filled this in" and a guess reads as a fact; `tbd` says "this was looked for
   and not found", which is the true statement, and a checker can tell the three
   apart. Say in the node's body what the real origin was. Settled 2026-08-28;
-  the worked case is [`00-delivery/corrections`](prds/00-delivery/corrections/prd.md),
+  the worked case is [`00-delivery/corrections`](.pearde/prds/00-delivery/corrections/prd.md),
   surfaced by the four-agent audit that ran before the tree was board-shaped.
 - **Record exclusions where they'd be looked for.** A `DO NOT PORT` decision
   belongs in the epic's Non-goals and the README's exclusion list, not just
@@ -379,10 +380,10 @@ Rules that keep this tree useful:
 - Numbered prefixes (`01-`, `02-`) order by build priority / value ratio.
 - Markdown wrapped at ~78 columns, matching the existing files. Tables are
   exempt — don't mangle a table to fit.
-- Don't reorganize the tree without updating `prds/README.md` in the same
+- Don't reorganize the tree without updating `.pearde/prds/README.md` in the same
   change — the index, the tree diagram, and the build order all live there.
 - When an epic's children change, update three places together: the epic's
   children table, the README tree, and the README build order.
 - New capability inventories are `capabilities-<area>.md` in `docs/`, and
-  get an epic in `prds/` — never a doc inside `prds/` or a PRD inside
+  get an epic in `.pearde/prds/` — never a doc inside `prds/` or a PRD inside
   `docs/`.
