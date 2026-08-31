@@ -357,6 +357,26 @@ if ! have tinty; then
         "https://github.com/tinted-theming/tinty/releases/download/$tag/tinty-$tinty_triple.tar.gz"
 fi
 
+# tmux-mcp (08-claude-agent/01-tmux-mcp, spec01): the binary 08-claude-agent
+# registers with Claude Code. In no package manager; prebuilt release, the
+# same rung tinty rides, and Go is NOT a requirement — a fresh machine gets
+# the binary without a toolchain. The release carries exactly four assets,
+# named with an UNDERSCORE (tmux-mcp_$TRIPLE.tar.gz; measured on v1.7.1, whose
+# tarball holds the binary and a README at its root — the shape
+# fetch_release_do's find already handles), so the triple is remapped from
+# uname instead of reused.
+case "$OS/$ARCH" in
+    Darwin/aarch64) tmux_mcp_triple=darwin_arm64 ;;
+    Darwin/*)       tmux_mcp_triple=darwin_amd64 ;;
+    */aarch64)      tmux_mcp_triple=linux_arm64  ;;
+    *)              tmux_mcp_triple=linux_amd64  ;;
+esac
+if ! have tmux-mcp; then
+    tag="$(latest_tag MadAppGang/tmux-mcp)"
+    [ -n "$tag" ] && fetch_release tmux-mcp \
+        "https://github.com/MadAppGang/tmux-mcp/releases/download/$tag/tmux-mcp_$tmux_mcp_triple.tar.gz"
+fi
+
 # Linux-only rungs: Debian/Ubuntu carry none of these. macOS got them from
 # brew above, and each call is have-guarded anyway.
 if [ "$OS" != "Darwin" ]; then
