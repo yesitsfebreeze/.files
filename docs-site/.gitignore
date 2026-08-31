@@ -24,3 +24,6 @@ yarn-error.log*
 .env*.local
 .vercel
 next-env.d.ts
+# fumadocs auto-generates these; the repo's contract is the root AGENTS.md
+AGENTS.md
+CLAUDE.md
