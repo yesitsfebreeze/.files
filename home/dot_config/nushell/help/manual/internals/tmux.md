@@ -33,6 +33,21 @@ Undercurl (`Smulx`) and coloured undercurl (`Setulc`) have **no standard
 terminfo capability**, so both are declared as overrides against the outer
 terminal rather than read from its entry. Neovim draws diagnostics with them.
 
+### Hyperlinks are dropped unless the *client* feature is on
+
+`*:hyperlinks` under `terminal-features` sets the `Hz` capability on the
+outer terminal's description, and that is what makes tmux re-emit an OSC 8
+link it received from a pane instead of stripping it. Without it the link is
+in the pane buffer (`capture-pane -e` shows it) but never reaches WezTerm, so
+there is nothing at the cursor to shift-click — measured 2026-08-31 on
+tmux 3.7c with WezTerm attached as `xterm-256color`.
+
+TRAP: features are resolved **once, at client attach**. `tmux source-file`
+appends to the `terminal-features` option (visible in `tmux show -gs`) but an
+already-attached client keeps the set it was attached with — reloading is not
+enough, the client must detach and come back. Check the live value with
+`tmux display -p '#{client_termfeatures}'`; `hyperlinks` has to be in it.
+
 ### `escape-time 10`
 
 tmux waits this long after an `Esc` for the rest of an escape sequence.

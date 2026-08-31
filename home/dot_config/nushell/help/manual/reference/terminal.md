@@ -20,4 +20,4 @@ Every entry links to where the guide explains it.
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |
 | `Ctrl+C` | Copy the selection, or interrupt when there is none | terminal | [Copy and paste](../guide/copy.md#ctrl-c) |
 | `Ctrl+Alt+Super+drag` | Move the window without a titlebar | terminal | [Move around windows and panes](../guide/windows.md#ctrl-alt-super-drag) |
-| `Ctrl+click` | Open the link under the cursor | terminal | [Move around windows and panes](../guide/windows.md#ctrl-click) |
+| `Shift+click` | Open the link under the cursor | terminal | [Move around windows and panes](../guide/windows.md#shift-click) |

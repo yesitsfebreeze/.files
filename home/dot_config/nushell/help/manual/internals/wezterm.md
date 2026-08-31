@@ -315,4 +315,4 @@ config.mouse_bindings = {
 {
 ```
 
-CTRL + left-click opens the hyperlink under the cursor. mouse_reporting = true keeps it working while an application is capturing the mouse (DECSET 1002/1006) — nvim and other full-screen TUIs do — because without the flag WezTerm forwards the click to the application and nobody opens the URL. Plain clicks still reach the application.
+SHIFT + left-click opens the hyperlink under the cursor. mouse_reporting = true keeps it working while an application is capturing the mouse (DECSET 1002/1006) — tmux (`set -g mouse on`) and nvim do — because without the flag WezTerm forwards the click to the application and nobody opens the URL. Plain clicks still reach the application. SHIFT is also the `bypass_mouse_reporting_modifiers` default, which strips the modifier before bindings match (wezterm#4536) — the bypass therefore lives on ALT instead, so these SHIFT bindings are reachable while mouse reporting is on.

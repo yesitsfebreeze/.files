@@ -27,7 +27,7 @@ Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane. Every pane carries its letter in a video-inverse chip on the border above it — the label you are reading is the key you press. The switcher stays on after each pick, and `Escape` leaves it.
+Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane. Every pane carries its letter in a video-inverse chip at the left edge of the border above it — the label you are reading is the key you press. The switcher stays on after each pick, and `Escape` leaves it.
 
 > **Why it is this way**
 >
@@ -114,20 +114,20 @@ Hold all three of `Ctrl`, `Alt` and `Cmd`, then drag anywhere in the window with
 >
 > `RESIZE` decorations leave no titlebar to grab, so this is the only handle for repositioning the window. The deliberately heavy three-modifier combo is what keeps it from stealing plain clicks and selection drags.
 
-See also: [`Ctrl+click`](./windows.md#ctrl-click)  
+See also: `Ctrl+click`  
 Spec: `prds/02-terminal/04-copy-mode/prd.md`
 
-## `Ctrl+click`
+## `Shift+click`
 
 **Open the link under the cursor**
 
 *terminal*
 
-Hold `Ctrl` and left-click a URL and it opens in the browser, even while nvim or another full-screen TUI owns the mouse. A plain click still reaches the program.
+Hold `Shift` and left-click a URL or a hyperlinked file path — in a plain shell, tmux, Claude or nvim — and it opens in the browser or editor. A plain click still reaches the program.
 
 > **Why it is this way**
 >
-> The binding sets `mouse_reporting`, which is what keeps it working while an application is capturing the mouse. Without that flag the click is forwarded to the application and nobody opens the URL.
+> The binding sets `mouse_reporting`, which is what keeps it working while an application is capturing the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), and that feature is only picked up by a client that attached after it was set. Without either half the click is forwarded to the application and nobody opens the URL.
 
 See also: [`Ctrl+Alt+Super+drag`](./windows.md#ctrl-alt-super-drag)  
 Spec: `prds/02-terminal/04-copy-mode/prd.md`
