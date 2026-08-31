@@ -11,6 +11,7 @@ from: 00-delivery/corrections/done-nodes-with-unticked-boxes/drain-the-backlog
 complexity: 2
 blast-radius: low
 actual: 0.02h
+commit: ad6a374
 ---
 
 # `shell.nuon [y]` has no review row, so the content-model gate is red
