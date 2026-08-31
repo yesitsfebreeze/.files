@@ -32,7 +32,11 @@ so a diff reads top to bottom.
 | `key` *or* `cmd` | one of the two | the binding (`Ctrl-R`, `F5 <digit>`) or the invocation (`z <query>`) |
 | `title` | yes | one line, imperative, no trailing period |
 | `use` | yes | the real gesture in order: what to press next, and what comes back. A `key` entry never *opens* by restating its key, backticks included |
-| `topic` | yes | one of the nine in `topics.nuon` |
+| `topic` | yes | one of the nine in `topics.nuon` — the REFERENCE's spine, grouping by subject |
+| `task` | yes | one of the fourteen in `tasks.nuon` — the GUIDE's spine, grouping by what you are trying to do. Deliberately independent of `topic`: an agent's capsule credentials are a `containers` topic and an `agents` task |
+| `step` | yes | integer, this entry's order on its task page |
+| `does` | optional | a shared id for two entries that are two ROUTES to one capability — a key and a command, e.g. `Ctrl+Shift+D` and `capsule [dir]`. The guide renders them as one block, which is what stops the same thing being listed twice. Both still answer to `help` under their own names |
+| `kind` | optional | `concept` for an entry that explains something rather than naming a command (`mkcd`, `the status bar`, `ssh in a capsule`). The guide renders these under their title instead of as code |
 | `mode` | yes | `shell` · `nvim:normal` · `nvim:visual` · `nvim:insert` · `terminal` · `container` |
 | `also` | optional | related entries, by `key`/`cmd` |
 | `why` | optional | the non-obvious reason it works this way — a constraint that cost somebody a day, and nothing the `use` already said |

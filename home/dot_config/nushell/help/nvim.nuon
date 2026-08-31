@@ -12,6 +12,8 @@
         title: "Show what the leader key can do"
         use: "Press space and pause: which-key lists the groups — `f` find, `b` buffer, `c` code, `r` rename/refactor, `t` table — and then the maps inside whichever one you press."
         topic: "edit"
+        task: "editing"
+        step: 5
         mode: "nvim:normal"
         why: "Leader is space, and it is set before any plugin spec is evaluated: a spec that declares `keys = { \"<leader>x\" }` resolves leader at declaration time, so setting it later silently binds the wrong key."
         verify: [{kind: "prose"}]
@@ -22,6 +24,8 @@
         title: "Clear highlight"
         use: "Press `Esc` in normal mode to run `:nohlsearch`. Nothing visible happens in this config: `hlsearch` is off, so matches never stay highlighted and there is nothing to drop. Turn the option on and this is the key that clears it; the search itself is untouched either way, so `n` still works."
         topic: "edit"
+        task: "editing"
+        step: 16
         mode: "nvim:normal"
         why: "The map and the option have to be decided together or the key is dead, and live bug L-6 decided it the other way round: keep `hlsearch = false` and drop the map. So this documents a binding the rebuild is not meant to carry over."
         verify: [{kind: "prose"}]
@@ -32,6 +36,8 @@
         title: "Close a utility buffer"
         use: "Press `q` in a help, quickfix, man, lspinfo, checkhealth or startuptime buffer to close it — one key across all six. The buffer is also marked unlisted the moment it opens, so it never turns up under `<S-h>`/`<S-l>` or `:bnext` either."
         topic: "edit"
+        task: "editing"
+        step: 17
         mode: "nvim:normal"
         verify: [{kind: "nvim-map", mode: "n", lhs: "q", desc: null, scope: "buffer"}]
         source: "prds/03-editor/03-autocmds/prd.md"
@@ -41,6 +47,8 @@
         title: "Move between windows"
         use: "Control plus a vim direction letter moves the cursor to the window that way — no `<C-w>` prefix."
         topic: "edit"
+        task: "editing"
+        step: 8
         mode: "nvim:normal"
         also: ["<C-Up> <C-Down> <C-Left> <C-Right>", "<leader>| and <leader>-"]
         verify: [
@@ -56,6 +64,8 @@
         title: "Resize the current window"
         use: "Control plus an arrow resizes by two: up and down change height, left and right change width. Hold it to keep going."
         topic: "edit"
+        task: "editing"
+        step: 10
         mode: "nvim:normal"
         also: ["<C-h> <C-j> <C-k> <C-l>"]
         verify: [
@@ -71,6 +81,8 @@
         title: "Split the window"
         use: "`<leader>|` splits vertically (the new window is to the right), `<leader>-` splits horizontally (the new window is below). The bar and the dash look like the split they make."
         topic: "edit"
+        task: "editing"
+        step: 9
         mode: "nvim:normal"
         also: ["<C-h> <C-j> <C-k> <C-l>"]
         verify: [
@@ -84,6 +96,8 @@
         title: "Walk and close buffers"
         use: "`H` and `L` step to the previous and next buffer; `<leader>bd` runs a plain `:bdelete` on the one you are in. The buffer leaves the list — and so does its window: this is the bare command, so a split showing that buffer closes with it rather than falling back to another buffer."
         topic: "edit"
+        task: "editing"
+        step: 7
         mode: "nvim:normal"
         also: ["<leader>fb"]
         verify: [
@@ -98,6 +112,8 @@
         title: "Move a line or a selection up and down"
         use: "Alt with `j` or `k` drags the current line. In visual mode it drags the whole selection, and the selection stays selected and re-indented for the next press, so you can walk a block through a file."
         topic: "edit"
+        task: "editing"
+        step: 14
         mode: "nvim:normal"
         verify: [
             {kind: "nvim-map", mode: "n", lhs: "<A-j>", desc: "Move line down"}
@@ -112,6 +128,8 @@
         title: "Keep the cursor centred while jumping"
         use: "Half-page scrolls and search steps re-centre the line you land on, and `n`/`N` also open a fold you land inside. Nothing to press differently — the keys are the stock ones."
         topic: "edit"
+        task: "editing"
+        step: 15
         mode: "nvim:normal"
         why: "These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, and the drift check treats a missing `desc` here as intended rather than as a mismatch."
         verify: [
@@ -127,6 +145,8 @@
         title: "Indent a selection without losing it"
         use: "`<` and `>` shift the selection and leave it selected, so you can press `>` four times instead of `4>` and reselecting."
         topic: "edit"
+        task: "editing"
+        step: 13
         mode: "nvim:visual"
         verify: [
             {kind: "nvim-map", mode: "v", lhs: "<", desc: null}
@@ -139,6 +159,8 @@
         title: "Save and quit"
         use: "`<leader>w` writes the buffer, `<leader>q` quits the window."
         topic: "edit"
+        task: "editing"
+        step: 6
         mode: "nvim:normal"
         verify: [
             {kind: "nvim-map", mode: "n", lhs: "<leader>w", desc: "Save"}
@@ -151,6 +173,8 @@
         title: "Paste (keep register)"
         use: "Select, then `<leader>p`: the selection is replaced and the register still holds what you copied, so you can paste the same thing over several places in a row."
         topic: "edit"
+        task: "editing"
+        step: 18
         mode: "nvim:visual"
         also: ["<C-v> (visual)"]
         why: "A plain `p` over a selection puts the deleted text into the unnamed register, which is why the second paste always pastes the wrong thing. This deletes into the black hole register first."
@@ -162,6 +186,8 @@
         title: "Select text with shift and the arrows"
         use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. It behaves like every non-modal editor."
         topic: "edit"
+        task: "editing"
+        step: 11
         mode: "nvim:normal"
         also: ["h j k l (visual)", "<C-c> (visual)"]
         why: "The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price."
@@ -186,6 +212,8 @@
         title: "Move (collapse selection)"
         use: "In a selection that shift started, a plain motion — `h`/`j`/`k`/`l` or an unshifted arrow — drops the selection and moves, the way it would in a normal editor. A count still applies: `3j` collapses and goes down three lines. In a selection you started with `v`, the same keys extend it, exactly as stock vim does."
         topic: "edit"
+        task: "editing"
+        step: 12
         mode: "nvim:visual"
         also: ["<S-Up> <S-Down> <S-Left> <S-Right>"]
         why: "This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim."
@@ -202,6 +230,8 @@
         title: "Copy to clipboard"
         use: "`<C-c>` on a selection yanks it and leaves visual mode. The clipboard is shared with the system, so it pastes into the terminal and into any other application."
         topic: "edit"
+        task: "editing"
+        step: 19
         mode: "nvim:visual"
         also: ["<C-v> (visual)", "<leader>p (visual)"]
         why: "`clipboard=unnamedplus` is what makes this work in both directions — there is no separate editor clipboard to copy out of."
@@ -213,6 +243,8 @@
         title: "Paste over selection"
         use: "`<C-v>` on a selection replaces it with the clipboard, and the clipboard still holds what it held, so you can do it again somewhere else."
         topic: "edit"
+        task: "editing"
+        step: 20
         mode: "nvim:visual"
         also: ["<C-c> (visual)", "<leader>p (visual)"]
         why: "Note what this costs: `<C-v>` no longer starts visual-block from within a selection. Blockwise select is still `<C-v>` from normal mode."
@@ -224,6 +256,8 @@
         title: "Drive the completion menu"
         use: "`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call."
         topic: "edit"
+        task: "code"
+        step: 1
         mode: "nvim:insert"
         why: "`<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode."
         verify: [{kind: "prose"}]
@@ -234,6 +268,8 @@
         title: "Delete a bracket pair, and let Enter fall through to it"
         use: "`<BS>` next to an auto-inserted closing bracket or quote deletes both characters as one press, the same key as anywhere else. `<CR>` right after an opening bracket splits it onto three lines with the cursor indented in between — `{` then Enter gives `{`, a blank indented line, `}` — but only when no completion menu is showing; with one open, `<CR>` accepts the highlighted item instead, exactly as the entry above describes."
         topic: "edit"
+        task: "code"
+        step: 2
         mode: "nvim:insert"
         why: "Both keys look like they belong entirely to completion, and only one does. blink.cmp maps `<CR>` to `{\"accept\", \"fallback\"}`: `fallback` means \"run whatever `<CR>` did before blink.cmp claimed it\", and because autopairs sets up first in load order, that prior mapping is autopairs' own bracket-expand handler — so the expand survives, but only through blink.cmp's fallback chain, and only while no menu is open. `<BS>` has no such chain: it is the one map autopairs sets that nothing else claims, so its default wins outright."
         verify: [
@@ -247,6 +283,8 @@
         title: "Open the current directory as a buffer"
         use: "Press `<leader>e` in any buffer: oil opens on the directory of the current file, dotfiles included. It is a normal buffer — rename a line, delete a line, add a line, then `:w` and the filesystem matches."
         topic: "edit"
+        task: "files"
+        step: 11
         mode: "nvim:normal"
         why: "`<leader>e` is the fast path, not the only one: oil loads eagerly (`lazy = false`) so its `default_file_explorer` hijack is installed at startup, and `:e some/dir` reaches it with no key pressed. Netrw is disabled either way, so nothing else could claim the directory instead."
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>e", desc: "Open file explorer"}]
@@ -257,6 +295,8 @@
         title: "Format the buffer now"
         use: "Press `<leader>cf` and the buffer formats asynchronously. You rarely need it: saving formats already — stylua for lua, rustfmt for rust, black for python, prettier for markdown — and a filetype with no formatter of its own is formatted by its language server instead."
         topic: "edit"
+        task: "code"
+        step: 6
         mode: "nvim:normal"
         why: "Prettier is the markdown formatter because it aligns table pipes, but prose must stay exactly as wrapped: these files are hand-wrapped at ~78 columns and reflowing them would churn every diff. On-save formatting gives up after 500 ms rather than blocking the write."
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>cf", desc: "Format buffer"}]
@@ -267,6 +307,8 @@
         title: "Work with markdown tables"
         use: "In a markdown buffer, table mode is already on: type a row and the pipes realign as you type, with GitHub-style `|` corners. `<leader>t` is the prefix for the rest — `<leader>tt` tableizes the line or the selection, `<leader>tm` toggles the mode, `<leader>tr` realigns. Moving between cells is not under the prefix: `[|` and `]|` step left and right, `{|` and `}|` up and down."
         topic: "edit"
+        task: "code"
+        step: 7
         mode: "nvim:normal"
         also: ["<leader>cf"]
         why: "Table mode is switched on by a FileType autocmd, not by the plugin itself: `vim-table-mode` ships inactive and needs `TableModeEnable` per buffer. Without the autocmd only the file you opened nvim with would align, and every markdown buffer you `:edit` afterwards would not."
@@ -280,6 +322,8 @@
         title: "Find files in the project"
         use: "Either one opens telescope over the project's files; type any part of the path. `<leader><space>` exists because it is the fastest thing your thumb can do."
         topic: "find"
+        task: "files"
+        step: 6
         mode: "nvim:normal"
         also: ["<Tab> <S-Tab> <CR> (telescope)", "<leader>fg"]
         why: "This is the editor's finder, and it is deliberately not the shell's. television owns the shell's pickers, telescope owns the editor's; unifying them was considered and rejected."
@@ -294,6 +338,8 @@
         title: "Grep the project live"
         use: "Press `<leader>fg`, then type: the search runs over file contents as you type, and enter opens the file on the matching line."
         topic: "find"
+        task: "files"
+        step: 7
         mode: "nvim:normal"
         also: ["<leader>ff and <leader><space>", "<Tab> <S-Tab> <CR> (telescope)"]
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fg", desc: "Live grep"}]
@@ -304,6 +350,8 @@
         title: "Switch to an open buffer"
         use: "Press `<leader>fb` to get the open buffers as a picker, then type part of a name and press enter — the alternative to walking them with `H` and `L` when there are many."
         topic: "find"
+        task: "files"
+        step: 8
         mode: "nvim:normal"
         also: ["<S-h> <S-l> <leader>bd"]
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fb", desc: "Buffers"}]
@@ -314,6 +362,8 @@
         title: "Search Neovim's own help"
         use: "Press `<leader>fh`, then type a topic: it fuzzy-searches the help tags — vim's documentation, not this manual. `help` in the shell is this configuration; `:help` in the editor is Neovim."
         topic: "find"
+        task: "files"
+        step: 9
         mode: "nvim:normal"
         verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fh", desc: "Help tags"}]
         source: "prds/03-editor/08-telescope/prd.md"
@@ -323,6 +373,8 @@
         title: "Send several picks to the quickfix list"
         use: "Inside any telescope picker, `<Tab>` marks the highlighted row and steps one entry towards the worse matches, `<S-Tab>` marks and steps back towards the better ones — the best match sits at the bottom next to the prompt, so `<Tab>` walks up the screen. Then `<CR>`: with anything marked it sends every mark to the quickfix list and opens it; with nothing marked it just opens the highlighted row. The same keys work whether you are typing or in normal mode inside the picker."
         topic: "find"
+        task: "files"
+        step: 10
         mode: "nvim:normal"
         also: ["<leader>fg"]
         why: "`prose` because these maps are buffer-local to telescope's own prompt buffer, created only while a picker is open and gone once it closes — `maparg` can see them (a live picker really does return an `lhs`, with `buffer = 1`), but nothing static can, so no `nvim --headless` probe outside a running picker has anything to check against."
@@ -336,6 +388,8 @@
         title: "Jump to a definition or an implementation"
         use: "`gd` on a symbol goes to where it is defined, `gI` to where it is implemented. `<C-o>` comes back."
         topic: "edit"
+        task: "code"
+        step: 3
         mode: "nvim:normal"
         also: ["Neovim's own LSP keys", "<leader>rn and <leader>ca"]
         why: "These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`."
@@ -350,6 +404,8 @@
         title: "Rename a symbol or take a code action"
         use: "`<leader>rn` renames across the project — type the new name, enter. `<leader>ca` offers the actions the server has for the thing under the cursor. Both are buffer-local, so they appear once a server attaches."
         topic: "edit"
+        task: "code"
+        step: 5
         mode: "nvim:normal"
         also: ["Neovim's own LSP keys", "gd and gI"]
         verify: [
@@ -363,6 +419,8 @@
         title: "Use the LSP keys Neovim already ships"
         use: "`K` hovers. `grn` renames, `gra` acts, `grr` lists references, `gri` implementations, `gO` the symbols in the file. `]d` and `[d` walk diagnostics, which show inline with a `●`; to read one in full press `<C-w>d`, which is the key that opens the bordered float naming the server it came from."
         topic: "edit"
+        task: "code"
+        step: 4
         mode: "nvim:normal"
         also: ["gd and gI", "<leader>rn and <leader>ca"]
         why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that plugin- and core-provided maps are allowlisted out of the drift check rather than documented."
@@ -383,6 +441,8 @@
         title: "Restore the buffers you had open here"
         use: "The session for a directory is written automatically when you quit Neovim with at least one real file open. `<leader>ss` restores the one belonging to the directory you are in, `<leader>sl` restores the most recent session from anywhere, and `<leader>sd` turns the save off for this run when you do not want what you are about to do remembered. Nothing is restored unless you ask: starting `nvim` plainly gives you an empty editor, as it always did."
         topic: "edit"
+        task: "code"
+        step: 8
         mode: "nvim:normal"
         also: ["<leader>w and <leader>q"]
         why: "This is what tmux-resurrect brings back after a reboot: it re-launches nvim in the pane's directory with the restore command, and without a written session that pane would come back as an empty editor in the right place. The keys sit on `<leader>s` and not persistence.nvim's documented `<leader>q` because `<leader>q` is already Quit here, and making it a prefix would leave every quit waiting `timeoutlen` for a second key."

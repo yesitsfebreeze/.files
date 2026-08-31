@@ -63,7 +63,7 @@ schedule, its history — lives in the PRD itself; there is no side file.
 | `prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
 | `.claude/skills/pearde/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what. A symlink: the skill lives in its own repo (`~/dev/infra/pearde`) and is not vendored here |
 | `prds/README.md` | Index, build order, and the canonical exclusion list |
-| `docs-site/` | The searchable manual — a fumadocs site. `content/docs/manual/` is **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs`; `content/docs/internals/` is hand-written and holds the constraints the configs used to carry as comments |
+| `docs-site/` | The searchable manual — a fumadocs site. `content/docs/guide/` (task order, from `tasks.nuon`) and `content/docs/reference/` (subject order, from `topics.nuon`) are both **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs`, so the site and `help` cannot drift; `content/docs/internals/` is hand-written and holds the constraints the configs used to carry as comments |
 | `docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
 | `docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
 | `docs/capabilities-nvim.md` | Rated inventory of the live Neovim config |

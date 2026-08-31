@@ -1,25 +1,43 @@
 ---
 title: This environment
-description: Every key, command and alias in the dotfiles, and why each one is the way it is.
+description: A guide to the shell, multiplexer, editor and containers on this machine — and why each part is the way it is.
 ---
 
-The manual for this machine: nushell as the shell, tmux as the multiplexer,
-Neovim as the editor, WezTerm as the chrome, and capsule for containers.
+Nushell is the shell, tmux owns the windows, Neovim is the editor, WezTerm only
+draws the picture. Everything here works from a fresh terminal with no setup.
 
 <Cards>
-  <Card title="Manual" href="/docs/manual/navigate" description="102 entries — every key, command and alias, grouped by what you are trying to do." />
-  <Card title="Internals" href="/docs/internals" description="The constraints the configuration is built around, and what each was measured against." />
+  <Card title="Start here" href="/docs/guide/usage" description="The six keys that get you moving, then a page per task." />
+  <Card title="Reference" href="/docs/reference/navigate" description="All 101 entries in one table per subject, each linking into the guide." />
+  <Card title="Internals" href="/docs/internals" description="The constraints the configuration is built around, and what each was measured on." />
 </Cards>
 
-## How to read this
+## The three halves
 
-**Manual** answers *what do I press*. It is generated from the same four
-`.nuon` surface files that `help` reads in the shell, so the site and the
-shell manual cannot disagree — one set of entries, two renderers.
+**Guide** answers *how do I …*. One page per task, in the order you meet them —
+moving between directories, finding a file, changing window, working in a
+container. Read it front to back once and you have the environment.
 
-**Internals** answers *why is the config written that way*. These are the
-constraints that cost a day each to find: a terminfo entry that is absent on
-minimal hosts, a tmux format delimiter that must not be a glob metacharacter,
-an option assignment that silently suppresses an OSC 52.
+**Reference** answers *what was that key again*. One table per subject, every
+entry, each row linking to the place in the guide that explains it.
 
-Use the search (`⌘K`) — it indexes both.
+**Internals** answers *why is it written that way*. The constraints that cost a
+day each to find: a terminfo entry absent on minimal hosts, a tmux format
+delimiter that must not be a glob metacharacter, an option assignment that
+silently suppresses an OSC 52.
+
+Guide and Reference are both **generated** from the four `.nuon` files that
+`help` reads in the shell, so this site and `help` cannot disagree.
+
+Search with `⌘K` — it indexes all three.
+
+## If you only read one thing
+
+| | |
+|---|---|
+| `<word>` | type a directory name on its own to jump there |
+| `F5` `1`–`9` | change window &nbsp;·&nbsp; `F5` `a`–`i` change pane |
+| `F4` `←↑↓→` | split, in that direction |
+| `Ctrl-Space` | find a file, a line, a directory, a commit |
+| `Ctrl-R` | search this directory's history |
+| `help` | the same manual, in the shell |

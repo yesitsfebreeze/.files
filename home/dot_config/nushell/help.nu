@@ -142,6 +142,10 @@ def _help_norm [] {
             title: $e.title
             use: $e.use
             topic: $e.topic
+            task: ($e.task? | default "")
+            step: ($e.step? | default 0)
+            does: ($e.does? | default "")
+            kind: ($e.kind? | default "")
             mode: $e.mode
             also: ($e.also? | default [])
             why: ($e.why? | default "")

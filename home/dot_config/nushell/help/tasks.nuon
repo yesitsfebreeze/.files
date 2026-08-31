@@ -1,0 +1,94 @@
+# The guide's spine: the task order a person reads in, most-needed first.
+# Distinct from topics.nuon, which is the REFERENCE's spine — a topic groups
+# entries by subject, a task groups them by what you are trying to do, and one
+# entry can sit under a task whose topic it does not share (an agent's capsule
+# credentials are a `containers` topic and an `agents` task).
+#
+# Every entry in every surface file carries a `task` id from this list and a
+# `step` giving its order on that page. Schema: see README.md.
+[
+    {
+        id: "usage"
+        title: "Start here"
+        summary: "What this environment is, and the six keys that get you moving."
+        intro: "Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a digit to change window, `Ctrl-Space` to find anything, and `help` to get back here."
+    }
+    {
+        id: "directories"
+        title: "Move between directories, and make new ones"
+        summary: "Jumping by fragment, going back, and the `cd` that creates what it is given."
+        intro: "You rarely type a path here. Zoxide learns where you go and ranks by frecency, so a fragment is enough — and a bare word with no command is treated as a jump. Every route lands in the same funnel, so the start directory, the back-stack and the recents log stay correct however you moved."
+    }
+    {
+        id: "listing"
+        title: "See what is in a directory"
+        summary: "The decorated `ls`, its short forms, and real directory sizes."
+        intro: "A listing prints itself after every move, so most of the time you do not run one. When you do, `ls` returns structured data — a real table you can filter with `| where`, not text you have to parse."
+    }
+    {
+        id: "files"
+        title: "Find a file, a line, or a directory"
+        summary: "The finder in the shell, telescope in the editor, and ripgrep underneath."
+        intro: "One key opens everything: `Ctrl-Space` picks a channel — files, directories, text, git log, history — and acts on what you choose. `Ctrl-T` does the same but inserts the result into the line you are typing instead. In the editor the same job is telescope, deliberately a second tool rather than a shared one."
+    }
+    {
+        id: "history"
+        title: "Recall something you already ran"
+        summary: "This directory's history by default; the whole history one modifier away."
+        intro: "History is scoped to where you are, because that is almost always what you meant. The unscoped history is always one modifier away — and the rule is consistent: plain is local, shift or alt is global."
+    }
+    {
+        id: "windows"
+        title: "Move around windows and panes"
+        summary: "tmux owns all of it: nine windows by digit, panes by letter, splits by arrow."
+        intro: "There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see."
+    }
+    {
+        id: "copy"
+        title: "Copy and paste"
+        summary: "Keyboard selection in the scrollback, and the clipboard that follows you over ssh."
+        intro: "Copying works without the mouse: freeze the screen, move the cursor, and press `c` to widen the selection from a cell to a word to a whole line. Where the text lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at."
+    }
+    {
+        id: "editing"
+        title: "Edit text"
+        summary: "Opening the editor, moving around it, and selecting with shift like everywhere else."
+        intro: "Neovim, with shift-and-arrow selection wired up so it behaves the way every other editor does — hold shift, sweep, type to replace. The vim motions are all still there; the shift keys are additive, not a mode."
+    }
+    {
+        id: "code"
+        title: "Work with code"
+        summary: "Completion, LSP, formatting, and getting your buffers back."
+        intro: "The language server does the heavy lifting and Neovim's own built-in keys drive most of it — this config adds a plugin only where the platform has no answer. Sessions are per-directory, so reopening a project restores what you had open."
+    }
+    {
+        id: "git"
+        title: "Work with a repository"
+        summary: "Two letters, and a full TUI when two letters are not enough."
+        intro: "Almost everything is `g`, which is git. When a diff needs looking at rather than reading, `lg` opens lazygit on the current repository."
+    }
+    {
+        id: "containers"
+        title: "Work inside a container"
+        summary: "One capsule per directory, with your credentials already in it."
+        intro: "A capsule is a dev container bound to a directory: drop in, work, leave. Credentials are propagated rather than re-entered, so an agent or a build inside a capsule comes up already authenticated without any secret being baked into the image."
+    }
+    {
+        id: "agents"
+        title: "Run coding agents"
+        summary: "The launchers, the model routing, and what this manual gives an agent."
+        intro: "Claude Code starts in the directory you are in and inherits the environment. The proxy lets you pick a model per session and tells you what quota is left. This manual is also the agent's brief — `help --json` hands it the same content as structured data, which is what stops it reaching for `grep` when `rg` is the tool here."
+    }
+    {
+        id: "appearance"
+        title: "Change how it looks"
+        summary: "One key retints the terminal, tmux, the editor and the pickers at once."
+        intro: "tinty owns the palette and everything else reads it downstream, so a scheme change reaches every surface in one gesture — including panes on the far end of an ssh. Nothing below tinty hardcodes a colour."
+    }
+    {
+        id: "maintaining"
+        title: "Read the manual and keep it current"
+        summary: "Deploying a change, searching the manual, and checking it still tells the truth."
+        intro: "This manual is data, not prose kept beside the code: the shell's `help`, this site, and the drift check all read the same four files. When you add a key, add its entry in the same change — otherwise the check reports it as undocumented."
+    }
+]

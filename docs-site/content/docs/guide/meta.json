@@ -1,0 +1,19 @@
+{
+  "title": "Guide",
+  "pages": [
+    "usage",
+    "directories",
+    "listing",
+    "files",
+    "history",
+    "windows",
+    "copy",
+    "editing",
+    "code",
+    "git",
+    "containers",
+    "agents",
+    "appearance",
+    "maintaining"
+  ]
+}

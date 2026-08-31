@@ -10,6 +10,9 @@
         title: "Drop a directory into a dev container"
         use: "Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in zsh at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and, if the container is still running, you are back in it in well under a second; if it was stopped it starts and attaches, and if the image definition changed it rebuilds the image first, which takes as long as docker takes. Every successful mount is recorded for the recent-workspace picker."
         topic: "containers"
+        task: "containers"
+        step: 1
+        does: "enter-capsule"
         mode: "shell"
         also: ["capsule --rebuild", "capsule list", "credentials in a capsule", "Ctrl+Shift+D"]
         why: "One container per directory, named after it, with a short path hash appended so two directories called `api` in different parents do not collide. This one command replaced five loosely coupled pieces — a terminal binding, a shell function, a task-runner recipe, a second Dockerfile and a credential script — that overlapped and drifted."
@@ -21,6 +24,9 @@
         title: "Rebuild the image and recreate the container"
         use: "`capsule --rebuild` builds the image again and throws away the existing container for this directory before making a new one. Anything you left in the container's own filesystem, outside `/workspace`, is gone."
         topic: "containers"
+        task: "containers"
+        step: 2
+        does: "rebuild-capsule"
         mode: "shell"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
         why: "The only way to force a rebuild. A changed image definition is picked up automatically on the next mount; nothing else rebuilds implicitly, because an implicit rebuild in the middle of a working day is the thing that makes people stop using the tool."
@@ -32,6 +38,8 @@
         title: "See which capsules exist"
         use: "`capsule list` shows the containers this tool owns and whether each is running or stopped, so you can tell what is still holding resources."
         topic: "containers"
+        task: "containers"
+        step: 4
         mode: "shell"
         also: ["capsule clean"]
         verify: [{kind: "command", name: "capsule list"}]
@@ -42,6 +50,8 @@
         title: "Remove capsules you are finished with"
         use: "`capsule clean` removes capsules you are finished with — the stopped ones, or all of them including the running. Which of the two a bare `capsule clean` does, and what you pass to get the other, is not settled: the specification names both modes and neither invocation. Only containers this tool created are ever touched."
         topic: "containers"
+        task: "containers"
+        step: 5
         mode: "shell"
         also: ["capsule list"]
         verify: [{kind: "command", name: "capsule clean"}]
@@ -52,6 +62,9 @@
         title: "Understand how a container gets your credentials"
         use: "Nothing to run: inside a capsule, `git pull`, `git push` over either protocol, `ssh -T git@github.com`, `claude` and `opencode` all just work, with no login and no prompt."
         topic: "containers"
+        task: "containers"
+        step: 6
+        kind: "concept"
         mode: "container"
         also: ["capsule [dir]", "cc [...args]", "ssh in a capsule", "agents in a capsule"]
         why: "Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `.gitconfig` is mounted read-only so authorship matches the host. The HTTPS credential is exported from the host's credential helper into a cache directory the container reads as its git credential store — synchronously on create and on `--rebuild`, backgrounded on any attach to an existing capsule, and on either path skipped while every exported file is under 60 seconds old, because the four-file export costs ~1.5s (git's helper 0.75–1.16s, an agent keychain read 0.34–0.50s) — over the whole warm-attach budget. That path is bound as a directory, never file by file: the refresh renames each file into place, so a rotated token reaches an already-running capsule."
@@ -63,6 +76,9 @@
         title: "Understand how SSH works inside a capsule"
         use: "Nothing to run: inside a capsule, `ssh -T git@github.com`, `git pull` and `git push` over SSH all just work, with no host-key prompt."
         topic: "containers"
+        task: "containers"
+        step: 7
+        kind: "concept"
         mode: "container"
         also: ["capsule [dir]", "credentials in a capsule"]
         why: "Keys are copied into a container-local directory rather than used from the read-only mount, because Docker Desktop's file sharing does not carry host permissions into the container in a form ssh accepts. The copy gets the mode each file needs: 700 on the directory, 600 on private keys and the generated config, 644 on `*.pub` (`setup-credentials.sh:59,67,68`). The no-prompt guarantee is `StrictHostKeyChecking accept-new` (`:115`), which accepts an unseen host key once rather than disabling verification the way `no` would. The `ssh-keyscan -T 5` pre-add (`:121-130`) is the optimisation, not the guarantee: it seeds `known_hosts` before the first connection when the network allows it, and `accept-new` covers the connection when it does not."
@@ -74,6 +90,9 @@
         title: "Understand how an agent comes up authenticated"
         use: "Nothing to run: inside a capsule, `claude` and `opencode` both come up already authenticated, with no login prompt."
         topic: "agents"
+        task: "agents"
+        step: 10
+        kind: "concept"
         mode: "container"
         also: ["capsule [dir]", "credentials in a capsule", "cc [...args]"]
         why: "The Claude and OpenCode tokens are exported from the host's login keychain into a read-only mount, then symlinked into place (`setup-credentials.sh:208-213`, `:224-229`) rather than copied. A writable copy would let the container run its own OAuth refresh, and Claude's refresh rotates the refresh token — so a capsule refreshing on its own would invalidate the host's login. Borrowing the host credential and failing closed is the trade: if the access token expires while a long-lived capsule sits idle, the agent asks to log in, and re-mounting (or running the agent on the host) heals it."
