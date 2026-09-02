@@ -69,7 +69,7 @@ terminal, press the keys named in its acceptance. There is no other gate.
 
 | child | contract | needs |
 |---|---|---|
-| `01-hygiene` | Commit the working tree as-is, then remove the duplicates, the generated artifact, the stale ignore rules and the one-time recipe. | — |
+| `01-hygiene` | Land the 2026-09-01 state as one commit over the paths R1 names, then remove the duplicates, the generated artifact, the stale ignore rules and the one-time recipe. | — |
 | `02-board` | Every `prd.md` stays; every `specs/` goes; process memos are archived; `AGENTS.md` becomes ~60 lines; no `verify:` names a deleted script. | 01-hygiene |
 | `03-help-system` | Delete the drift checker, the review files and the redundant renderers. One corpus, one generator, one search. Sweep the internals of dead test citations. | 01-hygiene |
 | `04-nushell` | `config.nu` and the modules: built-in `ls --du`, one keybinding append, no tombstones, no second-machine branches, four small commands deleted. | 03-help-system |

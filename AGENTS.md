@@ -333,6 +333,20 @@ scheduler and closes unmet, which is the whole reason the tree was converted.
 real thing *with the check you ran*. A `[x]` you did not prove is not
 optimism, it is a false record that outlives you.
 
+**A requirement names paths, never the tree.** Write the paths it lands, or
+an exclusion set computed from the live claims — never "commit the current
+working tree" or "the working tree as-is". On 2026-09-02 a requirement
+written that way was implemented as `git add --all` with four exclusions and
+absorbed a concurrently-claimed node's mid-flight work, five commits over
+fourteen minutes; the record is
+[`baseline-commit-absorbs-live-claims`](.pearde/prds/00-delivery/corrections/baseline-commit-absorbs-live-claims/prd.md).
+The same rule holds one level down: a spec's `## Verify and Proof` block
+asserts the post-state and never acts — no `git add`, no `git commit`, no
+`chezmoi apply` without `--dry-run`. Both are checked by
+`python3 scripts/board-guard.py requirements` and `… verify-blocks`
+(`just board-guard-blocks`), and `just board-guard <node> <paths…>` names
+any path another node holds under a live claim.
+
 Rules that keep this tree useful:
 
 - **Preserve the hard-won why.** The live config is full of workarounds for

@@ -58,16 +58,40 @@ not part of this commit and must not be un-tracked. See spec02.
 
 ```sh
 cd /Users/feb/dev/dotfiles
-git ls-files .pearde/graphify | wc -l          # note it, before and after
-git reset -- home/dot_config/litellm/create_config.yaml
-git add --all -- . \
-  ':!.pearde/09-simplify' \
-  ':!.gitignore' ':!.graphifyignore' ':!justfile' ':!install' \
-  ':!home/dot_config/litellm/create_config.yaml'
-git commit -m "the 2026-09-01 tree as it stood, landed before simplification"
-git status --short
-git log -1 --format=%s
-git show --stat HEAD | tail -1
-git ls-files scripts/generate-manual.mjs
-just manual && git status --short home/dot_config/nushell/help/manual
+set -eu
+
+# the baseline is in git, and its message names the state it landed
+git log -1 --format=%s 5dceabc | grep -q 'landed before simplification'
+
+# ~200 files in one commit, and no hunk under home/ edits a line
+git show --stat 5dceabc | tail -1 | grep -q 'files changed'
+
+# the generator is tracked, so `just manual` no longer calls an untracked file
+git ls-files --error-unmatch scripts/generate-manual.mjs >/dev/null
+
+# .pearde/graphify was not un-tracked by the baseline
+test "$(git ls-tree -r 5dceabc --name-only -- .pearde/graphify | wc -l | tr -d ' ')" \
+   = "$(git ls-tree -r HEAD --name-only -- .pearde/graphify | wc -l | tr -d ' ')"
+
+# the epic's own board tree is in git — it entered at b637aad, not here
+git ls-tree -r HEAD --name-only -- .pearde/prds/09-simplify | head -1 >/dev/null
+
+# the probe directory made at the wrong level holds no file and is untracked
+test "$(git ls-files .pearde/09-simplify | wc -l | tr -d ' ')" = 0
+
+# and no path this node landed is one another node holds today
+python3 scripts/board-guard.py held --self 09-simplify/01-hygiene \
+  home/dot_config/litellm/create_config.yaml
 ```
+
+Rewritten 2026-09-02 by the orchestrator, on
+[`baseline-commit-absorbs-live-claims`](../../../00-delivery/corrections/baseline-commit-absorbs-live-claims/prd.md)'s
+transition. The block this replaces staged and committed — which is
+`collect`'s job, never a spec's — so each of its five runs committed
+whatever was dirty at that instant, and two of them absorbed paths a live
+claim held. Every line above reads the commit that already exists instead
+of making a new one; the five acceptance boxes stay closed on the same
+evidence, ticked against `5dceabc`. `just manual` is deliberately absent:
+the manual pages and `scripts/generate-manual.mjs` are held by
+`09-simplify/03-help-system` under a live claim, so that line would fail
+for a reason unrelated to this node.

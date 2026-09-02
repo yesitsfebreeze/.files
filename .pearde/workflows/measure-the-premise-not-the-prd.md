@@ -3,7 +3,7 @@ atomic: measure-the-premise-not-the-prd
 subject: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
 date: 2026-09-02
 updated: 2026-09-02
-runs: 1
+runs: 2
 ---
 
 ## Do
@@ -28,3 +28,8 @@ runs: 1
 - The premise was already acted on by an earlier pass. Then the command
   measures the *result*, not the premise, and reproduces trivially. Measure
   the survivor instead and say which pass changed it.
+- The premise is a count, and the counter is not written down. Two honest
+  counters disagree (here: 8, 7 and 5 for the same class, differing only on
+  whether a dry run counts and whether the line must sit under a
+  `## Verify and Proof` heading). Write the counter beside the number, or
+  the recount cannot be a check.

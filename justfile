@@ -28,3 +28,19 @@ push message="dotfiles: update":
 [doc('Regenerate the manual pages from the .nuon surfaces. Does NOT deploy.')]
 manual:
     node "{{ repo }}/scripts/generate-manual.mjs"
+
+# Name the paths a commit lands, never the tree. On 2026-09-02 a requirement
+# written "commit the current working tree" swept up a node another worker
+# held; see
+# .pearde/prds/00-delivery/corrections/baseline-commit-absorbs-live-claims/.
+# Read-only: this stages nothing.
+[doc('Refuse a path another node holds under a live claim. Read-only.')]
+board-guard prd="-" paths="":
+    python3 "{{ repo }}/scripts/board-guard.py" held --self "{{ prd }}" {{ paths }}
+
+# Every spec's `## Verify and Proof` block asserts the post-state; none of
+# them acts on the repo. Read-only.
+[doc('Refuse a spec whose Verify block stages or commits. Read-only.')]
+board-guard-blocks:
+    python3 "{{ repo }}/scripts/board-guard.py" verify-blocks
+    python3 "{{ repo }}/scripts/board-guard.py" requirements

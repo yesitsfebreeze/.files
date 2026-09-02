@@ -224,15 +224,20 @@ happy-path assertion:
 
 ## Verify and Proof
 
-```sh
-cd "$(git rev-parse --show-toplevel)"
-bash tests/shell-listing.sh
-bash tests/shell-listing.sh --tree
-bash tests/shell-listing.sh --hermetic
+Historical. This block ran `tests/shell-listing.sh` in three modes plus a
+negative control that stashed `config.nu` to prove T6/H11 caught the
+regression, and it passed when this node closed. **`tests/` was deleted on
+2026-08-31** — see
+[the memo](../../../../memos/tests-and-gates-retire-a-dev-setup-is-not-a-product.md)
+— so every command in it now names a script that does not exist, and the
+block is unrunnable rather than merely unrun. Per AGENTS.md a verify that
+pointed into `tests/` reads `""`, the contract's value for *unproven*.
 
-# negative control: prove T6/H11 actually catch the regression
-git stash push -- home/dot_config/nushell/config.nu
-bash tests/shell-listing.sh --tree 2>&1 | grep 'T6'
-bash tests/shell-listing.sh --hermetic 2>&1 | grep 'H11'
-git stash pop
-```
+Rewritten 2026-09-02 by the orchestrator, on
+[`baseline-commit-absorbs-live-claims`](../../baseline-commit-absorbs-live-claims/prd.md)'s
+transition: the stash pair was the last live thing here and the second
+member of that node's censused class — a `git` mutation inside a
+`## Verify and Proof` block, which bypasses `collect`'s cross-claim refusal
+and can leave a dirty tree behind on a failed run. Removing it closes the
+class; nothing about this node's own result changes, and its boxes stay
+closed on the evidence they were closed against.

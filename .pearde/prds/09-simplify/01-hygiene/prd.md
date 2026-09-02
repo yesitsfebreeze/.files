@@ -38,17 +38,21 @@ recipe that has run.
 
 ## Requirements
 
-- [x] **R1** — The current working tree is committed as one commit whose
-      message says it is the 2026-09-01 state landed before simplification.
-      No content is edited in that commit. **The `09-simplify` board tree —
-      the epic's own `prd.md` and its seven siblings, written by the user at
-      11:12-11:15 — lands with this node, through `collect --also
-      .pearde/prds/09-simplify`.** Added 2026-09-02: those eight files sit
-      inside "the current working tree" and on the claim's own untracked
-      list, but `collect` commits `.pearde/prds/<prd>/`, which is
-      `01-hygiene/` and not its parent, so nothing would have taken them.
-      Naming the route is the point — implicit was the one option not
-      available.
+- [x] **R1** — One commit lands the paths this node names and no others:
+      `.pearde/prds/09-simplify/01-hygiene/`, which `collect` takes on its
+      own, and `.pearde/prds/09-simplify` — the epic's own `prd.md` and its
+      seven siblings, written by the user at 11:12-11:15 — through
+      `collect --also .pearde/prds/09-simplify`. Held back: `.gitignore`,
+      `.graphifyignore`, `justfile`, `install` and
+      `home/dot_config/litellm/create_config.yaml`, which R2 and R4 edit.
+      The exclusion set is whatever `python3 scripts/board-guard.py held
+      --self 09-simplify/01-hygiene` names, and no path it names is staged.
+      The message says the commit is the 2026-09-01 state landed before
+      simplification, and it edits no content. Added 2026-09-02: naming the
+      route is the point — implicit was the one option not available.
+      Rewritten 2026-09-02, after the bulk form of this requirement absorbed
+      a live claim; the record is
+      [`baseline-commit-absorbs-live-claims`](../../00-delivery/corrections/baseline-commit-absorbs-live-claims/prd.md).
 - [x] **R2** — `.gitignore` loses the entries for `.pi/kern/`, `vicky/`,
       `board`, `__pycache__/` — none of those paths exists in the tree.
       `.graphifyignore` loses `docs-site/`. **Corrected 2026-09-02**: this
