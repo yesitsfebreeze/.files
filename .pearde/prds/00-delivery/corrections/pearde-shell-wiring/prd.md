@@ -14,6 +14,7 @@ time:              # OPTIONAL. See @references/parts/order.md
   actual: 0.36h
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 workflow: wire-a-tool-into-the-shell
+commit: d1e993c
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
