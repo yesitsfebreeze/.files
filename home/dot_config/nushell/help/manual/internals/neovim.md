@@ -389,7 +389,7 @@ No ["markdown.mdx"] key. Nothing in this config registers the .mdx extension, so
 format_on_save = { timeout_ms = 500, lsp_format = "fallback" },
 ```
 
-R4. `lsp_format = "fallback"` covers TWO cases, and the second one is silent. The obvious one is a filetype with no formatter listed above. The other, measured with an in-process fake language server and an empty PATH: a filetype whose formatter IS listed but whose binary is missing also falls through to the server, which formats the buffer while vim.notify is never called — nothing at all indicates that stylua did not run. That is why install.sh provisions the four binaries rather than assuming them.
+R4. `lsp_format = "fallback"` covers TWO cases, and the second one is silent. The obvious one is a filetype with no formatter listed above. The other, measured with an in-process fake language server and an empty PATH: a filetype whose formatter IS listed but whose binary is missing also falls through to the server, which formats the buffer while vim.notify is never called — nothing at all indicates that stylua did not run. That is why the `Brewfile` carries the four binaries rather than assuming them.
 
 The write ALWAYS succeeds. Every failure mode was measured to exit 0 with the file written: a timeout (WARN `Formatter 'stylua' timeout`, unformatted write, ~570 ms wall for a 2 s formatter), a formatter that fails (ERROR `Formatter failed. See :ConformInfo for details`), an absent formatter with no server (WARN `Formatters unavailable for lua file`, once per filetype per session), and no configured formatter with no server (silent). Formatting never blocks a save.
 
