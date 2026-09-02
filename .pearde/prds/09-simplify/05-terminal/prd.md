@@ -1,8 +1,8 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 32        # higher first
-complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+complexity: 28      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
 blast-radius: high
 repo:
 time:
@@ -19,6 +19,8 @@ footprint:
   - home/dot_config/tinted-theming/tinty/executable_tmux-colors.sh
   - home/dot_config/nushell/help/terminal.nuon
   - home/dot_config/nushell/config.nu
+workflow: prove-a-key-binding-on-a-real-client
+claim: implementer-terminal 2026-09-02 15:02
 ---
 
 # 05-terminal — tmux.conf to ~250 lines, one palette path
@@ -85,7 +87,12 @@ it no longer has. The palette is re-asserted three ways. Measured
 
 ## Acceptance
 
-- [ ] `tmux -L probe -f home/dot_config/tmux/tmux.conf new-session -d && tmux -L probe list-keys -T jump | wc -l` prints at least 35, then `tmux -L probe kill-server`
+- [ ] `tmux -L probe -f home/dot_config/tmux/tmux.conf new-session -d && tmux -L probe list-keys -T jump | wc -l` prints 27, then `tmux -L probe kill-server`.
+      **Corrected 2026-09-02, before dispatch**: the original line asked
+      for "at least 35"; measured 27 on the current, unmodified file, and
+      R2 asks for a generator that reproduces the existing binds
+      byte-for-byte, not more of them — the analyst's pass-1 build proved
+      the run-shell-loop generator reproduces all 27 exactly.
 - [ ] `grep -cE '^\s*#' home/dot_config/tmux/tmux.conf` is below the count of non-comment lines
 - [ ] after `chezmoi apply` and `tmux source ~/.config/tmux/tmux.conf`: F3 prompts, Escape cancels silently, a query opens the picker; F4 then an arrow splits with the cwd inherited; `F5 2` and `F5 b` land; F6 retints two attached windows and a new pane
 - [ ] drag-select in a pane, then `pbpaste` prints the selection
@@ -96,3 +103,22 @@ it no longer has. The palette is re-asserted three ways. Measured
 
 - tmux-mcp and the Claude-in-tmux bindings — `08-claude-agent/03`.
 - `tmux-git` — kept verbatim.
+
+## Questions
+
+### Q1: Where the pane letter lives
+
+Right now every pane carries a small letter on its own border so you can see
+which key reaches it without looking away. You are choosing whether that
+stays, moves into the status line instead, or only appears while you're
+actually switching panes?
+
+1. **Keep it on every pane, always** — the letter stays on each pane's edge all the time, so the key is visible without a glance elsewhere. (recommended)
+2. **Move it into the status line** — panes look cleaner, and you check the key in the line above instead of on the pane.
+3. **Show it only while switching** — the letter appears on the border only during the moment you're picking a pane, and stays hidden otherwise.
+
+<!-- for the board: home/dot_config/tmux/tmux.conf pane-border-format / pane-border-lines / pane-border-status; 09-simplify/05-terminal R6 -->
+
+## Answers
+
+**Q1** *(answered 2026-09-02 14:14)* — Keep it on every pane, always.

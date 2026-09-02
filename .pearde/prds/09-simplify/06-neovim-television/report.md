@@ -214,6 +214,41 @@ Two things leave this node named rather than dropped:
   `tinty/executable_tmux-colors.sh` is `05-terminal`'s footprint and has a
   live implementer on it, so nothing here went near it.
 
+### Box 1's machine clause, transferred by the orchestrator after this report
+
+Written by the orchestrator, 2026-09-02, after the tail landed as `9b80a71`.
+
+The implementer left acceptance box 1 red at `23` rather than tune its
+threshold, which was right. `pearde collect` then refused `done` on the open
+box, correctly — and the node that would make it green
+(`retire-the-unmanaged-television-channels`) is gated on this one, so the board
+deadlocked.
+
+The skeptic that had ruled the clause stayed was asked again, and moved it. Its
+test both times was the same one it used on box 3: can any work inside this
+PRD's footprint move this number? Yesterday the answer was yes and this node
+had not done it — so it stayed. After `9b80a71` the answer is no: the remaining
+`23 - 10 = 13` files were never managed by this repo and nothing in this
+footprint reaches them. And once they go, the machine count and the
+isolated-fixture count measure the same ten files and the same `16`, so the
+clause was never a check on this node.
+
+So the clause left whole, with its measurements, and is now
+`09-simplify/retire-the-unmanaged-television-channels`'s own acceptance box.
+Box 1 keeps the two clauses this node controls, both green, and is ticked.
+
+**The rule this sets:** a clause may leave a PRD only after the in-footprint
+work that could have moved it has landed and been measured, with the commit
+named. `9b80a71` is that receipt. Moving it before those five lines would have
+been talking a red box green, and the skeptic said so at the time.
+
+One correction it made to the derived node, recorded rather than acted on here:
+the claim that `.chezmoiremove` only speaks for paths this repo once managed is
+probably false — `03-help-system/probe/verify.sh:108-117` plants a canary at
+`manual.toml` and watches chezmoi remove it while it has no source entry, which
+is the condition the thirteen are in. That node now carries the premise as
+something to test with a canary before it is specced, not as a constraint.
+
 ## Health floor
 
 The brief listed no file in the footprint under the health floor, and this

@@ -1,30 +1,35 @@
 ---
 atomic: rerun-the-drift-check
-subject: "`help --check` is the one command that says the configuration and its manual still agree"
+subject: "`just manual` plus a shasum pair is what says the configuration and its manual still agree"
 date: 2026-09-02
 updated: 2026-09-02
-runs: 3
+runs: 4
 ---
 
 ## Do
 
-1. `help --check` in a shell that loaded the config.
+1. `just manual` — regenerate the manual's derived pages from the `.nuon`
+   surfaces. It writes into the tree; it does not deploy.
+2. Take a `shasum` over `help/manual/guide/` and `help/manual/reference/`
+   before and after, and compare.
+3. `just board-guard <prd> "<your paths>"` and `just board-guard-blocks`.
 
 ## Done when
 
-- It exits 0 and reports `undocumented: 0` — the new surface is documented,
-  not added to the allowlist.
+- The two shasums are identical — the generated pages already matched the
+  `.nuon` surfaces, so nothing in the manual is drifting behind the
+  configuration.
+- `git status` shows a changed page for every `.nuon` you edited and no
+  others.
+- Both guards exit 0.
 
 ## Fails when
 
-- The check is piped — `help --check | tail`, `| grep` — and `$?` is then the
-  PIPE's exit code, not nushell's. It reads as a clean 0 no matter what the
-  check did. Run it as `nu ... -c 'help --check' >/dev/null; echo $?` when the
-  exit status is what you are claiming.
-- It exits 0 while reporting a non-zero `unresolved:` count. `unresolved` does
-  NOT fail the check — measured 2026-09-02, `unresolved: 3` alongside
-  `help --check: clean` and exit 0. Read the `undocumented:` line for your own
-  surface; do not read a clean exit as "no findings".
-- It reports `undocumented: 0` because the surface was added to `HC_ALLOW`
-  rather than documented. Grep the allowlist and confirm it is unchanged — a
-  passing check and a hidden surface look identical from the exit code.
+- You reach for `help --check`. It was retired with
+  `.config/nushell/help-check.nu` and is in `home/.chezmoiremove`;
+  `nu -c 'help --check'` returns `nu::parser::unknown_flag`, which reads as
+  a broken shell rather than a retired command. There is no `HC_ALLOW`
+  allowlist left to grep either.
+- `just manual` is run but its output is only eyeballed. It prints a page
+  and entry count on every run whether or not anything changed; the shasum
+  pair is the only thing that says "no drift".

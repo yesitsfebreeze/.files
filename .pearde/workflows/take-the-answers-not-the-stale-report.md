@@ -2,7 +2,8 @@
 atomic: take-the-answers-not-the-stale-report
 subject: the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced
 date: 2026-09-02
-runs: 1
+updated: 2026-09-02
+runs: 2
 ---
 
 ## Do

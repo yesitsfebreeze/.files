@@ -1,5 +1,5 @@
 ---
-state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 30        # higher first
 complexity: 25      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
@@ -7,7 +7,7 @@ blast-radius: mid
 repo:
 time:
   est:
-  actual:
+  actual: 0.94h
 needs:
   - 09-simplify/03-help-system
 footprint:
@@ -19,7 +19,6 @@ footprint:
   - home/dot_config/nushell/help/nvim.nuon
   - .pearde/prds/00-delivery/decisions/shift-select-scope/prd.md
 workflow: land-an-answered-fork
-claim: implementer-neovim-tv 2026-09-02 14:23
 ---
 
 # 06-neovim-television — built-ins over wrappers, five channels not twenty-one
@@ -84,12 +83,11 @@ Neovim 0.12.5; re-read before cutting.
 
 ## Acceptance
 
-- [ ] The television surface this repo owns is at most 16 channels and at
-      most 15 cable files, on the machine as well as in the tree: `tv
-      list-channels | wc -l` is at most 16 against an `XDG_CONFIG_HOME`
-      holding only this repo's television configuration, `ls
-      home/dot_config/television/cable | wc -l` is at most 15, and `ls
-      ~/.config/television/cable | wc -l` is at most 15.
+- [x] The television surface this repo owns is at most 16 channels and at
+      most 15 cable files in the tree: `tv list-channels | wc -l` is at most
+      16 against an `XDG_CONFIG_HOME` holding only this repo's television
+      configuration, and `ls home/dot_config/television/cable | wc -l` is at
+      most 15.
       **Rewritten 2026-09-02 by `implementer-neovim-tv`** — the box as
       dispatched read `tv list-channels | wc -l` with no `XDG_CONFIG_HOME`
       named, which measures the machine's whole cable directory, not this
@@ -100,24 +98,36 @@ Neovim 0.12.5; re-read before cutting.
       measures exactly `10`), and R1+R2's ten kept files add six names those
       builtins do not cover. There is no in-scope file left to drop that
       would reach 15.
-      **Measured after the `home/.chezmoiremove` apply. Two of three hold;
-      the box stays red at `23`.** Isolated fixture: `16` channels over `10`
-      cable files. Repo: `ls home/dot_config/television/cable | wc -l` → `10`.
-      Machine: `ls ~/.config/television/cable | wc -l` → **`23`**, down from
-      `28`. `chezmoi apply` never removes a file it has stopped managing, so
-      R1's five deletions needed the retirement mechanism `03-help-system`
-      built and `04-nushell` reused: five lines appended to
-      `home/.chezmoiremove`, then a `chezmoi apply` naming the five paths.
-      All five are now gone from `$HOME` and `tv list-channels` fell `30` →
-      `27` (only three of the five names disappeared — `env` and
-      `git-branch` are also baked-in `tv` channel names, so deleting those
-      two files changes no count). The remaining `23 - 10 = 13` files —
-      `bg`, `burrito-sessions`, `git-deletions`, `git-diff`, `git-reflog`,
-      `git-remotes`, `git-repos`, `git-stash`, `git-submodules`, `git-tags`,
-      `git-worktrees`, `opacity`, `opencode-sessions` — were never managed
-      by this repo at all, so no source deletion and no `.chezmoiremove`
-      entry here can reach them. Handed off as separate work; the threshold
-      was left at 15 rather than tuned to `23`.
+      **Measured after the `home/.chezmoiremove` apply: both clauses hold.**
+      Isolated fixture: `16` channels over `10` cable files. Repo: `ls
+      home/dot_config/television/cable | wc -l` → `10`. `chezmoi apply` never
+      removes a file it has stopped managing, so R1's five deletions needed
+      the retirement mechanism `03-help-system` built and `04-nushell`
+      reused: five lines appended to `home/.chezmoiremove`, then a `chezmoi
+      apply` naming the five target paths. All five are now gone from
+      `$HOME`.
+      **A third clause — `ls ~/.config/television/cable | wc -l` at most 15 —
+      was struck 2026-09-02 and transferred whole, with its measurements, to
+      `09-simplify/retire-the-unmanaged-television-channels`, where it is now
+      that node's acceptance box.** It was not tuned away and it was not
+      dropped. It stayed in this box until `9b80a71` had landed and been
+      measured: before that commit the number was movable by work inside this
+      PRD's footprint and this PRD had not moved it, which is exactly why the
+      skeptic ruled on 2026-09-02 that it stayed. After it, the machine reads
+      `23` and `13` of those files — `bg`, `burrito-sessions`,
+      `git-deletions`, `git-diff`, `git-reflog`, `git-remotes`, `git-repos`,
+      `git-stash`, `git-submodules`, `git-tags`, `git-worktrees`, `opacity`,
+      `opencode-sessions` — were never managed by this repo at all, so
+      nothing this node's footprint reaches can move `23` toward `15`. The
+      second reason it moves: once those thirteen are gone the machine clause
+      and the fixture clause measure the same ten files and the same `16`, so
+      a clause that becomes a verbatim duplicate of its neighbour the moment
+      its blocker clears was never a check on this node. Same shape, and same
+      ruling, as the struck `tinty apply` clause below.
+      **The rule this sets, for the next box that looks like this:** a clause
+      may leave a PRD only after the in-footprint work that could have moved
+      it has landed and been measured, with the commit named. `9b80a71` is
+      that receipt here.
 - [x] `nvim --headless "+Lazy! sync" +qa` exits 0; `nvim --headless +qa` prints no error
       — re-run 2026-09-02 by `implementer-neovim-tv`; both exit 0, no stderr.
 - [x] in nvim: Shift-Down three times then Down collapses the selection; the same from insert mode; `grn` renames in a Lua buffer; ~~the statusline follows two `tinty apply` calls without a restart~~; `<leader>xc` opens Claude through `cll`
@@ -189,3 +199,173 @@ chosen also resolves the R7-tied acceptance box `rg -l 'tests/' ...`
 ## Answers
 
 **Q1** *(answered 2026-09-02 14:14)* — Automatic.
+
+## Report
+
+spec01-channels-and-lua: exit 0
+[35m[blink.cmp] [0m[36m      fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[claude-tmux.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[claudecode.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[conform.nvim] [0m[36m   fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[friendly-snippets] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[gitsigns.nvim] [0m[36m  fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[lazy.nvim] [0m[36m      fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[lualine.nvim] [0m[36m   fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[mason-lspconfig.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[mason.nvim] [0m[36m     fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[nvim-autopairs] [0m[36m fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[nvim-lspconfig] [0m[36m fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[nvim-treesitter] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[nvim-web-devicons] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[oil.nvim] [0m[36m       fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[persistence.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[plenary.nvim] [0m[36m   fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[smear-cursor.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[snacks.nvim] [0m[36m    fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[telescope-fzf-native.nvim] [0m[36mfetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[telescope.nvim] [0m[36m fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[tinted-nvim] [0m[36m    fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[vim-table-mode] [0m[36m fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[which-key.nvim] [0m[36m fetch[0m[90m | [0m[34mRunning task fetch[0m
+[35m[claudecode.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 676ms[0m
+[35m[claudecode.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[smear-cursor.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 734ms[0m
+[35m[smear-cursor.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[nvim-lspconfig] [0m[36m fetch[0m[90m | [0m[34mFinished task fetch in 738ms[0m
+[35m[nvim-lspconfig] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[claudecode.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 57ms[0m
+[35m[claudecode.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[claudecode.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[smear-cursor.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 16ms[0m
+[35m[smear-cursor.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[smear-cursor.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[nvim-lspconfig] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[nvim-lspconfig] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[persistence.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 785ms[0m
+[35m[nvim-lspconfig] [0m[36mcheckout[0m[90m | [0mHEAD is now at ee1e3691 fix(util): undefined variable #4520
+[35m[persistence.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[nvim-lspconfig] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 21ms[0m
+[35m[persistence.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 11ms[0m
+[35m[persistence.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[persistence.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[oil.nvim] [0m[36m       fetch[0m[90m | [0m[34mFinished task fetch in 821ms[0m
+[35m[oil.nvim] [0m[36m      status[0m[90m | [0m[34mRunning task status[0m
+[35m[gitsigns.nvim] [0m[36m  fetch[0m[90m | [0m[34mFinished task fetch in 857ms[0m
+[35m[gitsigns.nvim] [0m[36m status[0m[90m | [0m[34mRunning task status[0m
+[35m[friendly-snippets] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 866ms[0m
+[35m[friendly-snippets] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[oil.nvim] [0m[36m      status[0m[90m | [0m[34mFinished task status in 36ms[0m
+[35m[oil.nvim] [0m[36m    checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[oil.nvim] [0m[36m    checkout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[gitsigns.nvim] [0m[36m status[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[gitsigns.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[gitsigns.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 5be654f fix(change_base): handle files missing from revision
+[35m[friendly-snippets] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 34ms[0m
+[35m[friendly-snippets] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[friendly-snippets] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 4ms[0m
+[35m[gitsigns.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 14ms[0m
+[35m[which-key.nvim] [0m[36m fetch[0m[90m | [0m[34mFinished task fetch in 911ms[0m
+[35m[which-key.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[vim-table-mode] [0m[36m fetch[0m[90m | [0m[34mFinished task fetch in 916ms[0m
+[35m[vim-table-mode] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[which-key.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 29ms[0m
+[35m[which-key.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[which-key.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[lazy.nvim] [0m[36m      fetch[0m[90m | [0m[34mFinished task fetch in 953ms[0m
+[35m[lazy.nvim] [0m[36m     status[0m[90m | [0m[34mRunning task status[0m
+[35m[vim-table-mode] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 33ms[0m
+[35m[vim-table-mode] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[vim-table-mode] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[plenary.nvim] [0m[36m   fetch[0m[90m | [0m[34mFinished task fetch in 963ms[0m
+[35m[plenary.nvim] [0m[36m  status[0m[90m | [0m[34mRunning task status[0m
+[35m[lazy.nvim] [0m[36m     status[0m[90m | [0m[34mFinished task status in 16ms[0m
+[35m[tinted-nvim] [0m[36m    fetch[0m[90m | [0m[34mFinished task fetch in 979ms[0m
+[35m[lazy.nvim] [0m[36m   checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[tinted-nvim] [0m[36m   status[0m[90m | [0m[34mRunning task status[0m
+[35m[plenary.nvim] [0m[36m  status[0m[90m | [0m[34mFinished task status in 21ms[0m
+[35m[lazy.nvim] [0m[36m   checkout[0m[90m | [0mHEAD is now at 306a055 chore(build): auto-generate rockspec mappings
+[35m[plenary.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[lazy.nvim] [0m[36m   checkout[0m[90m | [0m[34mFinished task checkout in 19ms[0m
+[35m[lualine.nvim] [0m[36m   fetch[0m[90m | [0m[34mFinished task fetch in 1001ms[0m
+[35m[lualine.nvim] [0m[36m  status[0m[90m | [0m[34mRunning task status[0m
+[35m[plenary.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 74b06c6 docs: provide info in readme that plenary will be archived in Q2 2026 (#677)
+[35m[tinted-nvim] [0m[36m   status[0m[90m | [0m[34mFinished task status in 22ms[0m
+[35m[tinted-nvim] [0m[36m checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[plenary.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 15ms[0m
+[35m[lualine.nvim] [0m[36m  status[0m[90m | [0m[34mFinished task status in 13ms[0m
+[35m[tinted-nvim] [0m[36m checkout[0m[90m | [0mHEAD is now at a1f4cd3 Update with the latest tinted-theming colorschemes [skip ci]
+[35m[lualine.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[lualine.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 221ce6b fix: re-deepcopy extension sections to avoid shared-ref mutation (#1507) (#1509)
+[35m[tinted-nvim] [0m[36m checkout[0m[90m | [0m[34mFinished task checkout in 22ms[0m
+[35m[lualine.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 9ms[0m
+[35m[mason-lspconfig.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 1048ms[0m
+[35m[mason-lspconfig.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[nvim-web-devicons] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 1074ms[0m
+[35m[nvim-web-devicons] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[mason-lspconfig.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 22ms[0m
+[35m[mason-lspconfig.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[mason-lspconfig.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 40276c4 chore: update generated code (#693)
+[35m[nvim-web-devicons] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[nvim-web-devicons] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[mason-lspconfig.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 13ms[0m
+[35m[nvim-web-devicons] [0m[36mcheckout[0m[90m | [0mHEAD is now at 5f032a8 feat: change clang icons to llvm dragon logo (#654)
+[35m[nvim-web-devicons] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 14ms[0m
+[35m[claude-tmux.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 1318ms[0m
+[35m[claude-tmux.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[snacks.nvim] [0m[36m    fetch[0m[90m | [0m[34mFinished task fetch in 1331ms[0m
+[35m[snacks.nvim] [0m[36m   status[0m[90m | [0m[34mRunning task status[0m
+[35m[claude-tmux.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[claude-tmux.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[claude-tmux.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[snacks.nvim] [0m[36m   status[0m[90m | [0m[34mFinished task status in 111ms[0m
+[35m[snacks.nvim] [0m[36m checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[snacks.nvim] [0m[36m checkout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[blink.cmp] [0m[36m      fetch[0m[90m | [0m[34mFinished task fetch in 1475ms[0m
+[35m[blink.cmp] [0m[36m     status[0m[90m | [0m[34mRunning task status[0m
+[35m[blink.cmp] [0m[36m     status[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[blink.cmp] [0m[36m   checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[blink.cmp] [0m[36m   checkout[0m[90m | [0mHEAD is now at 78336bc chore: bump version to 1.10.2
+[35m[blink.cmp] [0m[36m   checkout[0m[90m | [0m[34mFinished task checkout in 47ms[0m
+[35m[mason.nvim] [0m[36m     fetch[0m[90m | [0m[34mFinished task fetch in 1674ms[0m
+[35m[mason.nvim] [0m[36m    status[0m[90m | [0m[34mRunning task status[0m
+[35m[mason.nvim] [0m[36m    status[0m[90m | [0m[34mFinished task status in 56ms[0m
+[35m[mason.nvim] [0m[36m  checkout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[mason.nvim] [0m[36m  checkout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[nvim-autopairs] [0m[36m fetch[0m[90m | [0m[34mFinished task fetch in 1799ms[0m
+[35m[nvim-autopairs] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[nvim-treesitter] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 1808ms[0m
+[35m[nvim-treesitter] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[nvim-autopairs] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[nvim-autopairs] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[nvim-treesitter] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 33ms[0m
+[35m[nvim-autopairs] [0m[36mcheckout[0m[90m | [0mHEAD is now at 430522f fix: pairing after entering insert mode by action with count (#543) (#550)
+[35m[nvim-treesitter] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[nvim-autopairs] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 23ms[0m
+[35m[nvim-treesitter] [0m[36mcheckout[0m[90m | [0mHEAD is now at 427e9222 feat(proto)!: update parser and queries
+[35m[nvim-treesitter] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 22ms[0m
+[35m[telescope-fzf-native.nvim] [0m[36mfetch[0m[90m | [0m[34mFinished task fetch in 1920ms[0m
+[35m[telescope-fzf-native.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[telescope-fzf-native.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[telescope-fzf-native.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[telescope-fzf-native.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 0ms[0m
+[35m[conform.nvim] [0m[36m   fetch[0m[90m | [0m[34mFinished task fetch in 2482ms[0m
+[35m[conform.nvim] [0m[36m  status[0m[90m | [0m[34mRunning task status[0m
+[35m[conform.nvim] [0m[36m  status[0m[90m | [0m[34mFinished task status in 22ms[0m
+[35m[conform.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[conform.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 016802d fix(rumdl): specify filename to formatter (#893)
+[35m[conform.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 23ms[0m
+[35m[telescope.nvim] [0m[36m fetch[0m[90m | [0m[34mFinished task fetch in 2569ms[0m
+[35m[telescope.nvim] [0m[36mstatus[0m[90m | [0m[34mRunning task status[0m
+[35m[telescope.nvim] [0m[36mstatus[0m[90m | [0m[34mFinished task status in 23ms[0m
+[35m[telescope.nvim] [0m[36mcheckout[0m[90m | [0m[34mRunning task checkout[0m
+[35m[telescope.nvim] [0m[36mcheckout[0m[90m | [0mHEAD is now at 40aedd8 fix(finders): yield once per await_count entries in oneshot replay loop
+[35m[telescope.nvim] [0m[36mcheckout[0m[90m | [0m[34mFinished task checkout in 23ms[0m
+spec01-channels-and-lua OK
+
+spec02-mason-hook: exit 0
+ok   warm registry: silent no-op
+ok   no nvim on PATH: warns, exits 0
+ok   cold + working nvim: seeds automatically, no switch needed
+ok   cold + offline: warns, exits 0, tells you how to retry
+PASS
+spec02-mason-hook OK
