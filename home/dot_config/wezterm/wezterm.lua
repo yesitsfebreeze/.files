@@ -1,37 +1,26 @@
+-- macOS host only (repo scope decision) — no is_mac branch, no Linux fonts.
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 local act = wezterm.action
 
-local triple = wezterm.target_triple
-local is_mac = triple:find("darwin") ~= nil
-
 local home = os.getenv("HOME") or ""
-
-local nu_config = home .. "/.config/nushell/config.nu"
-local nu_env = home .. "/.config/nushell/env.nu"
 
 config.default_prog = { home .. "/.local/bin/tmux-main" }
 
 config.set_environment_variables = {
 	XDG_CONFIG_HOME = home .. "/.config",
-}
-
-if is_mac then
-	config.set_environment_variables.PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:"
+	PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:"
 		.. home
 		.. "/.local/bin:"
 		.. home
 		.. "/.cargo/bin:"
-		.. (os.getenv("PATH") or "")
-end
+		.. (os.getenv("PATH") or ""),
+}
 
-local TAB_BAR_RESERVE = 0
-
+-- No tab bar (enable_tab_bar = false below) — nothing to reserve height for.
 local function grid_padding(win_w, win_h, cell_w, cell_h)
-	local bar_h = TAB_BAR_RESERVE or (math.ceil(cell_h) + 1)
-
 	local avail_w = win_w
-	local avail_h = win_h - bar_h
+	local avail_h = win_h
 
 	local cols = math.floor(avail_w / cell_w)
 	local rows = math.floor(avail_h / cell_h)
@@ -46,7 +35,6 @@ local function grid_padding(win_w, win_h, cell_w, cell_h)
 		bottom = tot_y - math.floor(tot_y / 2),
 	}
 end
--- <<< grid-padding
 
 local function center_grid(window)
 	local mux_win = window:mux_window()
@@ -99,21 +87,14 @@ config.font = wezterm.font_with_fallback({
 	"Cascadia Code",
 	"Menlo",
 })
-config.font_size = is_mac and 14.0 or 9.0
+config.font_size = 14.0
 config.line_height = 1.0
-
-if is_mac then
-	config.font_dirs = { home .. "/Library/Fonts" }
-else
-	config.font_dirs = { home .. "/.local/share/fonts" }
-end
+config.font_dirs = { home .. "/Library/Fonts" }
 
 config.window_decorations = "RESIZE"
 config.default_cursor_style = "BlinkingBlock"
 config.window_background_opacity = 0.95
 config.macos_window_background_blur = 30
-config.inactive_pane_hsb = { saturation = 0.85, brightness = 0.7 }
-config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.adjust_window_size_when_changing_font_size = false
@@ -132,38 +113,15 @@ config.keys = {
 	{ key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
 	{ key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
 	{ key = "q", mods = "SUPER", action = act.QuitApplication },
-	-- CTRL+SHIFT+Q closes this window. In the old config this needed a Lua
-	-- callback, because the nine-tab floor refilled any window faster than
-	-- tabs could be closed. That machinery is gone — tmux owns tabs now and a
-	-- WezTerm window is one tab running the tmux client — so closing the tab
-	-- closes the window. The tmux session detaches and survives.
+	-- tmux owns tabs now — a WezTerm window is one tab running the tmux
+	-- client, so closing the tab closes the window; the session detaches.
 	{ key = "q", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
 	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
 
-	{ key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },
-	{ key = "b", mods = "CTRL|SHIFT", action = act.SendString("capsule --rebuild\r") },
-	{ key = "s", mods = "CTRL|SHIFT", action = act.SendString("capsule recent\r") },
-	{
-		key = "o",
-		mods = "CTRL|SHIFT",
-		action = act.SpawnCommandInNewWindow({
-			args = { "nu", "--config", nu_config, "--env-config", nu_env, "--execute", "capsule recent" },
-		}),
-	},
 	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
-	{
-		key = "c",
-		mods = "CTRL",
-		action = wezterm.action_callback(function(window, pane)
-			local sel = window:get_selection_text_for_pane(pane)
-			if sel and sel ~= "" then
-				window:perform_action(act.CopyTo("ClipboardAndPrimarySelection"), pane)
-				window:perform_action(act.ClearSelection, pane)
-			else
-				window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
-			end
-		end),
-	},
+	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
+	-- handles select-then-copy now, so this just passes the key through.
+	{ key = "c", mods = "CTRL", action = act.SendKey({ key = "c", mods = "CTRL" }) },
 }
 
 -- SHIFT + click opens the link under the cursor, in tmux/nvim (mouse reporting

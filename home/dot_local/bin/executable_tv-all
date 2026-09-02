@@ -8,19 +8,14 @@
 # list, Enter to enter it, and pick a row. If only one channel has a hit at
 # all, there is nothing to choose and you go straight to its rows.
 #
-# Everywhere-mode is progressive, and that is the whole reason it is usable.
-# Counting one query across $HOME costs 29-74s with ripgrep, which is dead as
-# an interactive wait — but the lanes people actually navigate by (recent
-# directories, recent files, shell history, aliases) all answer in
-# under 0.2s. So the fast lanes land first and you can act on them immediately,
-# while files, directories and file contents fill in behind them; tv's --watch
-# redraws the list as each one arrives. If you only wanted to jump somewhere
-# you have already been you never wait; if you are genuinely hunting, you let
-# it run.
+# Everywhere-mode is progressive: counting one query across $HOME costs
+# 29-74s with ripgrep, dead as an interactive wait, but the lanes people
+# actually navigate by (recent dirs/files, history, aliases) answer under
+# 0.2s. Fast lanes land first and are actionable at once; files, directories
+# and contents fill in behind them as tv's --watch redraws the list.
 #
-# POSIX sh, not nushell, for tmux-main's reason: this is launched by the tmux
-# server, whose environment is not a login shell's, and it must not assume the
-# process tree it is called from.
+# POSIX sh, not nushell: this is launched by the tmux server, whose
+# environment is not a login shell's, and must not assume the process tree.
 #
 # Why any of this is shaped the way it is: manual → internals/tmux.
 
@@ -33,30 +28,22 @@ XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 MANUAL="$XDG_CONFIG_HOME/nushell/help/manual"
 CACHE="$XDG_CACHE_HOME/tv-all"
 
-# Where "everywhere" reaches. $HOME is the honest reading of the word and the
-# cache below is what makes it affordable; narrow it here, or export the
-# variable, if a machine has a home directory worth avoiding.
+# Where "everywhere" reaches; the cache below is what makes $HOME affordable.
 GLOBAL_ROOT=${TV_ALL_GLOBAL_ROOT:-$HOME}
 
-# How long a cached directory listing is served before a refresh is started
-# behind it. The refresh never blocks a search — the stale list serves this
-# query and the fresh one serves the next.
+# Minutes a cached listing serves before a refresh starts behind it — the
+# stale list serves this query, never blocking, and the fresh one the next.
 TREE_TTL_MIN=10
 
-# The one search-ignore list, named rather than inherited. ~/.config/fd/ignore
-# is what fd reads by itself; ripgrep only reaches it through
-# RIPGREP_CONFIG_PATH, which env.nu exports and which therefore does not exist
-# in the sh that tmux spawns.
+# Named rather than inherited: RIPGREP_CONFIG_PATH is env.nu's, unset in the
+# sh tmux spawns, so this reads ~/.config/fd/ignore directly instead.
 IGNORE_FILE="$XDG_CONFIG_HOME/fd/ignore"
 [ -f "$IGNORE_FILE" ] || IGNORE_FILE=""
 
-# A SECOND ignore list, layered on the first and applied only to the home-wide
-# search. It is what makes "everywhere" terminate at all: measured 2026-09-01,
-# `fd -t f -H . ~` had not finished enumerating $HOME after two minutes, almost
-# all of it ~/Library; with this list it returns 402,970 files in 2.2s and
-# ripgrep answers a query in about 15s. It is deliberately NOT folded into
-# ~/.config/fd/ignore, because that file governs what `fd` and `rg` do at a
-# prompt and excluding Pictures/ there would be a surprise nobody asked for.
+# TRAP: without this second, home-wide-only list, "everywhere" never
+# terminates — measured 2026-09-01, `fd -t f -H . ~` was still enumerating
+# ~/Library two minutes in. Kept apart from fd/ignore, which also governs a
+# plain prompt and would surprise nobody by excluding Pictures/ there.
 GLOBAL_IGNORE="$XDG_CONFIG_HOME/tv-all/ignore"
 [ -f "$GLOBAL_IGNORE" ] || GLOBAL_IGNORE=""
 
@@ -102,9 +89,7 @@ _filter() {
 # takes ~9s for its 905k files, which is worth keeping and worth serving stale.
 _tree() {
     _t_scope=$1; _t_kind=$2
-    # IFS=newline so the ignore flags split on lines and never on a space in a
-    # path; restored immediately, because a global IFS is a trap for every
-    # later expansion in this script.
+    # IFS=newline: ignore flags split on lines, never on a space in a path.
     _t_ifs=$IFS; IFS='
 '
     # shellcheck disable=SC2046
@@ -242,7 +227,7 @@ counts() {
 
 rows() { cat "$1/$2" 2>/dev/null; }
 
-# Lanes that have finished with at least one hit.
+# Lanes with at least one hit.
 _hit_lanes() {
     for _h_l in $LANES_FAST $LANES_SCOPED; do
         [ -s "$1/$_h_l" ] && printf '%s\n' "$_h_l"
@@ -394,128 +379,19 @@ open_row() {
     esac
 }
 
-# ── the ask line ────────────────────────────────────────────────────────────
-#
-# A byte-at-a-time reader rather than `read -r`, and the whole reason is Escape.
-# Under `read` the terminal is in canonical mode and Escape is simply a
-# character that goes into the buffer: the box cannot be dismissed with it, only
-# with Ctrl-C, which is not what anybody presses to back out of a search. Raw
-# mode is what makes a key a key.
-#
-# TRAP: Escape is also the first byte of every arrow, Home, End and function
-# key, so treating a bare 0x1b as cancel would make one stray arrow press throw
-# the query away. The two are told apart the only way a terminal allows — by
-# time. After an Escape the read is switched to a tenth-of-a-second timeout: a
-# byte arriving that fast is the rest of a sequence the terminal sent as one
-# burst, and is swallowed; nothing arriving is a human finger, and cancels.
-ask_line() {
-    [ -t 0 ] || return 0
-    _al_saved=$(stty -g 2>/dev/null)
-    # The trap covers every exit, including the popup being killed from
-    # outside: a terminal left in raw mode with echo off is a dead pane.
-    trap 'stty "$_al_saved" 2>/dev/null' EXIT INT TERM
-    stty raw -echo 2>/dev/null
-
-    _al_buf=""
-    printf '\r  \033[K'
-    while :; do
-        _al_c=$(dd bs=1 count=1 2>/dev/null; printf X); _al_c=${_al_c%X}
-        _al_n=$(printf '%s' "$_al_c" | od -An -tu1 | tr -d ' \n')
-        case ${_al_n:-none} in
-        none) break ;;
-        27)
-            # After an Escape byte, exactly two things can continue a real
-            # escape SEQUENCE: `[` (CSI) or `O` (SS3). Anything else is a
-            # keypress, and the Escape was a keypress too.
-            #
-            # TRAP: the obvious test — "another byte arrived within a tenth of
-            # a second, so this must be a sequence" — is wrong, and it is the
-            # bug that made the box refuse to close. Measured inside a real
-            # popup on 2026-09-01: a single press of Escape can arrive as TWO
-            # bytes, `27 27`. The peek saw the second Escape land instantly,
-            # concluded a sequence had begun, found neither `[` nor `O`, and
-            # discarded both. Timing narrows the question but does not answer
-            # it; the byte that follows does. So the timeout is only used to
-            # tell "nothing follows" from "something follows", and what
-            # follows is then read rather than assumed.
-            _al_p=$(stty -g 2>/dev/null); stty -icanon min 0 time 1 2>/dev/null
-            _al_x=$(dd bs=1 count=1 2>/dev/null; printf X); _al_x=${_al_x%X}
-            stty "$_al_p" 2>/dev/null
-            [ -z "$_al_x" ] && { stty "$_al_saved" 2>/dev/null; printf '\r\033[K'; return 0; }
-            _al_seq=""
-            stty -icanon min 0 time 1 2>/dev/null
-            case $_al_x in
-            '[')
-                # Consume exactly the sequence and not a byte more. Draining
-                # until the input falls quiet is the other obvious version and
-                # it eats the characters typed straight after an arrow, which
-                # arrive inside the same gap. CSI runs to a final byte in @..~.
-                while :; do
-                    _al_y=$(dd bs=1 count=1 2>/dev/null; printf X); _al_y=${_al_y%X}
-                    [ -z "$_al_y" ] && break
-                    _al_seq="$_al_seq$_al_y"
-                    _al_m=$(printf '%s' "$_al_y" | od -An -tu1 | tr -d ' \n')
-                    [ "${_al_m:-0}" -ge 64 ] && [ "${_al_m:-0}" -le 126 ] && break
-                done
-                # CSI-u carries the key as a number, and 27 in that wrapping is
-                # still Escape — belt to the bare-byte braces above.
-                case $_al_seq in
-                27u|27\;*u) stty "$_al_saved" 2>/dev/null; printf '\r\033[K'; return 0 ;;
-                esac
-                stty raw -echo 2>/dev/null ;;
-            O)
-                dd bs=1 count=1 >/dev/null 2>&1
-                stty raw -echo 2>/dev/null ;;
-            *)
-                # Not a sequence introducer. A second Escape is the common
-                # case; Alt+key is the other, and this box binds no Alt key,
-                # so treating either as "the user meant to leave" is both
-                # simpler and what they meant.
-                stty "$_al_saved" 2>/dev/null; printf '\r\033[K'; return 0 ;;
-            esac
-            ;;
-        3)  stty "$_al_saved" 2>/dev/null; printf '\r\033[K'; return 0 ;;
-        10|13) break ;;
-        21) _al_buf="" ;;
-        8|127) _al_buf=${_al_buf%?} ;;
-        *)
-            # Printable only. A control byte that reached here is a key this
-            # box has no meaning for, and appending it would put an invisible
-            # character into the query.
-            [ "$_al_n" -ge 32 ] && _al_buf="$_al_buf$_al_c" ;;
-        esac
-        # Drawn short of the content width on purpose. The popup's pty is one
-        # line; a string long enough to wrap scrolls it, and a scrolled
-        # one-line pty is how the box loses its shape mid-typing. The tail is
-        # what is kept, because the end of what you are typing is the part you
-        # are looking at.
-        _al_show=$_al_buf
-        if [ ${#_al_show} -gt 44 ]; then _al_show="…$(printf '%s' "$_al_show" | tail -c 44)"; fi
-        printf '\r  %s\033[K' "$_al_show"
-    done
-
-    stty "$_al_saved" 2>/dev/null
-    printf '\r\033[K'
-    [ -n "$_al_buf" ] || return 0
-    printf '%s' "$_al_buf" > "$PENDING"
-}
-
 # ── the two stages ──────────────────────────────────────────────────────────
 
 pick_lane() {
     # $1 qdir, $2 query, $3 scope label. Prints the chosen lane, or nothing.
     #
-    # The header repeats the query because the prompt that took it is a separate
-    # popup and has already closed — without it there is nothing on screen
-    # saying what these counts are counting.
+    # The header repeats the query — tmux's command-prompt line is gone by
+    # the time this popup draws, so nothing else says what is being counted.
     #
-    # --watch is what makes everywhere-mode progressive: tv re-runs `counts`
-    # twice a second, so a lane that read "searching…" becomes a count the
-    # moment its file lands, without the list closing or losing what you typed.
-    #
-    # --no-sort keeps the fastest-first order the lane list is written in.
-    # There are at most twelve rows here, so ranking buys nothing, and a list
-    # that reorders itself under a --watch redraw is a list you cannot aim at.
+    # --watch makes everywhere-mode progressive: tv re-runs `counts` twice a
+    # second, so "searching…" becomes a count as each lane's file lands.
+    # --no-sort keeps the fastest-first write order — at most twelve rows, so
+    # ranking buys nothing and a --watch reorder would move the row you were
+    # aiming at.
     tv --source-command "$SELF counts '$(_q "$1")'" \
         --source-output '{}' \
         --watch 0.5 \
@@ -554,11 +430,8 @@ case "${1:-}" in
     scan)    shift; scan "$1" "$2" "$3" < /dev/null; exit 0 ;;
     tree)    shift; tree_rebuild "$1" "$2" "$3" < /dev/null; exit 0 ;;
     preview) shift; preview "$@"; exit 0 ;;
-    # `open` is how the openers get exercised without a human driving a TUI:
-    # hand it a lane and a row and it does exactly what picking that row does.
-    # It exists because the dispatch is the half that can be wrong quietly — a
-    # lane that is missing is visible the moment the list draws, an opener that
-    # splits into the wrong directory is not.
+    # `open` exercises a picked row's dispatch without a human driving the
+    # TUI — an opener splitting into the wrong directory is silent otherwise.
     open)    shift; ORIGIN=${TV_ALL_ORIGIN:?tv-all open: set TV_ALL_ORIGIN}; open_row "$@"; exit 0 ;;
 esac
 
@@ -568,66 +441,39 @@ ORIGIN=${TV_ALL_ORIGIN:-}
 
 mkdir -p "$CACHE" 2>/dev/null
 
-# The query is handed from the ask popup to the run popup through a file named
-# for the pane the key was pressed in. It has to be a file rather than an
-# argument because these are two separate popups: tmux allows exactly one popup
-# per client, so a small bordered prompt and a full-height result list cannot be
-# the same one, and the binding runs them in sequence instead. Naming it for the
-# origin pane keeps two panes searching at once from reading each other's query.
-PENDING="$CACHE/pending-$(printf '%s' "$ORIGIN" | tr -cd 'A-Za-z0-9')"
-
 case "${1:-here}" in
     everywhere) MODE=everywhere; SCOPE=$GLOBAL_ROOT ;;
     *)          MODE=here;       SCOPE=$PWD ;;
 esac
 
-# ── the ask step: one line, in a small popup the binding drew the border on ──
-
-if [ "${2:-}" = "ask" ]; then
-    # Cleared first, so a cancelled prompt cannot leave the previous query
-    # behind for the binding's `test -s` to find and act on.
-    rm -f "$PENDING"
-    ask_line
-    exit 0
-fi
-
-# ── the run step ────────────────────────────────────────────────────────────
-
-[ -s "$PENDING" ] || exit 0
-QUERY=$(cat "$PENDING")
-rm -f "$PENDING"
+# tmux's own command-prompt takes the query now (R7 — no more ask popup, no
+# pending file, no raw-mode reader): the F3/S-F3 bindings pass it as %1,
+# which lands here as $2. Escape at the prompt runs nothing, so an empty
+# $QUERY only happens on a bare Enter.
+QUERY=${2:-}
+[ -n "$QUERY" ] || exit 0
 
 case $MODE in
     everywhere) LABEL="everywhere — $(printf '%s' "$GLOBAL_ROOT" | sed "s|^$HOME|~|")" ;;
     *)          LABEL="here — $(printf '%s' "$PWD" | sed "s|^$HOME|~|")" ;;
 esac
 
-# Every search leaves a directory of row files behind, and a broad `text` lane
-# is megabytes of them. Without this they accumulate for the life of the
-# machine — the tree caches are bounded and rewritten in place, but the query
-# dirs are one per distinct query and nothing else would ever remove them.
-# Pruned on the way in rather than on the way out, because the way out is a
-# popup closing and is not guaranteed to run at all.
+# Query dirs are one per distinct query and nothing else removes them; a
+# broad `text` lane is megabytes, so pruned here rather than on exit, which
+# a popup closing is not guaranteed to run.
 find "$CACHE" -maxdepth 1 -name 'q-*' -type d -mmin +60 -exec rm -rf {} + 2>/dev/null
-# And the handoff files, which outlive their pane only when the second popup
-# never ran at all — a killed client, say. Harmless but not tidy, and a pane
-# id is never reused so nothing can ever read one of these again.
-find "$CACHE" -maxdepth 1 -name 'pending-*' -type f -mmin +60 -delete 2>/dev/null
 
 QDIR="$CACHE/q-$(_hash "$SCOPE|$QUERY")"
 rm -rf "$QDIR" 2>/dev/null
 mkdir -p "$QDIR" 2>/dev/null
 
-# Detached, so the scan outlives this shell: the popup closes the moment a row
-# is picked, and a slow lane still writing its file must not be killed halfway
-# through — the cache it is filling is what makes the next search fast.
+# Detached: the popup can close the instant a row is picked without killing a
+# slow lane mid-write, since that cache is what makes the next search fast.
 nohup "$SELF" scan "$QDIR" "$SCOPE" "$QUERY" >/dev/null 2>&1 &
 
-# A short budget for the scan to finish outright. Here-mode nearly always beats
-# it — a repository answers every lane in about half a second — and when it
-# does the count list is complete, so it can be acted on rather than merely
-# watched. Everywhere-mode never beats it, which is the point: the list opens
-# unfinished and fills in.
+# A budget for the scan to finish outright — here-mode nearly always does
+# (~0.5s per repo); everywhere-mode never does, and the list opens unfinished
+# on purpose.
 _i=0
 while [ "$_i" -lt 15 ] && [ ! -f "$QDIR/.done" ]; do sleep 0.1; _i=$((_i + 1)); done
 

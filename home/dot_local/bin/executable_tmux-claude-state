@@ -1,0 +1,29 @@
+#!/bin/sh
+# tmux-claude-state <state> — a Claude Code hook reports its pane's state and
+# the window digit wears it. No argument clears. Wired into
+# ~/.claude/settings.json by run_after_install-claude-hooks.sh; the colours are
+# `@claude-tint` in tmux.conf. manual → internals/tmux, "The digit wears Claude's state".
+#
+# WHY A PANE OPTION AND NOT A WINDOW ONE. The tab is per window but the report
+# is per pane, and one window holds a Claude beside a shell often enough. A pane
+# option dies with its pane, so a Claude that is killed rather than exited
+# leaves nothing behind; a window option would outlive it and strand the digit
+# in a colour with no process left to clear it.
+#
+# TRAP: every path exits 0 and every tmux call is quiet. Claude Code shows a
+# hook's stderr and non-zero exit to the human, so a pane outside tmux — or a
+# server that went away mid-session — has to fail silently rather than print a
+# red line on every single turn.
+[ -n "${TMUX_PANE:-}" ] || exit 0
+
+if [ -n "${1:-}" ]; then
+    tmux set -p -t "$TMUX_PANE" @claude "$1" 2> /dev/null
+else
+    tmux set -pu -t "$TMUX_PANE" @claude 2> /dev/null
+fi
+
+# TRAP: without this the bar waits for `status-interval`, so a turn that ends in
+# under five seconds goes green after it has already finished — which reads as a
+# broken hook rather than a slow one.
+tmux refresh-client -S 2> /dev/null
+exit 0

@@ -1,26 +1,6 @@
-# tinty (Tinted Theming) — the engine behind the `theme` switcher (theme.nu).
-# `tinty apply` is the single palette funnel: this file is what makes an apply
-# propagate to every reader. The tinted-shell item emits OSC sequences into
-# the pane the hook ran in; the hook then runs tmux-colors.sh, which does the
-# two things that pane cannot.
-#
-# 07-multiplexer/04-palette-delivery (Q4) replaced wezterm-colors.sh here.
-# The old note in this file was right about the problem — OSC from inside a
-# pane reaches only that pane — and solved it in a way that worked on one
-# emulator on one desk: write ~/.config/wezterm/colors.lua and let WezTerm's
-# reload watch retint every pane. tmux-colors.sh instead writes the OSC
-# straight to every attached client's tty (bypassing the multiplexer, so no
-# passthrough wrapping and no dependence on which terminal it is) and writes
-# ~/.config/tmux/colors.conf for tmux's own surfaces, which are not ANSI
-# slots — base02, the active window label's background, has no slot at all.
-# The result follows an ssh; colors.lua never could.
-#
-# `default-scheme` is the Gruvbox base16 hard scheme, matching WezTerm's
-# builtin fallback, so a fresh checkout with no prior pick lands on a neutral
-# base. The colors.lua generator and `tinty init` resolve the LAST picked
-# scheme (current_scheme) first and fall back to this only when nothing has
-# ever been picked — so the last `theme` choice persists across applies and
-# new shells.
+# tinty (Tinted Theming) — the `theme` switcher's engine. `tinty apply` runs
+# tmux-colors.sh, which fans the scheme out to every reader. manual →
+# internals/tmux, Palette delivery.
 
 default-scheme = "base16-gruvbox-dark-hard"
 shell = "bash -c '{}'"

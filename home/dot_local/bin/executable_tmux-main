@@ -17,41 +17,18 @@
 # `-c` is read only when the session is CREATED; on an attach it is ignored,
 # which is correct — the session keeps the directory it was born with.
 #
-# It is the START DIR rather than $HOME, and that is 04-shell R7: "a new shell
-# opens in the last directory navigated to". `nushell/env.nu` used to do that
-# read itself, on every interactive shell, which meant the `cd` ran after tmux
-# had placed the pane and overwrote it — a split landed wherever any pane had
-# last been, not where it was split from (measured 2026-09-01). The read
-# belongs here instead: once, when the environment comes up, on the one shell
-# that has no parent to inherit from. Every pane after that inherits properly.
+# TRAP: the nu-launch ladder lives in exactly one place, tmux.conf's
+# default-command — this script and tv-all must not re-spell it.
 #
 # The `F5 <digit>` clean slate is unaffected because those binds pass `-c ~`
 # explicitly — checked: no `new-window` in tmux.conf relies on the session
 # directory. Do not add one that does.
 #
 # POSIX sh, not nushell: this runs before nushell exists in the process tree,
-# and on a remote it may run where nushell is not installed at all.
+# and on a remote it may run where nushell is not installed at all. No
+# no-tmux fallback either: if tmux itself is missing the `exec` below fails
+# and the shell says so — env.nu's own no-TMUX branch is the bare-nu path.
 set -u
-
-if ! command -v tmux >/dev/null 2>&1; then
-    # No tmux, no multiplexer — but a terminal that opens and immediately
-    # closes is the worst possible failure here (WezTerm's exit_behavior
-    # leaves a pane you cannot type into). Say why, then hand over the shell
-    # so the machine is still usable while somebody installs tmux.
-    echo "tmux-main: tmux is not installed; falling back to a plain shell." >&2
-    echo "tmux-main: install it — tmux is a hard dependency of this config." >&2
-    # The same three obligations tmux.conf's default-command carries, for
-    # the same reasons: resolve nu on PATH, export XDG_CONFIG_HOME BEFORE the
-    # exec (it is a launch-time constant in nushell — see tmux.conf), and
-    # fall back to a shell that exists rather than to nothing.
-    XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-    export XDG_CONFIG_HOME
-    if command -v nu >/dev/null 2>&1; then
-        exec nu --config "$XDG_CONFIG_HOME/nushell/config.nu" \
-                --env-config "$XDG_CONFIG_HOME/nushell/env.nu"
-    fi
-    exec "${SHELL:-/bin/sh}"
-fi
 
 # Same fallback ladder env.nu had: the recorded directory if it still exists,
 # then ~/dev, then $HOME. `mkcd` is what writes the file.

@@ -1,0 +1,59 @@
+#!/bin/sh
+# tmux-claude-resume — put the session id this pane already printed back on the
+# command line. Bound to `s` in copy mode; see manual → terminal, `F4 s`.
+#
+# WHY A SCRIPT AND NOT A BINDING. tmux can find the text on its own — copy
+# mode's `search-backward` takes an extended regex — but finding it is not the
+# job. The job is getting the id OUT of the scrollback and into the prompt, and
+# a format has no capture groups: `#{copy_cursor_line}` hands over the whole
+# line and there is no way to keep only the part that matched. So the match is
+# made here, where a capture group exists, and the pane is left the finished
+# `cr <id>` line rather than a highlight the human has to retype.
+#
+# TRAP: `-J` on the capture is not optional. A pane narrower than the id wraps
+# it across two rows, and without the join the regex below sees two halves and
+# matches neither — the failure is a gesture that works on a wide pane and
+# silently finds nothing on a split one.
+pane=${1:?pane id}
+
+# Newest first, then dedupe: reversing BEFORE `!seen` is what makes a repeated
+# id keep its most recent occurrence rather than its oldest.
+ids=$(tmux capture-pane -p -J -S - -t "$pane" |
+    sed -nE 's/.*--(resume|continue)[ =]+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}).*/\2/p' |
+    sed '1!G;h;$!d' |
+    awk '!seen[$0]++')
+
+if [ -z "$ids" ]; then
+    tmux display-message -t "$pane" 'no session id in this scrollback'
+    exit 0
+fi
+
+n=$(printf '%s\n' "$ids" | wc -l | tr -d ' ')
+head=$(printf '%s\n' "$ids" | sed -n 1p)
+
+# The cycle. Pressing the gesture again steps one id older, and the memory of
+# where it got to is two pane options — pane-scoped, so two panes cycling at
+# once do not share a cursor. It resets whenever the NEWEST id changes, which
+# is exactly when the pane has printed a session that was not there before:
+# there is no timer and no hook to leave half-armed, which is why the `c` cycle
+# this replaced was retired.
+repeat=0
+i=0
+if [ "$head" = "$(tmux show -pqv -t "$pane" @claude-resume-head)" ]; then
+    repeat=1
+    prev=$(tmux show -pqv -t "$pane" @claude-resume-i)
+    i=$(( (${prev:-0} + 1) % n ))
+fi
+tmux set -pt "$pane" @claude-resume-head "$head"
+tmux set -pt "$pane" @claude-resume-i "$i"
+
+id=$(printf '%s\n' "$ids" | sed -n "$((i + 1))p")
+
+# Ctrl+U only on a repeat, and only because the previous press left its own
+# line staged. Sending it on a first press would eat something the human typed.
+[ "$repeat" = 1 ] && tmux send-keys -t "$pane" C-u
+
+# Typed, not run: which session to resume is a decision, and the gesture stops
+# one key short of making it.
+tmux send-keys -t "$pane" "cr $id"
+tmux display-message -t "$pane" "session $((i + 1))/$n"

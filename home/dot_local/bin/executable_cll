@@ -20,6 +20,10 @@ set -euo pipefail
 
 CATALOG="$HOME/.local/state/litellm/catalog.json"
 CONTEXTS="$HOME/.local/state/litellm/contexts.json"
+PROXY_LOG="$HOME/.local/state/litellm/proxy.log"
+
+proxy_live() { curl -sf --max-time 2 "$LITELLM_BASE/health/liveliness" >/dev/null 2>&1; }
+
 # Claude Code's own aliases, served by the Max plan rather than any provider.
 NATIVE=(opus sonnet haiku fable)
 
@@ -219,9 +223,28 @@ print(json.dumps(sys.stdin.buffer.read().decode("utf-8", "surrogateescape").spli
   exec claude --model "$M" --dangerously-skip-permissions "$@"
 fi
 
-if ! curl -sf --max-time 2 "$LITELLM_BASE/health/liveliness" >/dev/null 2>&1; then
-  echo "cll: LiteLLM proxy is not running on ${LITELLM_BASE#http://} — start it with: litellm-up" >&2
-  exit 1
+# Nothing else starts the proxy: there is no launchd agent, and neither WezTerm
+# nor the shell brings it up — so a first `cll` of the day used to fail with an
+# instruction instead of a session. It starts it here and waits. The first
+# launch pays litellm's import once; every later cll finds it live and falls
+# straight through.
+if ! proxy_live; then
+  [ -f "$HOME/.config/litellm/config.yaml" ] || litellm-gen-config
+  echo "cll: starting litellm on ${LITELLM_BASE#http://} …" >&2
+  mkdir -p "$(dirname "$PROXY_LOG")"
+  nohup litellm-up >>"$PROXY_LOG" 2>&1 </dev/null &
+  # The wait polls liveliness rather than the child it just spawned, because
+  # two cll launches racing both spawn one: the loser dies on the bound port
+  # and says so in the log, while this loop still sees the winner answer.
+  n=0
+  until proxy_live; do
+    n=$((n + 1))
+    if [ "$n" -ge 120 ]; then
+      echo "cll: litellm did not answer within 60s — see $PROXY_LOG" >&2
+      exit 1
+    fi
+    sleep 0.5
+  done
 fi
 
 # --- proxied: its own login profile, so /model can't leak into the Max config -
