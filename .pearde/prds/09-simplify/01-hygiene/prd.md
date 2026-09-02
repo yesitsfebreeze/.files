@@ -21,6 +21,7 @@ footprint:
 # matched no repo for it". A node that deletes a file cannot keep that file in
 # its own footprint and still be collectable. Both deletions are in `b233cc0`.
 workflow: delete-what-nothing-reads
+commit: a82645a
 ---
 
 # 01-hygiene — a known baseline, then the obvious deletions
