@@ -79,20 +79,45 @@ reopened by a later reader:
 
 ## Verify and Proof
 
+**Rewritten by the orchestrator 2026-09-02.** What stood here was a build
+script, not a proof, and it exited 1 on its own second run — which is how
+`collect` found it. Four separate reasons, all of them the same mistake
+(asserting the *act* instead of the *post-state*):
+
+- `grep -c <pattern>` **exits 1 when the count is 0**, and 0 is exactly what
+  success looks like for a rule this spec deletes. Two lines here asserted a
+  deletion in a way that could only ever pass while the deletion had not
+  happened. `grep -c ... ; test "$(...)" = 0` is the form that says it.
+- `git add -A -- ... install ...` names a path deleted by this same spec.
+  Once it is gone and untracked, git answers `fatal: pathspec did not match
+  any files` and stages nothing — the block dies mid-way.
+- `git commit` in a verify block re-commits. On a re-run there is nothing to
+  commit and it exits 1. Committing is `collect`'s job, never a spec's.
+- `chezmoi apply --dry-run ; echo rc=$?` swallows the status into an echo, so
+  a red apply reads as a green line.
+
 ```sh
 cd /Users/feb/dev/dotfiles
-test ! -e install && test ! -e home/dot_config/litellm/create_config.yaml
-git check-ignore .pearde/graphify/cache/x
-git check-ignore .pearde/graphify/x ; test $? -eq 1
-grep -cE '^(\.pi/kern/|vicky/|board|__pycache__/|!\.pearde/wiki/board/)$' .gitignore
-grep -c 'docs-site' .graphifyignore
-just --list ; grep -c cutover justfile
-chezmoi apply --dry-run ; echo "rc=$?"
-ls -l ~/.config/litellm/config.yaml
-ls .pearde/workflows | wc -l
-python3 .claude/skills/pearde/resources/workflows.py list .
-git add -A -- .gitignore .graphifyignore justfile install \
-  home/dot_config/litellm/create_config.yaml
-git commit -m "delete the install duplicate, the generated litellm yaml, the dead ignore rules and the cutover recipe"
-git log -1 --stat
+set -e
+test ! -e install
+test ! -e home/dot_config/litellm/create_config.yaml
+git check-ignore .pearde/graphify/cache/x            # the cache is ignored
+! git check-ignore -q .pearde/graphify/x             # the vault is versioned
+test "$(grep -cE '^(\.pi/kern/|vicky/|board|__pycache__/|!\.pearde/wiki/board/)$' .gitignore || true)" = 0
+test "$(grep -c 'docs-site' .graphifyignore || true)" = 0
+test "$(grep -c cutover justfile || true)" = 0
+recipes=$(just --list)                               # once: `just | grep -q` SIGPIPEs it
+case "$recipes" in *push*) ;; *) exit 1 ;; esac
+case "$recipes" in *manual*) ;; *) exit 1 ;; esac
+chezmoi apply --dry-run
+test -s "$HOME/.config/litellm/config.yaml"          # the generator still owns it
+python3 .claude/skills/pearde/resources/workflows.py list . | grep -c delete-what-nothing-reads >/dev/null
+git add -n .pearde/wiki >/dev/null                   # collect can still name it
+test -z "$(git ls-tree -r HEAD --name-only | grep obsidian-api-key || true)"
 ```
+
+Every line asserts a post-state and is re-runnable. The last two are not from
+the original block and are the two that matter most operationally: `collect`
+git-adds `.pearde/wiki` **by name** and git errors rather than skips when a
+named path is ignored, so an ignore rule there breaks the whole board; and
+the credential must stay out of `HEAD`.
