@@ -1,5 +1,5 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 20        # higher first
@@ -11,8 +11,9 @@ repo:              # the sub-repo the code lands in; delete if n/a
 #                  #   Absent = the brief alone, as before workflows
 time:              # OPTIONAL. See @references/parts/order.md
   est:             # the weight, only when complexity is absent. Not a duration
-  actual:          # a record. Nothing reads it
+  actual: 1.14h
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
+commit: 026c634
 ---
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
      vision importance (priority), and complexity/blast-radius. Add your own
@@ -116,3 +117,9 @@ bindings documented.
 | `02-nvim-plugin` | claudecode.nvim + claude-tmux.nvim in the lazy.nvim stack: `lua/plugins/claude.lua`, snacks.nvim dependency, `<leader>a*` keymaps, Claude Code in a tmux split. | — |
 | `03-tmux-config` | The tmux.conf additions Claude Code needs inside tmux: the extended-keys decision with its reason, and anything else the terminal-config docs require. | 07-multiplexer/01-session-and-windows |
 | `04-help-entries` | `06-help` entries for the new bindings so `help --check` passes. | 02-nvim-plugin |
+
+## Report
+
+container: every child done — pearde collect closes it
+
+children: 08-claude-agent/04-help-entries, 08-claude-agent/01-tmux-mcp, 08-claude-agent/03-tmux-config, 08-claude-agent/02-nvim-plugin
