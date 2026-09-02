@@ -9,34 +9,22 @@ default:
     @just --list
 
 # Publish this repo: stage, commit, push. Git only.
-# This does NOT deploy and does NOT change which repo this machine is
-# deployed from. Deploying is `chezmoi apply`; changing ownership is
-# `just cutover`, and nothing else in this file does it.
-[doc('Stage, commit and push. Git only — does NOT deploy or change ownership.')]
+# This does NOT deploy. Deploying is `chezmoi apply`; this machine is already
+# handed over to this repo (`chezmoi source-path` answers it).
+[doc('Stage, commit and push. Git only — does NOT deploy.')]
 push message="dotfiles: update":
     git -C "{{ repo }}" add --all
     git -C "{{ repo }}" diff --cached --quiet || git -C "{{ repo }}" commit -m "{{ message }}"
     git -C "{{ repo }}" push
 
-# DANGER, one-time and deliberate: hand this machine over to this repo.
-# `chezmoi init --source` rewrites sourceDir in ~/.config/chezmoi/chezmoi.toml,
-# so from here on `chezmoi apply`, `chezmoi update` and `rr` deploy from HERE
-# and no longer from wherever they pointed before. Files the old source
-# managed are not deleted, they simply stop being managed. Until the managed
-# tree is complete this leaves the machine deployed from a repo that carries
-# almost none of it. Type this on purpose.
-[doc('DANGER: hands this machine over to this repo. One-time, deliberate.')]
-cutover:
-    chezmoi init --source "{{ repo }}" --force
-    chezmoi apply --force
-
-# Serve the manual at http://localhost:3000. Regenerates from the .nuon
-# surfaces first, so it always matches what `help` prints in the shell.
-[doc('Serve the searchable manual on :3000.')]
-docs:
-    cd "{{ repo }}/docs-site" && npm run dev
-
-# Regenerate the manual pages from the .nuon surfaces without serving.
-[doc('Regenerate the manual pages from the .nuon surfaces.')]
-docs-generate:
-    cd "{{ repo }}/docs-site" && npm run generate
+# Regenerate the manual's generated halves from the .nuon surfaces that
+# `help` reads, so the pages and the shell cannot disagree. Writes into
+# home/dot_config/nushell/help/manual/{guide,reference}; internals/ is
+# hand-written and untouched.
+#
+# This does NOT deploy. `chezmoi apply` (or `rr`) ships it; `?` reads it.
+# There is no site to serve any more — the manual is markdown, and the
+# search is the `docs` television channel.
+[doc('Regenerate the manual pages from the .nuon surfaces. Does NOT deploy.')]
+manual:
+    node "{{ repo }}/scripts/generate-manual.mjs"

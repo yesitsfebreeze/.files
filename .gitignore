@@ -1,14 +1,8 @@
 # macOS
 .DS_Store
 
-# kern knowledge graph — local database, regenerable
-.pi/kern/
-
 # Obsidian workspace (machine-local state)
 .obsidian/
-
-# vicky knowledge base (local, regenerable)
-vicky/
 
 # claude local state
 .claude/settings.local.json
@@ -23,16 +17,8 @@ vicky/
 .pearde/.plan.json
 .pearde/.view.html
 .pearde/.claims/
-board
-__pycache__/
 
-# The knowledge base and the graph vault ARE versioned — settled by the user
-# 2026-09-02. Only the regenerable parts below are not. The secret that used
-# to sit in .pearde/wiki/ is ignored by .pearde/.gitignore and has been
-# removed from every reachable commit.
+# The knowledge base and the graph vault ARE versioned; only the regenerable
+# cache below is not. The secret that used to sit in .pearde/wiki/ is ignored
+# by .pearde/.gitignore and is gone from every reachable commit.
 .pearde/graphify/cache/
-
-# `board` above is an unanchored pattern, so it swallows .pearde/wiki/board/ —
-# the wiki's own board notes, which are part of what is now tracked. The
-# pattern predates the wiki and is not aimed at it.
-!.pearde/wiki/board/
