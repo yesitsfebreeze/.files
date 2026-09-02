@@ -24,6 +24,7 @@ footprint:
   - home/dot_config/television/cable/cht-query.toml
   - home/dot_config/television/cable/channels.toml
 workflow: simplify-a-nushell-surface-and-deploy-it
+commit: af791b3
 ---
 
 # 04-nushell — built-ins, one append, no tombstones
