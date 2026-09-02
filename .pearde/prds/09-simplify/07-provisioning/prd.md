@@ -23,6 +23,7 @@ footprint:
   - home/dot_config/nushell/help/manual/internals/index.md
   - home/dot_config/nushell/help/manual/internals/neovim.md
 workflow: replace-a-hand-rolled-mechanism
+commit: 6a65c29
 ---
 
 # 07-provisioning — a Brewfile and sixty lines
