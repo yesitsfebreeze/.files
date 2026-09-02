@@ -1,5 +1,5 @@
 ---
-state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 40        # higher first
 complexity: 13      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
@@ -7,7 +7,7 @@ blast-radius: low
 repo:
 time:
   est:
-  actual:
+  actual: 0.46h
 needs:
 footprint:
   - .gitignore
@@ -21,7 +21,6 @@ footprint:
 # matched no repo for it". A node that deletes a file cannot keep that file in
 # its own footprint and still be collectable. Both deletions are in `b233cc0`.
 workflow: delete-what-nothing-reads
-claim: impl-hygiene 2026-09-02 11:26
 ---
 
 # 01-hygiene — a known baseline, then the obvious deletions
@@ -127,3 +126,35 @@ baseline *edited no content*, R1's second sentence. The artifact that would sett
 
 - Any edit inside `home/` beyond the one deletion in R4.
 - The litellm scripts themselves — `08-litellm-out`.
+
+## Report
+
+spec01: exit 0
+     531
+Unstaged changes after reset:
+M	.pearde/prds/09-simplify/01-hygiene/specs/spec02.md
+[main adcd544] the 2026-09-01 tree as it stood, landed before simplification
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+the 2026-09-01 tree as it stood, landed before simplification
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+scripts/generate-manual.mjs
+guide:     14 pages
+  usage          0 blocks  (0 entries)
+  directories    8 blocks  (8 entries)
+  listing        4 blocks  (4 entries)
+  files         11 blocks  (11 entries)
+  history        5 blocks  (5 entries)
+  windows       10 blocks  (10 entries)
+  copy           5 blocks  (6 entries)
+  editing       20 blocks  (20 entries)
+  code           8 blocks  (8 entries)
+  git            2 blocks  (2 entries)
+  containers     7 blocks  (10 entries)
+  agents        21 blocks  (21 entries)
+  appearance     3 blocks  (4 entries)
+  maintaining    6 blocks  (7 entries)
+reference: 9 pages, 116 entries
+node "/Users/feb/dev/dotfiles/scripts/generate-manual.mjs"
+
+spec02: exit 0
+.pearde/graphify/cache/x
