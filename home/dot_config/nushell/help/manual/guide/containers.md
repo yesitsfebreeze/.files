@@ -19,8 +19,7 @@ Two routes to the same thing:
 >
 > The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided. It is one of the four keys the terminal still owns after the multiplexer took the rest: it types into the pane rather than addressing it.
 
-See also: [`Ctrl+Shift+B`](./containers.md#rebuild-capsule) · [`capsule --rebuild`](./containers.md#rebuild-capsule) · [`capsule list`](./containers.md#capsule-list) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)  
-Spec: `prds/01-capsule/01-container-lifecycle/prd.md`
+See also: [`Ctrl+Shift+B`](./containers.md#rebuild-capsule) · [`capsule --rebuild`](./containers.md#rebuild-capsule) · [`capsule list`](./containers.md#capsule-list) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
 
 ## `Ctrl+Shift+B` · `capsule --rebuild`
 
@@ -35,8 +34,7 @@ Two routes to the same thing:
 >
 > The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but that whole pipeline is rated DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here.
 
-See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule) · [`capsule [dir]`](./containers.md#enter-capsule)  
-Spec: `prds/01-capsule/01-container-lifecycle/prd.md`
+See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule) · [`capsule [dir]`](./containers.md#enter-capsule)
 
 ## `Ctrl+Shift+S` · `Ctrl+Shift+O`
 
@@ -51,8 +49,7 @@ Two routes to the same thing:
 >
 > The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting the terminal. The `Recent:` indicator this entry used to promise is gone with the derived status bar: the bar is the multiplexer's now and nothing sets its left side from a picker.
 
-See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule)  
-Spec: `prds/01-capsule/04-recent-workspaces/prd.md`
+See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule)
 
 ## `capsule list`
 
@@ -62,8 +59,7 @@ Spec: `prds/01-capsule/04-recent-workspaces/prd.md`
 
 `capsule list` shows the containers this tool owns and whether each is running or stopped, so you can tell what is still holding resources.
 
-See also: [`capsule clean`](./containers.md#capsule-clean)  
-Spec: `prds/01-capsule/01-container-lifecycle/prd.md`
+See also: [`capsule clean`](./containers.md#capsule-clean)
 
 ## `capsule clean`
 
@@ -73,8 +69,7 @@ Spec: `prds/01-capsule/01-container-lifecycle/prd.md`
 
 `capsule clean` removes capsules you are finished with — the stopped ones, or all of them including the running. Which of the two a bare `capsule clean` does, and what you pass to get the other, is not settled: the specification names both modes and neither invocation. Only containers this tool created are ever touched.
 
-See also: [`capsule list`](./containers.md#capsule-list)  
-Spec: `prds/01-capsule/01-container-lifecycle/prd.md`
+See also: [`capsule list`](./containers.md#capsule-list)
 
 ## Understand how a container gets your credentials
 
@@ -86,8 +81,7 @@ Nothing to run: inside a capsule, `git pull`, `git push` over either protocol, `
 >
 > Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `.gitconfig` is mounted read-only so authorship matches the host. The HTTPS credential is exported from the host's credential helper into a cache directory the container reads as its git credential store — synchronously on create and on `--rebuild`, backgrounded on any attach to an existing capsule, and on either path skipped while every exported file is under 60 seconds old, because the four-file export costs ~1.5s (git's helper 0.75–1.16s, an agent keychain read 0.34–0.50s) — over the whole warm-attach budget. That path is bound as a directory, never file by file: the refresh renames each file into place, so a rotated token reaches an already-running capsule.
 
-See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`cc [...args]`](./agents.md#cc-args) · [`ssh in a capsule`](./containers.md#ssh-in-a-capsule) · [`agents in a capsule`](./agents.md#agents-in-a-capsule)  
-Spec: `prds/01-capsule/03-credential-propagation/prd.md`
+See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`cc [...args]`](./agents.md#cc-args) · [`ssh in a capsule`](./containers.md#ssh-in-a-capsule) · [`agents in a capsule`](./agents.md#agents-in-a-capsule)
 
 ## Understand how SSH works inside a capsule
 
@@ -99,5 +93,4 @@ Nothing to run: inside a capsule, `ssh -T git@github.com`, `git pull` and `git p
 >
 > Keys are copied into a container-local directory rather than used from the read-only mount, because Docker Desktop's file sharing does not carry host permissions into the container in a form ssh accepts. The copy gets the mode each file needs: 700 on the directory, 600 on private keys and the generated config, 644 on `*.pub` (`setup-credentials.sh:59,67,68`). The no-prompt guarantee is `StrictHostKeyChecking accept-new` (`:115`), which accepts an unseen host key once rather than disabling verification the way `no` would. The `ssh-keyscan -T 5` pre-add (`:121-130`) is the optimisation, not the guarantee: it seeds `known_hosts` before the first connection when the network allows it, and `accept-new` covers the connection when it does not.
 
-See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)  
-Spec: `prds/01-capsule/03-credential-propagation/prd.md`
+See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)

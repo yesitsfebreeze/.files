@@ -60,7 +60,7 @@ if $nu.is-interactive {
 
 ── Start dir (R7) ────────────────────────────────────────────────────────── Open every interactive shell in the last directory navigated into by any means (real `cd`, zoxide, picker jump) — `mkcd`, the single funnel, records it in startdir.txt on every move — falling back to ~/dev on a fresh machine.
 
-The startdir.txt path is computed HERE and again in dirstack.nu's `_startdir_file`. That is a deliberate MIRROR, not duplication by accident: env.nu runs before config.nu sources dirstack.nu, so this file cannot call that helper. The two must agree on the XDG_STATE_HOME default, the `nushell` segment and the filename; the gate greps both files and fails if they diverge.
+The startdir.txt path is computed HERE and again in dirstack.nu's `_startdir_file`. That is a deliberate MIRROR, not duplication by accident: env.nu runs before config.nu sources dirstack.nu, so this file cannot call that helper. The two must agree on the XDG_STATE_HOME default, the `nushell` segment and the filename. Nothing checks that they still do, so change one and you must change the other in the same edit — a divergence here loses the start dir silently.
 
 THE GUARD IS `$nu.is-interactive`, AND IT IS NOT THE ONE THE LIVE CONFIG USES. Measured on nushell 0.114.1, 2026-08-21, in this very file, under a real pty allocated by python's `pty.spawn` (so the child genuinely has a terminal — a `/bin/sh -c '[ -t 1 ]'` spawned from inside nu answers yes):
 
@@ -87,9 +87,9 @@ Guarded on the same `$nu.is-interactive` as the start dir (see the measurement t
 
 AND ON `which`, BECAUSE `complete` DOES NOT CATCH A MISSING EXTERNAL. This repo deploys no `ollama-host` — `git ls-files home` carries nothing under `.local/bin` and no package list names it — so on a fresh provision the binary is absent. Measured 2026-08-23 on 0.114.1 under a real pty with it absent, the unguarded `do { ^ollama-host } | complete` printed `nu::shell::external_command` / "Command `ollama-host` not found" at EVERY interactive start AND ABORTED THE REST OF THIS FILE: a `$env.X = ...` appended below this block never ran. The block being LAST is the only reason the visible damage is the message alone — anything appended below it would silently not run.
 
-`complete` is not a presence check, and no redirect makes it one: `^missing e> /dev/null` raises the identical error, because there is no child whose stderr could be redirected. `do --ignore-errors { ^missing } | complete` is worse still — it fails with "Complete only works with external commands". `try { ... }` DOES catch it, which is what makes config.nu's `^bash <artifact>` safe at the PALETTE anchor, but wrapping this probe in `try` would throw away the exit code the next line reads. So the guard is `which`, the same idiom that gates `tinty init` one branch below that artifact.
+`complete` is not a presence check, and no redirect makes it one: `^missing e> /dev/null` raises the identical error, because there is no child whose stderr could be redirected. `do --ignore-errors { ^missing } | complete` is worse still — it fails with "Complete only works with external commands". `try { ... }` DOES catch it, which is what makes config.nu's `^bash <artifact>` safe at the PALETTE anchor, but wrapping this probe in `try` would throw away the exit code the next line reads. So the guard is `which`, the same idiom guarding `tinty init` one branch below that artifact.
 
-COST of the guard, measured the same day in the same shell: 100 lookups of an ABSENT name take 0.49 ms (~5 µs each), 100 of a present one 0.94 ms (~9 µs each). Three orders of magnitude under the ~11 ms spawn it now gates, so it does not dent R9's zero-work startup.
+COST of the guard, measured the same day in the same shell: 100 lookups of an ABSENT name take 0.49 ms (~5 µs each), 100 of a present one 0.94 ms (~9 µs each). Three orders of magnitude under the ~11 ms spawn it guards, so it does not dent R9's zero-work startup.
 
 ## `dirstack.nu`
 
@@ -103,7 +103,7 @@ dirstack.nu — directory-history STATE. Two files under XDG state, and the help
 
 2. startdir.txt — a single line: the last directory moved into, by any means. `mkcd` is the single funnel every move flows through, so it writes this on every move, and env.nu reads it at shell start so a new shell opens wherever navigation last left off.
 
-env.nu READS startdir.txt directly, because env.nu is evaluated before config.nu sources this module and so cannot call `_startdir_file`. Its path computation is a deliberate MIRROR of the one below — same XDG_STATE_HOME default, same `nushell` segment, same filename — and the gate greps both files and fails if they diverge.
+env.nu READS startdir.txt directly, because env.nu is evaluated before config.nu sources this module and so cannot call `_startdir_file`. Its path computation is a deliberate MIRROR of the one below — same XDG_STATE_HOME default, same `nushell` segment, same filename — and nothing checks that the two still agree, so they are changed together or not at all.
 
 This file is `source`d rather than `use`d, and the defs are `export def`, so the names land unprefixed: config.nu needs `_startdir_save` in scope at PARSE time for `mkcd`'s body and `_dirstack_push` in scope for the PWD hook closure. See prds/04-shell/01-core-config/specs/spec02.md.
 
@@ -171,7 +171,7 @@ for.
 
 FOUR LOAD-BEARING DECISIONS, each with its reason:
 
-(1) THE STATE DIRECTORY IS dirstack.nu's `_state_dir`, NOT A SECOND COMPUTATION. dirstack.nu is sourced at config.nu's FUNNEL anchor, well above MODULES, and it exports `_state_dir` precisely so there is exactly one definition of the directory — so the log is `<XDG_STATE_HOME|~/.local/state>/nushell/recents.nuon`. This deliberately DIFFERS from the live config, which computed its own `$env.HOME`-rooted `.../state/finder/` path: on this host `$nu.home-dir` and `$env.HOME` differ under a symlinked TMPDIR (dirstack.nu's own header records it), and a second path computation is the divergence env.nu already has to be gate-pinned against. The COST is that this file does not run standalone under `nu -n` on its own — so quicklist.toml's source command sources dirstack.nu first, exactly as recent-dirs.toml already does for `_dirstack_list`.
+(1) THE STATE DIRECTORY IS dirstack.nu's `_state_dir`, NOT A SECOND COMPUTATION. dirstack.nu is sourced at config.nu's FUNNEL anchor, well above MODULES, and it exports `_state_dir` precisely so there is exactly one definition of the directory — so the log is `<XDG_STATE_HOME|~/.local/state>/nushell/recents.nuon`. This deliberately DIFFERS from the live config, which computed its own `$env.HOME`-rooted `.../state/finder/` path: on this host `$nu.home-dir` and `$env.HOME` differ under a symlinked TMPDIR (dirstack.nu's own header records it), and a second path computation is exactly the divergence env.nu already has to be kept in step by hand. The COST is that this file does not run standalone under `nu -n` on its own — so quicklist.toml's source command sources dirstack.nu first, exactly as recent-dirs.toml already does for `_dirstack_list`.
 
 (2) THE ROW HAS FOUR FIELDS, NOT FIVE. The live log carried a `query` column that was written `""` at every call site and read by nothing. R1 names kind, value, channel, cwd and a timestamp and does not name a query, so the field is dropped. The cable's display template indexes (0 kind, 1 value, 2 cwd, 3 channel) are unchanged by the drop.
 
@@ -217,7 +217,7 @@ def _z_no_zoxide [] {
 
 zoxide.nu — zoxide navigation (04-shell/03): the z/zi wrappers, the composed verbs zz/zl/zc, and the bare-word fallback. Sourced by config.nu at the MODULES anchor.
 
-PARSE ORDER IS LOAD-BEARING, TWICE OVER. Nushell binds a def body's command calls at parse time, so this file must be parsed AFTER the generated zoxide init at the GENERATED anchor (`__zoxide_z` in the def bodies below) and AFTER claude.nu at MODULES (`cc` in `zc`'s body). An unresolved `cc` silently binds to /usr/bin/cc, the C compiler: a reversed MODULES order produces no error at parse and a compiler invocation at runtime. tests/shell-zoxide.sh executes that counterfactual.
+PARSE ORDER IS LOAD-BEARING, TWICE OVER. Nushell binds a def body's command calls at parse time, so this file must be parsed AFTER the generated zoxide init at the GENERATED anchor (`__zoxide_z` in the def bodies below) and AFTER claude.nu at MODULES (`cc` in `zc`'s body). An unresolved `cc` silently binds to /usr/bin/cc, the C compiler: a reversed MODULES order produces no error at parse and a compiler invocation at runtime. Reverse the two anchors and type `zc` if you want to watch it happen.
 
 THE RECENTS SEAM, NOW CLOSED (04-shell/07-quicklist): the real logger lives in recents.nu, sourced above this file at MODULES, and the four `_recents_add` call sites below re-bind to it at parse. The no-op shim this file used to carry is GONE — it existed only because an unresolved name binds as an EXTERNAL and would fail at runtime on every jump, which is a hazard only while the logger does not exist. Sourcing recents.nu above this file is the same mechanism the live config used (finder.nu sourced before the wrappers); recents.nu is its own module, and not quicklist.nu, because quicklist.nu's runner calls into finder.nu and so must be sourced BELOW it, on the other side of this file.
 
@@ -311,7 +311,7 @@ bail only on real path operators — a leading '/' or '~', any embedded '/' (so 
 if (which zoxide | is-empty) { return }
 ```
 
-candidate navigation: ask zoxide directly, jump only on a genuine dir match. SILENTLY, unlike the three user-invoked sites above (R2): nothing asked for zoxide here — this closure fires on EVERY unresolvable bare word — so a missing binary must leave the shell's OWN unknown-command error as the only thing printed. Measured 2026-08-23 with zoxide absent: two typos in one session produced FOUR error boxes unguarded, the first of each pair quoting this file and even offering the generated init's jump function as a did-you-mean, and the string `zoxide` appeared 8 times in the transcript; with the guard it is two boxes, both the shell's own, and the string `zoxide` appears NOT ONCE. (The name of that function is kept out of this body on purpose: absences_ok in tests/shell-zoxide.sh asserts it appears nowhere here, because its empty no-match hand-off is the M-8 route to HOME.)
+candidate navigation: ask zoxide directly, jump only on a genuine dir match. SILENTLY, unlike the three user-invoked sites above (R2): nothing asked for zoxide here — this closure fires on EVERY unresolvable bare word — so a missing binary must leave the shell's OWN unknown-command error as the only thing printed. Measured 2026-08-23 with zoxide absent: two typos in one session produced FOUR error boxes unguarded, the first of each pair quoting this file and even offering the generated init's jump function as a did-you-mean, and the string `zoxide` appeared 8 times in the transcript; with the guard it is two boxes, both the shell's own, and the string `zoxide` appears NOT ONCE. (The name of the generated init's jump function is kept out of this body on purpose — its empty no-match hand-off is the M-8 route to HOME — so a grep of the source finds it only if that route has been reopened.)
 
 ```
 _dirstack_push $env.PWD
@@ -337,9 +337,9 @@ $env.config.hooks.pre_prompt = (
 def _hist_cwd [] {
 ```
 
-history.nu — directory-scoped history: the shared cwd query, the local Ctrl-R picker and the inline Up/Down cycle. Covers 04-shell/05-history R1–R3. DEFS ONLY: the six keybinding records live at config.nu's KEYBINDINGS anchor — that anchor's last-entry-wins promise is this node's R5 — no hook is appended and the config record is never written here, so the file parses standalone under `nu -n`. The gate greps this file for a config write, so the record's name is kept out of this comment entirely and a hit is proof of a regression.
+history.nu — directory-scoped history: the shared cwd query, the local Ctrl-R picker and the inline Up/Down cycle. Covers 04-shell/05-history R1–R3. DEFS ONLY: the six keybinding records live at config.nu's KEYBINDINGS anchor — that anchor's last-entry-wins promise is this node's R5 — no hook is appended and the config record is never written here, so the file parses standalone under `nu -n`. The name of the config record is kept out of this comment entirely, so a grep of the source finds a config write here only if one has been added.
 
-THE DB PATH IS `$nu.history-path`, NEVER A LITERAL. Measured 2026-08-22 on the pinned 0.114.1: the constant honours XDG_CONFIG_HOME from the LAUNCH environment (env.nu's own assignment runs too late to move it) and follows the loaded config's history.file_format; under `env -i` with no XDG set it is ~/Library/Application Support/nushell/history.sqlite3. The live config's hardcoded path worked only because the LIVE wezterm.lua exports XDG_CONFIG_HOME — a line the repo's wezterm.lua deliberately omits — so a literal here would silently query a db no keystroke ever updates. The constant is the file reedline actually reads and writes, wherever the terminal's env puts it. The gate greps this file for the live literal spelling, so it is kept out entirely and a hit is proof of a regression.
+THE DB PATH IS `$nu.history-path`, NEVER A LITERAL. Measured 2026-08-22 on the pinned 0.114.1: the constant honours XDG_CONFIG_HOME from the LAUNCH environment (env.nu's own assignment runs too late to move it) and follows the loaded config's history.file_format; under `env -i` with no XDG set it is ~/Library/Application Support/nushell/history.sqlite3. The live config's hardcoded path worked only because the LIVE wezterm.lua exports XDG_CONFIG_HOME — a line the repo's wezterm.lua deliberately omits — so a literal here would silently query a db no keystroke ever updates. The constant is the file reedline actually reads and writes, wherever the terminal's env puts it. The live literal spelling is kept out of this comment entirely, so a grep of the source finds it only if a literal has come back.
 
 ALT-R'S TARGET IS NOT DEFINED HERE. `tv_shell_history` comes from the generated television init (`tv init nu`, written at apply time by home/run_after_generate-shell-init.sh, whose comment names this node). The `nu-history` cable channel behind it — the sqlite-aware override — belongs to 04-shell/04-television, which depends on this node and owns that file. Until it lands, Alt-R runs tv's builtin nu-history channel: degraded content, correct wiring. The cwd query, shared by the picker and the inline cycle (R1): this directory's distinct commands, newest use first, capped at 5000.
 
@@ -472,7 +472,7 @@ def _finder_parse [raw: string] {
 let known = ["ctrl-p" "ctrl-b" "ctrl-n" "ctrl-r" "ctrl-o" "enter" "esc"]
 ```
 
-`ctrl-o` is 06-help/03-browser's key (the `manual` channel's "open the entry's PRD"). It has to be HERE and not only in that runner: with an unknown head the else-branch below returns the pressed key AS THE FIRST ENTRY, so the browser's ctrl-o would silently print the detail for a nonexistent entry instead of opening anything.
+`ctrl-o` was 06-help/03-browser's key — the `manual` channel's "open the entry's PRD". **That channel was deleted on 2026-09-02 and nothing binds `ctrl-o` any more**, so this list entry is dead: no runner passes `--expect ctrl-o`, and a key nobody expects is never the head of a row block. It is left in `known` rather than removed because the reason it had to be here is the live constraint and outlives the key — with an unknown head, the else-branch below returns the pressed key AS THE FIRST ENTRY, so any `--expect`ed key missing from this list silently yields a detail render for a nonexistent entry instead of opening anything. Add a key here in the same change that binds it.
 
 ```
 def _finder_decode [stage] {
@@ -766,7 +766,7 @@ def _llm_rows [] {
 
 litellm — one launcher across every model provider we can reach.
 
-`cll` picks a model and starts Claude Code on it; `llm` is the catalogue and `llm quota` the balances. The heavy lifting lives in ~/.local/bin/{cll,llm-quota} so non-nu callers and the gate script share one implementation — this module is the interactive skin: the fuzzy picker and tab-completion.
+`cll` picks a model and starts Claude Code on it; `llm` is the catalogue and `llm quota` the balances. The heavy lifting lives in ~/.local/bin/{cll,llm-quota} so every non-nu caller shares one implementation — this module is the interactive skin: the fuzzy picker and tab-completion.
 
 The picker is `input list --fuzzy`, the same one `_claude_login` uses for the cc profile list, so fzf stays where it belongs (zoxide's zi/cdi). Catalogue rows decorated with the balance of whichever provider serves first. A model is only as usable as the credit behind it, so the number rides along.
 

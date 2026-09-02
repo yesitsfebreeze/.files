@@ -18,8 +18,7 @@ Press `Ctrl-R`: a picker opens over the commands you have run *in this directory
 >
 > Directory-scoped is the default because a command worth repeating is nearly always one you ran here; the global list is one modifier away. The sqlite store runs with `isolation: false` so every pane contributes to one merged history.
 
-See also: [`Alt-R`](./history.md#alt-r) · [`Up / Down`](./history.md#up-down)  
-Spec: `prds/04-shell/05-history/prd.md`
+See also: [`Alt-R`](./history.md#alt-r) · [`Up / Down`](./history.md#up-down)
 
 ## `Alt-R`
 
@@ -33,8 +32,7 @@ Press `Alt-R` for television's own shell-history picker over every command from 
 >
 > `Alt`, not `Ctrl-Shift`. The kitty keyboard protocol stays off — it leaks `^[[?0u` through the WezTerm pty — and without it shift is indistinguishable on a control+letter chord, so `Ctrl-Shift-R` would arrive as plain `Ctrl-R` and shadow the local picker.
 
-See also: [`Ctrl-R`](./history.md#ctrl-r) · [`Shift+Up / Shift+Down`](./history.md#shift-up-shift-down)  
-Spec: `prds/04-shell/05-history/prd.md`
+See also: [`Ctrl-R`](./history.md#ctrl-r) · [`Shift+Up / Shift+Down`](./history.md#shift-up-shift-down)
 
 ## `Up / Down`
 
@@ -48,8 +46,7 @@ With the cursor on the command line, `Up` walks back through this directory's co
 >
 > Both keys try `menuup`/`menudown` first in an `until` chain, so with a completion menu open the arrows still navigate the menu. And these bindings are appended *after* television's generated init, because reedline resolves last-entry-wins and tv's own Ctrl-R would otherwise take the key.
 
-See also: [`Shift+Up / Shift+Down`](./history.md#shift-up-shift-down) · [`Ctrl-R`](./history.md#ctrl-r)  
-Spec: `prds/04-shell/05-history/prd.md`
+See also: [`Shift+Up / Shift+Down`](./history.md#shift-up-shift-down) · [`Ctrl-R`](./history.md#ctrl-r)
 
 ## `Shift+Up / Shift+Down`
 
@@ -59,8 +56,7 @@ Spec: `prds/04-shell/05-history/prd.md`
 
 Hold shift with the arrows for reedline's own global traversal — the same inline stepping, ignoring which directory you are in. Use it when the command you want was run somewhere else.
 
-See also: [`Up / Down`](./history.md#up-down) · [`Alt-R`](./history.md#alt-r)  
-Spec: `prds/04-shell/05-history/prd.md`
+See also: [`Up / Down`](./history.md#up-down) · [`Alt-R`](./history.md#alt-r)
 
 ## `Ctrl-Q`
 
@@ -70,5 +66,4 @@ Spec: `prds/04-shell/05-history/prd.md`
 
 Press `Ctrl-Q` for one list of everything recent across every channel — jumps, files opened via `z`, finder picks — newest first. `enter` opens it by type. `ctrl-r` replays instead: it cds to the directory the pick was made in and re-runs the channel it came from, so a grep result reopens the same search where you ran it. An empty log prints a hint rather than an empty picker.
 
-See also: [`F3`](./files.md#f3) · [`mkcd`](./directories.md#mkcd)  
-Spec: `prds/04-shell/07-quicklist/prd.md`
+See also: [`F3`](./files.md#f3) · [`mkcd`](./directories.md#mkcd)

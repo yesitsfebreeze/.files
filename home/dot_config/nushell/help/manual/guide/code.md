@@ -18,8 +18,6 @@ The language server does the heavy lifting and Neovim's own built-in keys drive 
 >
 > `<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode.
 
-Spec: `prds/03-editor/05-completion/prd.md`
-
 ## `<BS> and <CR> (autopairs)`
 
 **Delete a bracket pair, and let Enter fall through to it**
@@ -31,8 +29,6 @@ Spec: `prds/03-editor/05-completion/prd.md`
 > **Why it is this way**
 >
 > Both keys look like they belong entirely to completion, and only one does. blink.cmp maps `<CR>` to `{"accept", "fallback"}`: `fallback` means "run whatever `<CR>` did before blink.cmp claimed it", and because autopairs sets up first in load order, that prior mapping is autopairs' own bracket-expand handler — so the expand survives, but only through blink.cmp's fallback chain, and only while no menu is open. `<BS>` has no such chain: it is the one map autopairs sets that nothing else claims, so its default wins outright.
-
-Spec: `prds/03-editor/12-small-plugins/prd.md`
 
 ## `gd and gI`
 
@@ -46,8 +42,7 @@ Spec: `prds/03-editor/12-small-plugins/prd.md`
 >
 > These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`.
 
-See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)  
-Spec: `prds/03-editor/09-lsp/prd.md`
+See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)
 
 ## `Neovim's own LSP keys`
 
@@ -59,10 +54,9 @@ Spec: `prds/03-editor/09-lsp/prd.md`
 
 > **Why it is this way**
 >
-> Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that plugin- and core-provided maps are allowlisted out of the drift check rather than documented.
+> Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you.
 
-See also: [`gd and gI`](./code.md#gd-and-gi) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)  
-Spec: `prds/03-editor/09-lsp/prd.md`
+See also: [`gd and gI`](./code.md#gd-and-gi) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)
 
 ## `<leader>rn and <leader>ca`
 
@@ -72,8 +66,7 @@ Spec: `prds/03-editor/09-lsp/prd.md`
 
 `<leader>rn` renames across the project — type the new name, enter. `<leader>ca` offers the actions the server has for the thing under the cursor. Both are buffer-local, so they appear once a server attaches.
 
-See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`gd and gI`](./code.md#gd-and-gi)  
-Spec: `prds/03-editor/09-lsp/prd.md`
+See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`gd and gI`](./code.md#gd-and-gi)
 
 ## `<leader>cf`
 
@@ -87,8 +80,6 @@ Press `<leader>cf` and the buffer formats asynchronously. You rarely need it: sa
 >
 > Prettier is the markdown formatter because it aligns table pipes, but prose must stay exactly as wrapped: these files are hand-wrapped at ~78 columns and reflowing them would churn every diff. On-save formatting gives up after 500 ms rather than blocking the write.
 
-Spec: `prds/03-editor/07-formatting/prd.md`
-
 ## `<leader>t`
 
 **Work with markdown tables**
@@ -101,8 +92,7 @@ In a markdown buffer, table mode is already on: type a row and the pipes realign
 >
 > Table mode is switched on by a FileType autocmd, not by the plugin itself: `vim-table-mode` ships inactive and needs `TableModeEnable` per buffer. Without the autocmd only the file you opened nvim with would align, and every markdown buffer you `:edit` afterwards would not.
 
-See also: [`<leader>cf`](./code.md#leader-cf)  
-Spec: `prds/03-editor/15-markdown-tables/prd.md`
+See also: [`<leader>cf`](./code.md#leader-cf)
 
 ## `<leader>ss <leader>sl <leader>sd`
 
@@ -116,5 +106,4 @@ The session for a directory is written automatically when you quit Neovim with a
 >
 > This is what tmux-resurrect brings back after a reboot: it re-launches nvim in the pane's directory with the restore command, and without a written session that pane would come back as an empty editor in the right place. The keys sit on `<leader>s` and not persistence.nvim's documented `<leader>q` because `<leader>q` is already Quit here, and making it a prefix would leave every quit waiting `timeoutlen` for a second key.
 
-See also: [`<leader>w and <leader>q`](./editing.md#leader-w-and-leader-q)  
-Spec: `prds/07-multiplexer/06-nvim-session/prd.md`
+See also: [`<leader>w and <leader>q`](./editing.md#leader-w-and-leader-q)

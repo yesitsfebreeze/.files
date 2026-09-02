@@ -18,8 +18,7 @@ Claude Code starts in the directory you are in and inherits the environment. The
 >
 > With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it.
 
-See also: [`cr [...args]`](./agents.md#cr-args) · [`zc <query>`](./directories.md#zc-query) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)  
-Spec: `prds/04-shell/08-claude-launchers/prd.md`
+See also: [`cr [...args]`](./agents.md#cr-args) · [`zc <query>`](./directories.md#zc-query) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
 
 ## `cr [...args]`
 
@@ -29,8 +28,7 @@ Spec: `prds/04-shell/08-claude-launchers/prd.md`
 
 `cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick.
 
-See also: [`cc [...args]`](./agents.md#cc-args)  
-Spec: `prds/04-shell/08-claude-launchers/prd.md`
+See also: [`cc [...args]`](./agents.md#cc-args)
 
 ## `cll [model]`
 
@@ -38,14 +36,13 @@ Spec: `prds/04-shell/08-claude-launchers/prd.md`
 
 *shell*
 
-Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy with its fallback chain. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves — 1M stays 1M instead of compacting at 200K.
+Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy, which `cll` starts itself when it is down — the first launch of the day waits a few seconds for it, later ones find it live. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves — 1M stays 1M instead of compacting at 200K.
 
 > **Why it is this way**
 >
 > The picker lives in the script rather than in the shell, so every shell gets the same one. An earlier split — a nushell picker calling a script launcher — meant a stale shell called the script with no model at all and fell into a fallback path nothing had ever exercised.
 
-See also: [`llm`](./agents.md#llm) · [`llm quota`](./agents.md#llm-quota)  
-Spec: `prds/04-shell/10-litellm-launcher/prd.md`
+See also: [`llm`](./agents.md#llm) · [`llm quota`](./agents.md#llm-quota)
 
 ## `llm`
 
@@ -59,8 +56,7 @@ Run `llm` for the catalogue as a table: every model, who serves it, and the bala
 >
 > One table rather than a page per provider: choosing a model is a comparison, and a comparison wants rows.
 
-See also: [`cll [model]`](./agents.md#cll-model) · [`llm quota`](./agents.md#llm-quota) · [`llm regen`](./agents.md#llm-regen)  
-Spec: `prds/04-shell/10-litellm-launcher/prd.md`
+See also: [`cll [model]`](./agents.md#cll-model) · [`llm quota`](./agents.md#llm-quota) · [`llm regen`](./agents.md#llm-regen)
 
 ## `llm quota`
 
@@ -74,8 +70,7 @@ Spec: `prds/04-shell/10-litellm-launcher/prd.md`
 >
 > Two kinds of provider, one command: some publish a balance endpoint and some publish nothing at all, and the second kind is why `set` exists rather than an empty column.
 
-See also: [`llm`](./agents.md#llm) · [`cll [model]`](./agents.md#cll-model)  
-Spec: `prds/04-shell/10-litellm-launcher/prd.md`
+See also: [`llm`](./agents.md#llm) · [`cll [model]`](./agents.md#cll-model)
 
 ## `llm regen`
 
@@ -89,8 +84,7 @@ Run `llm regen` after a provider gains or loses models: it rewrites the proxy's 
 >
 > The routing config is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model.
 
-See also: [`llm`](./agents.md#llm) · [`cll [model]`](./agents.md#cll-model)  
-Spec: `prds/04-shell/10-litellm-launcher/prd.md`
+See also: [`llm`](./agents.md#llm) · [`cll [model]`](./agents.md#cll-model)
 
 ## Search with rg, find with fd, pick with tv
 
@@ -102,8 +96,7 @@ Nothing to run — four rules that stop an agent guessing. Search with `rg` and 
 >
 > Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing.
 
-See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · [`cd <path>`](./directories.md#cd-path) · [`zi / cdi`](./directories.md#zi-cdi)  
-Spec: `prds/06-help/05-agent-interface/prd.md`
+See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · [`cd <path>`](./directories.md#cd-path) · [`zi / cdi`](./directories.md#zi-cdi)
 
 ## `help --json`
 
@@ -117,19 +110,7 @@ Spec: `prds/06-help/05-agent-interface/prd.md`
 >
 > The field names are an interface: renaming one is a breaking change and has to be recorded in the agent-interface PRD.
 
-See also: [`help`](./maintaining.md#help) · [`help --md`](./agents.md#help-md)  
-Spec: `prds/06-help/05-agent-interface/prd.md`
-
-## `help --md`
-
-**Write this manual out as markdown**
-
-*shell*
-
-`help --md` prints the whole manual grouped by topic, top-to-bottom readable — for pasting into an issue or writing to a file.
-
-See also: [`help --json`](./agents.md#help-json)  
-Spec: `prds/06-help/05-agent-interface/prd.md`
+See also: [`help`](./maintaining.md#help) · [`idioms`](./agents.md#idioms)
 
 ## Understand how an agent comes up authenticated
 
@@ -141,8 +122,7 @@ Nothing to run: inside a capsule, `claude` and `opencode` both come up already a
 >
 > The Claude and OpenCode tokens are exported from the host's login keychain into a read-only mount, then symlinked into place (`setup-credentials.sh:208-213`, `:224-229`) rather than copied. A writable copy would let the container run its own OAuth refresh, and Claude's refresh rotates the refresh token — so a capsule refreshing on its own would invalidate the host's login. Borrowing the host credential and failing closed is the trade: if the access token expires while a long-lived capsule sits idle, the agent asks to log in, and re-mounting (or running the agent on the host) heals it.
 
-See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule) · [`cc [...args]`](./agents.md#cc-args)  
-Spec: `prds/01-capsule/03-credential-propagation/prd.md`
+See also: [`capsule [dir]`](./containers.md#enter-capsule) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule) · [`cc [...args]`](./agents.md#cc-args)
 
 ## `<leader>x`
 
@@ -152,8 +132,7 @@ Spec: `prds/01-capsule/03-credential-propagation/prd.md`
 
 Press `<leader>x` and pause: which-key lists the Claude maps — `c` toggle, `f` focus, `r` resume, `C` continue, `m` model, `b` add buffer, `s` send selection, `a` accept diff, `d` deny diff. Claude owns this prefix outright; nothing else sits on `x`.
 
-See also: [`<leader>xc`](./agents.md#leader-xc)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xc`](./agents.md#leader-xc)
 
 ## `<leader>xc`
 
@@ -161,14 +140,13 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 *nvim normal*
 
-Press `<leader>xc` to spawn Claude in a split below the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes.
+Press `<leader>xc` to spawn Claude in a split to the right of the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes.
 
 > **Why it is this way**
 >
 > Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `cll` (claudecode's terminal_cmd), so model and proxy routing belong to cll: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what cll does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie).
 
-See also: [`<leader>xf`](./agents.md#leader-xf) · [`cll [model]`](./agents.md#cll-model) · [`cc [...args]`](./agents.md#cc-args)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xf`](./agents.md#leader-xf) · [`cll [model]`](./agents.md#cll-model) · [`cc [...args]`](./agents.md#cc-args)
 
 ## `<leader>xf`
 
@@ -178,8 +156,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xf` to jump into the Claude pane without toggling it — the move when it is already open and you want to type to it.
 
-See also: [`<leader>xc`](./agents.md#leader-xc)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xc`](./agents.md#leader-xc)
 
 ## `<leader>xr`
 
@@ -189,8 +166,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xr` to open the session picker for this directory inside the Claude pane and continue the one you pick — the in-editor twin of `cr` in the shell.
 
-See also: [`<leader>xc`](./agents.md#leader-xc) · [`<leader>xC`](./agents.md#leader-xc) · [`cr [...args]`](./agents.md#cr-args)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xc`](./agents.md#leader-xc) · [`<leader>xC`](./agents.md#leader-xc) · [`cr [...args]`](./agents.md#cr-args)
 
 ## `<leader>xC`
 
@@ -200,8 +176,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xC` to continue the most recent Claude conversation without a picker — where `<leader>xr` asks which one, this just resumes the latest.
 
-See also: [`<leader>xr`](./agents.md#leader-xr)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xr`](./agents.md#leader-xr)
 
 ## `<leader>xm`
 
@@ -211,8 +186,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xm` to pick the model the Claude pane runs on, without leaving the editor. That model choice lives in the pane's own profile, so it survives while the pane is open; the next fresh pane re-picks at spawn through cll. Native models are Claude Code's own, served by the Max plan.
 
-See also: [`<leader>xc`](./agents.md#leader-xc) · [`cll [model]`](./agents.md#cll-model)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xc`](./agents.md#leader-xc) · [`cll [model]`](./agents.md#cll-model)
 
 ## `<leader>xb`
 
@@ -222,8 +196,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xb` in a file buffer to hand that file to Claude as context, so the next prompt starts already knowing what you are looking at.
 
-See also: [`<leader>xs`](./agents.md#leader-xs)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xs`](./agents.md#leader-xs)
 
 ## `<leader>xs`
 
@@ -233,8 +206,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Select text in visual mode and press `<leader>xs` to send exactly the selection to the Claude pane — the way to point at a snippet instead of describing it.
 
-See also: [`<leader>xb`](./agents.md#leader-xb) · [`<leader>xc`](./agents.md#leader-xc)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xb`](./agents.md#leader-xb) · [`<leader>xc`](./agents.md#leader-xc)
 
 ## `<leader>xa`
 
@@ -244,8 +216,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xa` to accept the inline diff Claude proposed for a buffer, keeping the change and closing the diff.
 
-See also: [`<leader>xd`](./agents.md#leader-xd) · [`<leader>xc`](./agents.md#leader-xc)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xd`](./agents.md#leader-xd) · [`<leader>xc`](./agents.md#leader-xc)
 
 ## `<leader>xd`
 
@@ -255,8 +226,7 @@ Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
 
 Press `<leader>xd` to deny the inline diff Claude proposed, restoring the buffer as it was.
 
-See also: [`<leader>xa`](./agents.md#leader-xa)  
-Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+See also: [`<leader>xa`](./agents.md#leader-xa)
 
 ## `pearde [cmd]`
 
@@ -270,5 +240,4 @@ Run `pearde` on its own for the board on one page, `pearde help` for the subcomm
 >
 > This alias is half of a pair and does not work alone. Every subcommand that MOVES a PRD stamps who did it, reading `$env.PEARDE_AS` from env.nu, and refuses outright when it is unset — measured 2026-09-02, `pearde sweep --dry` without it answers `refused — persona:` and does nothing. The alias points at the SOURCE repo, never at the `.claude/skills/pearde` symlink inside a project: every install on this machine links into that one repo, so a project-local path would answer only inside that project.
 
-See also: [`cc [...args]`](./agents.md#cc-args) · [`help --json`](./agents.md#help-json)  
-Spec: `prds/00-delivery/corrections/pearde-shell-wiring/prd.md`
+See also: [`cc [...args]`](./agents.md#cc-args) · [`help --json`](./agents.md#help-json)

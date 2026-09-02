@@ -4,7 +4,7 @@
 
 > Deploying a change, searching the manual, and checking it still tells the truth.
 
-This manual is data, not prose kept beside the code: the shell's `help`, this site, and the drift check all read the same four files. When you add a key, add its entry in the same change — otherwise the check reports it as undocumented.
+This manual is data, not prose kept beside the code: the shell's `help` and the markdown `?` searches both render from the same four files. When you add a key, add its entry in the same change — nothing checks for you.
 
 ## `help`
 
@@ -12,14 +12,13 @@ This manual is data, not prose kept beside the code: the shell's `help`, this si
 
 *shell*
 
-Run `help` alone for the topics and the handful of keys worth knowing first. `help <topic>` gives that topic as a nushell table, so `help find | where key =~ ctrl` composes; `help <entry>` gives one entry in full, with its why and its source PRD. A name this manual does not document but the shell does is handed to nushell's own `std/help` untouched, which is what keeps every `<cmd> --help` working. Whatever is left is searched across the manual, and if that finds nothing the search falls through to `std/help`'s own, so `help <nu-word>` still lands somewhere. `help --all` prints everything.
+Run `help` alone for the topics and the handful of keys worth knowing first. `help <topic>` gives that topic as a nushell table, so `help find | where key =~ ctrl` composes; `help <entry>` gives one entry in full, with its why. A name this manual does not document but the shell does is handed to nushell's own `std/help` untouched, which is what keeps every `<cmd> --help` working. Whatever is left is searched across the manual, and if that finds nothing the search falls through to `std/help`'s own, so `help <nu-word>` still lands somewhere.
 
 > **Why it is this way**
 >
-> Nushell sanctions overriding `help`, which is the constraint the delegation exists for: this command also receives every `<anything> --help` typed in the shell, so it cannot be a manual that happens to be called `help`. Where a name is BOTH a nushell command and an entry here — `ls` is the live example — the manual wins, and winning costs you nothing: a `command` entry's detail ends with that command's own `std/help` output, and `help --entry`, `help --topic` and `help --delegate` address either side explicitly when the name is ambiguous.
+> Nushell sanctions overriding `help`, which is the constraint the delegation exists for: this command also receives every `<anything> --help` typed in the shell, so it cannot be a manual that happens to be called `help`. Where a name is BOTH a nushell command and an entry here — `ls` is the live example — the manual wins; `core-help ls` is the alias that reaches nushell's own, and it is the only way to, because the flags that used to address either side explicitly are gone.
 
-See also: [`help --fuzzy`](./maintaining.md#help-fuzzy) · [`help --check`](./maintaining.md#help-check) · [`help --json`](./agents.md#help-json)  
-Spec: `prds/06-help/02-help-command/prd.md`
+See also: [`?`](./maintaining.md#search-manual) · [`help --json`](./agents.md#help-json)
 
 ## `docs` · `?`
 
@@ -34,34 +33,7 @@ Two routes to the same thing:
 >
 > The manual was a documentation site that had to be built and served before it could be read, which meant it was not read. Markdown under `~/.config/nushell/help/manual`, `rg` and one television channel are the same search with nothing to start — and the file it lands you in is the file you edit.
 
-See also: [`help`](./maintaining.md#help) · [`help --fuzzy`](./maintaining.md#help-fuzzy)  
-Spec: `prds/06-help/06-manual-markdown/prd.md`
-
-## `help --fuzzy`
-
-**Fuzzy-search the manual itself**
-
-*shell*
-
-`help --fuzzy` opens every entry in this manual as a picker; type what you half-remember (`select`, `jump`, `capsule`) and the preview shows the full entry — title, use, why, related. `enter` prints that entry into the scrollback; `ctrl-o` opens the PRD it came from in `$EDITOR`. Without a TTY it degrades to `help <query>`.
-
-See also: [`help`](./maintaining.md#help) · [`F3`](./files.md#f3)  
-Spec: `prds/06-help/03-browser/prd.md`
-
-## `help --check`
-
-**Check the manual against the live configuration**
-
-*shell*
-
-`help --check` introspects the configured shell, Neovim and WezTerm and reports three things: bindings that exist with no entry, entries whose binding is gone, and entries whose text no longer matches the live description. Non-zero exit on any of them, so it can gate a commit. It spawns editors and terminals, so it is slow on purpose and never on the path of plain `help`.
-
-> **Why it is this way**
->
-> This is the only reason the manual can be trusted rather than hoped over. Add a binding without an entry and the check fails; a documented key that stopped existing is the dangerous case, because it sends a reader somewhere that does nothing.
-
-See also: [`help`](./maintaining.md#help)  
-Spec: `prds/06-help/04-drift-check/prd.md`
+See also: [`help`](./maintaining.md#help)
 
 ## `rr`
 
@@ -70,8 +42,6 @@ Spec: `prds/06-help/04-drift-check/prd.md`
 *shell*
 
 `rr` is `chezmoi update --force`: fetch the dotfiles repo and apply it over `~`. Applying twice changes nothing the second time.
-
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 ## `pass <tab>`
 
@@ -84,5 +54,3 @@ Type `pass ` and press Tab: the verbs come up, and so do the live entry names fr
 > **Why it is this way**
 >
 > Nushell ships no completion for pass, so this is an extern signature written by hand — which is also why an undeclared flag has to pass through rather than error.
-
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`

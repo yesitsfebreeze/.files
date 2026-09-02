@@ -2,7 +2,7 @@
 
 # Move around windows, tabs, panes and sessions
 
-> WezTerm's jump mode and the session commands.
+> tmux's jump mode, windows and panes, and the session commands.
 
 Every entry links to where the guide explains it.
 

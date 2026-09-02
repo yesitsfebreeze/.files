@@ -19,8 +19,7 @@ Two routes to the same thing:
 >
 > A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. Leaving by ANY route clears the widen cycle, through a hook rather than through the exit keys — the mode is also entered by the mouse wheel and by `copymode`, and a cycle left half-armed for the next time was the failure the hook exists to prevent. Inside a nested session `F5 F4` sends the literal key down to the inner server, because a root binding is always taken by the outermost one.
 
-See also: [`drag`](./copy.md#drag) · [`Ctrl+C`](./copy.md#ctrl-c)  
-Spec: `prds/07-multiplexer/05-copy-and-clipboard/prd.md`
+See also: [`drag`](./copy.md#drag) · [`Ctrl+C`](./copy.md#ctrl-c)
 
 ## `drag`
 
@@ -34,8 +33,7 @@ Drag across text with the left button and let go — the selection is on the sys
 >
 > The selection belongs to the multiplexer, not the terminal, and it has to: a terminal-level drag across a vertical split runs straight through the divider and takes both panes' columns as one line. Having taken the gesture the multiplexer owes it a clipboard, and that is the part that shipped broken — every stock copy path, the drag-release and both click counts included, pipes to NO command, which fills the multiplexer's own paste buffer and stops. The text highlighted, it looked copied, and `Cmd+V` still pasted whatever was there before. Each path now names the sink explicitly. A program that tracks the mouse itself — the editor, an agent pane — still gets its own clicks.
 
-See also: [`Ctrl+C`](./copy.md#ctrl-c) · [`Ctrl+V`](./copy.md#ctrl-v) · [`F4`](./copy.md#enter-copy-mode)  
-Spec: `prds/07-multiplexer/05-copy-and-clipboard/prd.md`
+See also: [`Ctrl+C`](./copy.md#ctrl-c) · [`Ctrl+V`](./copy.md#ctrl-v) · [`F4`](./copy.md#enter-copy-mode)
 
 ## `Ctrl+C`
 
@@ -49,8 +47,7 @@ In copy mode with something selected, `Ctrl+C` copies it and leaves; with nothin
 >
 > Two bindings in series, and the order is the whole trick. The terminal's reads ITS own selection first and sends the key on when there is none — which under the multiplexer is always, since the multiplexer owns the mouse and the terminal never sees the drag. So the key always arrives, and the multiplexer decides: copy when a selection is present, leave when it is not. Corrected 2026-09-01. This said mouse selection was left to the terminal because the multiplexer's mouse mode was off; the mouse mode is ON and has been, so the terminal's half found nothing to copy and the multiplexer's half was bound to plain `cancel` — the obvious gesture, select and press `Ctrl+C`, threw the selection away and touched no clipboard.
 
-See also: [`Ctrl+V`](./copy.md#ctrl-v) · [`F4`](./copy.md#enter-copy-mode) · [`drag`](./copy.md#drag)  
-Spec: `prds/02-terminal/04-copy-mode/prd.md`
+See also: [`Ctrl+V`](./copy.md#ctrl-v) · [`F4`](./copy.md#enter-copy-mode) · [`drag`](./copy.md#drag)
 
 ## `cf <file>`
 
@@ -64,8 +61,6 @@ Spec: `prds/02-terminal/04-copy-mode/prd.md`
 >
 > It picks `pbcopy`, `wl-copy` or `xclip` by session type and checks the display variables first, so on a headless box it fails fast rather than hanging on a clipboard nobody is listening to.
 
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
-
 ## `Ctrl+V`
 
 **Paste the clipboard into whatever is running**
@@ -78,5 +73,4 @@ Press `Ctrl+V` in any pane — a shell prompt, nvim, a running agent alike — a
 >
 > Bracketed paste is the mechanism: the text arrives wrapped in the escape sequence that marks it as pasted rather than typed, so a program that would reindent or autocomplete every keystroke can tell the two apart. That marker is also the only route clipboard-based dictation has into a terminal. This is the one gesture on this page that is deliberately NOT the multiplexer's, and it is the exception `07-multiplexer` I1 names: only the program sitting in front of the human can read that human's clipboard, so pasting belongs to the terminal by construction and cannot be made portable. Copying can — which is why every copy path here is the multiplexer's and this one is not.
 
-See also: [`Ctrl+C`](./copy.md#ctrl-c)  
-Spec: `prds/02-terminal/04-copy-mode/prd.md`
+See also: [`Ctrl+C`](./copy.md#ctrl-c)

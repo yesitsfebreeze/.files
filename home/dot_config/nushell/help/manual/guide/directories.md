@@ -18,8 +18,7 @@ Type a bare word that is not a command — `dotfiles` — and press enter. If zo
 >
 > The jump happens in `pre_execution` because that is the only hook where a cd persists, and the screen is cleared in `pre_prompt` to bury the command-not-found error that is already on its way. The trigger is deliberately narrow — first token unknown, no shell metacharacters, not path-shaped — so `./x` and `ls | nope` never jump. It queries `zoxide query --exclude $PWD` directly and only jumps on a real hit, because the funnel reads an empty argument as no argument at all and would otherwise take you HOME on every miss.
 
-See also: [`z <query>`](./directories.md#z-query) · [`zz`](./directories.md#zz)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`z <query>`](./directories.md#z-query) · [`zz`](./directories.md#zz)
 
 ## `z <query>`
 
@@ -33,8 +32,7 @@ Type `z` and any part of the path — `z dot` reaches ~/dev/dotfiles. Zoxide pic
 >
 > Every jump goes through the `cd` funnel, so the start dir, the dirstack and the recents log update no matter which route you took. A jump that does not move PWD logs nothing — a failed `z` leaves no trace.
 
-See also: [`zi / cdi`](./directories.md#zi-cdi) · [`zz`](./directories.md#zz) · [`<word>`](./directories.md#word)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`zi / cdi`](./directories.md#zi-cdi) · [`zz`](./directories.md#zz) · [`<word>`](./directories.md#word)
 
 ## `zi / cdi`
 
@@ -48,8 +46,7 @@ Run `zi` — or `cdi`, the same command under the name muscle memory reaches for
 >
 > The exception was granted rather than tolerated: drawing this list from a cable file would mean reimplementing zoxide's frecency ranking inside television, and that ranking is the only reason the list is worth opening. So fzf sits in the required package set as zoxide's dependency, never as a picker anything else may reach for — a second picker outside tv is a new decision, not an appeal to this one. Decided 2026-08-21 (user).
 
-See also: [`z <query>`](./directories.md#z-query)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`z <query>`](./directories.md#z-query)
 
 ## `zz`
 
@@ -59,8 +56,7 @@ Spec: `prds/04-shell/03-zoxide/prd.md`
 
 Run `zz` — it is `cd -`. Run it again to come back. It pairs with the bare-word jump: word, look, `zz`.
 
-See also: [`<word>`](./directories.md#word)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`<word>`](./directories.md#word)
 
 ## `zl <query>`
 
@@ -70,8 +66,7 @@ Spec: `prds/04-shell/03-zoxide/prd.md`
 
 Give it the same query `z` takes, directories only — there is no file-opening branch here, unlike `z`. It runs `la` in the directory it lands in, and because the PWD hook already lists after every interactive move, in a terminal that means you see the listing twice: `zl` adds a listing of its own rather than replacing the hook's.
 
-See also: [`z <query>`](./directories.md#z-query) · [`l / ll / la`](./listing.md#l-ll-la)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`z <query>`](./directories.md#z-query) · [`l / ll / la`](./listing.md#l-ll-la)
 
 ## `zc <query>`
 
@@ -81,8 +76,7 @@ Spec: `prds/04-shell/03-zoxide/prd.md`
 
 Same query as `z`, then `cc` in the directory you land in.
 
-See also: [`z <query>`](./directories.md#z-query) · [`cc [...args]`](./agents.md#cc-args)  
-Spec: `prds/04-shell/03-zoxide/prd.md`
+See also: [`z <query>`](./directories.md#z-query) · [`cc [...args]`](./agents.md#cc-args)
 
 ## `cd <path>`
 
@@ -96,8 +90,7 @@ Point `cd` at a path that is not there and it offers to make it: press `Enter` t
 >
 > `cd` is aliased to the `mkcd` wrapper, which is the single funnel every kind of navigation reaches the shell through.
 
-See also: [`mkcd`](./directories.md#mkcd) · [`z <query>`](./directories.md#z-query)  
-Spec: `prds/04-shell/01-core-config/prd.md`
+See also: [`mkcd`](./directories.md#mkcd) · [`z <query>`](./directories.md#z-query)
 
 ## Understand the one funnel every move goes through
 
@@ -109,5 +102,4 @@ Nothing to run — this is the shape of the shell. Real `cd`, zoxide jumps, pick
 >
 > Because there is exactly one funnel and exactly one reaction point, four things stay true however you moved: the directory is recorded to `startdir.txt` so a new pane opens where you left off, it is pushed onto the dirstack that feeds the recent-dirs picker, the pick is logged to the recents list, and the listing prints. Scatter that per navigation command and one route always ends up forgetting one of the four.
 
-See also: [`cd <path>`](./directories.md#cd-path) · [`<word>`](./directories.md#word) · [`Ctrl-Q`](./history.md#ctrl-q)  
-Spec: `prds/04-shell/prd.md`
+See also: [`cd <path>`](./directories.md#cd-path) · [`<word>`](./directories.md#word) · [`Ctrl-Q`](./history.md#ctrl-q)

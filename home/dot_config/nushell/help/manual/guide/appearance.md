@@ -18,8 +18,7 @@ Run `theme` and the scheme catalog opens in television with the A/B slot pair at
 >
 > Browsing never runs `tinty apply` — the preview is one OSC 11 escape, because an apply per focused row would fire tinty's whole hook chain on every keystroke. The one real apply happens after tv exits, in the live shell, so the hooks see the real environment rather than a stripped television-action subprocess.
 
-See also: [`theme toggle`](./appearance.md#switch-scheme) · [`theme slots`](./appearance.md#theme-slots)  
-Spec: `prds/04-shell/09-theme-switcher/prd.md`
+See also: [`theme toggle`](./appearance.md#switch-scheme) · [`theme slots`](./appearance.md#theme-slots)
 
 ## `theme toggle` · `F6`
 
@@ -34,8 +33,7 @@ Two routes to the same thing:
 >
 > The slots are deliberately A/B, not light/dark: a slot holds whatever was last picked while it was active, and picking in the picker retunes the active slot rather than choosing one — light versus dark is just the common way to use the pair.
 
-See also: [`theme`](./appearance.md#theme) · [`theme slots`](./appearance.md#theme-slots) · [`F5 F5`](./windows.md#f5-f5)  
-Spec: `prds/04-shell/09-theme-switcher/prd.md`, `prds/07-multiplexer/04-palette-delivery/prd.md`
+See also: [`theme`](./appearance.md#theme) · [`theme slots`](./appearance.md#theme-slots) · [`F5 F5`](./windows.md#f5-f5)
 
 ## `theme slots`
 
@@ -45,5 +43,4 @@ Spec: `prds/04-shell/09-theme-switcher/prd.md`, `prds/07-multiplexer/04-palette-
 
 Run `theme slots` to print slot A and slot B with `*` marking the active one; `theme a` or `theme b` activates that slot directly and applies its scheme.
 
-See also: [`theme toggle`](./appearance.md#switch-scheme)  
-Spec: `prds/04-shell/09-theme-switcher/prd.md`
+See also: [`theme toggle`](./appearance.md#switch-scheme)

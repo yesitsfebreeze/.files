@@ -2,7 +2,7 @@
 
 # Change this environment and check it still matches its manual
 
-> Deploying the dotfiles, reading the manual, and the drift check.
+> Deploying the dotfiles and reading the manual.
 
 Every entry links to where the guide explains it.
 
@@ -11,7 +11,6 @@ Every entry links to where the guide explains it.
 | `help` | Read the manual for this environment | shell | [Read the manual and keep it current](../guide/maintaining.md#help) |
 | `docs` | Grep the manual's prose and open it in the editor | shell | [Read the manual and keep it current](../guide/maintaining.md#search-manual) |
 | `?` | Grep the manual's prose and open it in the editor | shell | [Read the manual and keep it current](../guide/maintaining.md#search-manual) |
-| `help --check` | Check the manual against the live configuration | shell | [Read the manual and keep it current](../guide/maintaining.md#help-check) |
 | `rr` | Pull and apply the latest dotfiles | shell | [Read the manual and keep it current](../guide/maintaining.md#rr) |
 | `pass <tab>` | Complete pass subcommands and entry names | shell | [Read the manual and keep it current](../guide/maintaining.md#pass-tab) |
 | `theme` | Pick a colour scheme with a live preview | shell | [Change how it looks](../guide/appearance.md#theme) |

@@ -18,8 +18,7 @@ Plain `ls`. Rows are sorted by type then modified time, so directories group tog
 >
 > The builtin is captured as `core-ls` before being shadowed, because an alias target binds at parse time — without the capture the wrapper would call itself.
 
-See also: [`l / ll / la`](./listing.md#l-ll-la) · [`ls -D`](./listing.md#ls-d)  
-Spec: `prds/04-shell/06-listing/prd.md`
+See also: [`l / ll / la`](./listing.md#l-ll-la) · [`ls -D`](./listing.md#ls-d)
 
 ## `l / ll / la`
 
@@ -29,8 +28,7 @@ Spec: `prds/04-shell/06-listing/prd.md`
 
 `l` is the quick one, `ll` the long form, `la` includes hidden files. `la` is also what runs by itself after every directory change.
 
-See also: [`ls`](./listing.md#ls)  
-Spec: `prds/04-shell/06-listing/prd.md`
+See also: [`ls`](./listing.md#ls)
 
 ## `ls -D`
 
@@ -44,8 +42,7 @@ Add `-D` to swap each directory's inode size for what it actually occupies on di
 >
 > Opt-in only, and it stays that way: a single `node_modules` would stall every listing in the tree if this were the default. It also cannot be spelled `du -sb` — macOS `du` has no `-b`, and the old implementation discarded the error, so every directory silently kept its inode size.
 
-See also: [`ls`](./listing.md#ls)  
-Spec: `prds/04-shell/06-listing/prd.md`
+See also: [`ls`](./listing.md#ls)
 
 ## `y`
 
@@ -54,5 +51,3 @@ Spec: `prds/04-shell/06-listing/prd.md`
 *shell*
 
 `y` is `yazi`, the terminal file manager: move with the arrows or `hjkl`, `Enter` opens a file or descends into a directory, `q` quits back to the shell.
-
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`

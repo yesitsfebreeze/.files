@@ -2,14 +2,8 @@
 -- Why this file is shaped the way it is:
 --   manual → internals/neovim
 
-local checking = vim.env.HELP_CHECK == "1"
-
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  if checking then
-    io.stderr:write("HELP_CHECK: lazy.nvim is not installed at " .. lazypath .. "\n")
-    os.exit(1)
-  end
   local repo = "https://github.com/folke/lazy.nvim.git"
   local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", repo, lazypath })
   if vim.v.shell_error ~= 0 then
@@ -29,8 +23,8 @@ require("lazy").setup({
   },
   defaults = { lazy = false, version = false },
   rocks = { hererocks = false },
-  install = { colorscheme = { "base16-gruvbox-dark-hard" }, missing = not checking },
-  checker = { enabled = not checking, notify = false },
+  install = { colorscheme = { "base16-gruvbox-dark-hard" } },
+  checker = { enabled = true, notify = false },
   change_detection = { notify = false },
   performance = {
     rtp = {

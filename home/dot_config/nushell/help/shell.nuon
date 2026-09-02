@@ -2,15 +2,8 @@
 # Schema, verify kinds and writing rules: see README.md in this directory.
 # Entries are grouped by topic in the order topics.nuon declares.
 #
-# These entries describe the configuration being BUILT, and the keybinding
-# names in `verify` were read off the live nushell config so they are real
-# names rather than invented ones. Four behaviours are documented as they are
-# specified rather than as the live implementation currently does them, all
-# four recorded on the delivery corrections backlog: `ls -D` (the live version
-# uses a `du` flag macOS does not have), the git-log commit decode (dead in
-# the live finder), the recent-dirs channel name, and whether finder picks
-# reach the recents log (they do not yet). If one of them is still wrong when
-# the shell lands, the entry is wrong too — fix both in the same change.
+# These entries describe the shipped configuration. There is no checker: an
+# entry is true because someone deployed the change and used it.
 [
     # ---------------------------------------------------------------- navigate
     {
@@ -23,8 +16,6 @@
         mode: "shell"
         also: ["zi / cdi", "zz", "<word>"]
         why: "Every jump goes through the `cd` funnel, so the start dir, the dirstack and the recents log update no matter which route you took. A jump that does not move PWD logs nothing — a failed `z` leaves no trace."
-        verify: [{kind: "alias", name: "z"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "zi / cdi"
@@ -36,8 +27,6 @@
         mode: "shell"
         also: ["z <query>"]
         why: "The exception was granted rather than tolerated: drawing this list from a cable file would mean reimplementing zoxide's frecency ranking inside television, and that ranking is the only reason the list is worth opening. So fzf sits in the required package set as zoxide's dependency, never as a picker anything else may reach for — a second picker outside tv is a new decision, not an appeal to this one. Decided 2026-08-21 (user)."
-        verify: [{kind: "alias", name: "zi"} {kind: "alias", name: "cdi"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "zz"
@@ -48,8 +37,6 @@
         step: 4
         mode: "shell"
         also: ["<word>"]
-        verify: [{kind: "alias", name: "zz"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "zl <query>"
@@ -60,8 +47,6 @@
         step: 5
         mode: "shell"
         also: ["z <query>", "l / ll / la"]
-        verify: [{kind: "command", name: "zl"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "zc <query>"
@@ -72,8 +57,6 @@
         step: 6
         mode: "shell"
         also: ["z <query>", "cc [...args]"]
-        verify: [{kind: "command", name: "zc"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "<word>"
@@ -85,8 +68,6 @@
         mode: "shell"
         also: ["z <query>", "zz"]
         why: "The jump happens in `pre_execution` because that is the only hook where a cd persists, and the screen is cleared in `pre_prompt` to bury the command-not-found error that is already on its way. The trigger is deliberately narrow — first token unknown, no shell metacharacters, not path-shaped — so `./x` and `ls | nope` never jump. It queries `zoxide query --exclude $PWD` directly and only jumps on a real hit, because the funnel reads an empty argument as no argument at all and would otherwise take you HOME on every miss."
-        verify: [{kind: "prose"}]
-        source: "prds/04-shell/03-zoxide/prd.md"
     }
     {
         cmd: "cd <path>"
@@ -98,8 +79,6 @@
         mode: "shell"
         also: ["mkcd", "z <query>"]
         why: "`cd` is aliased to the `mkcd` wrapper, which is the single funnel every kind of navigation reaches the shell through."
-        verify: [{kind: "alias", name: "cd"}]
-        source: "prds/04-shell/01-core-config/prd.md"
     }
     {
         cmd: "mkcd"
@@ -115,8 +94,6 @@
         # `prose` was wrong here and hid a real handle: this entry describes a
         # concept, but `mkcd` is a command you can type and introspection can
         # see. A concept entry over a real handle should name it.
-        verify: [{kind: "command", name: "mkcd"}]
-        source: "prds/04-shell/prd.md"
     }
     {
         cmd: "ls"
@@ -128,8 +105,6 @@
         mode: "shell"
         also: ["l / ll / la", "ls -D"]
         why: "The builtin is captured as `core-ls` before being shadowed, because an alias target binds at parse time — without the capture the wrapper would call itself."
-        verify: [{kind: "command", name: "ls"}]
-        source: "prds/04-shell/06-listing/prd.md"
     }
     {
         cmd: "ls -D"
@@ -141,8 +116,6 @@
         mode: "shell"
         also: ["ls"]
         why: "Opt-in only, and it stays that way: a single `node_modules` would stall every listing in the tree if this were the default. It also cannot be spelled `du -sb` — macOS `du` has no `-b`, and the old implementation discarded the error, so every directory silently kept its inode size."
-        verify: [{kind: "command", name: "ls"}]
-        source: "prds/04-shell/06-listing/prd.md"
     }
     {
         cmd: "l / ll / la"
@@ -153,8 +126,6 @@
         step: 2
         mode: "shell"
         also: ["ls"]
-        verify: [{kind: "command", name: "l"}, {kind: "command", name: "ll"}, {kind: "command", name: "la"}]
-        source: "prds/04-shell/06-listing/prd.md"
     }
     {
         cmd: "y"
@@ -164,8 +135,6 @@
         task: "listing"
         step: 4
         mode: "shell"
-        verify: [{kind: "alias", name: "y"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
 
     # -------------------------------------------------------------------- find
@@ -181,8 +150,6 @@
         # Two handles, one gesture: the key, and the command it runs. Naming
         # only the key left `quicklist` reported undocumented in the reverse
         # direction while the entry describing it sat right here.
-        verify: [{kind: "keybinding", name: "quicklist"}, {kind: "command", name: "quicklist"}]
-        source: "prds/04-shell/07-quicklist/prd.md"
     }
     {
         cmd: "finder"
@@ -194,8 +161,6 @@
         mode: "shell"
         also: ["F3", "tv channel"]
         why: "Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI."
-        verify: [{kind: "command", name: "finder"}]
-        source: "prds/04-shell/04-television/prd.md"
     }
     {
         cmd: "tv channel"
@@ -207,9 +172,7 @@
         kind: "concept"
         mode: "shell"
         also: ["finder", "F3"]
-        why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `manual` (the manual's own fuzzy browser), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
-        verify: [{kind: "prose"}]
-        source: "prds/04-shell/04-television/prd.md"
+        why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `docs` (every line of the manual's prose, opened in the editor at the hit), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
     }
     {
         cmd: "grep"
@@ -221,20 +184,6 @@
         mode: "shell"
         also: ["F3", "idioms"]
         why: "`rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both."
-        verify: [{kind: "alias", name: "grep"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
-    }
-    {
-        cmd: "help --fuzzy"
-        title: "Fuzzy-search the manual itself"
-        use: "`help --fuzzy` opens every entry in this manual as a picker; type what you half-remember (`select`, `jump`, `capsule`) and the preview shows the full entry — title, use, why, related. `enter` prints that entry into the scrollback; `ctrl-o` opens the PRD it came from in `$EDITOR`. Without a TTY it degrades to `help <query>`."
-        topic: "find"
-        task: "maintaining"
-        step: 3
-        mode: "shell"
-        also: ["help", "F3"]
-        verify: [{kind: "command", name: "help"}]
-        source: "prds/06-help/03-browser/prd.md"
     }
 
     # ----------------------------------------------------------------- history
@@ -248,8 +197,6 @@
         mode: "shell"
         also: ["Alt-R", "Up / Down"]
         why: "Directory-scoped is the default because a command worth repeating is nearly always one you ran here; the global list is one modifier away. The sqlite store runs with `isolation: false` so every pane contributes to one merged history."
-        verify: [{kind: "keybinding", name: "hist_picker_local"}]
-        source: "prds/04-shell/05-history/prd.md"
     }
     {
         key: "Alt-R"
@@ -261,8 +208,6 @@
         mode: "shell"
         also: ["Ctrl-R", "Shift+Up / Shift+Down"]
         why: "`Alt`, not `Ctrl-Shift`. The kitty keyboard protocol stays off — it leaks `^[[?0u` through the WezTerm pty — and without it shift is indistinguishable on a control+letter chord, so `Ctrl-Shift-R` would arrive as plain `Ctrl-R` and shadow the local picker."
-        verify: [{kind: "keybinding", name: "hist_picker_global"}]
-        source: "prds/04-shell/05-history/prd.md"
     }
     {
         key: "Up / Down"
@@ -274,8 +219,6 @@
         mode: "shell"
         also: ["Shift+Up / Shift+Down", "Ctrl-R"]
         why: "Both keys try `menuup`/`menudown` first in an `until` chain, so with a completion menu open the arrows still navigate the menu. And these bindings are appended *after* television's generated init, because reedline resolves last-entry-wins and tv's own Ctrl-R would otherwise take the key."
-        verify: [{kind: "keybinding", name: "hist_up_local"}, {kind: "keybinding", name: "hist_down_local"}]
-        source: "prds/04-shell/05-history/prd.md"
     }
     {
         key: "Shift+Up / Shift+Down"
@@ -286,8 +229,6 @@
         step: 4
         mode: "shell"
         also: ["Up / Down", "Alt-R"]
-        verify: [{kind: "keybinding", name: "hist_up_global"}, {kind: "keybinding", name: "hist_down_global"}]
-        source: "prds/04-shell/05-history/prd.md"
     }
 
     # -------------------------------------------------------------------- edit
@@ -299,8 +240,6 @@
         task: "editing"
         step: 4
         mode: "shell"
-        verify: [{kind: "keybinding", name: "esc_clear"}]
-        source: "prds/04-shell/01-core-config/prd.md"
     }
     {
         cmd: "cat <file>"
@@ -310,8 +249,6 @@
         task: "editing"
         step: 3
         mode: "shell"
-        verify: [{kind: "alias", name: "cat"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     {
         cmd: "nv / vi"
@@ -322,8 +259,6 @@
         step: 1
         mode: "shell"
         also: ["nn"]
-        verify: [{kind: "alias", name: "nv"}, {kind: "alias", name: "vi"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     {
         cmd: "nn"
@@ -334,8 +269,6 @@
         step: 2
         mode: "shell"
         also: ["nv / vi"]
-        verify: [{kind: "alias", name: "nn"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     {
         cmd: "cf <file>"
@@ -346,8 +279,6 @@
         step: 4
         mode: "shell"
         why: "It picks `pbcopy`, `wl-copy` or `xclip` by session type and checks the display variables first, so on a headless box it fails fast rather than hanging on a clipboard nobody is listening to."
-        verify: [{kind: "command", name: "cf"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
 
     # --------------------------------------------------------------------- git
@@ -360,8 +291,6 @@
         step: 1
         mode: "shell"
         also: ["lg"]
-        verify: [{kind: "alias", name: "g"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     {
         cmd: "lg"
@@ -372,8 +301,6 @@
         step: 2
         mode: "shell"
         also: ["g"]
-        verify: [{kind: "alias", name: "lg"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
 
     # ---------------------------------------------------------------- terminal
@@ -385,8 +312,6 @@
         task: "windows"
         step: 7
         mode: "shell"
-        verify: [{kind: "alias", name: "q"}, {kind: "alias", name: ":q"}, {kind: "alias", name: "/exit"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
 
     # ------------------------------------------------------------------ agents
@@ -400,8 +325,6 @@
         mode: "shell"
         also: ["cr [...args]", "zc <query>", "credentials in a capsule"]
         why: "With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it."
-        verify: [{kind: "command", name: "cc"}]
-        source: "prds/04-shell/08-claude-launchers/prd.md"
     }
     {
         cmd: "cr [...args]"
@@ -412,8 +335,6 @@
         step: 2
         mode: "shell"
         also: ["cc [...args]"]
-        verify: [{kind: "command", name: "cr"}]
-        source: "prds/04-shell/08-claude-launchers/prd.md"
     }
     {
         cmd: "help --json"
@@ -423,22 +344,8 @@
         task: "agents"
         step: 8
         mode: "shell"
-        also: ["help", "help --md"]
+        also: ["help", "idioms"]
         why: "The field names are an interface: renaming one is a breaking change and has to be recorded in the agent-interface PRD."
-        verify: [{kind: "command", name: "help"}]
-        source: "prds/06-help/05-agent-interface/prd.md"
-    }
-    {
-        cmd: "help --md"
-        title: "Write this manual out as markdown"
-        use: "`help --md` prints the whole manual grouped by topic, top-to-bottom readable — for pasting into an issue or writing to a file."
-        topic: "agents"
-        task: "agents"
-        step: 9
-        mode: "shell"
-        also: ["help --json"]
-        verify: [{kind: "command", name: "help"}]
-        source: "prds/06-help/05-agent-interface/prd.md"
     }
     {
         cmd: "idioms"
@@ -451,23 +358,19 @@
         mode: "shell"
         also: ["grep", "tv channel", "cd <path>", "zi / cdi"]
         why: "Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing."
-        verify: [{kind: "prose"}]
-        source: "prds/06-help/05-agent-interface/prd.md"
     }
 
     # ------------------------------------------------------------------ config
     {
         cmd: "help"
         title: "Read the manual for this environment"
-        use: "Run `help` alone for the topics and the handful of keys worth knowing first. `help <topic>` gives that topic as a nushell table, so `help find | where key =~ ctrl` composes; `help <entry>` gives one entry in full, with its why and its source PRD. A name this manual does not document but the shell does is handed to nushell's own `std/help` untouched, which is what keeps every `<cmd> --help` working. Whatever is left is searched across the manual, and if that finds nothing the search falls through to `std/help`'s own, so `help <nu-word>` still lands somewhere. `help --all` prints everything."
+        use: "Run `help` alone for the topics and the handful of keys worth knowing first. `help <topic>` gives that topic as a nushell table, so `help find | where key =~ ctrl` composes; `help <entry>` gives one entry in full, with its why. A name this manual does not document but the shell does is handed to nushell's own `std/help` untouched, which is what keeps every `<cmd> --help` working. Whatever is left is searched across the manual, and if that finds nothing the search falls through to `std/help`'s own, so `help <nu-word>` still lands somewhere."
         topic: "config"
         task: "maintaining"
         step: 1
         mode: "shell"
-        also: ["help --fuzzy", "help --check", "help --json"]
-        why: "Nushell sanctions overriding `help`, which is the constraint the delegation exists for: this command also receives every `<anything> --help` typed in the shell, so it cannot be a manual that happens to be called `help`. Where a name is BOTH a nushell command and an entry here — `ls` is the live example — the manual wins, and winning costs you nothing: a `command` entry's detail ends with that command's own `std/help` output, and `help --entry`, `help --topic` and `help --delegate` address either side explicitly when the name is ambiguous."
-        verify: [{kind: "command", name: "help"}]
-        source: "prds/06-help/02-help-command/prd.md"
+        also: ["?", "help --json"]
+        why: "Nushell sanctions overriding `help`, which is the constraint the delegation exists for: this command also receives every `<anything> --help` typed in the shell, so it cannot be a manual that happens to be called `help`. Where a name is BOTH a nushell command and an entry here — `ls` is the live example — the manual wins; `core-help ls` is the alias that reaches nushell's own, and it is the only way to, because the flags that used to address either side explicitly are gone."
     }
     {
         cmd: "docs"
@@ -478,10 +381,8 @@
         step: 2
         does: "search-manual"
         mode: "shell"
-        also: ["?", "help", "help --fuzzy"]
+        also: ["?", "help"]
         why: "The manual was a documentation site that had to be built and served before it could be read, which meant it was not read. Markdown under `~/.config/nushell/help/manual`, `rg` and one television channel are the same search with nothing to start — and the file it lands you in is the file you edit."
-        verify: [{kind: "command", name: "docs"}]
-        source: "prds/06-help/06-manual-markdown/prd.md"
     }
     {
         cmd: "?"
@@ -493,21 +394,6 @@
         does: "search-manual"
         mode: "shell"
         also: ["docs"]
-        verify: [{kind: "alias", name: "?"}]
-        source: "prds/06-help/06-manual-markdown/prd.md"
-    }
-    {
-        cmd: "help --check"
-        title: "Check the manual against the live configuration"
-        use: "`help --check` introspects the configured shell, Neovim and WezTerm and reports three things: bindings that exist with no entry, entries whose binding is gone, and entries whose text no longer matches the live description. Non-zero exit on any of them, so it can gate a commit. It spawns editors and terminals, so it is slow on purpose and never on the path of plain `help`."
-        topic: "config"
-        task: "maintaining"
-        step: 4
-        mode: "shell"
-        also: ["help"]
-        why: "This is the only reason the manual can be trusted rather than hoped over. Add a binding without an entry and the check fails; a documented key that stopped existing is the dangerous case, because it sends a reader somewhere that does nothing."
-        verify: [{kind: "command", name: "help"}]
-        source: "prds/06-help/04-drift-check/prd.md"
     }
     {
         cmd: "rr"
@@ -517,8 +403,6 @@
         task: "maintaining"
         step: 5
         mode: "shell"
-        verify: [{kind: "alias", name: "rr"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     {
         cmd: "pass <tab>"
@@ -535,8 +419,6 @@
         # `{kind: "command", name: "pass"}` was stale in both directions at
         # once: it resolved to nothing, and the completer it should have named
         # was reported undocumented.
-        verify: [{kind: "command", name: "nu-complete pass"}]
-        source: "prds/04-shell/02-aliases-utilities/prd.md"
     }
     # theme switcher (04-shell/09)
     {
@@ -549,8 +431,6 @@
         mode: "shell"
         also: ["theme toggle", "theme slots"]
         why: "Browsing never runs `tinty apply` — the preview is one OSC 11 escape, because an apply per focused row would fire tinty's whole hook chain on every keystroke. The one real apply happens after tv exits, in the live shell, so the hooks see the real environment rather than a stripped television-action subprocess."
-        verify: [{kind: "command", name: "theme"}]
-        source: "prds/04-shell/09-theme-switcher/prd.md"
     }
     {
         cmd: "theme toggle"
@@ -563,8 +443,6 @@
         mode: "shell"
         also: ["theme", "theme slots"]
         why: "The slots are deliberately A/B, not light/dark: a slot holds whatever was last picked while it was active, and picking in the picker retunes the active slot rather than choosing one — light versus dark is just the common way to use the pair."
-        verify: [{kind: "command", name: "theme"}]
-        source: "prds/04-shell/09-theme-switcher/prd.md"
     }
     {
         cmd: "theme slots"
@@ -575,21 +453,17 @@
         step: 3
         mode: "shell"
         also: ["theme toggle"]
-        verify: [{kind: "command", name: "theme"}]
-        source: "prds/04-shell/09-theme-switcher/prd.md"
     }
     {
         cmd: "cll [model]"
         title: "Start Claude Code on a chosen model"
-        use: "Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy with its fallback chain. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves — 1M stays 1M instead of compacting at 200K."
+        use: "Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy, which `cll` starts itself when it is down — the first launch of the day waits a few seconds for it, later ones find it live. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves — 1M stays 1M instead of compacting at 200K."
         topic: "agents"
         task: "agents"
         step: 3
         mode: "shell"
         also: ["llm", "llm quota"]
         why: "The picker lives in the script rather than in the shell, so every shell gets the same one. An earlier split — a nushell picker calling a script launcher — meant a stale shell called the script with no model at all and fell into a fallback path nothing had ever exercised."
-        verify: [{kind: "command", name: "cll"}]
-        source: "prds/04-shell/10-litellm-launcher/prd.md"
     }
     {
         cmd: "llm"
@@ -601,8 +475,6 @@
         mode: "shell"
         also: ["cll [model]", "llm quota", "llm regen"]
         why: "One table rather than a page per provider: choosing a model is a comparison, and a comparison wants rows."
-        verify: [{kind: "command", name: "llm"}]
-        source: "prds/04-shell/10-litellm-launcher/prd.md"
     }
     {
         cmd: "llm quota"
@@ -614,8 +486,6 @@
         mode: "shell"
         also: ["llm", "cll [model]"]
         why: "Two kinds of provider, one command: some publish a balance endpoint and some publish nothing at all, and the second kind is why `set` exists rather than an empty column."
-        verify: [{kind: "command", name: "llm quota"}]
-        source: "prds/04-shell/10-litellm-launcher/prd.md"
     }
     {
         cmd: "llm regen"
@@ -627,8 +497,6 @@
         mode: "shell"
         also: ["llm", "cll [model]"]
         why: "The routing config is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model."
-        verify: [{kind: "command", name: "llm regen"}]
-        source: "prds/04-shell/10-litellm-launcher/prd.md"
     }
     {
         cmd: "pearde [cmd]"
@@ -640,7 +508,5 @@
         mode: "shell"
         also: ["cc [...args]", "help --json"]
         why: "This alias is half of a pair and does not work alone. Every subcommand that MOVES a PRD stamps who did it, reading `$env.PEARDE_AS` from env.nu, and refuses outright when it is unset — measured 2026-09-02, `pearde sweep --dry` without it answers `refused — persona:` and does nothing. The alias points at the SOURCE repo, never at the `.claude/skills/pearde` symlink inside a project: every install on this machine links into that one repo, so a project-local path would answer only inside that project."
-        verify: [{kind: "alias", name: "pearde"}]
-        source: "prds/00-delivery/corrections/pearde-shell-wiring/prd.md"
     }
 ]

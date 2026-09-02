@@ -11,7 +11,6 @@ Every entry links to where the guide explains it.
 | `cc [...args]` | Start Claude in this directory | shell | [Run coding agents](../guide/agents.md#cc-args) |
 | `cr [...args]` | Resume a Claude session in this directory | shell | [Run coding agents](../guide/agents.md#cr-args) |
 | `help --json` | Read this manual as structured data | shell | [Run coding agents](../guide/agents.md#help-json) |
-| `help --md` | Write this manual out as markdown | shell | [Run coding agents](../guide/agents.md#help-md) |
 | `idioms` | Search with rg, find with fd, pick with tv | shell | [Run coding agents](../guide/agents.md#idioms) |
 | `cll [model]` | Start Claude Code on a chosen model | shell | [Run coding agents](../guide/agents.md#cll-model) |
 | `llm` | See every model and what is left on it | shell | [Run coding agents](../guide/agents.md#llm) |

@@ -14,8 +14,7 @@ Almost everything is `g`, which is git. When a diff needs looking at rather than
 
 `g` is `git`: `g status`, `g push`, everything as usual, three characters shorter.
 
-See also: [`lg`](./git.md#lg)  
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+See also: [`lg`](./git.md#lg)
 
 ## `lg`
 
@@ -25,5 +24,4 @@ Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 `lg` in any repo: staging, hunk-level commits, rebases and the log in one terminal UI. Quit with `q`.
 
-See also: [`g`](./git.md#g)  
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+See also: [`g`](./git.md#g)

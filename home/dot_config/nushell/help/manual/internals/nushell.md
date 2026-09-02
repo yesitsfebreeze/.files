@@ -263,33 +263,28 @@ to the macOS Trash — the safety net for a mistyped argument, and the reason
 nothing here reaches for a `trash` wrapper.
 
 It applies to *every* `rm` the shell runs, including the ones inside sourced
-scripts, and that is the trap. `help --check` used to `mktemp` six probe files
-per run and delete them one at a time as it went; under `always_trash` each of
-those deletes was a trash move rather than an unlink, so the sound played
-repeatedly and the probes piled into `~/.Trash`. Reported 2026-09-01 as a check
-that "always makes sounds".
+scripts, and that is the trap. The manual's drift check used to `mktemp` six
+probe files per run and delete them one at a time as it went; under
+`always_trash` each of those deletes was a trash move rather than an unlink, so
+the sound played repeatedly and the probes piled into `~/.Trash`. Reported
+2026-09-01 as a check that "always makes sounds".
 
-Two things came out of that, and the second matters more than the first:
+Two rules came out of that. They outlive the check that surfaced them — it was
+deleted on 2026-09-02 — because the trap is `always_trash`, not the check:
 
 - **`-p` on any `rm` of a path the user did not type.** `capsule.nu`'s
   credential drop is the remaining caller, and it wants `-p` twice over — a
   trashed secret sits readable in `~/.Trash`.
-- **A probe is not garbage, so stop treating cleanup as a step.** `help
-  --check` now writes its six files into one directory, `$nu.temp-dir` /
-  `help-check`, emptied when a run *starts* (`_hc_scratch_reset`) and never
-  cleaned up after it. Nothing accumulates, because the next run clears it;
-  nothing is deleted mid-check, so a failed run leaves its evidence on disk
-  under a name that says what it is (`nvim-maps.json`, `probe.lua`,
-  `tmux.conf`) instead of a `mktemp` string that is already unlinked by the
-  time the error prints. It also removed a file that existed only to be
-  deleted: `mktemp` cannot give you a suffix, so the `.lua` probe was made by
-  `mktemp`ing a base, appending `.lua`, and deleting the base.
-
-The reset is load-bearing beyond tidiness: a fixed path could otherwise hand a
-run the *previous* run's dump to read as its own. Clearing at the start means a
-stale file cannot survive into the run that would read it. The cost is that two
-`help --check` runs at once would share the directory — this is a check a
-person types, not a daemon.
+- **A probe is not garbage, so stop treating cleanup as a step.** Write a
+  run's scratch files into one fixed directory under `$nu.temp-dir` and empty
+  it when the run *starts*, rather than deleting each file as you go. Nothing
+  accumulates, because the next run clears it; nothing is deleted mid-run, so
+  a failed run leaves its evidence on disk under a name that says what it is
+  instead of a `mktemp` string that is already unlinked by the time the error
+  prints. Clearing at the start is what stops a fixed path handing a run the
+  *previous* run's dump to read as its own. The cost is that two runs at once
+  share the directory, which is acceptable for anything a person types and not
+  for a daemon.
 
 ## `mkcd`, the navigation funnel
 

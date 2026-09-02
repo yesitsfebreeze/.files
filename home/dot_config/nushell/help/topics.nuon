@@ -35,7 +35,7 @@
     {
         id: "terminal"
         title: "Move around windows, tabs, panes and sessions"
-        summary: "WezTerm's jump mode and the session commands."
+        summary: "tmux's jump mode, windows and panes, and the session commands."
     }
     {
         id: "agents"
@@ -45,6 +45,6 @@
     {
         id: "config"
         title: "Change this environment and check it still matches its manual"
-        summary: "Deploying the dotfiles, reading the manual, and the drift check."
+        summary: "Deploying the dotfiles and reading the manual."
     }
 ]

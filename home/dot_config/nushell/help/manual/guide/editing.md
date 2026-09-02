@@ -14,8 +14,7 @@ Neovim, with shift-and-arrow selection wired up so it behaves the way every othe
 
 Either name starts nvim. `$EDITOR` and `$VISUAL` are nvim too, so anything that opens an editor for you — the finder, `z` on a file, a commit message — lands in the same place.
 
-See also: [`nn`](./editing.md#nn)  
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+See also: [`nn`](./editing.md#nn)
 
 ## `nn`
 
@@ -25,8 +24,7 @@ Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 `nn` opens `~/notes.md` in nvim, from wherever you are.
 
-See also: [`nv / vi`](./editing.md#nv-vi)  
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+See also: [`nv / vi`](./editing.md#nv-vi)
 
 ## `cat <file>`
 
@@ -36,8 +34,6 @@ Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 `cat <file>` is `bat --paging=never`: highlighted, line-numbered, and it still pipes like `cat` because nothing waits for a key.
 
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
-
 ## `Esc`
 
 **Clear the command line**
@@ -45,8 +41,6 @@ Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 *shell*
 
 Press `Esc` and the command line clears, the way `Ctrl-C` would. It is an unconditional clear with no menu-close branch, so the line goes whether or not a completion or history menu is open — this is not a two-stage escape.
-
-Spec: `prds/04-shell/01-core-config/prd.md`
 
 ## `<leader>`
 
@@ -60,8 +54,6 @@ Press space and pause: which-key lists the groups — `f` find, `b` buffer, `c` 
 >
 > Leader is space, and it is set before any plugin spec is evaluated: a spec that declares `keys = { "<leader>x" }` resolves leader at declaration time, so setting it later silently binds the wrong key.
 
-Spec: `prds/03-editor/12-small-plugins/prd.md`
-
 ## `<leader>w and <leader>q`
 
 **Save and quit**
@@ -69,8 +61,6 @@ Spec: `prds/03-editor/12-small-plugins/prd.md`
 *nvim normal*
 
 `<leader>w` writes the buffer, `<leader>q` quits the window.
-
-Spec: `prds/03-editor/02-keymaps/prd.md`
 
 ## `<S-h> <S-l> <leader>bd`
 
@@ -80,8 +70,7 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 
 `H` and `L` step to the previous and next buffer; `<leader>bd` runs a plain `:bdelete` on the one you are in. The buffer leaves the list — and so does its window: this is the bare command, so a split showing that buffer closes with it rather than falling back to another buffer.
 
-See also: [`<leader>fb`](./files.md#leader-fb)  
-Spec: `prds/03-editor/02-keymaps/prd.md`
+See also: [`<leader>fb`](./files.md#leader-fb)
 
 ## `<C-h> <C-j> <C-k> <C-l>`
 
@@ -91,8 +80,7 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 
 Control plus a vim direction letter moves the cursor to the window that way — no `<C-w>` prefix.
 
-See also: [`<C-Up> <C-Down> <C-Left> <C-Right>`](./editing.md#c-up-c-down-c-left-c-right) · [`<leader>| and <leader>-`](./editing.md#leader-and-leader)  
-Spec: `prds/03-editor/02-keymaps/prd.md`
+See also: [`<C-Up> <C-Down> <C-Left> <C-Right>`](./editing.md#c-up-c-down-c-left-c-right) · [`<leader>| and <leader>-`](./editing.md#leader-and-leader)
 
 ## `<leader>| and <leader>-`
 
@@ -102,8 +90,7 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 
 `<leader>|` splits vertically (the new window is to the right), `<leader>-` splits horizontally (the new window is below). The bar and the dash look like the split they make.
 
-See also: [`<C-h> <C-j> <C-k> <C-l>`](./editing.md#c-h-c-j-c-k-c-l)  
-Spec: `prds/03-editor/02-keymaps/prd.md`
+See also: [`<C-h> <C-j> <C-k> <C-l>`](./editing.md#c-h-c-j-c-k-c-l)
 
 ## `<C-Up> <C-Down> <C-Left> <C-Right>`
 
@@ -113,8 +100,7 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 
 Control plus an arrow resizes by two: up and down change height, left and right change width. Hold it to keep going.
 
-See also: [`<C-h> <C-j> <C-k> <C-l>`](./editing.md#c-h-c-j-c-k-c-l)  
-Spec: `prds/03-editor/02-keymaps/prd.md`
+See also: [`<C-h> <C-j> <C-k> <C-l>`](./editing.md#c-h-c-j-c-k-c-l)
 
 ## `<S-Up> <S-Down> <S-Left> <S-Right>`
 
@@ -128,8 +114,7 @@ Hold shift and press an arrow: from normal mode it starts a selection, from an e
 >
 > The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price.
 
-See also: [`h j k l (visual)`](./editing.md#h-j-k-l-visual) · [`<C-c> (visual)`](./editing.md#c-c-visual)  
-Spec: `prds/03-editor/14-shift-select/prd.md`
+See also: [`h j k l (visual)`](./editing.md#h-j-k-l-visual) · [`<C-c> (visual)`](./editing.md#c-c-visual)
 
 ## `h j k l (visual)`
 
@@ -143,8 +128,7 @@ In a selection that shift started, a plain motion — `h`/`j`/`k`/`l` or an unsh
 >
 > This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim.
 
-See also: [`<S-Up> <S-Down> <S-Left> <S-Right>`](./editing.md#s-up-s-down-s-left-s-right)  
-Spec: `prds/03-editor/14-shift-select/prd.md`
+See also: [`<S-Up> <S-Down> <S-Left> <S-Right>`](./editing.md#s-up-s-down-s-left-s-right)
 
 ## `< and > (visual)`
 
@@ -154,8 +138,6 @@ Spec: `prds/03-editor/14-shift-select/prd.md`
 
 `<` and `>` shift the selection and leave it selected, so you can press `>` four times instead of `4>` and reselecting.
 
-Spec: `prds/03-editor/02-keymaps/prd.md`
-
 ## `<A-j> <A-k>`
 
 **Move a line or a selection up and down**
@@ -163,8 +145,6 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 *nvim normal*
 
 Alt with `j` or `k` drags the current line. In visual mode it drags the whole selection, and the selection stays selected and re-indented for the next press, so you can walk a block through a file.
-
-Spec: `prds/03-editor/02-keymaps/prd.md`
 
 ## `<C-d> <C-u> n N`
 
@@ -176,9 +156,7 @@ Half-page scrolls and search steps re-centre the line you land on, and `n`/`N` a
 
 > **Why it is this way**
 >
-> These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, and the drift check treats a missing `desc` here as intended rather than as a mismatch.
-
-Spec: `prds/03-editor/02-keymaps/prd.md`
+> These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, so the missing `desc` is deliberate rather than an omission.
 
 ## `<Esc>`
 
@@ -192,8 +170,6 @@ Press `Esc` in normal mode to run `:nohlsearch`. Nothing visible happens in this
 >
 > The map and the option have to be decided together or the key is dead, and live bug L-6 decided it the other way round: keep `hlsearch = false` and drop the map. So this documents a binding the rebuild is not meant to carry over.
 
-Spec: `prds/03-editor/02-keymaps/prd.md`
-
 ## `q`
 
 **Close a utility buffer**
@@ -201,8 +177,6 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 *nvim normal*
 
 Press `q` in a help, quickfix, man, lspinfo, checkhealth or startuptime buffer to close it — one key across all six. The buffer is also marked unlisted the moment it opens, so it never turns up under `<S-h>`/`<S-l>` or `:bnext` either.
-
-Spec: `prds/03-editor/03-autocmds/prd.md`
 
 ## `<leader>p (visual)`
 
@@ -216,8 +190,7 @@ Select, then `<leader>p`: the selection is replaced and the register still holds
 >
 > A plain `p` over a selection puts the deleted text into the unnamed register, which is why the second paste always pastes the wrong thing. This deletes into the black hole register first.
 
-See also: [`<C-v> (visual)`](./editing.md#c-v-visual)  
-Spec: `prds/03-editor/02-keymaps/prd.md`
+See also: [`<C-v> (visual)`](./editing.md#c-v-visual)
 
 ## `<C-c> (visual)`
 
@@ -231,8 +204,7 @@ Spec: `prds/03-editor/02-keymaps/prd.md`
 >
 > `clipboard=unnamedplus` is what makes this work in both directions — there is no separate editor clipboard to copy out of.
 
-See also: [`<C-v> (visual)`](./editing.md#c-v-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)  
-Spec: `prds/03-editor/14-shift-select/prd.md`
+See also: [`<C-v> (visual)`](./editing.md#c-v-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)
 
 ## `<C-v> (visual)`
 
@@ -246,5 +218,4 @@ Spec: `prds/03-editor/14-shift-select/prd.md`
 >
 > Note what this costs: `<C-v>` no longer starts visual-block from within a selection. Blockwise select is still `<C-v>` from normal mode.
 
-See also: [`<C-c> (visual)`](./editing.md#c-c-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)  
-Spec: `prds/03-editor/14-shift-select/prd.md`
+See also: [`<C-c> (visual)`](./editing.md#c-c-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)

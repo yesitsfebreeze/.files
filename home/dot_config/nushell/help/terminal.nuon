@@ -57,21 +57,6 @@
         mode: "terminal"
         also: ["F5 <letter>", "F5 <arrow>", "F5 q", "F5 F5"]
         why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. Whether the switcher stays on is read from the window AFTER the jump rather than before it: a pushed table is one-shot, so a binding that does not re-arm is what ends the mode, and the digit is the only key that re-arms — into a second table holding the nine pane letters and Escape and nothing else. `q` is deliberately absent from that second table: after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. A key with no binding in the pushed table is looked up once more in root and dropped if it misses, so the keystroke that ends the wait is swallowed, not typed. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you."
-        verify: [
-            {kind: "tmux-key", key: "F5", mods: "NONE"}
-            {kind: "tmux-key", key: "Escape", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "1", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "2", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "3", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "4", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "5", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "6", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "7", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "8", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "9", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "Escape", mods: "NONE", table: "jump-pane"}
-        ]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F5 <letter>"
@@ -83,27 +68,6 @@
         mode: "terminal"
         also: ["F5 <digit>", "F5 <arrow>", "F5 q", "the status bar"]
         why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The chip rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The chip is shown whenever the window has more than one pane, not only while the switcher is armed — the letter is a property of the pane, not of the mode."
-        verify: [
-            {kind: "tmux-key", key: "a", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "b", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "c", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "d", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "e", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "f", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "g", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "h", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "i", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "a", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "b", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "c", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "d", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "e", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "f", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "g", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "h", mods: "NONE", table: "jump-pane"}
-            {kind: "tmux-key", key: "i", mods: "NONE", table: "jump-pane"}
-        ]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F5 <arrow>"
@@ -115,14 +79,6 @@
         mode: "terminal"
         also: ["F5 <letter>", "F5 <digit>", "F5 q"]
         why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The arrows, digits and letters share one table — one `F5` arms all three — so there is no second key to remember. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: that is the pane process's OS cwd, and nushell's `cd` never changes it, so until 2026-09-01 a split opened in the directory the pane was LAUNCHED in. `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
-        verify: [
-            {kind: "tmux-key", key: "F5", mods: "NONE"}
-            {kind: "tmux-key", key: "Left", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "Right", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "Up", mods: "NONE", table: "jump"}
-            {kind: "tmux-key", key: "Down", mods: "NONE", table: "jump"}
-        ]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F5 q"
@@ -134,10 +90,6 @@
         mode: "terminal"
         also: ["F5 <arrow>", "F5 <letter>", "F5 <digit>"]
         why: "It lives in the switcher's first table and NOT in the pane-letter table a digit arms, which is the whole guard. Pressing `F5` is deliberate, so a `q` straight after it is deliberate too; after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. There is no confirmation prompt because a confirmation is a second gesture on a key whose point is being one, and because tmux keeps nothing to restore a killed pane from — the choice of table is the guard, and it is the only one."
-        verify: [
-            {kind: "tmux-key", key: "q", mods: "NONE", table: "jump"}
-        ]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F5 F5"
@@ -149,10 +101,6 @@
         mode: "terminal"
         also: ["F5 <digit>", "F5 <arrow>", "F6"]
         why: "This key is bound without a prefix, so the outermost session eats it always — which is the portability case biting itself the moment you ssh somewhere that also runs tmux. The double tap needs an explicit binding and does not fall out for free: without it the second press misses in the pushed table, is looked up again in the root table, finds the same key there and silently re-arms the mode. `F6` is deliberately NOT forwardable: the palette belongs to the outermost terminal, because that is the process that owns the colours and reads the escape sequence."
-        verify: [
-            {kind: "tmux-key", key: "F5", mods: "NONE", table: "jump"}
-        ]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         cmd: "the status bar"
@@ -165,8 +113,6 @@
         mode: "terminal"
         also: ["F5 <digit>", "F5 <letter>"]
         why: "Background says which window has focus, foreground says which windows are busy — two signals that never have to be decoded out of one channel. A window counts as busy when any of its panes is running something that is not a shell, read from the pane's foreground process rather than from prompt marking, which is deliberately off. There is no key legend on the bar: the digits are the legend, and a legend in words was tried and removed as noise. The colours are ANSI slots, never fixed values, so a theme switch retints the bar with everything else."
-        verify: [{kind: "prose"}]
-        source: "prds/07-multiplexer/03-status-bar/prd.md"
     }
     {
         cmd: "the session survives"
@@ -179,8 +125,6 @@
         mode: "terminal"
         also: ["the status bar", "F5 <digit>"]
         why: "The session outliving the terminal is free — the server is a separate process and the attach is idempotent, so opening the terminal again is the same gesture as opening it the first time. Surviving a REBOOT is not free and is two plugins: one saves and restores the layout, the other runs the timer. What comes back is the shape of the work — where each pane was, what it was running — and not a copy of its scrollback, which would put the output of every command on disk and grow without bound. Editors come back through the editor's own session file rather than by dropping an untracked file in every project directory."
-        verify: [{kind: "prose"}]
-        source: "prds/07-multiplexer/07-persistence/prd.md"
     }
     {
         key: "F4"
@@ -193,8 +137,6 @@
         mode: "terminal"
         also: ["copymode", "drag", "Ctrl+C"]
         why: "A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. Leaving by ANY route clears the widen cycle, through a hook rather than through the exit keys — the mode is also entered by the mouse wheel and by `copymode`, and a cycle left half-armed for the next time was the failure the hook exists to prevent. Inside a nested session `F5 F4` sends the literal key down to the inner server, because a root binding is always taken by the outermost one."
-        verify: [{kind: "tmux-key", key: "F4", mods: "NONE"}, {kind: "tmux-key", key: "F4", mods: "NONE", table: "jump"}]
-        source: "prds/07-multiplexer/05-copy-and-clipboard/prd.md"
     }
     {
         cmd: "copymode"
@@ -207,8 +149,6 @@
         mode: "shell"
         also: ["F4"]
         why: "One command addressed at the pane it was typed in. It used to print an escape sequence the terminal parsed off the pty, because that was the only route a shell command had into a GUI-only mode; the mode is the multiplexer's now and the multiplexer has a command for it, so the trick is gone."
-        verify: [{kind: "command", name: "copymode"}]
-        source: "prds/07-multiplexer/05-copy-and-clipboard/prd.md"
     }
     {
         key: "drag"
@@ -220,12 +160,6 @@
         mode: "terminal"
         also: ["Ctrl+C", "Ctrl+V", "F4"]
         why: "The selection belongs to the multiplexer, not the terminal, and it has to: a terminal-level drag across a vertical split runs straight through the divider and takes both panes\' columns as one line. Having taken the gesture the multiplexer owes it a clipboard, and that is the part that shipped broken — every stock copy path, the drag-release and both click counts included, pipes to NO command, which fills the multiplexer\'s own paste buffer and stops. The text highlighted, it looked copied, and `Cmd+V` still pasted whatever was there before. Each path now names the sink explicitly. A program that tracks the mouse itself — the editor, an agent pane — still gets its own clicks."
-        verify: [
-            {kind: "tmux-key", key: "MouseDragEnd1Pane", mods: "NONE", table: "copy-mode-vi"}
-            {kind: "tmux-key", key: "DoubleClick1Pane", mods: "NONE"}
-            {kind: "tmux-key", key: "TripleClick1Pane", mods: "NONE"}
-        ]
-        source: "prds/07-multiplexer/05-copy-and-clipboard/prd.md"
     }
     {
         key: "Ctrl+V"
@@ -237,8 +171,6 @@
         mode: "terminal"
         also: ["Ctrl+C"]
         why: "Bracketed paste is the mechanism: the text arrives wrapped in the escape sequence that marks it as pasted rather than typed, so a program that would reindent or autocomplete every keystroke can tell the two apart. That marker is also the only route clipboard-based dictation has into a terminal. This is the one gesture on this page that is deliberately NOT the multiplexer's, and it is the exception `07-multiplexer` I1 names: only the program sitting in front of the human can read that human's clipboard, so pasting belongs to the terminal by construction and cannot be made portable. Copying can — which is why every copy path here is the multiplexer's and this one is not."
-        verify: [{kind: "wezterm-key", key: "v", mods: "CTRL"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "Ctrl+C"
@@ -250,8 +182,6 @@
         mode: "terminal"
         also: ["Ctrl+V", "F4", "drag"]
         why: "Two bindings in series, and the order is the whole trick. The terminal's reads ITS own selection first and sends the key on when there is none — which under the multiplexer is always, since the multiplexer owns the mouse and the terminal never sees the drag. So the key always arrives, and the multiplexer decides: copy when a selection is present, leave when it is not. Corrected 2026-09-01. This said mouse selection was left to the terminal because the multiplexer's mouse mode was off; the mouse mode is ON and has been, so the terminal's half found nothing to copy and the multiplexer's half was bound to plain `cancel` — the obvious gesture, select and press `Ctrl+C`, threw the selection away and touched no clipboard."
-        verify: [{kind: "wezterm-key", key: "c", mods: "CTRL"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "Ctrl+Alt+Super+drag"
@@ -263,8 +193,6 @@
         mode: "terminal"
         also: ["Ctrl+click"]
         why: "`RESIZE` decorations leave no titlebar to grab, so this is the only handle for repositioning the window. The deliberately heavy three-modifier combo is what keeps it from stealing plain clicks and selection drags."
-        verify: [{kind: "prose"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "Shift+click"
@@ -276,8 +204,6 @@
         mode: "terminal"
         also: ["Ctrl+Alt+Super+drag"]
         why: "Three measured facts: `mouse_reporting` on the duplicate binding is what keeps it working while an application captures the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), a feature only a client attached after it was set receives; and the click's Down stroke is Nopped, because with only Up bound tmux takes the press and turns the click into a copy-mode selection."
-        verify: [{kind: "prose"}]
-        source: "prds/02-terminal/04-copy-mode/prd.md"
     }
     {
         key: "F3"
@@ -289,8 +215,6 @@
         mode: "terminal"
         also: ["Shift+F3", "finder", "Ctrl-Q"]
         why: "What, then where — the inversion is the point. The retired `Ctrl-Space` asked for the channel first, so you had to know WHERE a thing lived before you could say what it was, and \"which channel is that in\" is exactly the question you cannot answer when you are looking for something. Counting first turns it into an answer instead of a prompt. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane, where a shell key can never reach; the cost is that the popup is modal and eats every key while it is up, F5 and F6 included, and that the pane to split from has to be handed in as `TV_ALL_ORIGIN` because a popup is not part of the window layout and has no position of its own. Terms are ANDed and matched as fixed strings, never as a pattern, so a stray bracket in what you typed narrows the list rather than failing the search. Picks divide on whether they change anything: a file, a directory, a commit and a manual entry are things you are looking at, so they open, while a history line, an alias, an env var and a branch switch land on a fresh prompt unrun. Hidden files are searched deliberately — this repo keeps its whole board under a dot-directory, and a search that skipped it would be lying. The prompt and the results are two separate popups because tmux allows exactly one popup per client, so a one-line box and a full-height list cannot be the same window; the binding runs them in sequence and hands the query over in a file named for the pane, and the `if-shell` between them is what makes cancelling silent rather than a second popup that flashes and vanishes. The results header repeats what you typed, because by then the box that took it has closed. Both popups state `-x` and `-y` rather than relying on a default: display-popup inherits display-menu's placement, which is anchored near the pane and not in the middle of anything, so an omitted position is an off-centre box. The result popup is drawn with `-B` and no tmux border at all, because television draws its own frames and a tmux border around them is a second frame one cell outside the first — tv repaints its own on every keystroke while tmux repaints its border only when it thinks it must, so the outer one comes apart in pieces as you type. The box reads the keyboard a byte at a time in raw mode rather than with a plain line read, and that is what Escape costs: under a line read the terminal is canonical and Escape is merely a character that lands in the buffer, so the box could only be dismissed with Ctrl-C. Escape is also the first byte of every arrow and function key, and telling the two apart by TIME — another byte within a tenth of a second, so this must be a sequence — is the obvious rule and it is wrong. Measured inside a real popup on 2026-09-01: one press of Escape can arrive as two bytes, `27 27`, and the timing rule read the second Escape as the start of a sequence, found neither of the two bytes that can continue one, and discarded both — which is precisely a box that will not close. Timing narrows the question to whether anything follows; only the byte that follows answers it, and just `[` and `O` continue a sequence. Once inside one, exactly the sequence is consumed and no more: draining until the input falls quiet eats the characters typed straight after an arrow, which arrive inside the same gap. Both of these cost a working version each, and neither is visible from outside the popup — `send-keys` cannot reach one, so a popup's keyboard behaviour can only be learned by logging the bytes it actually receives."
-        verify: [{kind: "tmux-key", key: "F3", mods: "NONE"}, {kind: "tmux-key", key: "F3", mods: "NONE", table: "jump"}]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "Shift+F3"
@@ -302,8 +226,6 @@
         mode: "terminal"
         also: ["F3"]
         why: "A home-wide search is only possible because of two things, and both were measured on 2026-09-01. The first is the second ignore list at `~/.config/tv-all/ignore`: without it `fd -t f -H . ~` had not finished enumerating $HOME after two minutes and was still running, almost all of it `~/Library`; with it, 402,970 files come back in 2.2s. It is layered on `~/.config/fd/ignore` rather than folded into it, because that file governs what `fd` and `rg` do at a prompt and excluding `Pictures/` there would be a surprise nobody asked for. The second is that nothing is materialised: ripgrep is asked FOR the term rather than for every line, which is the difference between three seconds and 4.2M rows, and it is why the whole thing fits in a pipe. The directory listings are cached under `~/.cache/tv-all` and served stale while a fresh one is built behind them — a refresh must never block a search, since the cache exists precisely to hand back the seconds it costs. Plain `F3` is the fast one on purpose: it is the key pressed fifty times a day, and the wide search is the deliberate one."
-        verify: [{kind: "tmux-key", key: "S-F3", mods: "NONE"}]
-        source: "prds/07-multiplexer/02-key-tables/prd.md"
     }
     {
         key: "F6"
@@ -316,8 +238,6 @@
         mode: "terminal"
         also: ["theme toggle", "F5 F5"]
         why: "Bound in the multiplexer rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the theme tool's hook chain would otherwise block the server for its duration. The scheme reaches the terminal as escape sequences written straight to it, not through a file only one emulator could read — which is why the key is worth pressing on a machine you ssh'd into. It is the one key that is never forwarded to a nested session: the palette belongs to the outermost terminal."
-        verify: [{kind: "tmux-key", key: "F6", mods: "NONE"}]
-        source: "prds/07-multiplexer/04-palette-delivery/prd.md"
     }
 
     # -------------------------------------------------------------- containers
@@ -332,8 +252,6 @@
         mode: "terminal"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
         why: "The binding is a thin wrapper over the CLI, not a second implementation — same container name, same image, same mounts, which is checkable by diffing `docker inspect`. The old config had two entry paths that drifted apart, and that is the mistake being avoided. It is one of the four keys the terminal still owns after the multiplexer took the rest: it types into the pane rather than addressing it."
-        verify: [{kind: "wezterm-key", key: "D", mods: "CTRL"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         key: "Ctrl+Shift+B"
@@ -346,8 +264,6 @@
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
         why: "The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but that whole pipeline is rated DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here."
-        verify: [{kind: "wezterm-key", key: "B", mods: "CTRL"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         key: "Ctrl+Shift+S"
@@ -362,8 +278,6 @@
         why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting the terminal. The `Recent:` indicator this entry used to promise is gone with the derived status bar: the bar is the multiplexer's now and nothing sets its left side from a picker."
         # Two handles, one gesture: the key, and `capsule recent`, which it
         # runs and which is equally typeable at a prompt.
-        verify: [{kind: "wezterm-key", key: "S", mods: "CTRL"}, {kind: "command", name: "capsule recent"}]
-        source: "prds/01-capsule/04-recent-workspaces/prd.md"
     }
     {
         key: "Ctrl+Shift+O"
@@ -375,8 +289,6 @@
         does: "recent-workspace"
         mode: "terminal"
         also: ["Ctrl+Shift+S"]
-        why: "A window, not a tab, and that is the point: there are no tabs. This key replaced `Ctrl+Shift+T`, which was documented as an open collision — it was the terminal's own new-tab default AND the tab reconciler's manual path, so the drift check passed off the default alone whether or not a capsule binding was ever written. Both of those are gone, and the collision went with them. The picker runs the shell directly rather than attaching to the session, because it is a one-shot that should exit with itself."
-        verify: [{kind: "wezterm-key", key: "O", mods: "CTRL"}]
-        source: "prds/01-capsule/04-recent-workspaces/prd.md"
+        why: "A window, not a tab, and that is the point: there are no tabs. This key replaced `Ctrl+Shift+T`, which was documented as an open collision — it was the terminal's own new-tab default AND the tab reconciler's manual path, so the name resolved either way and nothing said which. Both of those are gone, and the collision went with them. The picker runs the shell directly rather than attaching to the session, because it is a one-shot that should exit with itself."
     }
 ]

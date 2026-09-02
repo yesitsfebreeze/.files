@@ -12,7 +12,6 @@ Every entry links to where the guide explains it.
 | `finder` | Run a picker and get typed nushell data back | shell | [Find a file, a line, or a directory](../guide/files.md#finder) |
 | `tv channel` | Understand what a channel is, and add one | shell | [Find a file, a line, or a directory](../guide/files.md#tv-channel) |
 | `grep` | Search file contents with ripgrep | shell | [Find a file, a line, or a directory](../guide/files.md#grep) |
-| `help --fuzzy` | Fuzzy-search the manual itself | shell | [Read the manual and keep it current](../guide/maintaining.md#help-fuzzy) |
 | `<leader>ff and <leader><space>` | Find files in the project | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-ff-and-leader-space) |
 | `<leader>fg` | Grep the project live | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-fg) |
 | `<leader>fb` | Switch to an open buffer | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-fb) |

@@ -89,6 +89,6 @@
         id: "maintaining"
         title: "Read the manual and keep it current"
         summary: "Deploying a change, searching the manual, and checking it still tells the truth."
-        intro: "This manual is data, not prose kept beside the code: the shell's `help`, this site, and the drift check all read the same four files. When you add a key, add its entry in the same change — otherwise the check reports it as undocumented."
+        intro: "This manual is data, not prose kept beside the code: the shell's `help` and the markdown `?` searches both render from the same four files. When you add a key, add its entry in the same change — nothing checks for you."
     }
 ]

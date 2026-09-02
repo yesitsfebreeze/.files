@@ -103,11 +103,7 @@ function block(group) {
     .filter((a) => !group.some((g) => inv(g) === a))
     .map((a) => (href(a, 'guide') ? `[\`${a}\`](${href(a, 'guide')})` : `\`${a}\``))
     .join(' · ')
-  const src = [...new Set(group.map((e) => e.source).filter(Boolean))]
-  const meta = []
-  if (also) meta.push(`See also: ${also}`)
-  if (src.length) meta.push(`Spec: ${src.map((s) => `\`${s}\``).join(', ')}`)
-  if (meta.length) out.push(meta.join('  \n'), '')
+  if (also) out.push(`See also: ${also}`, '')
 
   return out.join('\n')
 }

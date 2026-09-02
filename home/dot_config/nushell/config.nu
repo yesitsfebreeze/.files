@@ -300,7 +300,6 @@ source ~/.config/nushell/copymode.nu
 # block. `core-help` must be an alias, and must precede the shadow.
 use std/help
 alias core-help = help
-source ~/.config/nushell/help-check.nu
 source ~/.config/nushell/help.nu
 
 # ── PALETTE ──

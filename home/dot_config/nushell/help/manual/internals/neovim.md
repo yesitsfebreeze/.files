@@ -20,7 +20,7 @@ SEAM: a require of a missing module aborts startup — this file requires exactl
 require("config.shift-select")
 ```
 
-14-shift-select gets its own module rather than riding in the general keymap file: that file's gate forbids shift-select machinery and autocmds per call site. It loads after the general maps and before the plugin manager, keeping I1's order. (Prose here names no module: a sibling gate greps this file for a module name to prove its own require was stripped.)
+14-shift-select gets its own module rather than riding in the general keymap file, which is kept free of shift-select machinery and of autocmds. It loads after the general maps and before the plugin manager, keeping I1's order.
 
 
 ## `lua/plugins/init.lua`
@@ -44,7 +44,7 @@ Four small behaviors, each in its own cleared augroup: clear = true is what make
 autocmd("TextYankPost", {
 ```
 
-Highlight on yank. vim.hl, NOT vim.highlight: the latter was renamed in 0.11 (deprecated.txt) and is on a removal clock. The rename is the one thing no runtime check can catch — the deprecated call still flashes and warns nobody (measured: notify count 0) — so the gate greps for it. timeout = 150 is also vim.hl.on_yank's own default; it is written out because R1 specifies the duration, not because it changes behavior.
+Highlight on yank. vim.hl, NOT vim.highlight: the latter was renamed in 0.11 (deprecated.txt) and is on a removal clock. The rename is the one thing no runtime check can catch — the deprecated call still flashes and warns nobody (measured: notify count 0) — so only reading the source finds it. timeout = 150 is also vim.hl.on_yank's own default; it is written out because R1 specifies the duration, not because it changes behavior.
 
 ```lua
 autocmd("BufReadPost", {
@@ -104,21 +104,11 @@ R9: <C-q> IS LEFT UNBOUND ON PURPOSE. No node in this epic may map it.
 
 ## `lua/config/lazy.lua`
 
-```lua
-local checking = vim.env.HELP_CHECK == "1"
-```
-
 Bootstrap lazy.nvim (clones it on first run) and load plugin specs.
 
-Lockfile policy: lazy-lock.json lives beside init.lua and is committed. lazy rewrites the deployed copy on sync/update; carry that change back to the repo in the same commit as the spec change that caused it. Every plugin node (E.5+) commits its lockfile delta with its spec. HELP_CHECK=1 — the drift check's read-only spawn (06-help/04-drift-check). `help --check` starts THIS config headless to read `nvim_get_keymap`, and a startup that installs is a startup that changes its own answer: measured 2026-08-29, a plugin in lazy-lock.json with no local store was git-cloned from the network in the middle of a check run, and lazy's clone chatter landed on stdout where the check reads its JSON. The check must observe the configuration, never provision it. Under this variable lazy installs nothing and polls nothing; a missing lazy.nvim is a FAILED check, not a clone (see the bootstrap guard below). Nothing else reads it today and an ordinary launch is unchanged.
+Lockfile policy: lazy-lock.json lives beside init.lua and is committed. lazy rewrites the deployed copy on sync/update; carry that change back to the repo in the same commit as the spec change that caused it. Every plugin node (E.5+) commits its lockfile delta with its spec.
 
-TWO MORE INSTALLERS EXIST AND ARE DELIBERATELY NOT GUARDED HERE, because the global-map spawn cannot reach them: lua/plugins/lsp.lua's `mason-lspconfig` (`ensure_installed`, five servers) sits behind `event = BufReadPre/BufNewFile`, and lua/plugins/treesitter.lua's `install()` behind `BufReadPost/BufNewFile`. Measured: a headless start that opens no buffer runs neither. A check that OPENS a buffer does — 06-help/04-drift-check/04-nvim-buffer-maps is that check, and extending this same variable to those two call sites is its job, not this one's.
-
-```lua
-io.stderr:write("HELP_CHECK: lazy.nvim is not installed at " .. lazypath .. "\n")
-```
-
-Loud on stderr and rc 1, so `help --check` raises with a real reason instead of reporting Neovim's own 123 default maps as our drift.
+REMOVED 2026-09-02: a `HELP_CHECK=1` guard that disabled `install.missing` and `checker` when the manual's drift check started this config headless to read `nvim_get_keymap`. The check is deleted, so the guard defends nothing and its two options are back at their normal values. The measurement that motivated it is worth keeping if anything ever spawns this config to observe it: 2026-08-29, a plugin in lazy-lock.json with no local store was git-cloned from the network mid-run, and lazy's clone chatter landed on stdout where the reader expected JSON. **A startup that installs is a startup that changes its own answer** — anything spawning this config to observe it has to stop it provisioning first, and two more installers sit behind buffer events (`lua/plugins/lsp.lua`'s `mason-lspconfig`, `lua/plugins/treesitter.lua`'s `install()`) where a headless start that opens no buffer runs neither, but one that opens a buffer does.
 
 ```lua
 if #vim.api.nvim_list_uis() > 0 then vim.fn.getchar() end
@@ -127,10 +117,11 @@ if #vim.api.nvim_list_uis() > 0 then vim.fn.getchar() end
 The guard is load-bearing, not dead code: a bare getchar() blocks forever in --headless, even with stdin at /dev/null (measured 2026-08-22, nvim 0.12.4) — an offline scripted launch would hang instead of failing. Interactive launch still waits for the keypress; headless gets the error on stderr and exit 1.
 
 ```lua
-install = { colorscheme = { "base16-gruvbox-dark-hard" }, missing = not checking },
+install = { colorscheme = { "base16-gruvbox-dark-hard" } },
+checker = { enabled = true, notify = false },
 ```
 
-`install.missing` defaults to true — it is the clone-on-start that the check must not trigger; `checker` polls GitHub for updates. Both are off under HELP_CHECK and unchanged otherwise. KEY ORDER IS LOAD-BEARING HERE, and only for a reader outside this file: tests/nvim-colorscheme.sh:216 extracts the scheme with the literal regex `install = \{ colorscheme = \{ "` , so `missing` goes AFTER `colorscheme` or that gate stops finding the string and goes red on a file it only reads. Measured 2026-08-29 by running that grep against both orders: with `missing` first it matches nothing, with it last it still returns the scheme.
+`install.missing` is left at its default of true — it is the clone-on-start that makes a fresh machine work — and `checker` polls GitHub for plugin updates, silently. Both were switched off under the deleted drift-check guard; deleting the guard restores them, which is the point. Writing `false` for either here would turn off plugin installation and update checks as a side effect of removing a check, which is the one way this edit could have gone wrong.
 
 
 ## `lua/config/options.lua`
@@ -168,7 +159,7 @@ local map = vim.keymap.set
 
 Editor-style "shift to select" (task E.14). A port of the live block at ~/.config/nvim/lua/config/keymaps.lua, verbatim in behaviour except for the augroup noted below.
 
-WHY THIS IS ITS OWN MODULE and not lua/config/keymaps.lua, where the rest of the general maps live: tests/nvim-keymaps.sh — 02-keymaps' committed gate — asserts PER CALL SITE that keymaps.lua contains no shift_select machinery, no <S-arrow> map, zero autocmds (epic invariant I7, live bug L-8) and no map on the clipboard keys, each with a selftest that plants exactly this code. Appending this block there would turn a landed node's gate red by construction. 02-keymaps leaves the clipboard keys and the blockwise-visual escape hatch unbound on purpose so this file can take them; its own file comment says why.
+WHY THIS IS ITS OWN MODULE and not lua/config/keymaps.lua, where the rest of the general maps live: keymaps.lua is deliberately free of shift_select machinery, of any <S-arrow> map, of autocmds (epic invariant I7, live bug L-8) and of any map on the clipboard keys. 02-keymaps leaves the clipboard keys and the blockwise-visual escape hatch unbound on purpose so this file can take them; its own file comment says why. Appending this block there would collapse that separation, and nothing checks it any more — the split is held by this paragraph and the file comment, so read both before moving a map between them.
 
 The system clipboard is shared (clipboard=unnamedplus, from 01-options), so copy and paste cross between nvim and the terminal.
 
@@ -218,7 +209,7 @@ Plain motion in visual mode: collapse + leave when we got here via Shift, otherw
 map("v", "h", visual_motion("h"), { desc = "Move (collapse selection)" })
 ```
 
-The eight collapse-on-motion maps are written out one per line rather than generated in a loop, as the live block does: the gate asserts the exact number of map call sites and reads each mode/lhs/desc triple out of this file, and a loop hides both from a text check.
+The eight collapse-on-motion maps are written out one per line rather than generated in a loop, as the live block does: one line per map keeps the mode/lhs/desc triple of each readable in the source, and a loop hides all eight behind a table.
 
 ```lua
 map("i", "<S-Right>", select_start_insert("lv<Right>"), { desc = "Select right" })
@@ -243,7 +234,7 @@ Automatic bracket and quote pairing while typing. Default config, per R3 — no 
 
 Three measured facts.
 
-1. `config = true` IS LOAD-BEARING, and "loaded" is not "set up". Replace it with an empty function and lazy still reports the plugin loaded, while typing `(` inserts a bare `(` (measured). Any readback that only checks `_.loaded` passes that mutation, which is why the gate types into a buffer instead. 2. THE DEFAULT `map_cr` INSTALLS A GLOBAL INSERT `<CR>` MAP, AND IT DOES NOT SURVIVE — and that is the good outcome. blink.cmp (03-editor/05-completion R3) sets its own `<CR>` from an async callback that runs after this setup, so the live map is `blink.cmp: Accept`, measured in BOTH spec orders (this filename sorting before completion.lua, and a copy named to sort after it), so the outcome does not depend on filename order. It matters because autopairs' own `<CR>` handler branches on `pumvisible()`, and blink draws its menu in a floating window where `pumvisible()` is 0 — so if autopairs' map ever did win, Enter would insert a newline instead of accepting the completion. 3. `<BS>` IS AUTOPAIRS' AND STAYS. `map_bs` is on by default and nothing overrides it: the live insert map is `autopairs delete` (measured). It is the only global map this plugin contributes to the final config.
+1. `config = true` IS LOAD-BEARING, and "loaded" is not "set up". Replace it with an empty function and lazy still reports the plugin loaded, while typing `(` inserts a bare `(` (measured). Any readback that only checks `_.loaded` passes that mutation, so check this by typing into a buffer, never by reading the flag. 2. THE DEFAULT `map_cr` INSTALLS A GLOBAL INSERT `<CR>` MAP, AND IT DOES NOT SURVIVE — and that is the good outcome. blink.cmp (03-editor/05-completion R3) sets its own `<CR>` from an async callback that runs after this setup, so the live map is `blink.cmp: Accept`, measured in BOTH spec orders (this filename sorting before completion.lua, and a copy named to sort after it), so the outcome does not depend on filename order. It matters because autopairs' own `<CR>` handler branches on `pumvisible()`, and blink draws its menu in a floating window where `pumvisible()` is 0 — so if autopairs' map ever did win, Enter would insert a newline instead of accepting the completion. 3. `<BS>` IS AUTOPAIRS' AND STAYS. `map_bs` is on by default and nothing overrides it: the live insert map is `autopairs delete` (measured). It is the only global map this plugin contributes to the final config.
 
 No dependency to add and nothing to exclude by hand: `check_ts` is false by default, so autopairs has no treesitter dependency even though nvim-treesitter is in the lockfile, and `disable_filetype` already defaults to TelescopePrompt, spectre_panel and snacks_picker_input, so telescope's prompt is excluded without this file saying anything.
 
@@ -256,7 +247,7 @@ return {
 
 Claude Code inside nvim: coder/claudecode.nvim (the IDE integration — WebSocket MCP server, inline diff accept/deny, send-selection, buffer management) with mr55p-dev/claude-tmux.nvim as its terminal provider, so the Claude terminal is a REAL tmux pane and not nvim's built-in terminal. Owned by 08-claude-agent/02-nvim-plugin.
 
-WHY THE PROVIDER IS WIRED CONDITIONALLY. tmux is the multiplexer here (07-multiplexer invariant: tmux owns the panes), so inside tmux the claude-tmux provider wins — `:ClaudeCode` opens a split BELOW nvim in the `main` session, and <C-j> returns to the editor from that pane only (claude-tmux binds it pane-locally; nvim's own <C-j> window-down in lua/config/keymaps.lua is untouched, and so is every other pane). Outside a tmux session the provider is claudecode's default "auto" (snacks), which is also what runs under --headless: claude-tmux checks $TMUX and answers false. Measured both branches — see tests/nvim-claude.sh.
+WHY THE PROVIDER IS WIRED CONDITIONALLY. tmux is the multiplexer here (07-multiplexer invariant: tmux owns the panes), so inside tmux the claude-tmux provider wins — `:ClaudeCode` opens a split BELOW nvim in the `main` session, and <C-j> returns to the editor from that pane only (claude-tmux binds it pane-locally; nvim's own <C-j> window-down in lua/config/keymaps.lua is untouched, and so is every other pane). Outside a tmux session the provider is claudecode's default "auto" (snacks), which is also what runs under --headless: claude-tmux checks $TMUX and answers false. Measured both branches.
 
 WHY ONE SPEC ENTRY, not two. claude-tmux has no user-facing surface of its own — no commands, no keymaps, nothing to lazy-load on; its README's own lazy spec relies on claudecode loading first. Naming it a dependency of claudecode means lazy installs both into the store, records both in lazy-lock.json, and loads claude-tmux before claudecode's `config` runs — which is the order the provider wiring needs. A second entry would add a load trigger where there is nothing to trigger.
 
@@ -317,7 +308,7 @@ PALETTE OWNERSHIP, and it points one way only: tinty owns the palette and the te
 lazy = false,
 ```
 
-lazy = false: a colorscheme must load before anything paints. NOTE for a later reader -- lua/config/lazy.lua already sets defaults.lazy = false, so deleting this line changes no observable state (measured). It is a text assertion in tests/nvim-colorscheme.sh --tree and nothing more; do not "strengthen" it into a readback, which would be vacuous.
+lazy = false: a colorscheme must load before anything paints. NOTE for a later reader -- lua/config/lazy.lua already sets defaults.lazy = false, so deleting this line changes no observable state (measured). It is a redundant statement of intent and nothing more; do not "strengthen" it into a readback, which would be vacuous, and do not delete it either — it is what tells the next reader that a colorscheme's eagerness is deliberate rather than an oversight.
 
 ```lua
 highlights = {
@@ -448,9 +439,9 @@ delete, topdelete           U+F0DA  nf-fa-caret_right
 
 Four measured facts, each because rediscovering it costs a debugging round.
 
-1. L-10 FAILS SILENTLY, NOT LOUDLY. Measured 2026-08-23 against a scratch git repo with a deleted line: with `delete`'s value emptied, gitsigns still places the extmark — `sign_hl_group = GitSignsDelete`, `sign_text = nil` — so the cell renders blank and nothing errors. A deleted hunk is the one hunk kind with no line of its own to colour, so blank means invisible. A readback of the config value catches an empty string and nothing else; tests/nvim-small-plugins.sh reads the `gitsigns_signs_` extmarks, which is the half that catches a value that reads back fine and paints nothing. 2. THE TWO GLYPH FAMILIES MUST NOT COLLAPSE. U+258E is drawn by WezTerm itself (`custom_block_glyphs = true`, measured via `wezterm ls-fonts`); U+F0DA comes from CaskaydiaCove Nerd Font. If the delete glyph ever equalled the add/change glyph, a deleted hunk would be indistinguishable from a changed one — the readable half of L-10's bug, and a check asserting only "non-empty" would pass it. 3. GITSIGNS SHELLS OUT TO `git`. Measured with a `git` stub exiting 127: gitsigns does not attach, places no sign, prints nothing, and the session still exits 0. `git=git` is in install.sh's PKGS, and that is what keeps the silent failure off a fresh machine. Do not assume the attach is unconditional. 4. `BufNewFile` IS NOT DECORATION. Opening a path that does not exist yet inside a git worktree loads gitsigns (measured), which is why both events are named and not just `BufReadPre`.
+1. L-10 FAILS SILENTLY, NOT LOUDLY. Measured 2026-08-23 against a scratch git repo with a deleted line: with `delete`'s value emptied, gitsigns still places the extmark — `sign_hl_group = GitSignsDelete`, `sign_text = nil` — so the cell renders blank and nothing errors. A deleted hunk is the one hunk kind with no line of its own to colour, so blank means invisible. A readback of the config value catches an empty string and nothing else, so checking this means reading the `gitsigns_signs_` extmarks in a scratch repo: that is the half that catches a value which reads back fine and paints nothing. 2. THE TWO GLYPH FAMILIES MUST NOT COLLAPSE. U+258E is drawn by WezTerm itself (`custom_block_glyphs = true`, measured via `wezterm ls-fonts`); U+F0DA comes from CaskaydiaCove Nerd Font. If the delete glyph ever equalled the add/change glyph, a deleted hunk would be indistinguishable from a changed one — the readable half of L-10's bug, and a check asserting only "non-empty" would pass it. 3. GITSIGNS SHELLS OUT TO `git`. Measured with a `git` stub exiting 127: gitsigns does not attach, places no sign, prints nothing, and the session still exits 0. `git` is in the `Brewfile`, and that is what keeps the silent failure off a fresh machine. Do not assume the attach is unconditional. 4. `BufNewFile` IS NOT DECORATION. Opening a path that does not exist yet inside a git worktree loads gitsigns (measured), which is why both events are named and not just `BufReadPre`.
 
-The fallback the PRD sanctions — `_` (U+005F) for delete and `‾` (U+203E) for topdelete, which additionally keep a below/above distinction — is NOT taken here, and its condition was measured false rather than assumed: `wezterm ls-fonts --text` resolves U+F0DA to `glyph=fa-caret_right` out of CaskaydiaCoveNerdFont-Regular.ttf at `cells=1`, and WezTerm additionally ships a built-in Symbols Nerd Font Mono that covers it even with the cask absent. The gate accepts either set, so taking the fallback stays a two-character change here with no gate edit.
+The fallback the PRD sanctions — `_` (U+005F) for delete and `‾` (U+203E) for topdelete, which additionally keep a below/above distinction — is NOT taken here, and its condition was measured false rather than assumed: `wezterm ls-fonts --text` resolves U+F0DA to `glyph=fa-caret_right` out of CaskaydiaCoveNerdFont-Regular.ttf at `cells=1`, and WezTerm additionally ships a built-in Symbols Nerd Font Mono that covers it even with the cask absent. Taking the fallback is therefore a two-character change here and nothing else.
 
 
 ## `lua/plugins/lsp.lua`
@@ -459,7 +450,7 @@ The fallback the PRD sanctions — `_` (U+005F) for delete and `‾` (U+203E) fo
 return {
 ```
 
-CONSTRAINT: the LSP log kill-switch is NOT here. lua/config/options.lua turns the LSP log level OFF (01-options R11) and this file must never raise it: Neovim mirrors every LSP stderr line into ~/.local/state/nvim/lsp.log with NO rotation, and a chatty rust-analyzer once grew it to 17 GB. rust_analyzer is in ensure_installed below, so this is exactly the file where turning logging up to debug a server is tempting. Raise it in a scratch probe (tests/nvim-lsp.sh does), never here.
+CONSTRAINT: the LSP log kill-switch is NOT here. lua/config/options.lua turns the LSP log level OFF (01-options R11) and this file must never raise it: Neovim mirrors every LSP stderr line into ~/.local/state/nvim/lsp.log with NO rotation, and a chatty rust-analyzer once grew it to 17 GB. rust_analyzer is in ensure_installed below, so this is exactly the file where turning logging up to debug a server is tempting. Raise it in a scratch probe, never here.
 
 LSP: mason (server installer, mason-org v2) + Neovim 0.11 native LSP. nvim-lspconfig ships the per-server lsp/*.lua defaults; mason-lspconfig auto-installs and auto-enables them via vim.lsp.enable(). Per-server tweaks and capabilities go through the native vim.lsp.config() API.
 
@@ -475,7 +466,7 @@ TWO OTHER CANDIDATES WERE TRIED FIRST AND BOTH FAILED, which is why this is a se
 
 WHAT IT COSTS, measured 2026-08-24 and real. A machine with an empty <data>/mason never bootstraps its catalogue on its own: online with the default, registries/github/mason-org/mason-registry/registry.json appears (536 KB); with this, nothing under <data>/mason is created, and ensure_installed below cannot resolve a server it cannot look up. And the catalogue then goes stale until it is refreshed by hand. Both are recoverable with ONE command; a discarded save is not.
 
-:MasonUpdate IS THE DELIBERATE REFRESH, and mason's networking is not broken. Measured offline on a cold root, :MasonUpdate raised the network-attempt count from 0 to 2; measured online on a cold root it installed the registry and has_package("pyright") came back true afterwards. tests/nvim-lsp.sh --headless asserts that pair, because a zero-attempt check on its own passes just as well on a mason that is entirely broken.
+:MasonUpdate IS THE DELIBERATE REFRESH, and mason's networking is not broken. Measured offline on a cold root, :MasonUpdate raised the network-attempt count from 0 to 2; measured online on a cold root it installed the registry and has_package("pyright") came back true afterwards. Check that PAIR if you check it at all: a zero-attempt count on its own passes just as well on a mason that is entirely broken.
 
 ```lua
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -683,9 +674,9 @@ The leader-key overlay: press `<leader>` and pause, and which-key lists the grou
 
 R2's "group names must stay in sync with the keymaps that live under them" IS MECHANICAL, not a discipline anyone has to keep. which-key builds a per-buffer tree and then runs `tree:fix()`, which DELETES any group node with no child keymap. So declaring a group before its keys exist is harmless: the overlay prunes rather than lying, and a group whose name is wrong is the only way this can go bad.
 
-MEASURED, so nobody reads a short leader menu as a bug. A group renders only where one of its children has a LIVE keymap in the current buffer, and lazy's `keys =` stubs count — they are real keymaps from startup. Measured 2026-08-24 against the repo tree: `f` (telescope's `<leader>ff`/`fg`/`fb`/ `fh` stubs), `b` (`<leader>bd` in lua/config/keymaps.lua) and `c` (conform's `<leader>cf` stub) render; `r` does not, because `<leader>rn` is BUFFER-LOCAL and set on `LspAttach`, so it exists only inside a buffer with a language server attached; and `t` does not, because vim-table-mode builds its `<leader>t` maps at plugin load time and that plugin is `ft`-lazy on markdown. Proved by construction rather than inferred: seeding a global `<leader>bd`, a global `<leader>tt` and buffer-local `<leader>ca` / `<leader>rn`, then calling `require("which-key.buf").clear()`, makes all five appear with their names. That is why all five are safe to declare here, and why the gate asserts the DECLARATIONS unconditionally and the RENDERED tree only against a probe-seeded buffer.
+MEASURED, so nobody reads a short leader menu as a bug. A group renders only where one of its children has a LIVE keymap in the current buffer, and lazy's `keys =` stubs count — they are real keymaps from startup. Measured 2026-08-24 against the repo tree: `f` (telescope's `<leader>ff`/`fg`/`fb`/ `fh` stubs), `b` (`<leader>bd` in lua/config/keymaps.lua) and `c` (conform's `<leader>cf` stub) render; `r` does not, because `<leader>rn` is BUFFER-LOCAL and set on `LspAttach`, so it exists only inside a buffer with a language server attached; and `t` does not, because vim-table-mode builds its `<leader>t` maps at plugin load time and that plugin is `ft`-lazy on markdown. Proved by construction rather than inferred: seeding a global `<leader>bd`, a global `<leader>tt` and buffer-local `<leader>ca` / `<leader>rn`, then calling `require("which-key.buf").clear()`, makes all five appear with their names. That is why all five are safe to declare here — and why anything checking the RENDERED tree has to seed a buffer first, while the DECLARATIONS can be read straight out of this file.
 
-`VeryLazy` NEVER FIRES WITHOUT A UI. lazy hooks `User VeryLazy` to `UIEnter`, so under `--headless` (`#nvim_list_uis() == 0`) which-key is never loaded and every probe has to fire the event itself. And which-key's `Config.setup` wraps its own `load` in `vim.schedule_wrap` AND defers to `VimEnter` when `vim.v.vim_did_enter == 0` — which is the case for anything in a `-c` chain — so a probe must then wait for `require("which-key.config").loaded`. Reading `Config.triggers.modes` before that flag flips throws `attempt to index field 'modes' (a nil value)`. All measured; tests/nvim-small-plugins.sh carries the shape.
+`VeryLazy` NEVER FIRES WITHOUT A UI. lazy hooks `User VeryLazy` to `UIEnter`, so under `--headless` (`#nvim_list_uis() == 0`) which-key is never loaded and every probe has to fire the event itself. And which-key's `Config.setup` wraps its own `load` in `vim.schedule_wrap` AND defers to `VimEnter` when `vim.v.vim_did_enter == 0` — which is the case for anything in a `-c` chain — so a probe must then wait for `require("which-key.config").loaded`. Reading `Config.triggers.modes` before that flag flips throws `attempt to index field 'modes' (a nil value)`. All measured.
 
 NO ICON PLUGIN IS NEEDED, so there is nothing to provision: `icons.mappings` defaults to true and uses which-key's own built-in set. Measured with neither mini.icons nor nvim-web-devicons loaded — `Config.issues` is empty and `:messages` is empty at startup. No health warning either.
 
@@ -693,4 +684,4 @@ NO ICON PLUGIN IS NEEDED, so there is nothing to provision: `icons.mappings` def
 { "<leader>s", group = "session" },
 ```
 
-Added by 07-multiplexer/06-nvim-session. It goes AFTER table, not in alphabetical order: tests/nvim-small-plugins.sh asserts R2's five groups as five ASCENDING line numbers, so inserting anywhere among them would go red on the order check while the set check still passed. Appending leaves f, b, c, r, t in the order R2 states.
+Added by 07-multiplexer/06-nvim-session. It goes AFTER table, not in alphabetical order, so the five groups read f, b, c, r, t — the order 07-multiplexer/06-nvim-session's R2 states. Nothing enforces that now; append a sixth rather than sorting the list.

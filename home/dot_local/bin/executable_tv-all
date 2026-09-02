@@ -11,7 +11,7 @@
 # Everywhere-mode is progressive, and that is the whole reason it is usable.
 # Counting one query across $HOME costs 29-74s with ripgrep, which is dead as
 # an interactive wait — but the lanes people actually navigate by (recent
-# directories, recent files, shell history, aliases, the manual) all answer in
+# directories, recent files, shell history, aliases) all answer in
 # under 0.2s. So the fast lanes land first and you can act on them immediately,
 # while files, directories and file contents fill in behind them; tv's --watch
 # redraws the list as each one arrives. If you only wanted to jump somewhere
@@ -72,7 +72,7 @@ _ig() {
 # Lane order is display order, and it is fastest-first on purpose: the lanes
 # that answer instantly sit at the top of the list while the slow ones are
 # still counting, so the list is useful before it is complete.
-LANES_FAST='recent-dir recent-file history alias env manual docs git-log git-branch'
+LANES_FAST='recent-dir recent-file history alias env docs git-log git-branch'
 LANES_SCOPED='files dirs text'
 
 # ── helpers ─────────────────────────────────────────────────────────────────
@@ -154,9 +154,6 @@ _lane_rows() {
         # Well-formed assignments only: a value holding a newline would
         # otherwise contribute rows with no KEY= on them.
         printenv 2>/dev/null | grep -E '^[A-Za-z_][A-Za-z0-9_]*=' | _filter "$_lq" ;;
-    manual)
-        nu -n -c 'source ~/.config/nushell/help.nu; _help_rows' 2>/dev/null \
-            | awk -F'\t' 'NF>2 {printf "%s — %s\n", $2, $3}' | _filter "$_lq" ;;
     docs)
         # Paths stay relative to $MANUAL so the rows read as manual pages
         # rather than as a home directory; the opener puts the prefix back.
@@ -271,8 +268,6 @@ preview() {
         git --no-pager show --color=always --stat "${_p_b%% *}" 2>/dev/null ;;
     git-branch)
         git --no-pager log --color=always --oneline -20 "$_p_b" 2>/dev/null ;;
-    manual)
-        nu -n -c "source ~/.config/nushell/help.nu; help --entry \"$(_key "$_p_b")\"" 2>/dev/null ;;
     *)
         printf '%s\n' "$_p_b" ;;
     esac
@@ -289,10 +284,6 @@ _preview_at() {
         --line-range "$_a_s:$((_a_n + 30))" "$_a_f" 2>/dev/null \
         || sed -n "${_a_s},$((_a_n + 30))p" "$_a_f"
 }
-
-# The manual lane renders as `key — description`; the key is what
-# `help --entry` addresses, so everything from the em dash on is display.
-_key() { printf '%s' "${1%% — *}"; }
 
 # ── openers ─────────────────────────────────────────────────────────────────
 #
@@ -392,8 +383,6 @@ open_row() {
         split_cd "$(_expand "$_o_b")" ;;
     git-log)
         split_run "$_o_here" "git show '$(_q "${_o_b%% *}")'" ;;
-    manual)
-        split_prefill "$_o_here" "help --entry \"$(_key "$_o_b")\"" ;;
     git-branch)
         split_prefill "$_o_here" "git switch $_o_b" ;;
     history)

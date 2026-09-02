@@ -16,8 +16,6 @@
         step: 5
         mode: "nvim:normal"
         why: "Leader is space, and it is set before any plugin spec is evaluated: a spec that declares `keys = { \"<leader>x\" }` resolves leader at declaration time, so setting it later silently binds the wrong key."
-        verify: [{kind: "prose"}]
-        source: "prds/03-editor/12-small-plugins/prd.md"
     }
     {
         key: "<Esc>"
@@ -28,8 +26,6 @@
         step: 16
         mode: "nvim:normal"
         why: "The map and the option have to be decided together or the key is dead, and live bug L-6 decided it the other way round: keep `hlsearch = false` and drop the map. So this documents a binding the rebuild is not meant to carry over."
-        verify: [{kind: "prose"}]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "q"
@@ -39,8 +35,6 @@
         task: "editing"
         step: 17
         mode: "nvim:normal"
-        verify: [{kind: "nvim-map", mode: "n", lhs: "q", desc: null, scope: "buffer"}]
-        source: "prds/03-editor/03-autocmds/prd.md"
     }
     {
         key: "<C-h> <C-j> <C-k> <C-l>"
@@ -51,13 +45,6 @@
         step: 8
         mode: "nvim:normal"
         also: ["<C-Up> <C-Down> <C-Left> <C-Right>", "<leader>| and <leader>-"]
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<C-h>", desc: "Go to left window"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-j>", desc: "Go to lower window"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-k>", desc: "Go to upper window"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-l>", desc: "Go to right window"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<C-Up> <C-Down> <C-Left> <C-Right>"
@@ -68,13 +55,6 @@
         step: 10
         mode: "nvim:normal"
         also: ["<C-h> <C-j> <C-k> <C-l>"]
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<C-Up>", desc: "Increase height"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-Down>", desc: "Decrease height"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-Left>", desc: "Decrease width"}
-            {kind: "nvim-map", mode: "n", lhs: "<C-Right>", desc: "Increase width"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<leader>| and <leader>-"
@@ -85,11 +65,6 @@
         step: 9
         mode: "nvim:normal"
         also: ["<C-h> <C-j> <C-k> <C-l>"]
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>|", desc: "Split right"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>-", desc: "Split below"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<S-h> <S-l> <leader>bd"
@@ -100,12 +75,6 @@
         step: 7
         mode: "nvim:normal"
         also: ["<leader>fb"]
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<S-h>", desc: "Previous buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "<S-l>", desc: "Next buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>bd", desc: "Delete buffer"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<A-j> <A-k>"
@@ -115,13 +84,6 @@
         task: "editing"
         step: 14
         mode: "nvim:normal"
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<A-j>", desc: "Move line down"}
-            {kind: "nvim-map", mode: "n", lhs: "<A-k>", desc: "Move line up"}
-            {kind: "nvim-map", mode: "v", lhs: "<A-j>", desc: "Move selection down"}
-            {kind: "nvim-map", mode: "v", lhs: "<A-k>", desc: "Move selection up"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<C-d> <C-u> n N"
@@ -131,14 +93,7 @@
         task: "editing"
         step: 15
         mode: "nvim:normal"
-        why: "These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, and the drift check treats a missing `desc` here as intended rather than as a mismatch."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<C-d>", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "<C-u>", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "n", desc: null}
-            {kind: "nvim-map", mode: "n", lhs: "N", desc: null}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
+        why: "These four maps carry no description on purpose: which-key should not list a key whose behaviour is the vim default plus a re-centre, so the missing `desc` is deliberate rather than an omission."
     }
     {
         key: "< and > (visual)"
@@ -148,11 +103,6 @@
         task: "editing"
         step: 13
         mode: "nvim:visual"
-        verify: [
-            {kind: "nvim-map", mode: "v", lhs: "<", desc: null}
-            {kind: "nvim-map", mode: "v", lhs: ">", desc: null}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<leader>w and <leader>q"
@@ -162,11 +112,6 @@
         task: "editing"
         step: 6
         mode: "nvim:normal"
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>w", desc: "Save"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>q", desc: "Quit"}
-        ]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<leader>p (visual)"
@@ -178,8 +123,6 @@
         mode: "nvim:visual"
         also: ["<C-v> (visual)"]
         why: "A plain `p` over a selection puts the deleted text into the unnamed register, which is why the second paste always pastes the wrong thing. This deletes into the black hole register first."
-        verify: [{kind: "nvim-map", mode: "x", lhs: "<leader>p", desc: "Paste (keep register)"}]
-        source: "prds/03-editor/02-keymaps/prd.md"
     }
     {
         key: "<S-Up> <S-Down> <S-Left> <S-Right>"
@@ -191,21 +134,6 @@
         mode: "nvim:normal"
         also: ["h j k l (visual)", "<C-c> (visual)"]
         why: "The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<S-Up>", desc: "Select up"}
-            {kind: "nvim-map", mode: "n", lhs: "<S-Down>", desc: "Select down"}
-            {kind: "nvim-map", mode: "n", lhs: "<S-Left>", desc: "Select left"}
-            {kind: "nvim-map", mode: "n", lhs: "<S-Right>", desc: "Select right"}
-            {kind: "nvim-map", mode: "v", lhs: "<S-Up>", desc: "Extend selection up"}
-            {kind: "nvim-map", mode: "v", lhs: "<S-Down>", desc: "Extend selection down"}
-            {kind: "nvim-map", mode: "v", lhs: "<S-Left>", desc: "Extend selection left"}
-            {kind: "nvim-map", mode: "v", lhs: "<S-Right>", desc: "Extend selection right"}
-            {kind: "nvim-map", mode: "i", lhs: "<S-Up>", desc: "Select up"}
-            {kind: "nvim-map", mode: "i", lhs: "<S-Down>", desc: "Select down"}
-            {kind: "nvim-map", mode: "i", lhs: "<S-Left>", desc: "Select left"}
-            {kind: "nvim-map", mode: "i", lhs: "<S-Right>", desc: "Select right"}
-        ]
-        source: "prds/03-editor/14-shift-select/prd.md"
     }
     {
         key: "h j k l (visual)"
@@ -217,13 +145,6 @@
         mode: "nvim:visual"
         also: ["<S-Up> <S-Down> <S-Left> <S-Right>"]
         why: "This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim."
-        verify: [
-            {kind: "nvim-map", mode: "v", lhs: "h", desc: "Move (collapse selection)"}
-            {kind: "nvim-map", mode: "v", lhs: "j", desc: "Move (collapse selection)"}
-            {kind: "nvim-map", mode: "v", lhs: "k", desc: "Move (collapse selection)"}
-            {kind: "nvim-map", mode: "v", lhs: "l", desc: "Move (collapse selection)"}
-        ]
-        source: "prds/03-editor/14-shift-select/prd.md"
     }
     {
         key: "<C-c> (visual)"
@@ -235,8 +156,6 @@
         mode: "nvim:visual"
         also: ["<C-v> (visual)", "<leader>p (visual)"]
         why: "`clipboard=unnamedplus` is what makes this work in both directions — there is no separate editor clipboard to copy out of."
-        verify: [{kind: "nvim-map", mode: "v", lhs: "<C-c>", desc: "Copy to clipboard"}]
-        source: "prds/03-editor/14-shift-select/prd.md"
     }
     {
         key: "<C-v> (visual)"
@@ -248,8 +167,6 @@
         mode: "nvim:visual"
         also: ["<C-c> (visual)", "<leader>p (visual)"]
         why: "Note what this costs: `<C-v>` no longer starts visual-block from within a selection. Blockwise select is still `<C-v>` from normal mode."
-        verify: [{kind: "nvim-map", mode: "v", lhs: "<C-v>", desc: "Paste over selection"}]
-        source: "prds/03-editor/14-shift-select/prd.md"
     }
     {
         key: "<Tab> <S-Tab> <C-n> <C-p> <C-Space> <C-e>"
@@ -260,8 +177,6 @@
         step: 1
         mode: "nvim:insert"
         why: "`<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode."
-        verify: [{kind: "prose"}]
-        source: "prds/03-editor/05-completion/prd.md"
     }
     {
         key: "<BS> and <CR> (autopairs)"
@@ -272,11 +187,6 @@
         step: 2
         mode: "nvim:insert"
         why: "Both keys look like they belong entirely to completion, and only one does. blink.cmp maps `<CR>` to `{\"accept\", \"fallback\"}`: `fallback` means \"run whatever `<CR>` did before blink.cmp claimed it\", and because autopairs sets up first in load order, that prior mapping is autopairs' own bracket-expand handler — so the expand survives, but only through blink.cmp's fallback chain, and only while no menu is open. `<BS>` has no such chain: it is the one map autopairs sets that nothing else claims, so its default wins outright."
-        verify: [
-            {kind: "nvim-map", mode: "i", lhs: "<BS>", desc: "autopairs delete", scope: "buffer"}
-            {kind: "nvim-map", mode: "i", lhs: "<CR>", desc: "blink.cmp: Accept", scope: "buffer"}
-        ]
-        source: "prds/03-editor/12-small-plugins/prd.md"
     }
     {
         key: "<leader>e"
@@ -287,8 +197,6 @@
         step: 11
         mode: "nvim:normal"
         why: "`<leader>e` is the fast path, not the only one: oil loads eagerly (`lazy = false`) so its `default_file_explorer` hijack is installed at startup, and `:e some/dir` reaches it with no key pressed. Netrw is disabled either way, so nothing else could claim the directory instead."
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>e", desc: "Open file explorer"}]
-        source: "prds/03-editor/06-explorer/prd.md"
     }
     {
         key: "<leader>cf"
@@ -299,8 +207,6 @@
         step: 6
         mode: "nvim:normal"
         why: "Prettier is the markdown formatter because it aligns table pipes, but prose must stay exactly as wrapped: these files are hand-wrapped at ~78 columns and reflowing them would churn every diff. On-save formatting gives up after 500 ms rather than blocking the write."
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>cf", desc: "Format buffer"}]
-        source: "prds/03-editor/07-formatting/prd.md"
     }
     {
         key: "<leader>t"
@@ -312,8 +218,6 @@
         mode: "nvim:normal"
         also: ["<leader>cf"]
         why: "Table mode is switched on by a FileType autocmd, not by the plugin itself: `vim-table-mode` ships inactive and needs `TableModeEnable` per buffer. Without the autocmd only the file you opened nvim with would align, and every markdown buffer you `:edit` afterwards would not."
-        verify: [{kind: "prose"}]
-        source: "prds/03-editor/15-markdown-tables/prd.md"
     }
 
     # -------------------------------------------------------------------- find
@@ -327,11 +231,6 @@
         mode: "nvim:normal"
         also: ["<Tab> <S-Tab> <CR> (telescope)", "<leader>fg"]
         why: "This is the editor's finder, and it is deliberately not the shell's. television owns the shell's pickers, telescope owns the editor's; unifying them was considered and rejected."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>ff", desc: "Find files"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader><space>", desc: "Find files"}
-        ]
-        source: "prds/03-editor/08-telescope/prd.md"
     }
     {
         key: "<leader>fg"
@@ -342,8 +241,6 @@
         step: 7
         mode: "nvim:normal"
         also: ["<leader>ff and <leader><space>", "<Tab> <S-Tab> <CR> (telescope)"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fg", desc: "Live grep"}]
-        source: "prds/03-editor/08-telescope/prd.md"
     }
     {
         key: "<leader>fb"
@@ -354,8 +251,6 @@
         step: 8
         mode: "nvim:normal"
         also: ["<S-h> <S-l> <leader>bd"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fb", desc: "Buffers"}]
-        source: "prds/03-editor/08-telescope/prd.md"
     }
     {
         key: "<leader>fh"
@@ -365,8 +260,6 @@
         task: "files"
         step: 9
         mode: "nvim:normal"
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>fh", desc: "Help tags"}]
-        source: "prds/03-editor/08-telescope/prd.md"
     }
     {
         key: "<Tab> <S-Tab> <CR> (telescope)"
@@ -378,8 +271,6 @@
         mode: "nvim:normal"
         also: ["<leader>fg"]
         why: "`prose` because these maps are buffer-local to telescope's own prompt buffer, created only while a picker is open and gone once it closes — `maparg` can see them (a live picker really does return an `lhs`, with `buffer = 1`), but nothing static can, so no `nvim --headless` probe outside a running picker has anything to check against."
-        verify: [{kind: "prose"}]
-        source: "prds/03-editor/08-telescope/prd.md"
     }
 
     # ------------------------------------------------------------------- edit / lsp
@@ -393,11 +284,6 @@
         mode: "nvim:normal"
         also: ["Neovim's own LSP keys", "<leader>rn and <leader>ca"]
         why: "These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "gd", desc: "LSP: Goto definition", scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "gI", desc: "LSP: Goto implementation", scope: "buffer"}
-        ]
-        source: "prds/03-editor/09-lsp/prd.md"
     }
     {
         key: "<leader>rn and <leader>ca"
@@ -408,11 +294,6 @@
         step: 5
         mode: "nvim:normal"
         also: ["Neovim's own LSP keys", "gd and gI"]
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>rn", desc: "LSP: Rename", scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>ca", desc: "LSP: Code action", scope: "buffer"}
-        ]
-        source: "prds/03-editor/09-lsp/prd.md"
     }
     {
         key: "Neovim's own LSP keys"
@@ -423,18 +304,7 @@
         step: 4
         mode: "nvim:normal"
         also: ["gd and gI", "<leader>rn and <leader>ca"]
-        why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that plugin- and core-provided maps are allowlisted out of the drift check rather than documented."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "K", desc: "vim.lsp.buf.hover()", scope: "buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "grn", desc: "vim.lsp.buf.rename()"}
-            {kind: "nvim-map", mode: "n", lhs: "gra", desc: "vim.lsp.buf.code_action()"}
-            {kind: "nvim-map", mode: "n", lhs: "grr", desc: "vim.lsp.buf.references()"}
-            {kind: "nvim-map", mode: "n", lhs: "gri", desc: "vim.lsp.buf.implementation()"}
-            {kind: "nvim-map", mode: "n", lhs: "gO", desc: "vim.lsp.buf.document_symbol()"}
-            {kind: "nvim-map", mode: "n", lhs: "]d", desc: "Jump to the next diagnostic in the current buffer"}
-            {kind: "nvim-map", mode: "n", lhs: "[d", desc: "Jump to the previous diagnostic in the current buffer"}
-        ]
-        source: "prds/03-editor/09-lsp/prd.md"
+        why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you."
     }
     {
         key: "<leader>ss <leader>sl <leader>sd"
@@ -446,12 +316,6 @@
         mode: "nvim:normal"
         also: ["<leader>w and <leader>q"]
         why: "This is what tmux-resurrect brings back after a reboot: it re-launches nvim in the pane's directory with the restore command, and without a written session that pane would come back as an empty editor in the right place. The keys sit on `<leader>s` and not persistence.nvim's documented `<leader>q` because `<leader>q` is already Quit here, and making it a prefix would leave every quit waiting `timeoutlen` for a second key."
-        verify: [
-            {kind: "nvim-map", mode: "n", lhs: "<leader>ss", desc: "Restore session for this directory"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>sl", desc: "Restore last session"}
-            {kind: "nvim-map", mode: "n", lhs: "<leader>sd", desc: "Stop session save on exit"}
-        ]
-        source: "prds/07-multiplexer/06-nvim-session/prd.md"
     }
 
     # ----------------------------------------------------------------- claude
@@ -467,21 +331,17 @@
         step: 11
         mode: "nvim:normal"
         also: ["<leader>xc"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>x", desc: "Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xc"
         title: "Toggle Claude"
-        use: "Press `<leader>xc` to spawn Claude in a split below the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes."
+        use: "Press `<leader>xc` to spawn Claude in a split to the right of the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes."
         topic: "agents"
         task: "agents"
         step: 12
         mode: "nvim:normal"
         also: ["<leader>xf", "cll [model]", "cc [...args]"]
         why: "Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `cll` (claudecode's terminal_cmd), so model and proxy routing belong to cll: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what cll does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie)."
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xc", desc: "Toggle Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xf"
@@ -492,8 +352,6 @@
         step: 14
         mode: "nvim:normal"
         also: ["<leader>xc"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xf", desc: "Focus Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xr"
@@ -504,8 +362,6 @@
         step: 15
         mode: "nvim:normal"
         also: ["<leader>xc", "<leader>xC", "cr [...args]"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xr", desc: "Resume Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xC"
@@ -516,8 +372,6 @@
         step: 16
         mode: "nvim:normal"
         also: ["<leader>xr"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xC", desc: "Continue Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xm"
@@ -528,8 +382,6 @@
         step: 17
         mode: "nvim:normal"
         also: ["<leader>xc", "cll [model]"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xm", desc: "Select Claude model"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xb"
@@ -540,8 +392,6 @@
         step: 18
         mode: "nvim:normal"
         also: ["<leader>xs"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xb", desc: "Add current buffer"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xs"
@@ -552,8 +402,6 @@
         step: 19
         mode: "nvim:visual"
         also: ["<leader>xb", "<leader>xc"]
-        verify: [{kind: "nvim-map", mode: "v", lhs: "<leader>xs", desc: "Send to Claude"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xa"
@@ -564,8 +412,6 @@
         step: 20
         mode: "nvim:normal"
         also: ["<leader>xd", "<leader>xc"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xa", desc: "Accept diff"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
     {
         key: "<leader>xd"
@@ -576,7 +422,5 @@
         step: 21
         mode: "nvim:normal"
         also: ["<leader>xa"]
-        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xd", desc: "Deny diff"}]
-        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
 ]

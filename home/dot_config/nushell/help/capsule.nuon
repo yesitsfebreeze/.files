@@ -16,8 +16,6 @@
         mode: "shell"
         also: ["capsule --rebuild", "capsule list", "credentials in a capsule", "Ctrl+Shift+D"]
         why: "One container per directory, named after it, with a short path hash appended so two directories called `api` in different parents do not collide. This one command replaced five loosely coupled pieces — a terminal binding, a shell function, a task-runner recipe, a second Dockerfile and a credential script — that overlapped and drifted."
-        verify: [{kind: "command", name: "capsule"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule --rebuild"
@@ -30,8 +28,6 @@
         mode: "shell"
         also: ["capsule [dir]", "Ctrl+Shift+B"]
         why: "The only way to force a rebuild. A changed image definition is picked up automatically on the next mount; nothing else rebuilds implicitly, because an implicit rebuild in the middle of a working day is the thing that makes people stop using the tool."
-        verify: [{kind: "command", name: "capsule"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule list"
@@ -42,8 +38,6 @@
         step: 4
         mode: "shell"
         also: ["capsule clean"]
-        verify: [{kind: "command", name: "capsule list"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "capsule clean"
@@ -54,8 +48,6 @@
         step: 5
         mode: "shell"
         also: ["capsule list"]
-        verify: [{kind: "command", name: "capsule clean"}]
-        source: "prds/01-capsule/01-container-lifecycle/prd.md"
     }
     {
         cmd: "credentials in a capsule"
@@ -68,8 +60,6 @@
         mode: "container"
         also: ["capsule [dir]", "cc [...args]", "ssh in a capsule", "agents in a capsule"]
         why: "Everything arrives by mount, never in an image layer — `docker history` shows no credential material. `.gitconfig` is mounted read-only so authorship matches the host. The HTTPS credential is exported from the host's credential helper into a cache directory the container reads as its git credential store — synchronously on create and on `--rebuild`, backgrounded on any attach to an existing capsule, and on either path skipped while every exported file is under 60 seconds old, because the four-file export costs ~1.5s (git's helper 0.75–1.16s, an agent keychain read 0.34–0.50s) — over the whole warm-attach budget. That path is bound as a directory, never file by file: the refresh renames each file into place, so a rotated token reaches an already-running capsule."
-        verify: [{kind: "prose"}]
-        source: "prds/01-capsule/03-credential-propagation/prd.md"
     }
     {
         cmd: "ssh in a capsule"
@@ -82,8 +72,6 @@
         mode: "container"
         also: ["capsule [dir]", "credentials in a capsule"]
         why: "Keys are copied into a container-local directory rather than used from the read-only mount, because Docker Desktop's file sharing does not carry host permissions into the container in a form ssh accepts. The copy gets the mode each file needs: 700 on the directory, 600 on private keys and the generated config, 644 on `*.pub` (`setup-credentials.sh:59,67,68`). The no-prompt guarantee is `StrictHostKeyChecking accept-new` (`:115`), which accepts an unseen host key once rather than disabling verification the way `no` would. The `ssh-keyscan -T 5` pre-add (`:121-130`) is the optimisation, not the guarantee: it seeds `known_hosts` before the first connection when the network allows it, and `accept-new` covers the connection when it does not."
-        verify: [{kind: "prose"}]
-        source: "prds/01-capsule/03-credential-propagation/prd.md"
     }
     {
         cmd: "agents in a capsule"
@@ -96,7 +84,5 @@
         mode: "container"
         also: ["capsule [dir]", "credentials in a capsule", "cc [...args]"]
         why: "The Claude and OpenCode tokens are exported from the host's login keychain into a read-only mount, then symlinked into place (`setup-credentials.sh:208-213`, `:224-229`) rather than copied. A writable copy would let the container run its own OAuth refresh, and Claude's refresh rotates the refresh token — so a capsule refreshing on its own would invalidate the host's login. Borrowing the host credential and failing closed is the trade: if the access token expires while a long-lived capsule sits idle, the agent asks to log in, and re-mounting (or running the agent on the host) heals it."
-        verify: [{kind: "prose"}]
-        source: "prds/01-capsule/03-credential-propagation/prd.md"
     }
 ]

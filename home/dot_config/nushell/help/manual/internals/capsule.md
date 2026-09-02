@@ -10,11 +10,11 @@ Notes harvested from the capsule sources.
 const CAPSULE_IMAGE = "capsule:latest"
 ```
 
-capsule.nu — one directory, one dev container, one CLI (01-capsule/01, task C.2): `capsule [dir] [--rebuild]` plus the `list`/`clean` subcommands. Sourced by config.nu at the MODULES anchor; parses standalone under `nu -n` (theme.nu precedent) — the gate sources it directly, and no def here depends on anything config.nu sets up.
+capsule.nu — one directory, one dev container, one CLI (01-capsule/01, task C.2): `capsule [dir] [--rebuild]` plus the `list`/`clean` subcommands. Sourced by config.nu at the MODULES anchor; parses standalone under `nu -n` (theme.nu precedent), and no def here depends on anything config.nu sets up — which is what lets anything source it in isolation.
 
-EVERY DOCKER CALL GOES THROUGH `^docker`, so a PATH shim can observe every one — tests/capsule-lifecycle.sh drives this file against a recording shim and never touches the real daemon.
+EVERY DOCKER CALL GOES THROUGH `^docker`, so a PATH shim can observe or stand in for every one, and this file can be exercised against a recording shim without ever touching the real daemon. `^` also forces the external, so a `docker` def or alias in scope cannot silently take over.
 
-THE TOOL HAS NO WORKING DIRECTORY OF ITS OWN (R5, finding C-3): everything downstream of argument parsing uses the expanded `$target` only, and no directory change is ever made here. The legacy `mount` failed on exactly this — it moved itself to a non-existent hardcoded directory and mounted a `workspace/` subdirectory instead of the directory it was handed. The gate greps this file for the regression spellings, so they are kept out of this comment entirely and a hit is proof of a regression.
+THE TOOL HAS NO WORKING DIRECTORY OF ITS OWN (R5, finding C-3): everything downstream of argument parsing uses the expanded `$target` only, and no directory change is ever made here. The legacy `mount` failed on exactly this — it moved itself to a non-existent hardcoded directory and mounted a `workspace/` subdirectory instead of the directory it was handed. The regression spellings are kept out of this comment entirely, so a grep of the source for `cd ` or `workspace` returns a hit only if the bug has come back. Do not name them here.
 
 REBUILD DETECTION IS A CONTENT HASH IN AN IMAGE LABEL, NOT MTIME AND NOT A SIDE STATE FILE: the sha256 of the Dockerfile it was built from rides on the image as the `capsule.dockerfile` label, so a `touch` never triggers a rebuild and there is no second file to drift. The AUTO path updates the IMAGE ONLY and attaches to the existing container as-is; `--rebuild` is the one recreate gesture, because recreation destroys container-local state and the cheap mistake has to be the safe one (R2, R4 — and what help/capsule.nuon already promises).
 
@@ -34,8 +34,8 @@ them, because both have already been got wrong somewhere:
     an already-running container the old token forever. A directory bind
     shows the rename immediately, which is what lets a rotated credential
     heal a RUNNING capsule (R5).
-The image name. C.2 owns it; nothing else builds or tags it (dev-image's
-own gate uses throwaway capsule-gate-* tags).
+The image name. C.2 owns it; nothing else builds or tags it — anything
+exercising the build uses a throwaway tag of its own.
 
 ```
 const CAPSULE_PREFIX = "capsule-"
@@ -109,7 +109,7 @@ def _capsule_state [name: string] {
 
 _capsule_state: {exists, running, dir_label} for one container name. dir_label empty on an existing container means it is NOT ours (R6's ownership marker) — never adopt it, never remove it.
 
-dir_label is load-bearing: it is what guards the `--rebuild` REMOVAL. Step 6 of `capsule` refuses on an empty dir_label, and step 7's `^docker rm -f $name` never consults _capsule_owned — so nothing else stands between a forced rebuild and a container this tool did not create. Measured 2026-08-23: with the emptiness test neutered, `--rebuild` against a same-named container carrying no capsule.dir label asks docker to remove it. The foreign-rebuild scenario in tests/capsule-lifecycle.sh and its control hold that down; a refactor that drops the refusal turns them red.
+dir_label is load-bearing: it is what guards the `--rebuild` REMOVAL. Step 6 of `capsule` refuses on an empty dir_label, and step 7's `^docker rm -f $name` never consults _capsule_owned — so nothing else stands between a forced rebuild and a container this tool did not create. Measured 2026-08-23: with the emptiness test neutered, `--rebuild` against a same-named container carrying no capsule.dir label asks docker to remove it. Nothing holds that down but the refusal itself, so a refactor here has to re-run that counterfactual by hand: neuter the emptiness test, point `--rebuild` at a same-named container with no `capsule.dir` label, and confirm it refuses.
 
 Empty here really does mean "no marker": `index .Config.Labels` prints the empty string for a container that has no such label — measured against docker 29.4.0 and against text/template's `index` on a nil map, an empty map and a missing key. It never prints <no value>, which would read as non-empty and open the guard.
 
@@ -205,13 +205,13 @@ def _capsule_recents_read [] {
 
 THE PICKER IS A TELEVISION AD-HOC CHANNEL, NOT A HAND-ROLLED TUI. 04-shell's invariant I3 gives every picker screen to tv and names exactly one exception (fzf behind `zi`), so a second hand-rolled picker would be a new decision. Ad-hoc (`^tv --source-command …`, no channel argument) rather than a cable file, because a cable file would put a capsule surface inside ~/.config/television, which 04-shell/04 owns.
 
-EVERY TV CALL GOES THROUGH `^tv`, for the same reason every docker call goes through `^docker`: a PATH shim can then observe it, so tests/capsule-recents.sh drives the real picker path against a recording shim and never needs a terminal. _capsule_recents_read (R4): the store, pruned on read. A directory that no longer exists is dropped AND the pruned list is written back, so a dead entry leaves the picker for good instead of being filtered on every open. The write-back is non-fatal, like _capsule_record's: a store that cannot be rewritten must still be pickable.
+EVERY TV CALL GOES THROUGH `^tv`, for the same reason every docker call goes through `^docker`: a PATH shim can then observe it, so the real picker path can be driven against a recording shim without a terminal. _capsule_recents_read (R4): the store, pruned on read. A directory that no longer exists is dropped AND the pruned list is written back, so a dead entry leaves the picker for good instead of being filtered on every open. The write-back is non-fatal, like _capsule_record's: a store that cannot be rewritten must still be pickable.
 
 ```
 def _capsule_shquote [p: string] {
 ```
 
-_capsule_shquote: POSIX single-quote one path for the source command tv runs through sh — everything inside '' is literal, and an embedded quote is closed, escaped and reopened. A LOCAL helper and not finder.nu's: this file parses standalone under `nu -n` and the gate sources it directly, so no def here may belong to another module.
+_capsule_shquote: POSIX single-quote one path for the source command tv runs through sh — everything inside '' is literal, and an embedded quote is closed, escaped and reopened. A LOCAL helper and not finder.nu's: this file parses standalone under `nu -n`, so no def here may belong to another module.
 
 ```
 def _capsule_recents_pick [dirs: list] {
@@ -249,7 +249,7 @@ let name = (_capsule_name $target)
 if $rebuild or not $state.exists {
 ```
 
-4 — the credential export (C.3 R3/R4/R5). AFTER the docker and Dockerfile preconditions, never before: C.2's gate asserts that a missing docker means NOTHING happened, and that has to include leaving no credential directory behind.
+4 — the credential export (C.3 R3/R4/R5). AFTER the docker and Dockerfile preconditions, never before: a missing docker must mean NOTHING happened, and that has to include leaving no credential directory behind.
 
 SYNCHRONOUS ON THE CREATE PATH, BACKGROUNDED ON THE ATTACH PATH. The mount source must exist before `docker run`, and a cold start is dominated by docker anyway — but the export costs ~1.5s, which would break C.2 R2's "well under one second" warm attach. Backgrounded, the parent then blocks in `docker exec` for the whole session, so the job finishes long before anything inside reads a credential; and because the creds path is a DIRECTORY bind, the fresh token appears inside the already-running session rather than only on the next mount.
 
@@ -287,7 +287,7 @@ if $rebuild and $state.exists { ^docker rm -f $name | ignore }
 if not $exists and ((_capsule_setup_script) | path exists) {
 ```
 
-10 — first-run credential setup (C.3 spec02), CREATE PATH ONLY. It runs as `dev`, the image's unprivileged user: C.1 R5 already creates that user and the script writes only inside $HOME, so the exec carries neither a user override nor any privilege escalation. The legacy setup script ran with root privileges and created users itself; none of that survives the consolidation. The gate greps this file for both spellings, so they are kept out of this comment entirely and a hit is proof of a regression.
+10 — first-run credential setup (C.3 spec02), CREATE PATH ONLY. It runs as `dev`, the image's unprivileged user: C.1 R5 already creates that user and the script writes only inside $HOME, so the exec carries neither a user override nor any privilege escalation. The legacy setup script ran with root privileges and created users itself; none of that survives the consolidation. Both spellings are kept out of this comment entirely, so a grep of the source for a user override or a privilege escalation returns a hit only if one has come back. Do not name them here.
 
 A non-zero exit is one stderr line and the flow CONTINUES to the attach, so a broken setup leaves a usable container to debug in rather than no container at all.
 
@@ -327,7 +327,7 @@ set, and the `--rebuild` recreate never reads that set at all.
 
 The two guards are not the same test. _capsule_owned is label-key AND name prefix; step 6 tests the label's VALUE. They agree on every container this tool can create, because the create line always writes a non-empty capsule.dir. They diverge on one input nothing here can produce: a container someone else named capsule-* and labelled with an EMPTY capsule.dir. Step 6 refuses that one; clean removes it.
 
-tests/capsule-lifecycle.sh declares this list as RM_SITES and asserts set equality against the file, so a fourth site turns that gate red until the roster and this comment are updated with it.
+The roster above is maintained by hand and nothing checks it. Adding a fourth removal site means adding it here in the same change, or the next reader trusts a list of three.
 
 ```
 def "capsule recent" [] {
@@ -335,7 +335,7 @@ def "capsule recent" [] {
 
 capsule recent (R2): pick a recently mounted directory and mount it. The pick funnels straight back into `capsule`, so there is exactly one mount path (the epic's one-entry-path acceptance) and this def knows nothing about images, names or containers.
 
-THE TTY GUARD IS $nu.is-interactive, and it fails FIRST. tv has no headless mode: run without a terminal it aborts with "television had a problem and crashed" and writes a crash report (measured 0.15.9, 2026-08-23), so the clean error has to come before the call. Ctrl+Shift+O reaches this def through `nu --execute`, where $nu.is-interactive is TRUE — measured on nushell 0.114.1, 2026-08-23; it is false under `-c`, which is why the hermetic gate drives the helpers rather than this def.
+THE TTY GUARD IS $nu.is-interactive, and it fails FIRST. tv has no headless mode: run without a terminal it aborts with "television had a problem and crashed" and writes a crash report (measured 0.15.9, 2026-08-23), so the clean error has to come before the call. Ctrl+Shift+O reaches this def through `nu --execute`, where $nu.is-interactive is TRUE — measured on nushell 0.114.1, 2026-08-23; it is false under `-c`, so anything checking this without a terminal has to drive the helpers rather than this def.
 
 ## `executable_setup-credentials.sh`
 
@@ -347,7 +347,7 @@ set -eu
 
 chezmoi deploys this to ~/.config/capsule/setup-credentials.sh (0755, the `executable_` prefix). The capsule CLI mounts it read-only at /opt/capsule/setup-credentials.sh and runs it ONCE, as `dev`, on the create path. It turns the read-only host mounts into working SSH, git and agent auth inside the container. Nothing it writes ever leaves the container.
 
-IT LIVES BESIDE THE DOCKERFILE, AND THAT DIRECTORY IS THE BUILD CONTEXT. A script here is fine — the Dockerfile has no COPY and no ADD, and C.1's gate keeps it that way — but a credential here would be one `COPY .` from an image layer. Never write generated material into ~/.config/capsule.
+IT LIVES BESIDE THE DOCKERFILE, AND THAT DIRECTORY IS THE BUILD CONTEXT. A script here is fine — the Dockerfile has no COPY and no ADD, and must not gain one — but a credential here would be one `COPY .` from an image layer. Never write generated material into ~/.config/capsule.
 
 WHAT IT MAY ASSUME
   * It runs as `dev` (the image's unprivileged user, C.1 R5). It needs no
@@ -355,8 +355,8 @@ WHAT IT MAY ASSUME
     made the user, which is the single biggest simplification over the
     legacy setup script, which created users, edited the privileged-user
     policy file, and cloned a dotfiles repo over SSH before any credential
-    was known to work. The gate greps this file for both spellings, so
-    they are kept out of it entirely and a hit is proof of a regression.
+    was known to work. Both spellings are kept out of this comment
+    entirely, so a grep of the source finds one only if it has come back.
   * The image has git, openssh-client, bash, zsh and coreutils (C.1 R2 and
     its support set). It installs NOTHING — the toolbox is closed (C.1 R7).
   * Mounts, all read-only, all optional: /opt/capsule/host/ssh,
@@ -417,7 +417,7 @@ One word per key, deliberately split. shellcheck disable=SC2086
 printf '  StrictHostKeyChecking accept-new\n'
 ```
 
-accept-new, and NEVER the `no` value: `no` disables host verification entirely instead of only the prompt. accept-new is the backstop that keeps the first connection from prompting when the keyscan below could not run. The gate greps this file for the forbidden spelling, so it is kept out of this comment entirely and a hit is proof of a regression.
+accept-new, and NEVER the `no` value: `no` disables host verification entirely instead of only the prompt. accept-new is the backstop that keeps the first connection from prompting when the keyscan below could not run. The forbidden spelling is kept out of this comment entirely, so a grep of the source finds it only if it has come back.
 
 ```
 if [ ! -f "$HOME/.ssh/known_hosts" ] || ! grep -q 'github\.com' "$HOME/.ssh/known_hosts"; then
