@@ -18,6 +18,7 @@ here and add its row below in the same change.
 - [Nushell modules](./nushell-modules.md) — history, finder, zoxide, theme, recents and the rest.
 - [The help command](./help.md) — How `help` and `?` are built, and the four constraints that shape them.
 - [Capsule](./capsule.md) — Container lifecycle, credentials, the image.
+- [Provisioning](./provisioning.md) — `brew bundle` then `chezmoi apply`, and the traps around them.
 - [Never verified by a person](./unverified.md) — 81 interactive checks that were written and never run.
 
 ## Why these are not comments any more

@@ -78,8 +78,20 @@ bad = [b.strip() for b in re.findall(r'```\n(.*?)```', doc, re.S)
 if bad: print("FAIL: help.md quotes a def that is not in help.nu:"); print(*bad, sep='\n')
 sys.exit(1 if bad else 0)
 PY
+# A filename appearing ANYWHERE in index.md is not a description of it — and
+# `index.md` naming itself (which it must, to explain that these pages are
+# hand-written) would satisfy such a check for free. Require a real link row
+# with prose after it, and skip the index itself: an index does not link to
+# itself.
 for f in $I/*.md; do
-  rg -qF "$(basename "$f")" $I/index.md || fail "index.md does not list $(basename "$f")"
+  b=$(basename "$f")
+  [ "$b" = "index.md" ] && continue
+  rg -q "\]\(\./$b\) — .+" $I/index.md || fail "index.md does not describe $b in a link row"
+done
+# The index must still be complete in the other direction: every row it carries
+# must point at a page that exists.
+rg -o '\]\(\./[a-z-]+\.md\)' $I/index.md | sed 's#^](\./##; s#)$##' | while read -r n; do
+  test -f "$I/$n" || { echo "FAIL: index.md links ./$n, which does not exist"; exit 1; }
 done
 
 # ── spec04: the deletions are true of the MACHINE, not only the repo ────────

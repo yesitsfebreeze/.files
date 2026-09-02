@@ -2,14 +2,12 @@
 # chezmoi deploys this file to ~/.config/capsule/Dockerfile; the capsule CLI
 # (C.2) builds from that path and hashes it for rebuild detection.
 #
-# Layer order is R6's contract: cheapest-changing last. Editing the final
-# config layer must invalidate nothing above it; tests/dev-image.sh --build
-# proves exactly that.
+# Layer order is the contract: cheapest-changing last, so editing the final
+# config layer invalidates nothing above it.
 #
-# R7: the toolbox is closed. R2/R3/R4 plus the support set in layer 1 are
-# exhaustive; tests/dev-image.sh --static fails the definition on any package
-# outside them. No COPY/ADD: the build context stays empty, so no host file —
-# and no credential — can enter a layer (credentials arrive by mount, C.3).
+# The toolbox is closed. No COPY/ADD: the build context stays empty, so no
+# host file — and no credential — can enter a layer; credentials arrive by
+# mount.
 
 FROM ubuntu:24.04
 

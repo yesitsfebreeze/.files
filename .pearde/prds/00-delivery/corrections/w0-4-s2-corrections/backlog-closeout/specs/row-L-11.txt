@@ -1,1 +1,0 @@
-| L-11 | `02-terminal/03-f5-jump-mode` — to be carried by `w0-2-terminal-respec`, which lists this node in its `deps` | The F5 miss path rings BEL, but `audible_bell = "Disabled"` and no visual bell is set: a mistyped jump letter gives **no feedback at all**. |

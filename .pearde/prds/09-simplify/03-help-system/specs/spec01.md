@@ -37,7 +37,7 @@ uphold rather than re-take:
 
 ## Acceptance
 
-- [x] `help.nu` is at most 200 lines and defines exactly two public names, `help` and `docs` — `wc -l` → **198**. The public names are `help`, `docs` and the `?` alias R4 requires; every other `def` is `_help_`-prefixed.
+- [x] `help.nu` is at most 200 lines and defines exactly **three** public names — `help`, `docs`, and `?` as an alias of `docs` — `wc -l` → **198**; every other `def` is `_help_`-prefixed. **The box as written said "exactly two" and was self-contradicting**: R4 requires `?`, and `help.nu:161` defines it, so a literal reading of the box could only have been closed by deleting the alias the same requirement demands. Corrected to three rather than ticked past.
 - [x] `nu -l -c 'help --check'` fails with nushell's own unknown-flag error, not a message of ours — output matches `doesn't have flag`, which is nushell's wording, not ours.
 - [x] `nu -l -c 'help'`, `nu -l -c 'help navigate'` and `nu -l -c 'help --json'` all render — all three exit 0; `help --json | from json | get entries | length` → **113**, matching the corpus count the PRD's corrected acceptance names.
 - [x] no `HELP_CHECK` in the Neovim config, and `nvim --headless +qa` exits 0 — `rg -c HELP_CHECK lazy.lua` → 0, `nvim --headless +qa` → 0.

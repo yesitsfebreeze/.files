@@ -554,7 +554,7 @@ clear = true is epic I7, and what it guards is a re-run of this config function,
 
 get_palette() needs no eager-vs-augroup ordering worry here, unlike lua/plugins/colorscheme.lua: that node runs at priority 1000 with lazy = false, so by the time this file loads on VeryLazy the palette is committed. The eager setup call is still required — it is the first build — but the startup ColorScheme has already fired by then, which is why the handler only matters for later switches.
 
-The diff component shells out to git: `git -C <dir> --no-pager diff --no-color --no-ext-diff -U0 -- <file>`. With no git on PATH there is no error and no crash — branch still resolves by reading .git/HEAD, and the diff section silently renders nothing. install.sh's PKGS carries git=git, and font-caskaydia-cove-nerd-font too, which is what makes the branch, file and fileformat glyphs render as icons rather than tofu.
+The diff component shells out to git: `git -C <dir> --no-pager diff --no-color --no-ext-diff -U0 -- <file>`. With no git on PATH there is no error and no crash — branch still resolves by reading .git/HEAD, and the diff section silently renders nothing. The `Brewfile` carries git, and font-caskaydia-cove-nerd-font too, which is what makes the branch, file and fileformat glyphs render as icons rather than tofu.
 
 
 ## `lua/plugins/table-mode.lua`

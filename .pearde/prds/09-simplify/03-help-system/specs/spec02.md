@@ -54,7 +54,7 @@ R7 named, recorded so nobody re-derives them:
 ## Acceptance
 
 - [x] no `verify:` or `source:` line survives in any of the four surfaces — the rg finds nothing.
-- [x] all six `.nuon` files still parse and return the same row counts as before the strip — shell 45, nvim 40, terminal 21, capsule 7, topics 9, tasks 14; 45+40+21+7 = **113**, which is the number `help --json` reports.
+- [x] all six `.nuon` files still parse and return the same row counts as before the strip — nvim 40, terminal 21, capsule 7, topics 9, tasks 14 are **unchanged**; 45+40+21+7 = **113**, the number `help --json` reports. **`shell.nuon` is not unchanged and the box as first ticked hid that**: it went 48 → 45. Reconciled against the true pre-change baseline `3f02c2c^` (not HEAD, which now contains this pass), the three ids removed are exactly `help --fuzzy`, `help --md` and `help --check` — the flag entries R4 and R5 delete, so the drop is the requirements landing and not a strip casualty. Measured by diffing the id lists, not by trusting the delta.
 - [x] no generated page under `manual/guide` or `manual/reference` contains the string `prds/` — the rg finds nothing.
 - [x] no surface asserts a drift check, a documentation site, a "not yet live" behaviour, or a deleted `help` flag — the rg finds nothing.
 - [x] `manual/guide` and `manual/reference` are byte-identical to a fresh `just manual` run — snapshotted, regenerated, `diff -r` silent on both trees. Re-checked after the spec03 edits: generation is still a fixed point, and `just manual` reports `reference: 9 pages, 113 entries`.

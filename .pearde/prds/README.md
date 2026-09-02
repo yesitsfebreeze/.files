@@ -13,8 +13,10 @@ system and PRD conventions.
 
 **Execution:** the ordered, parallelized plan for building this lives in
 [`00-delivery/`](00-delivery/prd.md), with the schedule in each node's own
-frontmatter (`est`, `deps`, `priority`). The build order below is the
-human-readable summary; the frontmatter dep graph is the operational one.
+frontmatter (`needs`, `priority`, `complexity`). Run
+`python3 ~/dev/infra/pearde/resources/board/plan.py plan` for the operational
+order — a wave list written into this file goes stale the day dependencies
+change, which is why none is kept here.
 
 Items marked `DO NOT PORT` / `DEFER` are excluded by design (listed at the
 bottom so the decision stays visible). The docker/mount capabilities are
@@ -145,61 +147,6 @@ prds/
     ├── 07-provisioning/                 a Brewfile and sixty lines
     └── 08-litellm-out/                  the litellm stack leaves the repo
 ```
-
-## Build order
-
-Generated from the dependency graph (each node's `deps:` frontmatter; folded
-from the retired `.mi/gantt/plan.json` on 2026-08-22) — the wave layout is
-the operational order and this is its summary. A node is claimable when its
-`deps` are resolved and its children are covered, so the waves below are what
-the dependency graph permits, not a preference.
-
-1. **D.2** · **D.3** · H.1 · W0.1 · W0.3 · W0.6
-2. **D.1b** · **D.1c** · **D.1d** · E.1 · P.1 · W0.4 · W0.4a · W0.4b ·
-   W0.4c · W0.4d · W0.4e · W0.4f · W0.4g
-3. E.2 · E.3 · E.4 · G.1 · H.2 · P.2 · P.3 · P.5 · W0.2 · W0.4i · W0.5
-4. C.1 · E.10 · E.11 · E.12 · E.14 · E.15 · E.5 · E.6 · E.8 · E.9 ·
-   P.4 · T.1 · W0.4h
-5. C.2 · E.13 · E.7 · S.1 · T.2 · T.8
-6. C.3 · S.2 · S.9 · T.3
-7. S.3 · T.4
-8. S.8 · T.6
-9. S.4 · **S.10** · T.7
-10. C.4 · S.6
-11. S.5
-12. S.7
-13. H.3
-14. H.5
-15. H.4
-16. H.1c
-
-Bold is `hitl` — a person answers it; an agent must not.
-
-`07-multiplexer` carries no `task:` ids and is deliberately absent from the
-waves above: those were folded from the retired `.mi/gantt/plan.json`, and
-inventing ids to extend a generated list is how a summary starts lying about
-where it came from. Its order is its own `needs:` graph —
-`01-session-and-windows` first, then `02`–`05` in parallel, `08` after all
-four, with `06`/`07` on their own thread — and
-`python3 ~/dev/infra/pearde/resources/pearde.py plan` is the operational
-answer for the whole board. The epic reverses `02-terminal` **I1** and half of
-**I2**; the argument is in
-[`memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome`(../../prds/memos/tmux-owns-multiplexing-wezterm-keeps-the-chrome.md),
-not here.
-
-`08-claude-agent` is likewise absent from the waves: it is net-new and
-carries no `task:` ids. Its order is its own `needs:` graph —
-`01-tmux-mcp` and `02-nvim-plugin` first (both bare `needs:`), then
-`03-tmux-config` after `07-multiplexer/01-session-and-windows` and
-`04-help-entries` after `02-nvim-plugin`.
-
-`09-simplify` is a meta-epic (no C/U) and runs after everything above. Its
-order is its own `needs:` graph — `01-hygiene` first; `02-board`,
-`03-help-system` and `07-provisioning` in parallel after it; `04-nushell`
-then `05-terminal` serially after `03` because `config.nu` and
-`wezterm.lua` each have one writer; `06-neovim-television` after `03`; and
-`08-litellm-out` last, after `06`. The audit it was cut from is
-[`docs/simplification-plan.md`](../../docs/simplification-plan.md).
 
 ## Excluded
 

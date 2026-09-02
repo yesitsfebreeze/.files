@@ -17,6 +17,9 @@ blast-radius: mid
 
 Parent: [Corrections backlog](../prd.md) · net-new
 
+About the pearde board tooling (the wave runner / `verify:` gate), not this
+repo's configuration — noted per `09-simplify/02-board` R6.
+
 Purpose: [`mi-rooted-verify-commands`](../mi-rooted-verify-commands/prd.md)'s
 R5 recommended a path-existence check on `verify:` and then argued itself out
 of gating it, on five reasons. The fifth settles it: after that node's repoint,
