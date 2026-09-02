@@ -1,6 +1,6 @@
 # pass.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def "nu-complete pass" [] {
     let store = ($env.PASSWORD_STORE_DIR? | default ($nu.home-dir | path join ".password-store"))

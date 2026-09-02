@@ -12,6 +12,7 @@ footprint:
   - prds/00-delivery/corrections/w0-2-terminal-respec/specs/spec03.md
 verify: ""
 origin: derived
+from: tbd
 ---
 
 # The tab-healing latch claim was substantially right; the refutation on record is what fails

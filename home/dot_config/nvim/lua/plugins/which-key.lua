@@ -1,6 +1,6 @@
 -- lua/plugins/which-key.lua
 -- Why this file is shaped the way it is:
---   docs-site → Internals → Neovim
+--   manual → internals/neovim
 
 return {
   "folke/which-key.nvim",

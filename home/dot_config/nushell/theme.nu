@@ -1,6 +1,6 @@
 # theme.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 const THEME_SLOTS = ["a" "b"]
 const THEME_SLOT_FALLBACK = "base16-gruvbox-light-hard"

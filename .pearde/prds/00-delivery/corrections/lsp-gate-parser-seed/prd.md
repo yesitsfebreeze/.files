@@ -3,11 +3,12 @@ state: done
 claim: 
 priority: 41
 est: 0.5h
-actual: 1h10m
+actual: 70m
 mode: afk
 needs:
 verify: ""
 origin: derived
+from: 03-editor/10-treesitter
 ---
 
 # `tests/nvim-lsp.sh` is red: 125 PASS → 60 PASS / 65 FAIL

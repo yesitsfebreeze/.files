@@ -50,6 +50,6 @@ hand-written and is the one place to add a *why*.
 | `<word>` | type a directory name on its own to jump there |
 | `F5` `1`–`9` | change window · `F5` `a`–`i` change pane |
 | `F5` `←↑↓→` | split, in that direction |
-| `Ctrl-Space` | find a file, a line, a directory, a commit |
+| `F3` | search here · `Shift+F3` search everywhere — say what, then where |
 | `Ctrl-R` | search this directory's history |
 | `?` | search this manual · `help` the same manual by entry |

@@ -62,3 +62,29 @@ Copy mode on `copy-mode-vi`: `Ctrl+Shift+X` enters with the selection and the pe
 <!-- `## Failure` — implementer-only, after a FAILED attempt: what broke, what
      was tried. `retry` moves this into the body as history and reopens the
      PRD. -->
+
+## Corrected 2026-09-01 — the entry key, and the sink that was never wired
+
+Two defects, both live from the cutover until 2026-09-01, both in this node's
+scope:
+
+- **`Ctrl+Shift+X` never worked.** This node's own probe (`probe/notes.md` C2)
+  measured the cause and filed the fix as a one-line WezTerm shim on
+  `08-wezterm-reduction`; that node shipped without it. The obligation is now
+  **withdrawn**, not overdue — the shim would have been a WezTerm binding
+  rescuing this epic's headline key, which [**I1**](../prd.md) forbids.
+  `bind -n F4 copy-mode` replaces it and the `C-S-x` binding is deleted.
+- **The sink was chosen and never used.** `@copy-sink pbcopy` was read by the
+  `y` binding alone. Every other copy path — `Enter`, the mouse drag-release,
+  double- and triple-click — ran stock `copy-pipe-and-cancel` with no command,
+  which fills tmux's paste buffer and stops; under `set-clipboard off` that is
+  the end of the line. Selecting text and pressing anything but `y` left the
+  system clipboard untouched. The sink is now an option every path names,
+  expanded with `send -FX` (plain `-X` does not expand formats and would pipe
+  to the literal `#{@copy-pipe}`), and `Ctrl+C` in `copy-mode-vi` copies on
+  `#{selection_present}` instead of the stock bare `cancel`.
+
+Both arms are now driven rather than reasoned about: with `pbcopy` on `PATH`
+the selection reaches `pbpaste`; on a server started with no `pbcopy`, no
+`infocmp` and no `nu`, the same `y` puts base64 on an attached client's tty as
+OSC 52. The fixture is in `manual → internals/tmux`.

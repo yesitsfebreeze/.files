@@ -10,6 +10,7 @@ footprint:
   - AGENTS.md
 verify: ""
 origin: derived
+from: 00-delivery/corrections/autolist-width-guard-reason
 ---
 
 # A census verdict must not be able to say "exact"

@@ -8,6 +8,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 00-delivery/corrections/terminal-inventory-path-claim
 ---
 
 # "The GUI launch dies" survives in five more places

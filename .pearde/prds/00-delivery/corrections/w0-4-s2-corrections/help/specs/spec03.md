@@ -88,5 +88,14 @@ files on purpose — a PRD-only assertion would go green on a schema entry that
 no longer matches the enforcement.
 
 ```
-nu -n -c 'let t = (open --raw prds/06-help/01-content-model/prd.md | str replace -ar "\\s+" " "); let g = (open --raw tests/help-content-model.nu | str replace -ar "\\s+" " "); let checks = [[want, phrase]; [true, "[x] `source` —"], [true, "the field the detail views render"], [true, "REQUIRED = [\"title\" \"use\" \"topic\" \"mode\" \"verify\" \"source\"]"]]; let bad = ($checks | where {|r| ((if $r.phrase =~ "REQUIRED" { $g } else { $t }) | str contains $r.phrase) != $r.want}); if ($bad | is-empty) { print "ok" } else { print ($bad | to text); exit 1 }'
+nu -n -c 'let t = (open --raw prds/06-help/01-content-model/prd.md | str replace -ar "\\s+" " "); let checks = [[want, phrase]; [true, "[x] `source` —"], [true, "the field the detail views render"]]; let bad = ($checks | where {|r| ($t | str contains $r.phrase) != $r.want}); if ($bad | is-empty) { print "ok" } else { print ($bad | to text); exit 1 }'
 ```
+
+
+**Amended 2026-09-01**: the `g` clause read `tests/help-content-model.nu` for
+the `REQUIRED = [...]` enforcement line. `tests/` was retired on 2026-08-31 by
+the memo `tests-and-gates-retire-a-dev-setup-is-not-a-product`, so the clause
+asserted against a file deleted by decision and the block was red on
+`file_not_found`, not on the PRD drifting. The two PRD clauses stay; the
+schema now has no mechanical enforcement to cross-check, which is the
+retirement decision working as recorded, not a gap this spec may reopen.

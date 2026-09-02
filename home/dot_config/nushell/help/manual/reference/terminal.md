@@ -12,11 +12,13 @@ Every entry links to where the guide explains it.
 | `F5 <digit>` | Jump to a window by its number | terminal | [Move around windows and panes](../guide/windows.md#f5-digit) |
 | `F5 <letter>` | Jump to a pane by its letter | terminal | [Move around windows and panes](../guide/windows.md#f5-letter) |
 | `F5 <arrow>` | Split the view in a direction | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
+| `F5 q` | Close the pane you are working in | terminal | [Move around windows and panes](../guide/windows.md#f5-q) |
 | `F5 F5` | Send F5 through to a nested session | terminal | [Move around windows and panes](../guide/windows.md#f5-f5) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
-| `Ctrl+Shift+X` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
+| `F4` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
 | `copymode` | Enter copy mode without touching a chord | shell | [Copy and paste](../guide/copy.md#enter-copy-mode) |
+| `drag` | Select with the mouse and have it on the clipboard | terminal | [Copy and paste](../guide/copy.md#drag) |
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |
 | `Ctrl+C` | Copy the selection, or interrupt when there is none | terminal | [Copy and paste](../guide/copy.md#ctrl-c) |
 | `Ctrl+Alt+Super+drag` | Move the window without a titlebar | terminal | [Move around windows and panes](../guide/windows.md#ctrl-alt-super-drag) |

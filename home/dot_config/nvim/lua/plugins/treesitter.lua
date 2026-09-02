@@ -1,6 +1,6 @@
 -- lua/plugins/treesitter.lua
 -- Why this file is shaped the way it is:
---   docs-site → Internals → Neovim
+--   manual → internals/neovim
 
 return {
   "nvim-treesitter/nvim-treesitter",

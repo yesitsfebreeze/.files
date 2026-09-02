@@ -279,7 +279,9 @@ identical code. That is why the parse-dead FAIL count of this gate is
 path-dependent: 20 measured in-tree, 18 in a frozen copy, for the same outage.
 
 A retry of this node owns tightening that assertion to something a path cannot
-satisfy. It is the same defect class as the `T.4` `opacity` box and R10's
+satisfy. It is the same defect class as the `T.4` `opacity` box (the
+[`wallpaper-opacity`](../../00-delivery/decisions/wallpaper-opacity/prd.md)
+decision's territory) and R10's
 `get_current_working_directory` — an assertion whose subject is wider than what
 it means to check — and it is the fifth instance on this board.
 

@@ -66,6 +66,40 @@ pane key at all and `wezterm.lua` is roughly 470 lines shorter.
   the capsule `SendString` keys. It stays, correctly, and stops pretending to
   be architecture.
 
+## Invariants
+
+**I1** — **every gesture this epic owns works on a bare server with no
+WezTerm.** Over ssh, on a console, under an emulator nobody has configured:
+the portable layer is portable or it is not the portable layer. Three things
+follow, and they are the test a binding has to pass before it lands in
+`tmux.conf`:
+
+- **No binding may depend on the emulator negotiating a protocol.** A chord
+  the legacy encoding cannot spell — anything needing CSI-u or
+  modifyOtherKeys to be distinguishable — is not portable, however well it
+  works on the desk it was written on. The function-key row (`F3`, `F4`, `F5`,
+  `F6`) is the idiom precisely because it asks the terminal for nothing.
+- **No binding may depend on a helper only this machine has.** Where a
+  capability has two implementations the arm is chosen at load time by probing
+  for the thing — `command -v pbcopy`, `infocmp tmux-256color` — and the
+  other arm has to be a real path somebody has run, not a theoretical one.
+- **A capability that genuinely cannot be portable is the emulator's,** and it
+  is documented as the emulator's rather than smuggled in here. Pasting the
+  local clipboard is the honest example: only the program in front of the human
+  can read it, so it stays a terminal binding and the manual says so.
+
+Established 2026-09-01, after `Ctrl+Shift+X` — the only copy-mode entry — was
+found to reach tmux as an unbound `C-x` and pass straight through to the pane.
+It had been documented as working since the cutover. The failure is the shape
+this invariant exists to catch: correct on paper, silent in practice, and
+invisible to anyone not sitting at the one terminal it was tried on.
+
+**I1 is not a style rule about comments.** `tmux.conf`'s header has said
+"Nothing here may assume WezTerm, macOS or Homebrew" since the cutover, and
+the chord shipped anyway, because a header is not a check anybody runs. What
+makes I1 different is that it names the *test*: press it somewhere that is not
+this desk.
+
 ## Constraints
 
 - **Invariant I3 stands.** WezTerm's `PaneSelect` remains forbidden and the
@@ -424,6 +458,15 @@ means two different things.
 the active pane's cwd joins the clock on the right. Locally it reads almost
 like today's bar; over ssh it tells you where you are.
 
+*Amended 2026-09-01 — the segment kept its content and swapped sides.* Host,
+cwd and clock are now the whole LEFT segment and `status-right` is empty, so
+`status-justify right` can put the window digits at the terminal's right edge.
+The reason is Q3's addressing, not taste: the pane letter moved to each pane's
+outermost right column in the same change, and a window digit at the left end
+would have left the two halves of one `F5` address in opposite corners. What
+Q9 actually settled — hostname present only when it varies, cwd beside the
+clock — is unchanged; only the edge is.
+
 **Q10** — Double-tap forwards. `F5 F5` sends a literal `F5` inward while a
 single `F5` stays local. This falls out of the design already chosen: `F5`
 pushes a key table, so `bind -T jump F5 send-keys F5` is the whole mechanism,
@@ -482,7 +525,7 @@ picks its sink accordingly.
 |---|---|---|
 | `01-session-and-windows` | The tmux base: one session `main` reached by an idempotent `new-session -A -s main`, stable window indices (`base-index 1`, `renumber-windows off`), and the terminal-integration floor every other child sits on — `tmux-256color` with a `screen-256color` fallback for minimal hosts, `*:RGB` and undercurl overrides, `escape-time 10` so Esc does not lag in nvim, `focus-events on`, OSC passthrough. `default-command` starts nushell resolved on PATH with a fallback, never the absolute launchd-era path, because a remote's nu is somewhere else. Lazily created windows start at `~` (Q14). | — |
 | `02-key-tables` | F4, F5 and F6 as tmux bindings and nothing in WezTerm. F4 pushes a table where an arrow splits in that direction with `-c "#{pane_current_path}"`; F5 pushes a table where a digit selects window N or creates it at that index when absent (Q2), and `a`–`i` select pane index 1–9 (Q3). Every letter stays bound so a mistyped one cancels rather than leaking a character — the reason `02-terminal/03-f5-jump-mode` R2 gives still holds on the new mechanism. `bind -T jump F5 send-keys F5` and its F4 twin are the double-tap that forwards a key to a nested session (Q10); F6 is never forwarded, because the palette belongs to the outermost terminal. | 01-session-and-windows |
-| `03-status-bar` | The bar as tmux draws it: digit-only window labels, occupied vs empty tinted from `#{pane_current_command}`, the hostname on the left dimmed or blank when local, and the active pane's cwd beside the clock on the right (Q5, Q9). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return. | 01-session-and-windows |
+| `03-status-bar` | The bar as tmux draws it: digit-only window labels right-aligned, occupied vs empty tinted from `#{pane_current_command}`, and one left segment carrying the hostname (dimmed or blank when local), the active pane's cwd and the clock (Q5, Q9 as amended). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return. | 01-session-and-windows |
 | `04-palette-delivery` | tinty's hook emits OSC 4/10/11 through tmux to the attached terminal and writes `~/.config/tmux/colors.conf`, then `source-file`s it, so one apply retints the terminal, tmux's own surfaces and every pane at once (Q4). `wezterm-colors.sh`, `~/.config/wezterm/colors.lua` and WezTerm's reload watch are deleted, and `02-terminal` I2's second clause is amended where it is written. The `dofile`-never-`require` trap is retired into the memo as history rather than deleted. | 01-session-and-windows |
 | `05-copy-and-clipboard` | Copy mode on `copy-mode-vi`: `Ctrl+Shift+X` enters with the selection and the per-pane toggle cleared, `c` cycles cell→word→line per pane, `y` copies (Q6). The sink is pbcopy when the pane is on this machine and OSC 52 when it is not (Q14), which is the only arrangement where copying works both at this desk and over ssh. Terminal.app ignores OSC 52 and will fail silently there; say so in the manual entry rather than papering over it. | 01-session-and-windows |
 | `06-nvim-session` | Neovim writes and restores a session so there is something for resurrect to bring back (Q12, Q13). A session plugin owns it; **which plugin is the analyst's call to recommend, not to assume** — persistence.nvim is smaller and lazy-loadable, auto-session is branch-aware and brings a picker. This is work inside the `done` `03-editor` epic and its footprint is that epic's files, so it takes the single-writer rule with it and amends `03-editor` where the plugin list is stated. | — |

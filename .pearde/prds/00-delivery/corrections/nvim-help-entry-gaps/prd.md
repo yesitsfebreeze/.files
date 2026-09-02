@@ -15,6 +15,7 @@ needs:
   - 06-help/02-help-command
 verify: ""
 origin: derived
+from: 03-editor/03-autocmds
 ---
 
 # The editor's utility-buffer `q` has no manual entry

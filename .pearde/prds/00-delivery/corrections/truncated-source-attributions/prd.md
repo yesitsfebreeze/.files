@@ -8,6 +8,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 03-editor/09-lsp
 ---
 
 # Nine PRD headers cite a `source:` entry name that is cut off mid-string

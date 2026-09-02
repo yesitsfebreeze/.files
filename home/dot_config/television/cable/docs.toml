@@ -1,0 +1,60 @@
+# docs — grep the manual line by line and open the hit in the editor.
+#
+# This is the whole manual: `manual/guide/` and `manual/reference/` generated
+# from the same .nuon surfaces `help` reads, `manual/internals/` hand-written.
+# It replaced a fumadocs site on 2026-08-31 — a manual you have to `npm run
+# dev` to read is a manual you do not read. Markdown plus rg plus tv is the
+# same search with nothing to start.
+#
+# THE COMPANION CHANNEL IS `manual`, AND THEY ARE NOT THE SAME SEARCH.
+# `manual` matches an ENTRY (a key or a command, by id and title) and prints
+# it; `docs` matches any LINE of prose in the manual and opens the file there.
+# Reach for `manual` when you half-remember a key, `docs` when you remember a
+# sentence.
+#
+# Row shape is rg's: `<relative path>:<line>:<text>`, which is what makes the
+# `text` channel's decode (finder.nu, GrepList) work unchanged here.
+
+[metadata]
+name = "docs"
+description = "Grep every line of the manual — enter opens it in the editor at that line"
+requirements = ["rg", "bat", "nu"]
+
+# `nu -n -c` rather than a bare `rg`: the command is handed to $SHELL, and
+# `~` is expanded by nushell in a bare path but not inside the quotes the
+# preview needs. `cd` first so the rows carry SHORT paths — an absolute
+# /Users/... prefix on every row is 30 columns of the picker saying nothing.
+# `-n` loads no config; the latency reason is in nu-history.toml.
+[source]
+command = "nu -n -c 'cd ($nu.home-dir | path join .config nushell help manual); rg . --no-heading --line-number --color=always --colors \"match:fg:white\" --colors \"path:fg:blue\"'"
+ansi = true
+# The rows are relative, but a caller has to be able to OPEN what it gets, and
+# finder.nu's GrepList decode `path expand`s the file field against the
+# CALLER's cwd — which is not this one. So the output re-absolutises with a
+# literal `~/` prefix: templates take literal text around the placeholder, and
+# `path expand` resolves the tilde.
+output = "~/.config/nushell/help/manual/{strip_ansi|split:\\::..2}"
+
+[preview]
+command = "nu -n -c 'bat -n --color=always ($nu.home-dir | path join .config nushell help manual \"{strip_ansi|split:\\::0}\")'"
+env = { BAT_THEME = "ansi" }
+offset = '{strip_ansi|split:\::1}'
+
+[ui]
+preview_panel = { size = 60, header = '{strip_ansi|split:\::..2}' }
+
+[ui.input_bar]
+header = "manual    [enter] open it in the editor at that line"
+
+# Standalone (`tv docs`) enter opens the editor itself. Through finder — the
+# Ctrl-Space remote and `?` — enter is un-hijacked back to `confirm_selection`
+# by finder.nu and the RUNNER opens it, which is why binding it here costs
+# nothing there. `text.toml` is the same arrangement.
+[keybindings]
+enter = "actions:edit"
+
+[actions.edit]
+description = "Open the manual page in the editor at that line"
+command = "${EDITOR:-nvim} '+{strip_ansi|split:\\::1}' \"$HOME/.config/nushell/help/manual/{strip_ansi|split:\\::0}\""
+shell = "bash"
+mode = "execute"

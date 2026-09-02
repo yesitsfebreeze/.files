@@ -2,7 +2,7 @@
 
 # executable_setup-credentials.sh
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Capsule
+#   manual → internals/capsule
 
 
 set -eu

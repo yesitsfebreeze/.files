@@ -35,9 +35,9 @@ needs:
      would change only how loudly the board notices, it is a memo, not a PRD.
      See @references/parts/derived.md. -->
 
-# 03-status-bar — The bar as tmux draws it: digit-only window labels, occupied vs empty tinted from `#{pane_current_command}`, the hostname on the left dimmed or blank when local, and the active pane's cwd beside the clock on the right (Q5, Q9). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return.
+# 03-status-bar — The bar as tmux draws it: digit-only window labels right-aligned, occupied vs empty tinted from `#{pane_current_command}`, and one left segment carrying the hostname (dimmed or blank when local), the active pane's cwd and the clock (Q5, Q9 as amended 2026-09-01). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return.
 
-The bar as tmux draws it: digit-only window labels, occupied vs empty tinted from `#{pane_current_command}`, the hostname on the left dimmed or blank when local, and the active pane's cwd beside the clock on the right (Q5, Q9). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return.
+The bar as tmux draws it: digit-only window labels right-aligned, occupied vs empty tinted from `#{pane_current_command}`, and one left segment carrying the hostname (dimmed or blank when local), the active pane's cwd and the clock (Q5, Q9 as amended 2026-09-01). `pane-border-format` prints each pane's letter, which is what makes Q3's index addressing honest after a renumber. Finding T-9 still binds: the F5 legend was removed as noise and does not return.
 
 <!-- Three more headings exist, and none of them is a slot to copy down. Each
      is a claim about the state of this PRD, so an empty copy of it is a false

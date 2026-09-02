@@ -109,11 +109,18 @@ on every repaint; the terminal renders each one as a **phantom blank line**
 above the input. Nothing in this environment uses the terminal's semantic-zone
 features, so the markers are a clean cut.
 
-`osc7` stays **on**, and it is stated so the two disables are not mistaken for
-turning all terminal integration off: OSC 7 reports the cwd to the host
-terminal, which is what `#{pane_current_path}` ultimately reads. Both are on by
-default — a bare `nu -n` REPL under a pty emits `ESC]7;file://…` and
-`ESC]133;D;0`.
+`osc7` stays **on**, and it is load-bearing, not a leftover from the two
+disables above it: OSC 7 is the **only** way tmux can learn where a nushell
+pane actually is. `#{pane_current_path}` is the pane process's OS cwd, and
+nushell's `cd` moves `$env.PWD` without ever calling `chdir` — so that format
+answers the directory the pane was launched in and stays there for the life of
+the shell. `#{pane_path}` is the OSC 7 report, and it is what `tmux.conf`'s
+`@cwd` reads so a split lands where the prompt is. Corrected 2026-09-01: this
+paragraph said OSC 7 was "what `#{pane_current_path}` ultimately reads", which
+is backwards — the two are independent, and they disagree the moment you `cd`.
+
+Both markers are on by default — a bare `nu -n` REPL under a pty emits
+`ESC]7;file://…` and `ESC]133;D;0`.
 
 ## The PWD hook
 
@@ -247,11 +254,50 @@ string **variable**, only in a directly typed bare word. Only a leading `~` is
 touched — a full `path expand` would absolutize `.` and turn every plain-`ls`
 name column into absolute paths.
 
+## `rm`
+
+### `always_trash: true`, and `-p` for anything the user did not type
+
+`$env.config.rm.always_trash` is on, so a bare interactive `rm` moves the path
+to the macOS Trash — the safety net for a mistyped argument, and the reason
+nothing here reaches for a `trash` wrapper.
+
+It applies to *every* `rm` the shell runs, including the ones inside sourced
+scripts, and that is the trap. `help --check` used to `mktemp` six probe files
+per run and delete them one at a time as it went; under `always_trash` each of
+those deletes was a trash move rather than an unlink, so the sound played
+repeatedly and the probes piled into `~/.Trash`. Reported 2026-09-01 as a check
+that "always makes sounds".
+
+Two things came out of that, and the second matters more than the first:
+
+- **`-p` on any `rm` of a path the user did not type.** `capsule.nu`'s
+  credential drop is the remaining caller, and it wants `-p` twice over — a
+  trashed secret sits readable in `~/.Trash`.
+- **A probe is not garbage, so stop treating cleanup as a step.** `help
+  --check` now writes its six files into one directory, `$nu.temp-dir` /
+  `help-check`, emptied when a run *starts* (`_hc_scratch_reset`) and never
+  cleaned up after it. Nothing accumulates, because the next run clears it;
+  nothing is deleted mid-check, so a failed run leaves its evidence on disk
+  under a name that says what it is (`nvim-maps.json`, `probe.lua`,
+  `tmux.conf`) instead of a `mktemp` string that is already unlinked by the
+  time the error prints. It also removed a file that existed only to be
+  deleted: `mktemp` cannot give you a suffix, so the `.lua` probe was made by
+  `mktemp`ing a base, appending `.lua`, and deleting the base.
+
+The reset is load-bearing beyond tidiness: a fixed path could otherwise hand a
+run the *previous* run's dump to read as its own. Clearing at the start means a
+stale file cannot survive into the run that would read it. The cost is that two
+`help --check` runs at once would share the directory — this is a check a
+person types, not a daemon.
+
 ## `mkcd`, the navigation funnel
 
 Every kind of move lands here: real `cd`, zoxide jumps, picker jumps and the
-bare-word fallback. That is what makes it the one place the new-shell start dir
-is recorded.
+bare-word fallback. That is what makes it the one place the start dir is
+recorded. It is no longer the place it is *read*: since 2026-09-01 that is
+`~/.local/bin/tmux-main`, once per session — see tmux → "Where the start dir
+is read" for why a per-shell read broke every split.
 
 **Confirm semantics:** a **blank** keypress confirms (Enter, and also Space or
 Tab — the test is for a non-blank key, not for Enter specifically) and **any**

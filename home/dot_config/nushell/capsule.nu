@@ -1,6 +1,6 @@
 # capsule.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Capsule
+#   manual → internals/capsule
 
 const CAPSULE_IMAGE = "capsule:latest"
 const CAPSULE_PREFIX = "capsule-"
@@ -87,7 +87,7 @@ def _capsule_creds_write [name: string, content: any] {
 
 def _capsule_creds_drop [name: string] {
     let f = ((_capsule_creds_dir) | path join $name)
-    if ($f | path exists) { rm -f $f }
+    if ($f | path exists) { rm -pf $f }
 }
 
 def _capsule_creds_fresh [] {

@@ -1,6 +1,6 @@
 -- lua/config/lazy.lua
 -- Why this file is shaped the way it is:
---   docs-site → Internals → Neovim
+--   manual → internals/neovim
 
 local checking = vim.env.HELP_CHECK == "1"
 

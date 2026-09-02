@@ -10,6 +10,7 @@ footprint:
   - gates/waves.tsv
 verify: ""
 origin: derived
+from: 00-delivery/corrections/autolist-width-guard-reason
 ---
 
 # Nothing stops a retired claim coming back

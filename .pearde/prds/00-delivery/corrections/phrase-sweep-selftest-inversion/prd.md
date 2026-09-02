@@ -8,6 +8,7 @@ footprint:
   - gates/retired-phrases.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/retired-phrase-sweep
 ---
 
 # The phrase sweep is green and its own `--selftest` is red

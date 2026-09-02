@@ -132,6 +132,12 @@ config.keys = {
 	{ key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
 	{ key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
 	{ key = "q", mods = "SUPER", action = act.QuitApplication },
+	-- CTRL+SHIFT+Q closes this window. In the old config this needed a Lua
+	-- callback, because the nine-tab floor refilled any window faster than
+	-- tabs could be closed. That machinery is gone — tmux owns tabs now and a
+	-- WezTerm window is one tab running the tmux client — so closing the tab
+	-- closes the window. The tmux session detaches and survives.
+	{ key = "q", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
 	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
 
 	{ key = "d", mods = "CTRL|SHIFT", action = act.SendString("capsule\r") },
@@ -160,6 +166,26 @@ config.keys = {
 	},
 }
 
+-- SHIFT + click opens the link under the cursor, in tmux/nvim (mouse reporting
+-- on) and in the plain shell alike — one binding per reporting state.
+-- Three measured facts pin this shape:
+-- 1. mouse_reporting defaulting to false means a plain binding NEVER matches
+--    while an app tracks the mouse; only the duplicated mouse_reporting=true
+--    binding fires there (mouse.html, "will only be considered if the current
+--    pane's mouse reporting state matches").
+-- 2. SHIFT is WezTerm's default `bypass_mouse_reporting_modifiers`: the bypass
+--    strips the modifier before matching (wezterm#4536), so with the default
+--    in place a SHIFT binding can never fire under mouse reporting. The bypass
+--    therefore moves to ALT — the cost is ALT+click bypassing to a block
+--    selection under mouse reporting, a dead modifier here anyway.
+-- 3. Binding only the Up event still sends the DOWN stroke to the running
+--    program (mouse.html, "Gotcha on binding an 'Up' event only"). tmux takes
+--    the press, a jittered click becomes a drag, and its copy-mode selection
+--    eats the click — the "stuck in selection" failure. The two Nop Down
+--    bindings stop that: both halves of SHIFT+click are consumed by WezTerm
+--    in both reporting states.
+config.bypass_mouse_reporting_modifiers = "ALT"
+
 config.mouse_bindings = {
 	{
 		event = { Down = { streak = 1, button = "Left" } },
@@ -168,9 +194,27 @@ config.mouse_bindings = {
 	},
 	{
 		event = { Up = { streak = 1, button = "Left" } },
-		mods = "CTRL",
+		mods = "SHIFT",
+		action = act.OpenLinkAtMouseCursor,
+	},
+	{
+		event = { Up = { streak = 1, button = "Left" } },
+		mods = "SHIFT",
 		mouse_reporting = true,
 		action = act.OpenLinkAtMouseCursor,
+	},
+	-- With no Down binding the press reaches tmux (see fact 3 above) and the
+	-- click turns into a selection. Nop consumes it instead, in both states.
+	{
+		event = { Down = { streak = 1, button = "Left" } },
+		mods = "SHIFT",
+		action = act.Nop,
+	},
+	{
+		event = { Down = { streak = 1, button = "Left" } },
+		mods = "SHIFT",
+		mouse_reporting = true,
+		action = act.Nop,
 	},
 }
 

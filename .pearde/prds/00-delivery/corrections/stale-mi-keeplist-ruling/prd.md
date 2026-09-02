@@ -1,7 +1,7 @@
 ---
 state: done
 claim: 
-actual: 2026-08-24T15:10Z
+actual:
 commit: 24111c4
 priority: 18
 est:
@@ -136,3 +136,6 @@ so the ruling applies to them exactly as it applied to the notes.
   [`mi-rooted-verify-commands`](../mi-rooted-verify-commands/prd.md)'s.
 - Reopening `stale-mi-paths`. Its work was correctly scoped; only the clause
   is stale.
+
+Closed 2026-08-24T15:10Z — the stamp that sat in `actual:` until 2026-09-01;
+`actual:` is a duration in hours and the planner warned on it every run.

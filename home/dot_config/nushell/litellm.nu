@@ -1,6 +1,6 @@
 # litellm.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def _llm_rows [] {
   let cat = (do { ^cll --catalog } | complete)

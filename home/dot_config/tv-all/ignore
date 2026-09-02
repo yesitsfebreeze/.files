@@ -1,0 +1,29 @@
+# Extra exclusions for Shift+F3 only — the home-wide search.
+#
+# This is layered ON TOP of ~/.config/fd/ignore, never instead of it: that file
+# is the one list fd and ripgrep follow for ordinary searching, and nothing
+# here should change what `fd` or `rg` do at a prompt. These paths are excluded
+# only when the finder is asked to search all of $HOME.
+#
+# Why it exists: without it, a home-wide search does not finish. Measured on
+# 2026-09-01, `fd -t f -H . ~` had not enumerated $HOME after two minutes and
+# was still running; with these paths excluded it returns 402,970 files in
+# 2.2s, and ripgrep answers a query in about 15s. ~/Library is the bulk of it —
+# application support, caches, containers and the iCloud mirror — and none of
+# it is a thing anybody is looking for when they search their own machine.
+#
+# The test for adding a line: would a hit here ever be one you wanted? If it is
+# somebody else's data about your data, it belongs in this file.
+Library/
+.Trash/
+.cache/
+.local/share/
+Applications/
+.npm/
+.cargo/registry/
+.rustup/
+.gradle/
+.m2/
+Pictures/
+Movies/
+Music/

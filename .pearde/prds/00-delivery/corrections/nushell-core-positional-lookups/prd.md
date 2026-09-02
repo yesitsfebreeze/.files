@@ -12,6 +12,7 @@ footprint:
   - tests/nushell-core.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/listing-order-lookup-regression
 commit: 022091e
 ---
 

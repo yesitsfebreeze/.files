@@ -10,6 +10,7 @@ footprint:
   - tests/shell-listing.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/config-nu-parse-claims
 commit: 11987ac
 ---
 

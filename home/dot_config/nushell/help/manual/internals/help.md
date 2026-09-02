@@ -552,7 +552,7 @@ command: ["help aliases" "help commands" "help externs" "help modules" "help ope
 
 std/help's subcommands arrive in `scope commands` because config.nu does `use std/help`. They are nushell's, and epic I2 says delegate never shadow, so documenting them here would be the shadow.
 
-The four below are THIS CONFIG'S machinery: a handle exists because something else has to call it, not because a person types it. decorate-ls        the `ls` pipeline's inner stage; `ls` is documented tv_finder          the television channel provider behind `finder` tv_history_local   the provider behind the history channel tv_remote          the Ctrl-Space dispatcher; the KEY is documented Each is reachable only from something that IS in the manual, which is the test applied: a handle nobody can usefully type is not a gap.
+The two below are THIS CONFIG'S machinery: a handle exists because something else has to call it, not because a person types it. decorate-ls        the `ls` pipeline's inner stage; `ls` is documented tv_history_local   the provider behind the history channel Each is reachable only from something that IS in the manual, which is the test applied: a handle nobody can usefully type is not a gap. It was four until 2026-09-01: `tv_finder` and `tv_remote` were the dispatchers behind Ctrl-T and Ctrl-Space, and went when those keys did. Their job is now `tv-all`, which is not a nushell handle at all — it is a script the multiplexer runs, so nothing in this list can stand for it and `F3` is documented as the key it is.
 
 ```
 keybinding: ["completion_menu" "ide_completion_menu" "completion_previous"

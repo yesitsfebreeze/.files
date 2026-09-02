@@ -10,6 +10,7 @@ needs:
   - 04-shell/06-listing
 verify: ""
 origin: derived
+from: 04-shell/06-listing
 commit: 65d2b54
 ---
 

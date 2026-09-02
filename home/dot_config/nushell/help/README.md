@@ -1,8 +1,14 @@
 # `help` content model
 
 The manual's single data source. Every renderer — `help` itself, the tv
-browser, `help --json`, `help --md` — reads these files and holds layout only.
-No description text for this environment lives anywhere else.
+browser, `help --json`, `help --md`, and the markdown under `manual/` that the
+`docs` channel greps — reads these files and holds layout only. No description
+of a key or a command lives anywhere else.
+
+The one thing that is *not* here is `manual/internals/`: the constraints a
+configuration **file** is built around, which belong to no single entry. Those
+are hand-written prose, and they are the place a long *why* goes when it is
+about a file rather than about a gesture.
 
 Spec: `prds/06-help/01-content-model/prd.md`. Read that before editing the
 schema; read this before editing an entry.
@@ -18,6 +24,7 @@ schema; read this before editing an entry.
 | `capsule.nuon` | the capsule CLI and what a container gets from the host |
 | `why-review.nuon` | not content: the record of who read each `why` against its `use`, and of the exact text they read |
 | `use-review.nuon` | not content: the record of who read each `use` against its `source` PRD and its live route, and of the exact pair they read |
+| `manual/` | not content: the manual as markdown. `manual/guide/` and `manual/reference/` are GENERATED from the files above by `scripts/generate-manual.mjs` (`just manual`) and must not be hand-edited; `manual/internals/` and `manual/index.md` are hand-written |
 
 NUON, not YAML: `open shell.nuon` in nushell returns a table with no parser and
 no dependency. Comments are legal and used for section headers.
@@ -353,5 +360,7 @@ which does not exist yet. Until then the target names are the contract the
 shell, editor and terminal work must meet, and the shell ones were read off
 the live nushell config (`hist_picker_local`, `hist_picker_global`,
 `hist_up_local`, `hist_down_local`, `hist_up_global`, `hist_down_global`,
-`tv_remote`, `tv_remote_f1`, `finder_pick`, `quicklist`, `esc_clear`) rather
-than invented here.
+`quicklist`, `esc_clear`) rather than invented here. Three of those names —
+`tv_remote`, `tv_remote_f1` and `finder_pick` — were retired on 2026-09-01
+with the keys they bound; the finder is `F3`, a tmux binding, and answers to
+a `tmux-key` target rather than a `keybinding` one.

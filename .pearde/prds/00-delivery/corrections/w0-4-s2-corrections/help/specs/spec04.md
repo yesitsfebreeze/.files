@@ -127,9 +127,9 @@ modifications, including `decisions/fzf`'s note landed into that very file
 today, so it fires red before this ticket starts. Pin the content instead:
 
 ```
-shasum -a 256 prds/06-help/04-drift-check/prd.md | grep -q '^3d916f8a82b8c37366e9571e758cbc461942112b822cd8f527443e78cf4fcadd '
+shasum -a 256 prds/06-help/04-drift-check/prd.md | grep -q '^41303ea0508980644b1169ee9ab17ccb0f22a2431cd395911e06c7efbe77070c '
 ```
 
-That digest was taken at analysis time, 2026-08-21, with the `fzf` note
+That digest was re-taken 2026-09-01 (the file legitimately changed under the board conversion and the tests retirement, per the instruction below); the original was taken at analysis time, 2026-08-21, with the `fzf` note
 already in place. If the file legitimately changes under another ticket while
 this one is in flight, re-take the digest rather than deleting the guard.

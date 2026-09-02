@@ -7,6 +7,7 @@ needs:
 mode: afk
 verify: ""
 origin: derived
+from: 04-shell/02-aliases-utilities
 ---
 
 # Stale references left by the bb/ba `DO NOT PORT` decision
@@ -29,9 +30,5 @@ recorded here instead of fixed there.
 
 Done means: no board or shipped file references `bb`/`ba` as a live alias,
 and the `rr` cross-reference names R3.
-
-## Questions
-
-## Answers
 
 ## Failure

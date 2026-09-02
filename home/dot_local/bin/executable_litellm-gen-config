@@ -22,22 +22,69 @@ PROVIDERS = {
 ORDER = ["zenmux", "opencode", "opencode-go", "openrouter"]
 
 def fetch(url, k):
+    """Model ids of a provider, with the context window each publishes
+    ({context_length, max_completion_tokens} — None where absent)."""
     try:
         r = urllib.request.Request(url + "/models", headers={"Authorization": "Bearer " + k})
-        return {m["id"] for m in json.load(urllib.request.urlopen(r, timeout=25))["data"]}
+        got = {}
+        for m in json.load(urllib.request.urlopen(r, timeout=25))["data"]:
+            mx = m.get("max_completion_tokens")
+            if mx is None:
+                mx = (m.get("top_provider") or {}).get("max_completion_tokens")
+            got[m["id"]] = {"context": m.get("context_length"), "max": mx}
+        return got
     except Exception as e:
         print(f"  ! {url}: {e}", file=sys.stderr)
-        return set()
+        return {}
+
+def ollama_ctx(name):
+    """Trained window from the GGUF metadata (/api/show → `llama.context_length`
+    and friends). The USEABLE window is num_ctx: the daemon serves at its own
+    default (or OLLAMA_CONTEXT_LENGTH) unless the Modelfile sets num_ctx, and it
+    silently truncates rather than erroring when a request overstays — so a
+    trained max with no num_ctx is an upper bound the server may not honour.
+    Callers record the distinction instead of passing a bound off as a promise."""
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/show",
+            data=json.dumps({"model": name}).encode(),
+            headers={"Content-Type": "application/json"})
+        d = json.load(urllib.request.urlopen(req, timeout=10))
+        lens = [v for k, v in d.get("model_info", {}).items()
+                if k.endswith(".context_length")]
+        params = d.get("model_info", {}).get("general.parameter_count")
+        p = d.get("parameters") or ""
+        nums = [int(t.split()[1]) for t in p.splitlines() if t.startswith("num_ctx ")]
+        if nums:
+            return {"context": min(nums), "max": None, "kind": "num_ctx",
+                    "params": params}
+        return {"context": min(lens) if lens else None, "max": None,
+                "kind": "trained", "params": params}
+    except Exception:
+        return {"context": None, "max": None}
 
 avail = {}
-avail["zenmux"] = fetch(PROVIDERS["zenmux"][0], key("zenmux"))
-avail["openrouter"] = fetch(PROVIDERS["openrouter"][0], key("openrouter"))
+# Context windows per provider, {provider: {model id: {context, max}}}. Every
+# client downstream of this generator used to carry a flat 200000/64000 for
+# every route (hardcoded in the pi models.json write below), which silently
+# under-windowed the 1M models and over-promised the 131K ones.
+ctx = {}
+for p in ("zenmux", "openrouter"):
+    got = fetch(PROVIDERS[p][0], key(p))
+    avail[p] = set(got)
+    ctx[p] = got
 store = json.load(open(f"{HOME}/.pi/agent/models-store.json"))
 for p in ("opencode", "opencode-go"):
-    avail[p] = {m["id"] for m in store.get(p, {}).get("models", [])}
+    models = store.get(p, {}).get("models", [])
+    avail[p] = {m["id"] for m in models}
+    # The store already rates context per model — read it, don't re-fetch.
+    ctx[p] = {m["id"]: {"context": m.get("contextWindow"), "max": m.get("maxTokens")}
+              for m in models}
 try:
     tags = json.load(urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=5))
     avail["ollama"] = {m["name"] for m in tags["models"]}
+    ctx["ollama"] = {m["name"]: ollama_ctx(m["name"])
+                     for m in tags["models"] if "embed" not in m["name"]}
 except Exception:
     avail["ollama"] = set()
 
@@ -144,9 +191,60 @@ for canon, alias in CANONICAL.items():
         fallbacks.append((canon, [f"{alias}@{q}" for q in chain[1:]]))
     catalog[canon] = chain
 
+# --- Per-route context windows, from the first provider in each chain that
+# publishes one. A pinned hop (`alias@provider`) keeps its base alias's number:
+# it is a provider fix, not a different model, and the windows a provider
+# reports for the same model agree where they overlap at all.
+windows = {}
+for alias in catalog:
+    base = CANONICAL.get(alias, alias)   # canonical ids borrow their alias's data
+    w, mx, src = None, None, "default"
+    for p in catalog[alias]:
+        mid = ALIASES.get(base, {}).get(p)
+        v = ctx.get(p, {}).get(mid) or {}
+        if v.get("context"):
+            w = v["context"]
+            mx = v.get("max")
+            src = p if p != "ollama" else f"ollama {v.get('kind', '')}".strip()
+            break
+        # else: skip to the next hop (default 200000/64000, source labelled below)
+    windows[alias] = {"context_window": w, "max_tokens": mx, "source": src}
+    if src == "ollama trained":
+        print(f"  ~ {alias}: {w} is the GGUF trained max, no num_ctx set — the"
+              " daemon may serve less (it truncates silently)", file=sys.stderr)
+os.makedirs(f"{HOME}/.local/state/litellm", exist_ok=True)
+json.dump(windows, open(f"{HOME}/.local/state/litellm/contexts.json", "w"), indent=2)
+
+# --- Free last resort, ranked from the live ollama inventory, not hardcoded.
+# When every paid hop in a chain is spent (zenmux, opencode and openrouter all
+# answered 402 no-credit on 2026-09-01) the chain's tail is a free ollama
+# model, so the client degrades to free instead of failing. Which one is
+# decided per job: heavy chains get the largest model the daemon knows
+# (parameter_count from /api/show — cloud models report 0 bytes in /api/tags,
+# so disk size cannot rank them), light chains (haiku/mini — titles, short
+# background work) get the smallest non-embedding model for latency. The full
+# ranking is written to state so the pick is auditable.
+free_ranked = sorted(
+    ((n, (ctx.get("ollama", {}).get(n) or {}).get("params") or 0)
+     for n in avail.get("ollama", set()) if "embed" not in n),
+    key=lambda kv: -kv[1])
+alias_of = lambda n: n.replace(":", "-")
+strongest = alias_of(free_ranked[0][0]) if free_ranked else None
+fastest = alias_of(free_ranked[-1][0]) if free_ranked else None
+light_job = lambda a: "haiku" in a or "mini" in a
+
+if free_ranked:
+    os.makedirs(f"{HOME}/.local/state/litellm", exist_ok=True)
+    json.dump({"ranked": [[n, p] for n, p in free_ranked],
+               "strongest": strongest, "fastest": fastest},
+              open(f"{HOME}/.local/state/litellm/free-fallbacks.json", "w"), indent=2)
+
 lines += ["", "litellm_settings:", "  drop_params: true", "  num_retries: 2",
           "  request_timeout: 600", "", "router_settings:", "  fallbacks:"]
 for name, fb in fallbacks:
+    pick = fastest if light_job(name) else strongest
+    if pick and pick not in fb:
+        fb = fb + [pick]
     lines.append(f"    - {name}: [{', '.join(fb)}]")
 lines += ["", "general_settings:", "  master_key: os.environ/LITELLM_MASTER_KEY", ""]
 
@@ -167,8 +265,13 @@ cfg.setdefault("providers", {})["litellm"] = {
     "api": "openai-completions",
     "apiKey": "!litellm-env",
     "models": [
+        # No window resolved for an alias keeps the old flat 200000/64000 — but
+        # `source: default` in contexts.json says that is what it is, so nothing
+        # downstream can mistake the fallback for a measurement.
         {"id": a, "name": f"{a} ({' → '.join(c)})", "reasoning": True,
-         "input": ["text", "image"], "contextWindow": 200000, "maxTokens": 64000,
+         "input": ["text", "image"],
+         "contextWindow": (windows.get(a) or {}).get("context_window") or 200000,
+         "maxTokens": (windows.get(a) or {}).get("max_tokens") or 64000,
          "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}}
         for a, c in catalog.items()
     ],
@@ -184,4 +287,7 @@ os.replace(tmp, pi_models)
 print(f"  pi: {len(catalog)} models -> {pi_models}", file=sys.stderr)
 print(f"\nwrote config.yaml: {len(catalog)} routes", file=sys.stderr)
 for a, c in catalog.items():
-    print(f"  {a:28} {' -> '.join(c)}", file=sys.stderr)
+    w = windows.get(a) or {}
+    ws = f"{w['context_window']:,}" if w.get("context_window") else "200000 (default)"
+    print(f"  {a:28} {' -> '.join(c):42} ctx {ws:14} [{w.get('source', 'default')}]",
+          file=sys.stderr)

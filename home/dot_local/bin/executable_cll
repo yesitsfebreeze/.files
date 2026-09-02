@@ -19,8 +19,24 @@ set -euo pipefail
 . "$(dirname "$(command -v litellm-env)")/litellm-env"
 
 CATALOG="$HOME/.local/state/litellm/catalog.json"
+CONTEXTS="$HOME/.local/state/litellm/contexts.json"
 # Claude Code's own aliases, served by the Max plan rather than any provider.
 NATIVE=(opus sonnet haiku fable)
+
+# Resolved context window for a catalog alias (written by litellm-gen-config).
+# Prints nothing when the file, the alias or the number itself is absent — the
+# caller then leaves Claude Code on its own default rather than exporting 0.
+ctx_lookup() {
+  python3 - "$1" "$CONTEXTS" <<'PY'
+import json, sys
+try:
+    w = json.load(open(sys.argv[2])).get(sys.argv[1], {}).get("context_window")
+    if w:
+        print(w)
+except Exception:
+    pass
+PY
+}
 
 catalog_json() {
   CLL_NATIVE="${NATIVE[*]}" python3 - "$CATALOG" <<'PY'
@@ -161,7 +177,8 @@ if [[ "$MODEL" == native:* ]]; then
   # inside a cll session the parent exports ANTHROPIC_BASE_URL/AUTH_TOKEN, and
   # an inherited pair would route this "native" hop through the proxy anyway.
   unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_API_KEY \
-        ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL ANTHROPIC_DEFAULT_HAIKU_MODEL
+        ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL ANTHROPIC_DEFAULT_HAIKU_MODEL \
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS
 
   if [ -t 0 ] && command -v nu >/dev/null 2>&1; then
     # Interactive: this is cc's job. Its login picker chooses the profile and
@@ -248,6 +265,30 @@ export ANTHROPIC_MODEL="$MODEL"
 export ANTHROPIC_SMALL_FAST_MODEL="${CLL_SMALL_MODEL:-claude-haiku-4-5-20251001}"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
 unset ANTHROPIC_API_KEY
+
+# Context window. Claude Code sizes its own context against the model *id* it
+# was given, not against anything the backend reports: an id it does not
+# recognise — everything here that is not `claude-*` — silently gets the 200K
+# assumption, so auto-compact fires far too early for a 1M model and never for
+# one that truncates at 131K. There is no per-model mapping in Claude Code, so
+# the picked model's window is declared per launch with
+# CLAUDE_CODE_MAX_CONTEXT_TOKENS (contexts.json records where each number came
+# from). A `claude-*` alias is left alone on purpose: for a real Claude id that
+# variable takes effect only with DISABLE_COMPACT, which would turn compaction
+# off entirely — Claude Code's own knowledge of the id beats that trade. A
+# pinned hop looks its window up under the base alias: it is a provider fix,
+# not a different model.
+case "$MODEL" in
+  claude-*) unset CLAUDE_CODE_MAX_CONTEXT_TOKENS ;;
+  *)
+    W="$(ctx_lookup "${MODEL%%@*}")"
+    if [ -n "$W" ]; then
+      export CLAUDE_CODE_MAX_CONTEXT_TOKENS="$W"
+    else
+      unset CLAUDE_CODE_MAX_CONTEXT_TOKENS
+    fi
+    ;;
+esac
 
 echo "cll: $MODEL via litellm" >&2
 exec claude --dangerously-skip-permissions "$@"

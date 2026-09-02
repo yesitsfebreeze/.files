@@ -12,6 +12,7 @@ needs:
   - 04-shell/04-television
 verify: ""
 origin: derived
+from: 03-editor/02-keymaps
 ---
 
 # The manual's `<Esc>` entry verifies a map the rebuild doesn't carry

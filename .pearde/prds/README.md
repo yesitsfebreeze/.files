@@ -130,11 +130,20 @@ prds/
     ├── 07-persistence/                 resurrect + continuum, cloned by install.sh
     ├── 08-wezterm-reduction/           the cutover; WezTerm keeps local chrome
     └── 09-manual-entries/              terminal.nuon on tmux bindings
-└── 08-claude-agent/                     C7 U8 V1 · Claude agent — Claude Code manages tmux panes and edits in nvim
-    ├── 01-tmux-mcp/                     the tmux MCP server
-    ├── 02-nvim-plugin/                  claudecode.nvim + claude-tmux.nvim
-    ├── 03-tmux-config/                  Claude Code inside tmux
-    └── 04-help-entries/                 the manual entries for the new bindings
+├── 08-claude-agent/                     C7 U8 V1 · Claude agent — Claude Code manages tmux panes and edits in nvim
+│   ├── 01-tmux-mcp/                     the tmux MCP server
+│   ├── 02-nvim-plugin/                  claudecode.nvim + claude-tmux.nvim
+│   ├── 03-tmux-config/                  Claude Code inside tmux
+│   └── 04-help-entries/                 the manual entries for the new bindings
+└── 09-simplify/                         Simplify — smaller and more straightforward, everywhere (meta)
+    ├── 01-hygiene/                      baseline commit, duplicates and stale ignores out
+    ├── 02-board/                        every prd.md stays; specs, process memos, AGENTS.md bulk go
+    ├── 03-help-system/                  no drift checker, no review files, one renderer
+    ├── 04-nushell/                      built-ins, one keybinding append, no tombstones
+    ├── 05-terminal/                     tmux.conf to ~250 lines, tv-all on command-prompt
+    ├── 06-neovim-television/            five channels, keymodel, theme = "tinted"
+    ├── 07-provisioning/                 a Brewfile and sixty lines
+    └── 08-litellm-out/                  the litellm stack leaves the repo
 ```
 
 ## Build order
@@ -183,6 +192,14 @@ carries no `task:` ids. Its order is its own `needs:` graph —
 `01-tmux-mcp` and `02-nvim-plugin` first (both bare `needs:`), then
 `03-tmux-config` after `07-multiplexer/01-session-and-windows` and
 `04-help-entries` after `02-nvim-plugin`.
+
+`09-simplify` is a meta-epic (no C/U) and runs after everything above. Its
+order is its own `needs:` graph — `01-hygiene` first; `02-board`,
+`03-help-system` and `07-provisioning` in parallel after it; `04-nushell`
+then `05-terminal` serially after `03` because `config.nu` and
+`wezterm.lua` each have one writer; `06-neovim-television` after `03`; and
+`08-litellm-out` last, after `06`. The audit it was cut from is
+[`docs/simplification-plan.md`](../../docs/simplification-plan.md).
 
 ## Excluded
 

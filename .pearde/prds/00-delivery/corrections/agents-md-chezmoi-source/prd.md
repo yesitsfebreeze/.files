@@ -10,6 +10,7 @@ footprint:
   - AGENTS.md
 verify: ""
 origin: derived
+from: 00-delivery/corrections/census-verdict-discipline
 ---
 
 # `AGENTS.md` sends every specifying agent to a two-month-stale chezmoi clone

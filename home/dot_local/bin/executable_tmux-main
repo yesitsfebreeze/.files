@@ -12,12 +12,22 @@
 # session outlive the terminal — quitting the emulator leaves the server
 # running, and reopening it is the same gesture as opening it the first time.
 #
-# `-c "$HOME"` is Q14, and it is NOT decoration. Measured on tmux 3.7c: a
-# `new-window` with no `-c` inherits the SESSION's working directory, not the
-# active pane's. So the session being created at $HOME is the whole mechanism
-# by which a lazily created window (02-key-tables' `F5 <digit>`) starts at ~.
+# `-c` is Q14, and it is NOT decoration. Measured on tmux 3.7c: a `new-window`
+# with no `-c` inherits the SESSION's working directory, not the active pane's.
 # `-c` is read only when the session is CREATED; on an attach it is ignored,
 # which is correct — the session keeps the directory it was born with.
+#
+# It is the START DIR rather than $HOME, and that is 04-shell R7: "a new shell
+# opens in the last directory navigated to". `nushell/env.nu` used to do that
+# read itself, on every interactive shell, which meant the `cd` ran after tmux
+# had placed the pane and overwrote it — a split landed wherever any pane had
+# last been, not where it was split from (measured 2026-09-01). The read
+# belongs here instead: once, when the environment comes up, on the one shell
+# that has no parent to inherit from. Every pane after that inherits properly.
+#
+# The `F5 <digit>` clean slate is unaffected because those binds pass `-c ~`
+# explicitly — checked: no `new-window` in tmux.conf relies on the session
+# directory. Do not add one that does.
 #
 # POSIX sh, not nushell: this runs before nushell exists in the process tree,
 # and on a remote it may run where nushell is not installed at all.
@@ -43,4 +53,15 @@ if ! command -v tmux >/dev/null 2>&1; then
     exec "${SHELL:-/bin/sh}"
 fi
 
-exec tmux new-session -A -s main -c "$HOME" "$@"
+# Same fallback ladder env.nu had: the recorded directory if it still exists,
+# then ~/dev, then $HOME. `mkcd` is what writes the file.
+mkdir -p "$HOME/dev" 2>/dev/null || true
+start="$HOME"
+if [ -d "$HOME/dev" ]; then start="$HOME/dev"; fi
+_sd="${XDG_STATE_HOME:-$HOME/.local/state}/nushell/startdir.txt"
+if [ -r "$_sd" ]; then
+    _d=$(cat "$_sd" 2>/dev/null)
+    if [ -n "$_d" ] && [ -d "$_d" ]; then start="$_d"; fi
+fi
+
+exec tmux new-session -A -s main -c "$start" "$@"

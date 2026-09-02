@@ -9,6 +9,7 @@ needs:
   - 04-shell/09-theme-switcher
 verify: ""
 origin: derived
+from: 02-terminal/01-appearance
 ---
 
 # managed-config's template census rejects the television theme template

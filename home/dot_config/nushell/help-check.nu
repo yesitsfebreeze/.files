@@ -1,6 +1,6 @@
 # help-check.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → The help command
+#   manual → internals/help
 
 # ── the corpus ──────────────────────────────────────────────────────────────
 def _hc_dir [] {
@@ -9,6 +9,34 @@ def _hc_dir [] {
         error make {msg: $"help --check: the manual's corpus directory ($dir) is missing — run `chezmoi apply`"}
     }
     $dir
+}
+
+# ── the scratch dir ─────────────────────────────────────────────────────────
+# Three probes need a real path on disk, and none of them can be a pipe:
+#
+#   * the nvim keymap dump is written to a FILE because a headless nvim writing
+#     to a stdout nushell is capturing dies on SIGPIPE (measured 2026-08-30 —
+#     see the `silent` note in the lua), and because the spawn's startup noise
+#     has to land somewhere that is not the payload.
+#   * the buffer-local maps only attach over a real file with a real extension:
+#     a scratch buffer fires neither FileType nor BufEnter, which is the whole
+#     point of the probe.
+#   * `tmux source-file` takes a path. It does not read stdin.
+#
+# So there is one directory, emptied when a run STARTS and never cleaned up
+# after it. Nothing accumulates — the next run clears it — and a check that
+# deleted its probes in the same breath as it failed would leave nothing to
+# look at. The reset is also what makes a leftover dump impossible to misread
+# as this run's: it cannot survive into the run that would read it.
+#
+# Fixed path, so two runs at once would share it. This is a check a person
+# types, not a daemon.
+def _hc_scratch [] { $nu.temp-dir | path join "help-check" }
+
+def _hc_scratch_reset [] {
+    let d = (_hc_scratch)
+    if ($d | path exists) { rm -prf $d }
+    mkdir $d
 }
 
 def _hc_targets [] {
@@ -72,11 +100,9 @@ def _hc_nvim_live [] {
     if (which nvim | is-empty) {
         error make {msg: "help --check: nvim is not on PATH — the Neovim surface cannot be introspected"}
     }
-    let dump = (mktemp -t "help-check-nvim-XXXXXX")
-    let probe_base = (mktemp -t "help-check-buf-XXXXXX")
-    let probe = ($probe_base + ".lua")
+    let dump = (_hc_scratch | path join "nvim-maps.json")
+    let probe = (_hc_scratch | path join "probe.lua")
     "local x = 1\nreturn x\n" | save -f $probe
-    rm -f $probe_base
     let lua = '
 local maps = {}
 for _, m in ipairs({"n","v","x","i","o","t","c","s"}) do
@@ -161,24 +187,20 @@ f:close()
     if not ($init | path exists) {
         error make {msg: $"help --check: ($init) is missing — the Neovim surface cannot be introspected, and a bare `nvim` would report Neovim's own defaults as drift"}
     }
-    let spawnlog = (mktemp -t "help-check-nvim-log-XXXXXX")
+    let spawnlog = (_hc_scratch | path join "nvim.log")
     let rc = (with-env {HELP_CHECK: "1", HELP_CHECK_DUMP: $dump, HELP_CHECK_PROBE: $probe} {
         do -i { ^nvim --headless -c $"lua ($lua)" -c "qa!" out+err> $spawnlog }
         $env.LAST_EXIT_CODE
     })
     let out = {exit_code: $rc}
     let spawn_said = (if ($spawnlog | path exists) { open --raw $spawnlog } else { "" })
-    rm -f $spawnlog
-    rm -f $probe
     if $out.exit_code != 0 {
-        rm -f $dump
         error make {msg: $"help --check: nvim --headless exited ($out.exit_code) — ($spawn_said | str trim)"}
     }
     if (not ($dump | path exists)) or (($dump | path type) != "file") {
         error make {msg: "help --check: the headless spawn wrote no keymap dump — nvim started but the check's lua never ran"}
     }
     let raw = (open --raw $dump)
-    rm -f $dump
     if ($raw | str trim | is-empty) {
         error make {msg: "help --check: the headless spawn wrote an empty keymap dump"}
     }
@@ -210,18 +232,16 @@ def _hc_tmux_live [] {
     let sock = "help-check"
     do -i { ^tmux -L $sock kill-server err> /dev/null } | ignore
 
-    let probe_conf = (mktemp -t "help-check-tmux-XXXXXX")
+    let probe_conf = (_hc_scratch | path join "tmux.conf")
     $"(open --raw $conf)\nset -g @hc-loaded 1\n" | save -f $probe_conf
 
     let up = (do -i { ^tmux -L $sock -f /dev/null new-session -d -s help-check cat } | complete)
     if $up.exit_code != 0 {
-        rm -f $probe_conf
         error make {msg: $"help --check: could not start the probe tmux server — ($up.stderr | str trim)"}
     }
     let load = (do -i { ^tmux -L $sock source-file $probe_conf } | complete)
     let said = ($"($load.stdout)($load.stderr)" | str trim)
     if ($said | is-not-empty) {
-        rm -f $probe_conf
         do -i { ^tmux -L $sock kill-server err> /dev/null } | ignore
         error make {msg: $"help --check: the conf did not load cleanly — tmux said: ($said)"}
     }
@@ -231,14 +251,20 @@ def _hc_tmux_live [] {
         if ($v.exit_code == 0) and (($v.stdout | str trim) == "1") { $loaded = true; break }
         sleep 100ms
     }
-    rm -f $probe_conf
     if not $loaded {
         do -i { ^tmux -L $sock kill-server err> /dev/null } | ignore
         error make {msg: "help --check: the tmux probe never finished loading the conf within six seconds. Reporting drift off a half-applied config would blame the manual for the config's load order"}
     }
 
     let read_tables = {||
-        ["root" "jump" "split" "copy-mode-vi"] | each {|t|
+        # The tables tmux.conf actually pushes. A table missing from this list
+        # is not reported as unknown — every key documented in it is reported
+        # STALE, which reads as the manual being wrong about a binding that is
+        # in fact bound. `jump-pane` was absent from 2026-09-01, when the digit
+        # gained a second table, until it was noticed here: ten findings, all
+        # of them the checker's own blind spot. `split` was in its place and
+        # had been retired when F4 folded into F5.
+        ["root" "jump" "jump-pane" "copy-mode-vi"] | each {|t|
             let out = (do -i { ^tmux -L $sock list-keys -T $t } | complete)
             if $out.exit_code != 0 { [] } else {
                 $out.stdout | lines | each {|l|
@@ -294,17 +320,24 @@ def _hc_wezterm_live [] {
 # ── the allowlist (R6) ──────────────────────────────────────────────────────
 const HC_ALLOW = {
     alias: ["core-help" "core-ls"]
+    # tv_shell_history / tv_smart_autocomplete are television's own init
+    # definitions — upstream, not our additions.
     command: ["help aliases" "help commands" "help externs" "help modules" "help operators" "help escapes" "banner" "pwd"
-              "decorate-ls" "tv_finder" "tv_history_local" "tv_remote"]
+              "decorate-ls" "tv_history_local"
+              "tv_shell_history" "tv_smart_autocomplete"]
     keybinding: ["completion_menu" "ide_completion_menu" "completion_previous"
                  "history_menu" "next_page_menu" "undo_or_previous_page_menu"
-                 "help_menu" "search_history"]
+                 "help_menu" "search_history"
+                 # television's generated init re-exports its own bindings under
+                 # tv_* names — upstream defaults, not our additions. Our own
+                 # records override Ctrl-T/Ctrl-R; these are what survives.
+                 "tv_completion" "tv_history"]
     nvim: []
 }
 
 # ── the Neovim classification (R6) ──────────────────────────────────────────
 def _hc_nvim_defaults [] {
-    let dump = (mktemp -t "help-check-clean-XXXXXX")
+    let dump = (_hc_scratch | path join "nvim-defaults.txt")
     let lua = '
 local maps = {}
 for _, m in ipairs({"n","v","x","i","o","t","c","s"}) do
@@ -316,13 +349,11 @@ local f = io.open(os.getenv("HELP_CHECK_DUMP"), "w")
 f:write(table.concat(maps, "\n"))
 f:close()
 '
-    let cleanlog = (mktemp -t "help-check-clean-log-XXXXXX")
+    let cleanlog = (_hc_scratch | path join "nvim-clean.log")
     with-env {HELP_CHECK_DUMP: $dump} {
         do -i { ^nvim --clean --headless -c $"lua ($lua)" -c "qa!" out+err> $cleanlog } | ignore
     }
-    rm -f $cleanlog
     let body = (if ($dump | path exists) { open --raw $dump } else { "" })
-    rm -f $dump
     if ($body | str trim | is-empty) {
         error make {msg: "help --check: `nvim --clean` reported no default maps, which no Neovim does — the defaults could not be measured and every one of them would be reported as an undocumented gap"}
     }
@@ -342,6 +373,7 @@ def _hc_is_private [name: string] { $name | str starts-with "_" }
 
 # ── the resolver ────────────────────────────────────────────────────────────
 def _hc_resolve [] {
+    _hc_scratch_reset
     let targets = (_hc_targets)
     let live = (_hc_shell_live)
     let prose = ($targets | where kind == "prose")

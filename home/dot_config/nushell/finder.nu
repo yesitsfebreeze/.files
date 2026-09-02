@@ -1,6 +1,6 @@
 # finder.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 # ── public entrypoint ────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ def _finder_cht_query [lang: string, unhijack: string] {
 def _finder_type [channel: string] {
     match $channel {
         "files" | "dirs" | "recent-dirs" | "recent-files" => "FileList"
-        "text" => "GrepList"
+        "text" | "docs" => "GrepList"
         "git-log" => "Commits"
         "cht-query" => "ChtSheet"
         _ => "Any"

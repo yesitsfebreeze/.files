@@ -1,6 +1,6 @@
 # zoxide.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def _z_no_zoxide [] {
     print -e "zoxide not installed — z/zi cannot jump. Install it, then run: chezmoi apply"

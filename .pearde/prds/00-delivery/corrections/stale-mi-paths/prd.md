@@ -7,6 +7,7 @@ needs:
 mode: afk
 verify: ""
 origin: derived
+from: 04-shell/09-theme-switcher
 ---
 
 # Repo-wide `.mi/` path rot after the restructure

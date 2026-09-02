@@ -51,7 +51,8 @@ What survives here is the local chrome and is untouched: the font stack,
 - **R5, the digit tab title** — tmux's `window-status-format` draws it
   ([`07-multiplexer/03-status-bar`](../../07-multiplexer/03-status-bar/prd.md)).
 - **R6, the per-pane OSC retint** — tinty writes the client tty directly.
-- **R10, the clock** — tmux's `status-right`.
+- **R10, the clock** — tmux's `status-left`, beside the cwd. It was
+  `status-right` until 2026-09-01, when the window digits took that edge.
 - **R11, the F6 toggle** — `bind -n F6` in `tmux.conf`, PATH prefix and
   measured reason carried across whole.
 

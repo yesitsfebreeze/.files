@@ -9,6 +9,7 @@ needs:
   - 01-capsule/03-credential-propagation
 verify: ""
 origin: derived
+from: 01-capsule/03-credential-propagation
 ---
 
 # `capsule.nuon`'s credentials entry says "on every mount"

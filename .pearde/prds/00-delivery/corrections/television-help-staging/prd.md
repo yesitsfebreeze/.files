@@ -9,6 +9,7 @@ needs:
   - 00-delivery/corrections/sibling-gates-copymode-staging
 verify: ""
 origin: derived
+from: 00-delivery/corrections/sibling-gates-copymode-staging
 ---
 
 # `tests/shell-television.sh` still misses `help.nu`, so wave 0's drift gate

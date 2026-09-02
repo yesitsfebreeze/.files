@@ -8,8 +8,6 @@ Every entry links to where the guide explains it.
 
 | | what it does | where | guide |
 |---|---|---|---|
-| `Ctrl-Space / F1` | Open the finder and act on what you pick | shell | [Find a file, a line, or a directory](../guide/files.md#ctrl-space-f1) |
-| `Ctrl-T` | Insert a path into the line you are typing | shell | [Find a file, a line, or a directory](../guide/files.md#ctrl-t) |
 | `Ctrl-Q` | Reopen something you picked or jumped to recently | shell | [Recall something you already ran](../guide/history.md#ctrl-q) |
 | `finder` | Run a picker and get typed nushell data back | shell | [Find a file, a line, or a directory](../guide/files.md#finder) |
 | `tv channel` | Understand what a channel is, and add one | shell | [Find a file, a line, or a directory](../guide/files.md#tv-channel) |
@@ -20,3 +18,5 @@ Every entry links to where the guide explains it.
 | `<leader>fb` | Switch to an open buffer | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-fb) |
 | `<leader>fh` | Search Neovim's own help | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-fh) |
 | `<Tab> <S-Tab> <CR> (telescope)` | Send several picks to the quickfix list | nvim normal | [Find a file, a line, or a directory](../guide/files.md#tab-s-tab-cr-telescope) |
+| `F3` | Search this directory and act on what you pick | terminal | [Find a file, a line, or a directory](../guide/files.md#f3) |
+| `Shift+F3` | Search your whole machine, fastest answers first | terminal | [Find a file, a line, or a directory](../guide/files.md#shift-f3) |

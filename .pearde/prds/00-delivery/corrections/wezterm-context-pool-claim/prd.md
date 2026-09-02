@@ -7,6 +7,7 @@ needs:
   - 00-delivery/corrections/wezterm-repairing-latch-claim
 verify: ""
 origin: derived
+from: 00-delivery/corrections/wezterm-repairing-latch-claim
 claim: 
 complexity: 30
 blast-radius: low

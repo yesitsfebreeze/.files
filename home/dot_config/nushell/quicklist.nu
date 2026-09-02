@@ -1,6 +1,6 @@
 # quicklist.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def _recents_entry [line: string] {
     let f = ($line | split row (char tab))
@@ -29,7 +29,7 @@ def --env _recents_replay [entry] {
 export def --env quicklist [] {
     if not $nu.is-interactive { return }
     if (_recents_load | is-empty) {
-        print "quicklist: nothing recent yet — jump with `z` or pick something with Ctrl-Space, and it lands here."
+        print "quicklist: nothing recent yet — jump with `z` or pick something with F3, and it lands here."
         return
     }
     let raw = (try {

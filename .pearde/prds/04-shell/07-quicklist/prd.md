@@ -177,6 +177,7 @@ no-op coming back.
    failure mode is a red gate rather than a silent pass. That is the tripwire
    earning its keep on a case nobody predicted.
 2. `home/dot_config/nushell/help/use-review.nuon:135` carries an L-4 qualifier
+   — the `finder` half of the bug, whose fix logs the non-`zoxide` channels —
    describing the live `quicklist.nu`; the shipped `Ctrl-Q` entry in
    `shell.nuon` is now true of this tree, so the qualifier is stale. Untouched
    — spec02 forbids writing under `help/`, and a `why`/`use` edit stales a

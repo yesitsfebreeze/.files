@@ -45,7 +45,7 @@ Spec: `prds/06-help/06-manual-markdown/prd.md`
 
 `help --fuzzy` opens every entry in this manual as a picker; type what you half-remember (`select`, `jump`, `capsule`) and the preview shows the full entry — title, use, why, related. `enter` prints that entry into the scrollback; `ctrl-o` opens the PRD it came from in `$EDITOR`. Without a TTY it degrades to `help <query>`.
 
-See also: [`help`](./maintaining.md#help) · [`Ctrl-Space / F1`](./files.md#ctrl-space-f1)  
+See also: [`help`](./maintaining.md#help) · [`F3`](./files.md#f3)  
 Spec: `prds/06-help/03-browser/prd.md`
 
 ## `help --check`

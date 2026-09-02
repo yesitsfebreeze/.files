@@ -125,8 +125,7 @@
 
     {id: "<leader>ss <leader>sl <leader>sd", file: "nvim.nuon", digest: "a3d233b599fb26ea", reviewer: "reader-07-06-nvim-session", author: "analyst-07-06-nvim-session", date: "2026-08-29", note: "independent reading by a session that wrote none of this text. keymaps.lua line 47 confirms leader-q is a plain leaf map, cmd quit, desc Quit, so the timeoutlen-prefix reasoning holds. tmux-resurrect's nvim_session.sh does take the pane DIRECTORY and echo a restore command (nvim -S when a Session.vim exists, else the original command), so re-launches nvim in the pane's directory is accurate as a general description of the strategy family, though this literal script is the Session.vim strategy rather than the custom-command inline strategy session.lua's own comments say this config actually uses. The why adds new information not in use: the reboot/tmux-resurrect motivation and the leader-q-collision rationale for the keybinding choice, no restatement. Word count: 69."}
     # terminal.nuon
-    {id: "F5 <digit>", file: "terminal.nuon", digest: "b8c8ef79b610ad6b", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
-    {id: "Ctrl+Shift+X", file: "terminal.nuon", digest: "ebc414bca1298f31", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
+    {id: "F5 <digit>", file: "terminal.nuon", digest: "c925c4c1c2ba6613", reviewer: "impl-f5-two-key-gesture", date: "2026-09-01", author: "impl-f5-two-key-gesture", note: "`why` rewritten with the `use`. The new claim it carries and the `use` does not is WHERE the stay-or-leave test is read — after the jump, off the window landed on — and why `q` is absent from the second table. Both were read off tmux.conf and confirmed against `list-keys`."}
     {id: "Ctrl+V", file: "terminal.nuon", digest: "90b8e3e29b6f5e11", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "Ctrl+C", file: "terminal.nuon", digest: "3d6e663371732fce", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "Ctrl+Shift+D", file: "terminal.nuon", digest: "49424622fed98795", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
@@ -147,8 +146,9 @@
     {id: "llm", file: "shell.nuon", digest: "d72b7f1cf6a00b32", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "llm quota", file: "shell.nuon", digest: "e9612c5e72f522d7", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "llm regen", file: "shell.nuon", digest: "a023ff1ee7744a92", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
-    {id: "F5 <letter>", file: "terminal.nuon", digest: "c85210b1eeae67d7", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
-    {id: "F4 <arrow>", file: "terminal.nuon", digest: "8f6c250c92718547", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
+    {id: "F5 <letter>", file: "terminal.nuon", digest: "6b5ff885af3e76a8", reviewer: "impl-f5-two-key-gesture", date: "2026-09-01", author: "impl-f5-two-key-gesture", note: "`why` text unchanged; the digest moved because the `use` did. Re-read the pair: the `use` now says the letter ends the switcher, which the `why` does not restate — it explains renumbering and why the chip rides the border."}
+    {id: "F5 <arrow>", file: "terminal.nuon", digest: "80e1448a9b8aaf03", reviewer: "impl-f5-two-key-gesture", date: "2026-09-01", author: "impl-f5-two-key-gesture", note: "Row id corrected from `F4 <arrow>`. `why` text unchanged, digest moved with the `use`. The sentence `the arrows, digits and letters share one table` still holds — `jump-pane` is a second table the digit arms afterwards, not a second key to remember."}
+    {id: "F5 q", file: "terminal.nuon", digest: "70bd60ce6eb05fdc", reviewer: "impl-f5-two-key-gesture", date: "2026-09-01", author: "impl-f5-two-key-gesture", note: "New entry. The `why` says which table the key lives in and that the table IS the guard; the `use` says only that nothing asks first. No overlap."}
     {id: "F5 F5", file: "terminal.nuon", digest: "177779bf137fcad6", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "the status bar", file: "terminal.nuon", digest: "2758ff944da85a2a", reviewer: "impl-tmux-cutover", date: "2026-08-30"}
     {id: "the session survives", file: "terminal.nuon", digest: "4380a492cf7c5057", reviewer: "impl-tmux-cutover", date: "2026-08-30"}

@@ -9,6 +9,7 @@ needs:
   - 06-help/02-help-command
 verify: ""
 origin: derived
+from: 06-help/02-help-command
 ---
 
 # `help` finds its corpus only where `XDG_CONFIG_HOME` is exported at launch

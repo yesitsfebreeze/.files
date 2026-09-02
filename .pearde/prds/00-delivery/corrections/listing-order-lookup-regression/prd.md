@@ -9,6 +9,7 @@ footprint:
   - tests/shell-listing.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/config-nu-parse-claims
 ---
 
 # `shell-listing.sh` is red: the correction that fixed one gate defused another

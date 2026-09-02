@@ -10,6 +10,7 @@ footprint:
   - prds/00-delivery/corrections/w0-4-s2-corrections/editor/specs/verify-all.sh
 verify: "bash prds/00-delivery/corrections/w0-4-s2-corrections/editor/specs/verify-all.sh"
 origin: derived
+from: 00-delivery/corrections/mi-rooted-verify-commands
 ---
 
 # The retirement introduced a regression into the script that reports it

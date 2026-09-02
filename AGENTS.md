@@ -112,6 +112,7 @@ it is, not to decide what it says.
 | [`06-help`](.pearde/prds/06-help/prd.md) | `help` — the environment manual, and `?` — the same manual as markdown, grepped (net-new) | 6 (+1) |
 | [`07-multiplexer`](.pearde/prds/07-multiplexer/prd.md) | tmux — the portable layer: windows, panes, addressing, splits, copy, status, persistence (net-new) | 9 |
 | [`08-claude-agent`](.pearde/prds/08-claude-agent/prd.md) | Claude Code manages tmux panes and edits in nvim: the tmux MCP server, claudecode.nvim + claude-tmux.nvim, the tmux.conf additions, the help entries (net-new) | 4 |
+| [`09-simplify`](.pearde/prds/09-simplify/prd.md) | Meta: smaller and more straightforward everywhere — the board, the help system, every config, provisioning; cut from `docs/simplification-plan.md` (net-new) | 8 |
 
 Counts are direct children, with grandchildren in parentheses.
 `find prds -name prd.md` is the index, because node membership is by existence

@@ -11,6 +11,7 @@ footprint:
   - tests/nushell-core.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/stale-pwd-latch-carriers
 ---
 
 # `config.nu:381-385`'s hang claim is true under a condition it never states

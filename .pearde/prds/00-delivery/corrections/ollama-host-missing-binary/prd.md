@@ -8,6 +8,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 02-terminal/06-launchd-path
 ---
 
 # Every interactive shell start prints `Command 'ollama-host' not found`

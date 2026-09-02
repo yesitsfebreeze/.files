@@ -8,10 +8,11 @@ needs:
   - 00-delivery/corrections/listing-order-lookup-regression
 verify: ""
 origin: derived
+from: 00-delivery/corrections/listing-order-lookup-regression
 complexity: 55
 blast-radius: high
 commit: 1d4f92f
-actual: 2026-08-24T14:10Z
+actual:
 ---
 
 # The highest-exposure file on the board is read positionally, with no guard
@@ -118,3 +119,6 @@ unique mktemp log; the orchestrator did not re-run the full wave sweep.
 Every landed counterfactual prints PASS across all five sites: copy-mode 2,
 startup-layout 1, tab-content 2 static + 6 probe, live-bugs 1, wave-status
 selftest 1.
+
+Closed 2026-08-24T14:10Z — the stamp that sat in `actual:` until 2026-09-01;
+`actual:` is a duration in hours and the planner warned on it every run.

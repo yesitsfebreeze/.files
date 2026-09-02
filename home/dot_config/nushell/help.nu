@@ -1,6 +1,6 @@
 # help.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → The help command
+#   manual → internals/help
 
 # ── the corpus ──────────────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ def _help_overview [] {
         } | str join "\n"
     )
     let first = (_help_curated $corpus [
-        "Ctrl-Space / F1" "F5 <digit>" "Ctrl-R" "<leader>ff and <leader><space>"
+        "F3" "F5 <digit>" "Ctrl-R" "<leader>ff and <leader><space>"
     ])
     let agents = (_help_curated $corpus ["help --json" "help --md" "idioms"])
     [
@@ -286,6 +286,30 @@ def _help_browse [q: string, m: string] {
     }
     _help_entry_detail $id
 }
+
+# ── the manual's prose, greppable (the `docs` channel) ──────────────────────
+
+# `help` addresses the manual's ENTRIES — one key, one command, by name.
+# `docs` addresses its PROSE — every line of manual/guide, manual/reference
+# and manual/internals — and opens the hit in $EDITOR at that line. The two
+# are deliberately separate searches; cable/docs.toml says why.
+#
+# `?` is the alias, because this is the thing you want with one keystroke.
+def --env docs [] {
+    if (which tv | is-empty) {
+        error make {msg: "docs: `tv` (television) is not installed — required dependency"}
+    }
+    if not $nu.is-interactive {
+        error make {msg: "docs: interactive-only — tv requires a TTY; `help --md` renders the entries without one"}
+    }
+    let dir = ($nu.home-dir | path join ".config" "nushell" "help" "manual")
+    if not ($dir | path exists) {
+        error make {msg: $"docs: the manual's markdown ($dir) is missing — run `chezmoi apply`"}
+    }
+    _finder_open (finder --start docs)
+}
+
+alias "?" = docs
 
 # ── the command ─────────────────────────────────────────────────────────────
 def help [

@@ -1,6 +1,6 @@
 -- lua/config/autocmds.lua
 -- Why this file is shaped the way it is:
---   docs-site → Internals → Neovim
+--   manual → internals/neovim
 
 local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd

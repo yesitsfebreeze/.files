@@ -9,6 +9,7 @@ needs:
   - 00-delivery/corrections/unguarded-startup-externals
 verify: ""
 origin: derived
+from: 00-delivery/corrections/unguarded-startup-externals
 ---
 
 # `config.nu`'s PWD-closure comment over-states the blast radius

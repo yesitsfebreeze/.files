@@ -7,6 +7,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 00-delivery/corrections
 ---
 
 # Finish the 05-platform provisioning rewrite

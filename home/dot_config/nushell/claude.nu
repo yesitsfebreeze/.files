@@ -1,6 +1,6 @@
 # claude.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def _claude_share [root: path, name: string] {
     let profile = ($root | path join $name)

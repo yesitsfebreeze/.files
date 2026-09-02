@@ -375,7 +375,7 @@ The clamp floors at 0 and ceils at n−1, so Down before any Up injects the NEWE
 export def --env finder [
 ```
 
-finder.nu — the typed channel runner over `tv` (television): `finder`, the channel picker, the typed decoder, the open-by-type dispatcher, the --expect parser, the shell quoter and the cht → cht-query pipe. DEFS ONLY: the entry points (`tv_finder`, `tv_remote`) and the three keybinding records live in config.nu — the entry points must parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. The file parses standalone under `nu -n`.
+finder.nu — the typed channel runner over `tv` (television): `finder`, the channel picker, the typed decoder, the open-by-type dispatcher, the --expect parser, the shell quoter and the cht → cht-query pipe. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-all`. The file parses standalone under `nu -n`.
 
 tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, stdout line 1 is the pressed key; a plain enter emits an empty first line.
 
@@ -492,7 +492,7 @@ def --env _finder_open [sel: list] {
 
 ── open a selection by type ──────────────────────────────────────────────── _finder_open: act on a decoded selection by its produced shape (R3) — {file, line} (grep hit) → editor at line, {hash} (commit) → git show, {sheet} (cht.sh) → pager, else a path → cd if a dir, edit if a file. --env so a `cd` here reaches the shell.
 
-── the 04-shell/07 seam, as built ────────────────────────────────────────── No _recents_* DEFS here: they live in recents.nu, sourced at MODULES ABOVE zoxide.nu and therefore above this file, so the three `_recents_add` CALLS above bind at parse. That direction is forced — nushell binds a def body's calls at parse time, so a later-sourced module could not have injected them, which is why the log is its own module rather than part of quicklist.nu (which must be sourced BELOW this file to reach `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`). 04-shell/07 still owns the quicklist cable, its runner and the quicklist dispatch arm in config.nu's tv_remote.
+── the 04-shell/07 seam, as built ────────────────────────────────────────── No _recents_* DEFS here: they live in recents.nu, sourced at MODULES ABOVE zoxide.nu and therefore above this file, so the three `_recents_add` CALLS above bind at parse. That direction is forced — nushell binds a def body's calls at parse time, so a later-sourced module could not have injected them, which is why the log is its own module rather than part of quicklist.nu (which must be sourced BELOW this file to reach `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`). 04-shell/07 still owns the quicklist cable and its runner; the quicklist dispatch arm it had in config.nu's `tv_remote` went with that def on 2026-09-01, and Ctrl-Q is now the only way in.
 
 ## `quicklist.nu`
 
@@ -500,7 +500,7 @@ def --env _finder_open [sel: list] {
 def _recents_entry [line: string] {
 ```
 
-quicklist.nu — the quicklist RUNNER (04-shell/07-quicklist R3/R4): the `quicklist` command behind Ctrl-Q and the tv_remote arm, plus the two dispatch helpers it uses. The log itself lives in recents.nu.
+quicklist.nu — the quicklist RUNNER (04-shell/07-quicklist R3/R4): the `quicklist` command behind Ctrl-Q, plus the two dispatch helpers it uses. The log itself lives in recents.nu.
 
 SOURCED AFTER finder.nu AT MODULES, and that is forced rather than tidy: nushell binds a def body's calls at PARSE time, and the bodies below call `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`. recents.nu is on the OTHER side of finder.nu for the mirror-image reason — zoxide.nu and finder.nu both call `_recents_add` — which is why this node ships two modules and not one. config.nu's MODULES paragraph carries the same note.
 

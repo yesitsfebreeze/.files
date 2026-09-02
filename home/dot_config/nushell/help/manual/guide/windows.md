@@ -12,13 +12,13 @@ There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm bin
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. The switcher stays on after each pick — keep hopping between tabs — and `Escape` leaves it, as does any key the switcher doesn't use.
+Press `F5` to enter the switcher, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. Land on a window holding one pane and the switcher is already done — you are typing again. Land on one holding several and it waits for the pane letter, so `F5 1 b` puts you in the second pane of window 1 in two keys. `Escape` ends the wait, as does any other key, which is swallowed rather than typed.
 
 > **Why it is this way**
 >
-> A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. A key with no binding in the pushed table is looked up once more in the root table and dropped if it misses, so a mistyped letter ends the mode and types nothing, with no bindings needed to arrange it. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you.
+> A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. Whether the switcher stays on is read from the window AFTER the jump rather than before it: a pushed table is one-shot, so a binding that does not re-arm is what ends the mode, and the digit is the only key that re-arms — into a second table holding the nine pane letters and Escape and nothing else. `q` is deliberately absent from that second table: after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. A key with no binding in the pushed table is looked up once more in root and dropped if it misses, so the keystroke that ends the wait is swallowed, not typed. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you.
 
-See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 F5`](./windows.md#f5-f5)  
+See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 q`](./windows.md#f5-q) · [`F5 F5`](./windows.md#f5-f5)  
 Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 ## `F5 <letter>`
@@ -27,13 +27,13 @@ Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane. Every pane carries its letter in a video-inverse chip at the left edge of the border above it — the label you are reading is the key you press. The switcher stays on after each pick, and `Escape` leaves it.
+Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane carries its letter in a video-inverse chip at the left edge of the border above it, so the label you are reading is the key you press. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane.
 
 > **Why it is this way**
 >
 > The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The chip rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The chip is shown whenever the window has more than one pane, not only while the switcher is armed — the letter is a property of the pane, not of the mode.
 
-See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`the status bar`](./windows.md#the-status-bar)  
+See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 q`](./windows.md#f5-q) · [`the status bar`](./windows.md#the-status-bar)  
 Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 ## `F5 <arrow>`
@@ -42,13 +42,28 @@ Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 *terminal*
 
-Press `F5`, let go, then an arrow: the pane splits that way and the new pane opens in the directory the old one was in. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. The switcher stays on — stack another split — and `Escape` leaves it.
+Press `F5`, let go, then an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the switcher is done — the cursor is in the new pane and typing goes there. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. A second split is a second `F5`.
 
 > **Why it is this way**
 >
-> A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The arrows, digits and letters share one table — one `F5` arms all three — so there is no second key to remember. The directory comes from the shell's OSC 7 report, which is why `config.nu` keeps `osc7: true` — its neighbour `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines.
+> A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The arrows, digits and letters share one table — one `F5` arms all three — so there is no second key to remember. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: that is the pane process's OS cwd, and nushell's `cd` never changes it, so until 2026-09-01 a split opened in the directory the pane was LAUNCHED in. `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines.
 
-See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit)  
+See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit) · [`F5 q`](./windows.md#f5-q)  
+Spec: `prds/07-multiplexer/02-key-tables/prd.md`
+
+## `F5 q`
+
+**Close the pane you are working in**
+
+*terminal*
+
+Press `F5`, let go, then `q`: the pane you were in is gone and its neighbours take the space back. Nothing asks first and there is no undo. Close the only pane of the only window and the session goes with it, which is the one way this key does more than tidy up.
+
+> **Why it is this way**
+>
+> It lives in the switcher's first table and NOT in the pane-letter table a digit arms, which is the whole guard. Pressing `F5` is deliberate, so a `q` straight after it is deliberate too; after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. There is no confirmation prompt because a confirmation is a second gesture on a key whose point is being one, and because tmux keeps nothing to restore a killed pane from — the choice of table is the guard, and it is the only one.
+
+See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit)  
 Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 ## Read the bar across the top
@@ -77,6 +92,16 @@ Quit the terminal — or lose the ssh connection — and nothing stops: reopenin
 See also: [`the status bar`](./windows.md#the-status-bar) · [`F5 <digit>`](./windows.md#f5-digit)  
 Spec: `prds/07-multiplexer/07-persistence/prd.md`
 
+## `q / :q / /exit`
+
+**Leave the shell**
+
+*shell*
+
+Any of the three exits. They exist because muscle memory arrives from vim, from a REPL, and from a chat box, and none of them should print an error.
+
+Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+
 ## `F5 F5`
 
 **Send F5 through to a nested session**
@@ -91,16 +116,6 @@ Press the key twice — `F5 F5` — and the second press is sent to whatever is 
 
 See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F6`](./appearance.md#switch-scheme)  
 Spec: `prds/07-multiplexer/02-key-tables/prd.md`
-
-## `q / :q / /exit`
-
-**Leave the shell**
-
-*shell*
-
-Any of the three exits. They exist because muscle memory arrives from vim, from a REPL, and from a chat box, and none of them should print an error.
-
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 ## `Ctrl+Alt+Super+drag`
 
@@ -127,7 +142,7 @@ Hold `Shift` and left-click a URL or a hyperlinked file path — in a plain shel
 
 > **Why it is this way**
 >
-> The binding sets `mouse_reporting`, which is what keeps it working while an application is capturing the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), and that feature is only picked up by a client that attached after it was set. Without either half the click is forwarded to the application and nobody opens the URL.
+> Three measured facts: `mouse_reporting` on the duplicate binding is what keeps it working while an application captures the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), a feature only a client attached after it was set receives; and the click's Down stroke is Nopped, because with only Up bound tmux takes the press and turns the click into a copy-mode selection.
 
 See also: [`Ctrl+Alt+Super+drag`](./windows.md#ctrl-alt-super-drag)  
 Spec: `prds/02-terminal/04-copy-mode/prd.md`

@@ -98,9 +98,77 @@ directory from *who ran it*:
 | run from outside tmux | the client's cwd |
 | **a key binding** | **the session's working directory** |
 
-The last is the only one anybody presses. So the mechanism is the session being
-*created* at `$HOME`, which happens in `~/.local/bin/tmux-main`. `tmux.conf`
-cannot do it — tmux has had no `default-path` option since 1.9.
+The last is the only one anybody presses, so a binding that wants `~` has to
+say so. Every digit bind carries `-c ~` explicitly for that reason; **do not
+add a `new-window` that leans on the session directory instead.** It used to
+be able to: the session was created at `$HOME` and the digit binds inherited
+it. Since 2026-09-01 the session is created at the recorded start dir (below),
+so the inherited answer is no longer `~`.
+
+`tmux.conf` cannot set a default itself — tmux has had no `default-path`
+option since 1.9.
+
+## Where the start dir is read
+
+**04-shell R7** — a new shell opens in the last directory navigated to — is
+one read, in `~/.local/bin/tmux-main`, on the session that has no parent to
+inherit from. `mkcd` writes `~/.local/state/nushell/startdir.txt` on every
+move; `tmux-main` passes it as `new-session -c`, falling back to `~/dev` and
+then `$HOME`.
+
+**TRAP: it must not be read per shell.** `nushell/env.nu` used to do exactly
+that, unconditionally, on every interactive shell — and it ran *after* the
+launcher had placed the process, so inside tmux it silently defeated every
+`-c` in this file. Measured 2026-09-01: `tmux split-window -c /usr/local`
+landed the pane in whatever `startdir.txt` held, which is the last directory
+visited in *any* pane. Both documented behaviours above were false in
+practice — a split did not inherit its parent and a digit window was not a
+clean `~`; both read one global file. `env.nu` now guards on `$env.TMUX` being
+empty, which keeps the old behaviour for a bare `nu` (the no-tmux fallback in
+`tmux-main` execs one).
+
+## Where a split starts
+
+`#{E:@cwd}` — set at the top of `tmux.conf` — is the pane's real working
+directory, and the only thing a gesture meaning "here" may use: the split
+binds, the F3/Shift+F3 popups' `-d`, the status bar.
+
+**TRAP: `#{pane_current_path}` is not where the pane is.** It is the pane
+process's OS cwd, and nushell never changes it — `cd` moves `$env.PWD` and
+leaves the process where it was launched. Measured 2026-09-01 on tmux 3.7c, a
+pane whose prompt sat in `~/dev/dotfiles` reported
+`pane_current_path=/Users/feb/dev/infra/pearde`, the directory it had been
+started in. `#{pane_path}` is the OSC 7 report instead, which nushell emits on
+every prompt.
+
+OSC 7 is a URL — `file://<host><path>` — so `@cwd` strips the host and guards
+on it. Three measurements shape the expression:
+
+| Written | Why not the obvious spelling |
+|---|---|
+| `file.//` | `#{s\|a\|b\|:var}` splits on the FIRST `:`, so a literal colon in the pattern truncates the modifier and the whole format yields `""`. `.` stands in for it |
+| replacement `/`, not empty | an empty replacement also yields `""` rather than the stripped string |
+| `#{m:pat,str}` | `#{m\|pat\|str}` is not parsed; it comes back as literal text |
+
+The `m:` guard is the ssh case: a pane logged into another box reports *that*
+box's path, which does not exist here. Only an OSC 7 naming this host is
+trusted, and anything else falls back to `#{pane_current_path}` — for an ssh
+pane that is the local cwd, which is the right answer.
+
+`#{E:@cwd}` is used rather than the expression, except in `status-format[1]`,
+the window row, which spells it out. That is not duplication for its own sake: `:...` names a
+*variable*, so a substitution cannot be applied to an expanded option —
+`#{s|^$HOME|~|:@cwd}` substitutes over the option's literal text and
+`:E:@cwd` yields `""`. The `~` collapse therefore rides inside the branch,
+chained onto the host strip with `;`, which is how one `#{}` carries two
+substitutions.
+
+One more: **`-c`'s format expands against the client's ACTIVE pane, not
+`-t`.** Measured 2026-09-01 — `split-window -t %224 -c "#{E:@cwd}"` from the
+command line resolved `@cwd` against the active pane and opened the split in
+*its* directory. The binds are unaffected because a key is pressed in the
+active pane and they pass no `-t`; a script that splits a pane it is not
+sitting in must resolve the path itself first.
 
 ## `default-command`: three things, each of which cost a day
 
@@ -144,7 +212,44 @@ forwarding anything.
 
 No timeout is needed or possible. WezTerm's jump mode carried a 5 s timeout
 because its key table persisted; a tmux table is popped by the very next
-keystroke whatever it is, so the mode is at most one key deep.
+keystroke whatever it is, so the mode is only ever as deep as the number of
+bindings that deliberately push it again.
+
+### Re-arming is the only thing that keeps the switcher alive
+
+A binding that does **not** end with a `switch-client -T` therefore *ends* the
+mode. That is the whole of the gesture rule and it needed no extra machinery:
+a letter, an arrow and `q` re-arm nothing and are complete on their own, so
+`F5 b` is two keystrokes and you are typing again.
+
+The digit is the one exception, and it decides **after** the jump rather than
+before it:
+
+```
+bind -T jump 1 if -F '#{m:*|1|*,#{W:|#{window_index}|}}' 'select-window -t :1' 'new-window -t :1 -c ~' \
+             \; if -F '#{==:#{window_panes},1}' 'switch-client -T root' 'switch-client -T jump-pane'
+```
+
+Commands in a `\;` sequence resolve their target when they run, not when the
+key was pressed, so `#{window_panes}` in the second `if` reads the window
+`select-window` just moved to. One pane and the gesture is finished; more than
+one and the pane letter is still to come, so it pushes `jump-pane`.
+
+`jump-pane` is a second table holding the nine letters and `Escape` and
+**nothing else**. In particular it does not hold `q`. `F5 q` kills the active
+pane with no confirmation and tmux keeps nothing to restore it from, so the
+guard is the table the key lives in: `F5` is a deliberate press and a `q`
+straight after it is deliberate too, while a `q` in the state a digit leaves
+you in is the first letter of a word you were about to type into the window you
+just landed on. The nine letter binds are written out twice for the same
+reason — tmux cannot forward a key from one table to another, and the
+duplication is cheaper than the hazard.
+
+Measured 2026-09-01 by attaching the session from a pane of a second tmux
+server and reading `#{client_key_table}` after each key: `F5`→`jump`,
+digit onto a one-pane window→`root`, digit onto a two-pane window→`jump-pane`,
+letter→`root`, arrow→`root`, `q`→`root` with the pane gone. `F5` then `z` put
+no byte on the pane's pty, which is the drop above, measured rather than read.
 
 ### The delimiter must not be a glob metacharacter
 
@@ -166,6 +271,29 @@ true for `nushell` when asked about `nu`.
 
 `if-shell -F` tests a *format*, so no `/bin/sh` is spawned per keypress.
 
+### The seams are empty
+
+`pane-border-lines` is **`spaces`**: every border cell is a space, so a seam
+reads as background and the only mark on it is the pane's letter chip.
+
+A dot at the junctions and nothing elsewhere — the shape people ask for when
+they want borderless panes that still show where three panes meet — is **not
+expressible**, and this is the measurement rather than an opinion. The glyphs
+are compiled-in tables in `tmux.h` (`CELL_BORDERS " xqlkmjwvtun~"`,
+`SIMPLE_BORDERS " |-+++++++++."`) selected by a six-value enum;
+`pane-border-lines` picks a *table* and no option anywhere names a border
+character. One table and one style cover **every** border cell, joins included,
+so blanking the runs blanks `├` and `┼` with them. Measured 2026-09-01 on
+**tmux 3.7c** against a three-pane layout: under `single` the T printed at
+column 50, under `spaces` that same cell came back a space. The five values in
+the manpage are the whole set — the `padded` and `none` strings in the binary
+belong to `popup-border-lines` and are rejected here.
+
+A ~40-line patch adding a `dots` value does work; it was built and run, drawing
+a single `●` on the five join cells and nothing on a two-pane seam. It was
+**declined** — this environment runs a stock tmux, and a patched binary was
+already retired once for the F5 overlay.
+
 ### Pane letters are only honest with the border
 
 tmux **renumbers panes** when one is killed, so a letter does not keep its pane
@@ -176,6 +304,18 @@ border are one design, not two features.
 
 `#{a:N}` is the character with numeric value N and `#{e|+|:96,N}` is integer
 addition, so pane 1 reads `a` and pane 9 reads `i`. No shell, no lookup table.
+
+The chip is **right-aligned**, in the pane's outermost right column, and the
+window digits sit at the right end of the status bar for the same reason: both
+halves of an `F5` address are then read from one corner of the screen instead
+of two. Look top-right, press the key.
+
+`#[align=right]` is a `format_draw` attribute, and the manpage documents it
+under the status line only — `pane-border-format` is not listed as taking it.
+It does work: measured 2026-09-01 on **tmux 3.7c**, both panes of a vertical
+split printed their chip flush against their own right edge. Re-measure after a
+tmux upgrade, because a regression here degrades silently — the chip drifts
+back to column 0 and nothing errors.
 
 ### `F6` is never forwarded
 
@@ -207,24 +347,56 @@ harder to see than a missing shell.
 
 ## Copy mode
 
-### `Ctrl+Shift+X` only exists on an extended-key terminal
+**07-multiplexer I1 governs this whole section**: every gesture here works on a
+bare server with no WezTerm. Copying is the multiplexer's on purpose — that is
+what makes it the same over ssh — and pasting is the terminal's by
+construction, because only the program in front of the human can read that
+human's clipboard. The one binding that broke the invariant is recorded below
+rather than deleted quietly.
+
+### `F4`, and the chord it replaced
+
+**07-multiplexer I1**: every gesture in this layer works on a bare server with
+no WezTerm. `Ctrl+Shift+X` did not, and it was the only keyboard entry to copy
+mode from the tmux cutover until 2026-09-01.
 
 A terminal cannot express `Ctrl+Shift+X` in the legacy encoding — both `Ctrl+X`
-and `Ctrl+Shift+X` are the single byte `0x18`. The key only arrives as
-something distinguishable when the terminal speaks an extended-key protocol.
+and `Ctrl+Shift+X` are the single byte `0x18`. It only arrives as something
+distinguishable when the terminal speaks an extended-key protocol.
 
-tmux 3.7c **decodes both spellings** — `CSI 120;6u` (kitty/CSI-u) and
-`CSI 27;6;120~` (xterm modifyOtherKeys) — into `C-S-x`, and it does so with
-`extended-keys` off, on and always alike: that option governs what tmux
-**sends**, never what it accepts.
+The measurement that made this look safe was about the wrong half. tmux 3.7c
+**decodes both spellings** — `CSI 120;6u` (kitty/CSI-u) and `CSI 27;6;120~`
+(xterm modifyOtherKeys) — into `C-S-x`, and does so with `extended-keys` off,
+on and always alike, because that option governs what tmux **sends**, never
+what it accepts. All true, and none of it load-bearing: the terminal still has
+to *send* one of the two spellings, and that is a fact about the emulator, not
+about tmux. Measured 2026-09-01 on this desk — WezTerm advertising `extkeys` in
+`#{client_termfeatures}`, `extended-keys on`, `enable_kitty_keyboard = false` —
+pressing the key did nothing at all. tmux received an unbound `C-x` in root and
+passed it to the program in the pane.
 
-Binding `C-S-x` costs plain `C-x` nothing: measured, with only `C-S-x` bound a
-plain `Ctrl+X` still reaches the pane as `0x18`, so nvim's `i_CTRL-X`
-completion prefix and every readline binding are untouched. Binding `C-x`
-instead — the byte that actually arrives on a legacy terminal — would have
-taken them all.
+So the binding is gone rather than kept as a second name for `F4`. Keeping it
+would leave the manual documenting a key that works on some terminals and
+silently does nothing on others, which is the exact failure I1 exists to catch:
+correct on paper, silent in practice, invisible to anyone not sitting at the
+one terminal it was tried on.
 
-`C-b [` is the entry that works on every terminal ever.
+`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (jump) and
+`F6` (theme) in the row this config reserves for keys no program in a pane
+wants, and carries the same nesting escape they do —
+`bind -T jump F4 send-keys F4`, because a root binding is always taken by the
+outermost server.
+
+`C-b [` remains the entry that works on every terminal ever, and `copymode` is
+the same mode from a shell prompt.
+
+**The fact worth keeping from the old section**, because it is why binding a
+chord was tempting: binding `C-S-x` costs plain `C-x` nothing. Measured, with
+only `C-S-x` bound a plain `Ctrl+X` still reaches the pane as `0x18`, so
+nvim's `i_CTRL-X` completion prefix and every readline binding were untouched.
+Binding `C-x` instead — the byte that actually arrives — would have taken them
+all. That is the trap for anyone who reads "it arrives as 0x18" and reaches for
+the obvious fix.
 
 ### The cycle's anchor, and why it is an option
 
@@ -265,9 +437,85 @@ Three shapes, one fixture:
 { send -X copy-selection-and-cancel ; set -pu @o }    buffer set, OSC 52 out
 ```
 
-The reset in the `y` binding is redundant — `after-copy-mode` clears the toggle
-on the next entry — and it is kept anyway, so a reader who moves it back to the
-top finds something here saying why it must not be moved.
+The reset in the `y`, `Enter` and `C-c` bindings is redundant —
+`after-copy-mode` clears the toggle on the next entry — and it is kept anyway,
+so a reader who moves it back to the top finds something here saying why it must
+not be moved.
+
+### Choosing the sink is not the same as using it
+
+**The bug this section exists to prevent shipped for weeks.** Picking a sink
+sets an option; it rebinds nothing. Every stock copy path calls
+`copy-pipe-and-cancel` with **no command**:
+
+```
+copy-mode-vi Enter              send -X copy-pipe-and-cancel
+copy-mode-vi MouseDragEnd1Pane  send -X copy-pipe-and-cancel
+root DoubleClick1Pane           ... send -X copy-pipe-and-cancel
+root TripleClick1Pane           ... send -X copy-pipe-and-cancel
+```
+
+With no command the text goes to tmux's own paste buffer and stops. Under
+`set-clipboard off` — the local arm, the one this desk runs — the buffer is the
+end of the line. Only `y` named `pbcopy`, so only `y` copied. Everything else
+highlighted, cancelled, and left the system clipboard holding whatever it had
+before: the exact shape of "I selected it and pressed the key and it did not
+paste".
+
+Measured 2026-09-01, on a session whose pane held `SENTINEL-ZZZ-9876` and whose
+clipboard held `BEFORE-15647`:
+
+```
+send -X copy-pipe-and-cancel          buffer SENTINEL-ZZZ-9876, pbpaste BEFORE-15647
+send -FX copy-pipe-and-cancel "#{@copy-pipe}"   pbpaste SENTINEL-ZZZ-9876
+```
+
+So the sink is an option every copy path names, and `-F` is load-bearing:
+`send -X` does **not** expand formats in its arguments and would pipe to the
+literal string `#{@copy-pipe}`. `-FX` is the same spelling tmux's own default
+`#` binding uses for `#{copy_cursor_word}`.
+
+The remote arm keeps the empty pipe on purpose: `copy-pipe-and-cancel ""` still
+sets the buffer, and `set-clipboard on` is what turns that into the OSC 52.
+One binding, both arms, the difference held entirely in `@copy-pipe`.
+
+### Taking the mouse means owing it a clipboard
+
+`mouse on` moves selection from the terminal to tmux, and it has to — a
+terminal-level drag across a vertical split runs through the divider and takes
+both panes' columns as one line. That is also what makes the gesture portable:
+the selection is the multiplexer's, so it behaves the same over ssh as it does
+locally, where a terminal-owned selection would be whatever the far end's
+emulator happens to do.
+
+Having taken the mouse, tmux owes it a clipboard, and `Ctrl+C` is bound in
+`copy-mode-vi` because stock binds it to a bare `cancel` — the obvious gesture
+threw the selection away. There are two routes to that binding and I1 requires
+both to work:
+
+- **No emulator binding in the way** (any terminal over ssh): `0x03` arrives at
+  tmux directly. Unlike the retired `C-S-x`, `Ctrl+C` is perfectly spellable in
+  the legacy encoding, so this route needs nothing negotiated.
+- **An emulator that binds it first** (WezTerm here): its callback reads its
+  own selection, finds none — `window:get_selection_text_for_pane` is **always
+  empty under tmux**, since the drag never reached it — and falls through to
+  sending the key down. It arrives at the same line.
+
+The second route only stays correct while the emulator's binding falls through
+on an empty selection. One that copied unconditionally, or swallowed the key,
+would break copy-mode `Ctrl+C` on this desk and nowhere else — the asymmetry
+worth knowing about before editing `wezterm.lua`.
+
+`#{selection_present}` is the test that makes one key do both jobs. Note it
+reads 0 for a one-cell selection while `#{selection_active}` reads 1 — the same
+asymmetry the cycle's anchor section relies on — so `Ctrl+C` on a single
+character leaves rather than copies. That is the acceptable end of the trade:
+the alternative is a key that can never simply leave.
+
+The manual entry for `Ctrl+C` asserted the opposite of all this until
+2026-09-01 — "the multiplexer's mouse mode is off, so dragging still selects
+the way it does in any other window". The mouse mode was on. The entry was
+written before the tmux cutover and never re-read against the file.
 
 ### The sink is chosen by where the panes are
 
@@ -294,6 +542,38 @@ machine attached from somewhere else over ssh copies to this desk's clipboard,
 not to the one in front of you. Copying out is the direction this environment is
 built for; copying in was not bought.
 
+### Both arms measured, on a host that is not this desk
+
+I1 asks for the gestures to work on a bare server, so the remote arm was driven
+rather than reasoned about. Fixture, 2026-09-01: a tmux server started with
+`PATH` holding neither `pbcopy` nor `infocmp` nor `nu`, and a client attached
+on a real pty whose bytes were read back.
+
+```
+sink        @copy-pipe ''  |  set-clipboard on  |  default-terminal screen-256color
+termfeature bpaste,ccolour,clipboard,hyperlinks,cstyle,extkeys,focus,RGB,title
+press y     OSC 52 out: 1
+  raw       ;L2V0Yy96c2hyYzo4OiBjb21tYW5kIG5vdCBmb3VuZDogbG9jYWxlCg==
+  decoded   /etc/zshrc:8: command not found: locale
+```
+
+Four things fell out of one run. The `infocmp` probe took the
+`screen-256color` fallback. The `pbcopy` probe took the OSC 52 arm. The real
+`y` binding — `send -FX copy-pipe-and-cancel "#{@copy-pipe}"` with the pipe
+empty — set the buffer *and* put the base64 on the client's wire, so an empty
+pipe does not suppress the OSC 52 the way a `set-option` before the copy does.
+And the pane came up in **zsh**, because `nu` was not on `PATH` and
+`default-command`'s `${SHELL:-/bin/sh}` fallback is real rather than
+theoretical.
+
+The decoded payload is a zsh startup error rather than anything interesting,
+which is the point: it is whatever was on the top line of a deliberately
+crippled host, copied by the ordinary key, read off the wire.
+
+The local arm is the same key measured the other way: with `pbcopy` on `PATH`,
+`pbpaste` returns the selection and no OSC 52 goes out. Two arms, one binding,
+the difference held entirely in `@copy-pipe`.
+
 ### `mode-keys vi` is stated, not inherited
 
 tmux picks `mode-keys` from `$EDITOR`/`$VISUAL` when it is not set, so on a host
@@ -315,6 +595,84 @@ The active label's colours live in a style *option*, not inline in the format,
 because a later `source-file` can replace a style option and cannot replace a
 format's embedded `#[…]`.
 
+The bar is **two rows, both at the top**.
+
+Row 0 is ambient — the facts true of the whole session. Left to right: the
+clock; the **key-table chip**, which appears the instant `F5` arms the switcher
+and names the table (`jump`, or `jump-pane` when a digit has been pressed and
+the letter is still to come); the **`✳N` Claude counter**; and at the right the
+window digits.
+
+Row 1 is *this window*. Left: the active pane's host (over ssh) and cwd, the
+**git branch** with a `*` when the tree is dirty, and a zoom or copy-mode flag.
+Right: the window's panes, each as **its letter and what it runs** — `A nu
+B nvim  C claude` — with the active one lit. That pairing is the row's reason
+to exist: the letter is the key `F5` addresses, so the row answers "which key
+gets me to the editor" without switching panes to find out. A single-pane
+window prints the command alone, since there is no letter worth pressing.
+
+A Claude pane is recognised by its **title**, never its command. Claude Code
+sets the pane title to `✳ <what it is doing>` and runs as its own version
+string, so `#{pane_current_command}` on a Claude pane reads `2.1.252` — measured
+2026-09-01 — and matching on that would break at the next Claude release and
+print a version number where a name belongs. A pane that has not set its title
+yet is simply not counted until it does.
+
+The counter is `#{n:#{W:#{P:…}}}`: `W` loops windows, `P` loops that window's
+panes, each Claude pane emits one character, and `n:` takes the length. No
+shell and no counter to keep in step — it cannot go stale, because it is
+computed at draw time from the panes themselves. **Trap:** both loops take two
+comma-separated arguments (`#{P:other,current}`), so a top-level comma inside
+one splits it rather than printing; commas nested inside a `#{?…}` are safe.
+
+The **git segment** is the one thing here that runs a command. It was left out
+of the first cut on the grounds that starship prints the same facts in the
+prompt one line below — which was wrong, and the counter-case is the common
+one: the prompt is only on screen while a pane sits *at* a prompt. Open nvim,
+tail a log, hand the pane to Claude, and the branch disappears from the screen
+entirely. The bar is the surface that is always there. `~/.local/bin/tmux-git`
+carries the reasons for how it asks git; the two that matter are `-uno` (a walk
+of tracked entries rather than the whole tree, because this runs on a timer)
+and `--no-optional-locks` (without it a polling `git status` contends for
+`.git/index.lock` with the git you are running in the pane, and the failure
+looks like random "unable to write index" errors that nothing points back at
+the bar). `#()` runs in the background and re-runs every `status-interval`, so
+a slow answer arrives late rather than freezing a redraw.
+
+The **key-table chip** is the awesome-tmux prefix-highlight idea rebuilt on the
+tables this config actually uses, there being no prefix key here to highlight —
+until it existed, nothing on screen said the switcher was armed. **Trap for
+anyone re-measuring it:** a real keypress redraws the status, so the chip
+appears and clears instantly, but driving the same change from the CLI with
+`switch-client -T jump` does *not* mark the status dirty and the chip does not
+appear until the next tick. That reads exactly like a broken format and is not
+one.
+
+Both rows sit wherever `status-position` says, because it is **one option for
+the whole bar**. Measured 2026-09-01 on **tmux 3.7c**: `status 2` with
+`status-position top` drew both at screen rows 1 and 2, so tabs at the top with
+the window status at the bottom is not available. Neither is an overlay at the
+bottom — tmux's only overlay is a popup: it is per client, it covers pane
+content rather than reserving a row, and it takes every key while it is up
+(`-N` only cancels `-E`/`-k`, it does not make a popup passive).
+
+The window list is right-aligned; row 0's left segment leads with the clock.
+The clock takes the outermost cell because it is the one segment whose width
+never changes, so it is the only one that can anchor a corner — a cwd in front
+of it would move the time to a different column on every `cd`, which is exactly
+what makes a clock hard to read at a glance. Everything that moves with a `cd`
+is on row 1 for that reason, and the host sits next to the path there because
+over ssh the two are one fact.
+
+The list is placed by **`status-justify`**, never by a format, and `right` only
+reaches the terminal's right edge while `status-right` is **empty**: tmux
+right-aligns the list within whatever space the two flanking segments leave, so
+anything put back in `status-right` pushes the digits inward by its own width.
+The two segments are written into both arms of the SSH test below rather than
+composed, because tmux options do not concatenate — there is no "append to
+`status-left`", and routing the hostname through a user option would nest a
+format inside a format.
+
 `status-interval` is 5 s. The clock is `HH:MM`, so a faster tick would repaint
 the bar sixty times for one visible change.
 
@@ -326,6 +684,11 @@ started from a terminal on this desk does not.
 `#{s|^$HOME|~|:pane_current_path}` is a format substitution, not a shell — no
 process per tick. `$HOME` is expanded by tmux at parse time, so the pattern is a
 literal path by the time a tick reads it.
+
+That expansion happens in **double quotes only**. Written inside single quotes
+the `$HOME` reaches the format literally, nothing matches, and the row prints
+the full `/Users/...` path with no error to say why — measured 2026-09-01 while
+building row 1. It is why both arms of the SSH test are double-quoted.
 
 A one-pane window has nothing to address, so the border is hidden there rather
 than spending a row of the grid saying `a` about the only pane there is. The

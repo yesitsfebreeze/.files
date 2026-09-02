@@ -8,6 +8,7 @@ needs:
   - 00-delivery/corrections/w0-3-platform-rewrite
 verify: ""
 origin: derived
+from: 00-delivery/corrections
 ---
 
 # Apply the S2/S3 corrections across the tree

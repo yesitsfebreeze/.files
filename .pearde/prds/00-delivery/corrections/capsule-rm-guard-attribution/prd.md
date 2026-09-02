@@ -8,6 +8,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 00-delivery/corrections/pwd-closure-blast-radius
 ---
 
 # `capsule.nu` points an auditor of `docker rm` at a guard that does not cover it

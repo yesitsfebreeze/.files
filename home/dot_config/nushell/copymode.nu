@@ -1,6 +1,6 @@
 # copymode.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def copymode [] {
     if ($env.TMUX? | is-empty) {

@@ -70,5 +70,5 @@ Spec: `prds/04-shell/05-history/prd.md`
 
 Press `Ctrl-Q` for one list of everything recent across every channel — jumps, files opened via `z`, finder picks — newest first. `enter` opens it by type. `ctrl-r` replays instead: it cds to the directory the pick was made in and re-runs the channel it came from, so a grep result reopens the same search where you ran it. An empty log prints a hint rather than an empty picker.
 
-See also: [`Ctrl-Space / F1`](./files.md#ctrl-space-f1) · [`mkcd`](./directories.md#mkcd)  
+See also: [`F3`](./files.md#f3) · [`mkcd`](./directories.md#mkcd)  
 Spec: `prds/04-shell/07-quicklist/prd.md`

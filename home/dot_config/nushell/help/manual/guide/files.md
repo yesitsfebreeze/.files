@@ -4,37 +4,37 @@
 
 > The finder in the shell, telescope in the editor, and ripgrep underneath.
 
-One key opens everything: `Ctrl-Space` picks a channel — files, directories, text, git log, history — and acts on what you choose. `Ctrl-T` does the same but inserts the result into the line you are typing instead. In the editor the same job is telescope, deliberately a second tool rather than a shared one.
+One key opens everything: `F3` asks what you are looking for, then tells you which channels have it — files, directories, file contents, git log, the manual, history — with a count each. Narrow to a channel, pick a row, and it opens in a new pane below you. `Shift+F3` is the same gesture across your whole machine, answering fastest-first so a jump costs nothing and a real hunt can be left to run. Both are tmux bindings, so they answer from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one.
 
-## `Ctrl-Space / F1`
+## `F3`
 
-**Open the finder and act on what you pick**
+**Search this directory and act on what you pick**
 
-*shell*
+*terminal*
 
-Press `Ctrl-Space` (or `F1`). The channel list opens first — type a few letters of the channel you want (`fil`, `dir`, `text`, `git-log`), enter, then pick a row. What happens next follows the type: a file opens in nvim, a directory cds the shell and lists it, a grep hit opens the editor on that line, a commit opens in `git show`. `Tab` multi-selects.
-
-> **Why it is this way**
->
-> Enter has to be un-hijacked per run (`--keybindings 'enter="confirm_selection"'`) because three channels bind it to an action of their own instead of confirming: `text` edits in place, `zoxide` cds in a nested shell, `recent-files` edits. Note that the `text` override is local to this config, not stock tv. tv panics outright without a TTY, so this and every other picker entry point is interactive-only by construction.
-
-See also: [`Ctrl-T`](./files.md#ctrl-t) · [`Ctrl-Q`](./history.md#ctrl-q) · [`finder`](./files.md#finder)  
-Spec: `prds/04-shell/04-television/prd.md`
-
-## `Ctrl-T`
-
-**Insert a path into the line you are typing**
-
-*shell*
-
-Mid-command, press `Ctrl-T`. The channel list opens first, exactly as it does for `Ctrl-Space` — pick a channel, then pick a row, and it is inserted at the cursor, shell-quoted, for you to carry on typing. Esc at either step leaves the line exactly as it was. This is the fzf reflex, on television.
+Press `F3` in any pane — a shell, an editor, a running agent — and a small box titled `search` opens in the middle of the PANE you are in: one line, nothing else. Type what you are looking for and press enter. You get back the list of channels that have a hit on it, with counts: `files 26 hits`, `text 1961 hits`, `docs 432 hits`, and nothing for the channels that have none. Type a few letters of a channel to narrow that list, enter to go into it, and pick a row. Whatever it opens arrives in a new pane below the one you pressed F3 in. If only one channel has a hit at all there is nothing to choose and you land straight in its rows; esc at any step leaves nothing behind.
 
 > **Why it is this way**
 >
-> Both keys end up in `_finder_pick_channel` over `tv list-channels`, so a cable file you add for one is on the other too, with nothing to register twice. The two differ only in what happens to the pick: this one edits it onto the command line instead of opening it.
+> What, then where — the inversion is the point. The retired `Ctrl-Space` asked for the channel first, so you had to know WHERE a thing lived before you could say what it was, and "which channel is that in" is exactly the question you cannot answer when you are looking for something. Counting first turns it into an answer instead of a prompt. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane, where a shell key can never reach; the cost is that the popup is modal and eats every key while it is up, F5 and F6 included, and that the pane to split from has to be handed in as `TV_ALL_ORIGIN` because a popup is not part of the window layout and has no position of its own. Terms are ANDed and matched as fixed strings, never as a pattern, so a stray bracket in what you typed narrows the list rather than failing the search. Picks divide on whether they change anything: a file, a directory, a commit and a manual entry are things you are looking at, so they open, while a history line, an alias, an env var and a branch switch land on a fresh prompt unrun. Hidden files are searched deliberately — this repo keeps its whole board under a dot-directory, and a search that skipped it would be lying. The prompt and the results are two separate popups because tmux allows exactly one popup per client, so a one-line box and a full-height list cannot be the same window; the binding runs them in sequence and hands the query over in a file named for the pane, and the `if-shell` between them is what makes cancelling silent rather than a second popup that flashes and vanishes. The results header repeats what you typed, because by then the box that took it has closed. Both popups state `-x` and `-y` rather than relying on a default: display-popup inherits display-menu's placement, which is anchored near the pane and not in the middle of anything, so an omitted position is an off-centre box. The result popup is drawn with `-B` and no tmux border at all, because television draws its own frames and a tmux border around them is a second frame one cell outside the first — tv repaints its own on every keystroke while tmux repaints its border only when it thinks it must, so the outer one comes apart in pieces as you type. The box reads the keyboard a byte at a time in raw mode rather than with a plain line read, and that is what Escape costs: under a line read the terminal is canonical and Escape is merely a character that lands in the buffer, so the box could only be dismissed with Ctrl-C. Escape is also the first byte of every arrow and function key, and telling the two apart by TIME — another byte within a tenth of a second, so this must be a sequence — is the obvious rule and it is wrong. Measured inside a real popup on 2026-09-01: one press of Escape can arrive as two bytes, `27 27`, and the timing rule read the second Escape as the start of a sequence, found neither of the two bytes that can continue one, and discarded both — which is precisely a box that will not close. Timing narrows the question to whether anything follows; only the byte that follows answers it, and just `[` and `O` continue a sequence. Once inside one, exactly the sequence is consumed and no more: draining until the input falls quiet eats the characters typed straight after an arrow, which arrive inside the same gap. Both of these cost a working version each, and neither is visible from outside the popup — `send-keys` cannot reach one, so a popup's keyboard behaviour can only be learned by logging the bytes it actually receives.
 
-See also: [`Ctrl-Space / F1`](./files.md#ctrl-space-f1)  
-Spec: `prds/04-shell/04-television/prd.md`
+See also: [`Shift+F3`](./files.md#shift-f3) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)  
+Spec: `prds/07-multiplexer/02-key-tables/prd.md`
+
+## `Shift+F3`
+
+**Search your whole machine, fastest answers first**
+
+*terminal*
+
+Same gesture as `F3`, one scope wider: the box is titled `search everywhere`, opens in the middle of the whole terminal rather than of your pane, and searches all of `~` instead of the directory you are in. Where the box sits is the scope, readable before you read the title. The channel list opens before the search has finished and fills in as it goes — the channels you navigate by (recent directories, recent files, history, aliases, the manual) are there within half a second, files and directories follow a second or two later, and the exhaustive search of every file's contents lands last, around fifteen to thirty seconds in, showing `searching…` until it does. So a jump to somewhere you have already been costs nothing, and a genuine hunt is something you start and let run while you read the answers that already arrived.
+
+> **Why it is this way**
+>
+> A home-wide search is only possible because of two things, and both were measured on 2026-09-01. The first is the second ignore list at `~/.config/tv-all/ignore`: without it `fd -t f -H . ~` had not finished enumerating $HOME after two minutes and was still running, almost all of it `~/Library`; with it, 402,970 files come back in 2.2s. It is layered on `~/.config/fd/ignore` rather than folded into it, because that file governs what `fd` and `rg` do at a prompt and excluding `Pictures/` there would be a surprise nobody asked for. The second is that nothing is materialised: ripgrep is asked FOR the term rather than for every line, which is the difference between three seconds and 4.2M rows, and it is why the whole thing fits in a pipe. The directory listings are cached under `~/.cache/tv-all` and served stale while a fresh one is built behind them — a refresh must never block a search, since the cache exists precisely to hand back the seconds it costs. Plain `F3` is the fast one on purpose: it is the key pressed fifty times a day, and the wide search is the deliberate one.
+
+See also: [`F3`](./files.md#f3)  
+Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 
 ## `finder`
 
@@ -48,7 +48,7 @@ Spec: `prds/04-shell/04-television/prd.md`
 >
 > Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI.
 
-See also: [`Ctrl-Space / F1`](./files.md#ctrl-space-f1) · [`tv channel`](./files.md#tv-channel)  
+See also: [`F3`](./files.md#f3) · [`tv channel`](./files.md#tv-channel)  
 Spec: `prds/04-shell/04-television/prd.md`
 
 ## `grep`
@@ -63,20 +63,20 @@ Spec: `prds/04-shell/04-television/prd.md`
 >
 > `rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both.
 
-See also: [`Ctrl-Space / F1`](./files.md#ctrl-space-f1) · [`idioms`](./agents.md#idioms)  
+See also: [`F3`](./files.md#f3) · [`idioms`](./agents.md#idioms)  
 Spec: `prds/04-shell/02-aliases-utilities/prd.md`
 
 ## Understand what a channel is, and add one
 
 *shell*
 
-Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file, and it appears in the `Ctrl-Space` remote alongside the built-ins; teach `finder` how to decode its rows and every opener works on it too.
+Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` is the one thing it does NOT join for free — the search-all corpus is a fixed list of lanes in `tv-all`, because a merged row is only useful if something knows what to do when you pick it, so a new channel worth searching from F3 is a lane and an opener added there.
 
 > **Why it is this way**
 >
 > One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `manual` (the manual's own fuzzy browser), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values.
 
-See also: [`finder`](./files.md#finder) · [`Ctrl-Space / F1`](./files.md#ctrl-space-f1)  
+See also: [`finder`](./files.md#finder) · [`F3`](./files.md#f3)  
 Spec: `prds/04-shell/04-television/prd.md`
 
 ## `<leader>ff and <leader><space>`

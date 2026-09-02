@@ -11,7 +11,7 @@
         id: "usage"
         title: "Start here"
         summary: "What this environment is, and the six keys that get you moving."
-        intro: "Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a digit to change window, `Ctrl-Space` to find anything, and `help` to get back here."
+        intro: "Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a digit to change window, `F3` to find anything, and `help` to get back here."
     }
     {
         id: "directories"
@@ -29,7 +29,7 @@
         id: "files"
         title: "Find a file, a line, or a directory"
         summary: "The finder in the shell, telescope in the editor, and ripgrep underneath."
-        intro: "One key opens everything: `Ctrl-Space` picks a channel — files, directories, text, git log, history — and acts on what you choose. `Ctrl-T` does the same but inserts the result into the line you are typing instead. In the editor the same job is telescope, deliberately a second tool rather than a shared one."
+        intro: "One key opens everything: `F3` asks what you are looking for, then tells you which channels have it — files, directories, file contents, git log, the manual, history — with a count each. Narrow to a channel, pick a row, and it opens in a new pane below you. `Shift+F3` is the same gesture across your whole machine, answering fastest-first so a jump costs nothing and a real hunt can be left to run. Both are tmux bindings, so they answer from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one."
     }
     {
         id: "history"

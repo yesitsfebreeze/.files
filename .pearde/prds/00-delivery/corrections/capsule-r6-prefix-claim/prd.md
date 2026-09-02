@@ -1,13 +1,14 @@
 ---
 state: done
 claim: 
-actual: 2026-08-24T14:50Z
+actual:
 commit: b812ef8
 priority: 21
 est:
 mode: afk
 verify: ""
 origin: derived
+from: 00-delivery/corrections/capsule-rm-reworded-claim
 ---
 
 # R6 names the prefix as the guard; the guard is label **and** prefix
@@ -186,3 +187,6 @@ requirement; nothing widened.
 - **R9** — does not exist in `prds/01-capsule/01-container-lifecycle/prd.md`.
   The PRD `## Requirements` lists R1 through R8 only (eight
   requirements). Census scope is taken literally; nothing to widen.
+
+Closed 2026-08-24T14:50Z — the stamp that sat in `actual:` until 2026-09-01;
+`actual:` is a duration in hours and the planner warned on it every run.

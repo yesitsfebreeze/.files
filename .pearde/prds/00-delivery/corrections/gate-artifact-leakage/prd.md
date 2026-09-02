@@ -6,6 +6,7 @@ est: 5h
 mode: afk
 verify: ""
 origin: derived
+from: 00-delivery/corrections/capsule-rm-guard-attribution
 ---
 
 # Counterfactual runs are leaking artifacts into the repo root

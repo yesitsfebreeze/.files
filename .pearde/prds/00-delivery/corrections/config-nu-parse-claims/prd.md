@@ -12,6 +12,7 @@ footprint:
   - tests/nushell-core.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/pwd-closure-blast-radius
 ---
 
 # Two `config.nu` reasons whose mechanism is wrong, both right in conclusion

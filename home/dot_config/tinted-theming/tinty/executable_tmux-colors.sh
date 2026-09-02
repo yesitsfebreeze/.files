@@ -123,23 +123,32 @@ osc_push() {
     command -v tmux > /dev/null 2>&1 || return 0
     tmux_at list-clients -F '#{client_tty}' > /dev/null 2>&1 || return 0
 
+    # TRAP: the escapes are ANSI-C quoted ($'...'), NOT `\033` fed to
+    # `printf %b`. Under %b the ST had to be written `\033\\` — but the
+    # double quotes around the assignment collapse `\\` to one backslash
+    # first, so printf received `\033\` and paired that lone backslash with
+    # the NEXT slot's leading one. Result, measured 2026-09-01 with od -c:
+    # slot 0 was a real OSC and every slot after it printed as the literal
+    # text `033]4;1;#hex` onto the terminal. Held ESC as a character and the
+    # whole class of doubling questions goes away — hence `%s` below, too.
+    local ESC=$'\033' ST=$'\033\\'
     local seq="" i=0 c
     # OSC 4 — the sixteen ANSI slots, in the order colors.lua filled them:
     # base00 08 0B 0A 0D 0E 0C 05, then base03 and the brights. tmux's status
     # bar reads colour0-15 out of exactly these.
     for c in "$base00" "$base08" "$base0b" "$base0a" "$base0d" "$base0e" "$base0c" "$base05" \
              "$base03" "$br_red" "$br_grn" "$br_yel" "$br_blu" "$br_mag" "$br_cyn" "$base07"; do
-        seq="$seq\033]4;$i;$c\033\\"
+        seq="$seq$ESC]4;$i;$c$ST"
         i=$((i + 1))
     done
     # 10 foreground, 11 background, 12 cursor — the three the ANSI slots do
     # not carry. 11 is the one F6 is judged by from across the room.
-    seq="$seq\033]10;$base05\033\\\033]11;$base00\033\\\033]12;$base05\033\\"
+    seq="$seq$ESC]10;$base05$ST$ESC]11;$base00$ST$ESC]12;$base05$ST"
 
     local tty
     while IFS= read -r tty; do
         [[ -w "$tty" ]] || continue
-        printf '%b' "$seq" > "$tty" 2>/dev/null || true
+        printf '%s' "$seq" > "$tty" 2>/dev/null || true
     done < <(tmux_at list-clients -F '#{client_tty}' 2>/dev/null | sort -u)
 }
 

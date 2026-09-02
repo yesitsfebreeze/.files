@@ -1,6 +1,6 @@
 # history.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 def _hist_cwd [] {
     if not ($nu.history-path | path exists) { return [] }

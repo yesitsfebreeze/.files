@@ -10,6 +10,7 @@ needs:
   - 00-delivery/corrections/w0-6-live-bugs
 verify: ""
 origin: derived
+from: 00-delivery/corrections
 ---
 
 # Re-base 01-capsule on build-once and free the colliding bindings

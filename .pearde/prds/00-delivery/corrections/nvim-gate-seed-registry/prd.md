@@ -10,6 +10,7 @@ needs:
   - 00-delivery/corrections/lsp-gate-parser-seed
 verify: ""
 origin: derived
+from: 00-delivery/corrections/lsp-gate-parser-seed
 ---
 
 # Nothing says which nvim gates are exposed to a load-time-fetching plugin

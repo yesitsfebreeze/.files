@@ -66,7 +66,32 @@ deliberately **not** in this node's `needs:` — `04-recent-workspaces` is alrea
 `done`, so a `needs:` edge would gate nothing. A named constraint is what a
 finished-but-load-bearing sibling gets instead.
 
-## Obligation — the `Ctrl+Shift+X` shim, or `05-copy-and-clipboard`'s headline key does nothing
+## Obligation WITHDRAWN 2026-09-01 — the shim is not to be built
+
+**This obligation was never fulfilled, and it is now cancelled rather than
+carried.** The prediction under it was exactly right: the node shipped without
+the one added line, `Ctrl+Shift+X` was delivered as `^X`, the binding never
+fired, and copy mode had no working keyboard entry from the cutover until
+2026-09-01 — while the manual documented it as working. "Easy to lose precisely
+because it is one added line inside a deletion" is what happened.
+
+The fix is not to add the line late. The shim is a **WezTerm binding rescuing
+the portable layer's headline key**, which is what
+[`07-multiplexer` **I1**](../prd.md) now forbids: every gesture that epic owns
+must work on a bare server with no WezTerm. A shim would have made the key work
+on this desk and nowhere else — the same key still dead over ssh, still dead
+under Terminal.app, and now *harder* to notice because it worked where it was
+tested.
+
+`bind -n F4 copy-mode` supersedes it. A function key asks the terminal for
+nothing, so one binding covers every host, and `wezterm.lua` gains no line at
+all. The `C-S-x` binding is deleted from `tmux.conf`, not kept as a second name
+that silently does nothing.
+
+The reasoning below is preserved because the mechanism is still true and still
+worth knowing — it is why the chord could not simply be kept.
+
+### The original obligation, as recorded 2026-08-29
 
 Recorded 2026-08-29 from `05-copy-and-clipboard`'s analyst, measured on this
 desk. This node **adds one line while deleting the block it lives in**:

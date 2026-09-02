@@ -7,6 +7,7 @@ mode: afk
 needs:
 verify: "python3 prds/00-delivery/corrections/git-diff-integrity-boxes/checks/gitdiff-boxes.py --selftest"
 origin: derived
+from: 00-delivery/corrections/done-nodes-without-proof
 ---
 
 # `git diff` is not an integrity check on this board — 135 of 142 `prd.md` files are untracked

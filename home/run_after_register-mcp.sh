@@ -32,10 +32,17 @@
 #    ~/.local/bin — and the entry is read back later by whatever process
 #    launches the server, with its own PATH.
 #
-# 4. **`claude mcp add` is itself the idempotency guard.** Re-running
-#    overwrites the entry in place (exit 0, same config). No `claude mcp get`
-#    pre-check: that spawns a health check — a real connection attempt per
-#    apply — for information the overwrite makes stale anyway.
+# 4. **`claude mcp add` is itself the idempotency guard.** Overwriting an
+#    existing entry is the goal, but the CLI does not agree on what that
+#    looks like: it has been observed both ways on 2.1.251 — as a quiet
+#    in-place overwrite (exit 0), and as "MCP server tmux-mcp already exists
+#    in user config" followed by a NON-ZERO exit (seen 2026-08-31, from a
+#    nested launch inside a live Claude Code session; unconfirmed whether
+#    nesting is the trigger). So the exit code is not trusted: the output
+#    is captured, an "already exists" counts as registered-and-fine, and
+#    only any other failure stays a warning. No `claude mcp get` pre-check
+#    either way: that spawns a health check — a real connection attempt per
+#    apply — for information the rewrite makes stale anyway.
 set -u
 
 log()  { printf '\033[1;34m::\033[0m mcp: %s\n' "$*" >&2; }
@@ -47,9 +54,13 @@ if ! command -v claude > /dev/null 2>&1; then
 fi
 
 log "registering tmux-mcp (user scope, shell-type bash, scope agentic)"
-env -u CLAUDE_CONFIG_DIR claude mcp add --scope user tmux-mcp -- \
-    "$HOME/.local/bin/tmux-mcp" -shell-type bash -scope agentic \
-    || warn "claude mcp add failed — tmux-mcp stays unregistered"
+out="$(env -u CLAUDE_CONFIG_DIR claude mcp add --scope user tmux-mcp -- \
+    "$HOME/.local/bin/tmux-mcp" -shell-type bash -scope agentic 2>&1)" \
+    && log "tmux-mcp registered (${out##*$'\n'})" \
+    || case "$out" in
+        *"already exists"*) log "tmux-mcp already registered — nothing to do" ;;
+        *) warn "claude mcp add failed: ${out:-no error text}" ;;
+       esac
 
 # Explicit, and load-bearing: a non-zero run_after fails the whole apply.
 exit 0

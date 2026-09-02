@@ -7,6 +7,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 05-platform/03-shell-init-generation
 ---
 
 # Gate HOME isolation

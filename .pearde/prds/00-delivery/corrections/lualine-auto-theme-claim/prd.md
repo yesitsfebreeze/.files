@@ -1,7 +1,7 @@
 ---
 state: done
 claim: 
-actual: 2026-08-24T15:10Z
+actual:
 commit: 7877faf
 priority: 15
 est:
@@ -9,6 +9,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 03-editor/13-statusline
 ---
 
 # The inventory says lualine's `auto` theme *errors* on base16; it paints the
@@ -179,3 +180,6 @@ the PRD wins on conflict, and there is no conflict.
 `prds/00-delivery/corrections/capsule-r6-prefix-claim/prd.md`, in files
 this PRD does not touch). Tier B is at 119 broken; that is also
 unchanged. Delta = 0.
+
+Closed 2026-08-24T15:10Z — the stamp that sat in `actual:` until 2026-09-01;
+`actual:` is a duration in hours and the planner warned on it every run.

@@ -10,7 +10,7 @@
     {
         key: "<leader>"
         title: "Show what the leader key can do"
-        use: "Press space and pause: which-key lists the groups — `f` find, `b` buffer, `c` code, `r` rename/refactor, `t` table — and then the maps inside whichever one you press."
+        use: "Press space and pause: which-key lists the groups — `f` find, `b` buffer, `c` code, `r` rename/refactor, `t` table, `x` Claude — and then the maps inside whichever one you press."
         topic: "edit"
         task: "editing"
         step: 5
@@ -452,5 +452,131 @@
             {kind: "nvim-map", mode: "n", lhs: "<leader>sd", desc: "Stop session save on exit"}
         ]
         source: "prds/07-multiplexer/06-nvim-session/prd.md"
+    }
+
+    # ----------------------------------------------------------------- claude
+    # The <leader>x* set is coder/claudecode.nvim riding mr55p-dev/claude-tmux,
+    # the editor half of 08-claude-agent. Titles must equal the live `desc`,
+    # because these nvim-map targets compare against it.
+    {
+        key: "<leader>x"
+        title: "Show what <leader>x can do"
+        use: "Press `<leader>x` and pause: which-key lists the Claude maps — `c` toggle, `f` focus, `r` resume, `C` continue, `m` model, `b` add buffer, `s` send selection, `a` accept diff, `d` deny diff. Claude owns this prefix outright; nothing else sits on `x`."
+        topic: "agents"
+        task: "agents"
+        step: 11
+        mode: "nvim:normal"
+        also: ["<leader>xc"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>x", desc: "Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xc"
+        title: "Toggle Claude"
+        use: "Press `<leader>xc` to spawn Claude in a split below the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes."
+        topic: "agents"
+        task: "agents"
+        step: 12
+        mode: "nvim:normal"
+        also: ["<leader>xf", "cll [model]", "cc [...args]"]
+        why: "Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `cll` (claudecode's terminal_cmd), so model and proxy routing belong to cll: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what cll does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie)."
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xc", desc: "Toggle Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xf"
+        title: "Focus Claude"
+        use: "Press `<leader>xf` to jump into the Claude pane without toggling it — the move when it is already open and you want to type to it."
+        topic: "agents"
+        task: "agents"
+        step: 14
+        mode: "nvim:normal"
+        also: ["<leader>xc"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xf", desc: "Focus Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xr"
+        title: "Resume Claude"
+        use: "Press `<leader>xr` to open the session picker for this directory inside the Claude pane and continue the one you pick — the in-editor twin of `cr` in the shell."
+        topic: "agents"
+        task: "agents"
+        step: 15
+        mode: "nvim:normal"
+        also: ["<leader>xc", "<leader>xC", "cr [...args]"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xr", desc: "Resume Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xC"
+        title: "Continue Claude"
+        use: "Press `<leader>xC` to continue the most recent Claude conversation without a picker — where `<leader>xr` asks which one, this just resumes the latest."
+        topic: "agents"
+        task: "agents"
+        step: 16
+        mode: "nvim:normal"
+        also: ["<leader>xr"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xC", desc: "Continue Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xm"
+        title: "Select Claude model"
+        use: "Press `<leader>xm` to pick the model the Claude pane runs on, without leaving the editor. That model choice lives in the pane's own profile, so it survives while the pane is open; the next fresh pane re-picks at spawn through cll. Native models are Claude Code's own, served by the Max plan."
+        topic: "agents"
+        task: "agents"
+        step: 17
+        mode: "nvim:normal"
+        also: ["<leader>xc", "cll [model]"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xm", desc: "Select Claude model"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xb"
+        title: "Add current buffer"
+        use: "Press `<leader>xb` in a file buffer to hand that file to Claude as context, so the next prompt starts already knowing what you are looking at."
+        topic: "agents"
+        task: "agents"
+        step: 18
+        mode: "nvim:normal"
+        also: ["<leader>xs"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xb", desc: "Add current buffer"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xs"
+        title: "Send to Claude"
+        use: "Select text in visual mode and press `<leader>xs` to send exactly the selection to the Claude pane — the way to point at a snippet instead of describing it."
+        topic: "agents"
+        task: "agents"
+        step: 19
+        mode: "nvim:visual"
+        also: ["<leader>xb", "<leader>xc"]
+        verify: [{kind: "nvim-map", mode: "v", lhs: "<leader>xs", desc: "Send to Claude"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xa"
+        title: "Accept diff"
+        use: "Press `<leader>xa` to accept the inline diff Claude proposed for a buffer, keeping the change and closing the diff."
+        topic: "agents"
+        task: "agents"
+        step: 20
+        mode: "nvim:normal"
+        also: ["<leader>xd", "<leader>xc"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xa", desc: "Accept diff"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
+    }
+    {
+        key: "<leader>xd"
+        title: "Deny diff"
+        use: "Press `<leader>xd` to deny the inline diff Claude proposed, restoring the buffer as it was."
+        topic: "agents"
+        task: "agents"
+        step: 21
+        mode: "nvim:normal"
+        also: ["<leader>xa"]
+        verify: [{kind: "nvim-map", mode: "n", lhs: "<leader>xd", desc: "Deny diff"}]
+        source: "prds/08-claude-agent/02-nvim-plugin/prd.md"
     }
 ]

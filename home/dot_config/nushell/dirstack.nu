@@ -1,6 +1,6 @@
 # dirstack.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 const DIRSTACK_CAP = 100
 

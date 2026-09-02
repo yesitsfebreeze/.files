@@ -10,6 +10,7 @@ footprint:
   - tests/nvim-statusline.sh
 verify: ""
 origin: derived
+from: 00-delivery/corrections/lsp-gate-parser-seed
 ---
 
 # `03-editor/13-statusline` is `done` with a verify that exits 1, and nobody owns it

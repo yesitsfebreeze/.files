@@ -8,6 +8,7 @@ mode: afk
 needs:
 verify: ""
 origin: derived
+from: 02-terminal/06-launchd-path
 ---
 
 # The terminal inventory says `nu` does not resolve in the F6 subshell
