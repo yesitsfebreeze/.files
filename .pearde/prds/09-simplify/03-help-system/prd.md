@@ -30,6 +30,7 @@ footprint:
 # `tmux.conf` and killed by R4+R5 either way; and `home/.chezmoiremove`, which
 # spec04 needs because `chezmoi apply` leaves deleted sources deployed.
 workflow: cut-a-feature-its-readers-still-name
+commit: 3f02c2c
 ---
 
 # 03-help-system — one corpus, one generator, one search
