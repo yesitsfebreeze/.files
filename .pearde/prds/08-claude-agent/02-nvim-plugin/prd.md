@@ -1,5 +1,5 @@
 ---
-state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: done        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 15        # higher first
@@ -11,11 +11,10 @@ repo:              # the sub-repo the code lands in; delete if n/a
 #                  #   Absent = the brief alone, as before workflows
 time:              # OPTIONAL. See @references/parts/order.md
   est:             # the weight, only when complexity is absent. Not a duration
-  actual:          # a record. Nothing reads it
+  actual: 0.16h
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 needs:
 workflow: land-an-answered-fork
-claim: impl-nvim 2026-09-02 11:44
 ---
 
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
@@ -144,3 +143,19 @@ so the setting currently does nothing?
 **Q1** *(answered 2026-09-02 11:17)* — Skip them — the retirement stands, and the integration is proven by deploying it and using it.
 
 **Q2** *(answered 2026-09-02 11:17)* — Accept the right-hand panel and remove the setting that has no effect, so nothing claims a choice that is not there.
+
+## Report
+
+spec01: exit 0
+72:        -- carries `split_side = "right"`. Whatever this call passed would be
+76:        -- headless): `split_side = "bottom"` and no key at all both end at
+documented 191 · prose-only 15 · allowlisted 24 · live nvim maps 229 of which 123 are Neovim's own · live buffer maps 5 · live tmux keys 156 · live wezterm keys 87
+stale: 0
+mismatched: 0
+undocumented: 0
+unresolved: 3
+  [nvim/nvim-map] q — n q — buffer-local, and not on the probe buffer (a lua file, 1 LSP client(s) attached, 5 buffer maps). It attaches on an event this dump does not fire — InsertEnter, or a filetype other than lua
+  [nvim/nvim-map] <BS> and <CR> (autopairs) — i <BS> — buffer-local, and not on the probe buffer (a lua file, 1 LSP client(s) attached, 5 buffer maps). It attaches on an event this dump does not fire — InsertEnter, or a filetype other than lua
+  [nvim/nvim-map] <BS> and <CR> (autopairs) — i <CR> — buffer-local, and not on the probe buffer (a lua file, 1 LSP client(s) attached, 5 buffer maps). It attaches on an event this dump does not fire — InsertEnter, or a filetype other than lua
+help --check: clean
+b5268a2 01-hygiene — record
