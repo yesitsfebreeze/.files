@@ -3,9 +3,12 @@ complexity: 8
 footprint:
   - .gitignore
   - .graphifyignore
-  - install
   - justfile
-  - home/dot_config/litellm/create_config.yaml
+# `install` and `home/dot_config/litellm/create_config.yaml` were removed here
+# on 2026-09-02 for the same reason as in the PRD: `collect` resolves every
+# footprint path to a repo and refuses the whole call when one is gone. This
+# spec's whole job is deleting them, so it could never have been collected
+# while it named them. Both deletions are in `b233cc0`.
 workflow: delete-what-nothing-reads
 ---
 
