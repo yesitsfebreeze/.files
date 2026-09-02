@@ -3,7 +3,7 @@ atomic: prove-in-a-shell-that-loaded-the-config
 subject: "`nu -c` loads no config and reports a correct change as absent — this is the step that catches the false negative"
 date: 2026-09-02
 updated: 2026-09-02
-runs: 2
+runs: 3
 ---
 
 ## Do

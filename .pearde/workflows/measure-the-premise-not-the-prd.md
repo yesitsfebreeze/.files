@@ -3,7 +3,7 @@ atomic: measure-the-premise-not-the-prd
 subject: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
 date: 2026-09-02
 updated: 2026-09-02
-runs: 2
+runs: 3
 ---
 
 ## Do
