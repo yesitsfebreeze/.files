@@ -18,8 +18,7 @@ Press `F3` in any pane — a shell, an editor, a running agent — and a small b
 >
 > What, then where — the inversion is the point. The retired `Ctrl-Space` asked for the channel first, so you had to know WHERE a thing lived before you could say what it was, and "which channel is that in" is exactly the question you cannot answer when you are looking for something. Counting first turns it into an answer instead of a prompt. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane, where a shell key can never reach; the cost is that the popup is modal and eats every key while it is up, F5 and F6 included, and that the pane to split from has to be handed in as `TV_ALL_ORIGIN` because a popup is not part of the window layout and has no position of its own. Terms are ANDed and matched as fixed strings, never as a pattern, so a stray bracket in what you typed narrows the list rather than failing the search. Picks divide on whether they change anything: a file, a directory, a commit and a manual entry are things you are looking at, so they open, while a history line, an alias, an env var and a branch switch land on a fresh prompt unrun. Hidden files are searched deliberately — this repo keeps its whole board under a dot-directory, and a search that skipped it would be lying. The prompt and the results are two separate popups because tmux allows exactly one popup per client, so a one-line box and a full-height list cannot be the same window; the binding runs them in sequence and hands the query over in a file named for the pane, and the `if-shell` between them is what makes cancelling silent rather than a second popup that flashes and vanishes. The results header repeats what you typed, because by then the box that took it has closed. Both popups state `-x` and `-y` rather than relying on a default: display-popup inherits display-menu's placement, which is anchored near the pane and not in the middle of anything, so an omitted position is an off-centre box. The result popup is drawn with `-B` and no tmux border at all, because television draws its own frames and a tmux border around them is a second frame one cell outside the first — tv repaints its own on every keystroke while tmux repaints its border only when it thinks it must, so the outer one comes apart in pieces as you type. The box reads the keyboard a byte at a time in raw mode rather than with a plain line read, and that is what Escape costs: under a line read the terminal is canonical and Escape is merely a character that lands in the buffer, so the box could only be dismissed with Ctrl-C. Escape is also the first byte of every arrow and function key, and telling the two apart by TIME — another byte within a tenth of a second, so this must be a sequence — is the obvious rule and it is wrong. Measured inside a real popup on 2026-09-01: one press of Escape can arrive as two bytes, `27 27`, and the timing rule read the second Escape as the start of a sequence, found neither of the two bytes that can continue one, and discarded both — which is precisely a box that will not close. Timing narrows the question to whether anything follows; only the byte that follows answers it, and just `[` and `O` continue a sequence. Once inside one, exactly the sequence is consumed and no more: draining until the input falls quiet eats the characters typed straight after an arrow, which arrive inside the same gap. Both of these cost a working version each, and neither is visible from outside the popup — `send-keys` cannot reach one, so a popup's keyboard behaviour can only be learned by logging the bytes it actually receives.
 
-See also: [`Shift+F3`](./files.md#shift-f3) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)  
-Spec: `prds/07-multiplexer/02-key-tables/prd.md`
+See also: [`Shift+F3`](./files.md#shift-f3) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)
 
 ## `Shift+F3`
 
@@ -33,8 +32,7 @@ Same gesture as `F3`, one scope wider: the box is titled `search everywhere`, op
 >
 > A home-wide search is only possible because of two things, and both were measured on 2026-09-01. The first is the second ignore list at `~/.config/tv-all/ignore`: without it `fd -t f -H . ~` had not finished enumerating $HOME after two minutes and was still running, almost all of it `~/Library`; with it, 402,970 files come back in 2.2s. It is layered on `~/.config/fd/ignore` rather than folded into it, because that file governs what `fd` and `rg` do at a prompt and excluding `Pictures/` there would be a surprise nobody asked for. The second is that nothing is materialised: ripgrep is asked FOR the term rather than for every line, which is the difference between three seconds and 4.2M rows, and it is why the whole thing fits in a pipe. The directory listings are cached under `~/.cache/tv-all` and served stale while a fresh one is built behind them — a refresh must never block a search, since the cache exists precisely to hand back the seconds it costs. Plain `F3` is the fast one on purpose: it is the key pressed fifty times a day, and the wide search is the deliberate one.
 
-See also: [`F3`](./files.md#f3)  
-Spec: `prds/07-multiplexer/02-key-tables/prd.md`
+See also: [`F3`](./files.md#f3)
 
 ## `finder`
 
@@ -48,8 +46,7 @@ Spec: `prds/07-multiplexer/02-key-tables/prd.md`
 >
 > Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI.
 
-See also: [`F3`](./files.md#f3) · [`tv channel`](./files.md#tv-channel)  
-Spec: `prds/04-shell/04-television/prd.md`
+See also: [`F3`](./files.md#f3) · [`tv channel`](./files.md#tv-channel)
 
 ## `grep`
 
@@ -63,8 +60,7 @@ Spec: `prds/04-shell/04-television/prd.md`
 >
 > `rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both.
 
-See also: [`F3`](./files.md#f3) · [`idioms`](./agents.md#idioms)  
-Spec: `prds/04-shell/02-aliases-utilities/prd.md`
+See also: [`F3`](./files.md#f3) · [`idioms`](./agents.md#idioms)
 
 ## Understand what a channel is, and add one
 
@@ -74,10 +70,9 @@ Nothing to run. A channel is a cable file under `~/.config/television` naming a 
 
 > **Why it is this way**
 >
-> One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `docs` (every line of the manual's prose, opened in the editor at the hit), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values.
+> One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, `nu-history` and `docs` (every line of the manual's prose, opened in the editor at the hit), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi` reaches fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values.
 
-See also: [`finder`](./files.md#finder) · [`F3`](./files.md#f3)  
-Spec: `prds/04-shell/04-television/prd.md`
+See also: [`finder`](./files.md#finder) · [`F3`](./files.md#f3)
 
 ## `<leader>ff and <leader><space>`
 
@@ -91,8 +86,7 @@ Either one opens telescope over the project's files; type any part of the path. 
 >
 > This is the editor's finder, and it is deliberately not the shell's. television owns the shell's pickers, telescope owns the editor's; unifying them was considered and rejected.
 
-See also: [`<Tab> <S-Tab> <CR> (telescope)`](./files.md#tab-s-tab-cr-telescope) · [`<leader>fg`](./files.md#leader-fg)  
-Spec: `prds/03-editor/08-telescope/prd.md`
+See also: [`<Tab> <S-Tab> <CR> (telescope)`](./files.md#tab-s-tab-cr-telescope) · [`<leader>fg`](./files.md#leader-fg)
 
 ## `<leader>fg`
 
@@ -102,8 +96,7 @@ Spec: `prds/03-editor/08-telescope/prd.md`
 
 Press `<leader>fg`, then type: the search runs over file contents as you type, and enter opens the file on the matching line.
 
-See also: [`<leader>ff and <leader><space>`](./files.md#leader-ff-and-leader-space) · [`<Tab> <S-Tab> <CR> (telescope)`](./files.md#tab-s-tab-cr-telescope)  
-Spec: `prds/03-editor/08-telescope/prd.md`
+See also: [`<leader>ff and <leader><space>`](./files.md#leader-ff-and-leader-space) · [`<Tab> <S-Tab> <CR> (telescope)`](./files.md#tab-s-tab-cr-telescope)
 
 ## `<leader>fb`
 
@@ -113,8 +106,7 @@ Spec: `prds/03-editor/08-telescope/prd.md`
 
 Press `<leader>fb` to get the open buffers as a picker, then type part of a name and press enter — the alternative to walking them with `H` and `L` when there are many.
 
-See also: [`<S-h> <S-l> <leader>bd`](./editing.md#s-h-s-l-leader-bd)  
-Spec: `prds/03-editor/08-telescope/prd.md`
+See also: [`<S-h> <S-l> <leader>bd`](./editing.md#s-h-s-l-leader-bd)
 
 ## `<leader>fh`
 
@@ -123,8 +115,6 @@ Spec: `prds/03-editor/08-telescope/prd.md`
 *nvim normal*
 
 Press `<leader>fh`, then type a topic: it fuzzy-searches the help tags — vim's documentation, not this manual. `help` in the shell is this configuration; `:help` in the editor is Neovim.
-
-Spec: `prds/03-editor/08-telescope/prd.md`
 
 ## `<Tab> <S-Tab> <CR> (telescope)`
 
@@ -138,8 +128,7 @@ Inside any telescope picker, `<Tab>` marks the highlighted row and steps one ent
 >
 > `prose` because these maps are buffer-local to telescope's own prompt buffer, created only while a picker is open and gone once it closes — `maparg` can see them (a live picker really does return an `lhs`, with `buffer = 1`), but nothing static can, so no `nvim --headless` probe outside a running picker has anything to check against.
 
-See also: [`<leader>fg`](./files.md#leader-fg)  
-Spec: `prds/03-editor/08-telescope/prd.md`
+See also: [`<leader>fg`](./files.md#leader-fg)
 
 ## `<leader>e`
 
@@ -152,5 +141,3 @@ Press `<leader>e` in any buffer: oil opens on the directory of the current file,
 > **Why it is this way**
 >
 > `<leader>e` is the fast path, not the only one: oil loads eagerly (`lazy = false`) so its `default_file_explorer` hijack is installed at startup, and `:e some/dir` reaches it with no key pressed. Netrw is disabled either way, so nothing else could claim the directory instead.
-
-Spec: `prds/03-editor/06-explorer/prd.md`

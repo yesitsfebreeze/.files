@@ -14,6 +14,5 @@ Every entry links to where the guide explains it.
 | `rr` | Pull and apply the latest dotfiles | shell | [Read the manual and keep it current](../guide/maintaining.md#rr) |
 | `pass <tab>` | Complete pass subcommands and entry names | shell | [Read the manual and keep it current](../guide/maintaining.md#pass-tab) |
 | `theme` | Pick a colour scheme with a live preview | shell | [Change how it looks](../guide/appearance.md#theme) |
-| `theme toggle` | Switch to the other scheme slot | shell | [Change how it looks](../guide/appearance.md#switch-scheme) |
-| `theme slots` | See both scheme slots and which one is live | shell | [Change how it looks](../guide/appearance.md#theme-slots) |
+| `theme toggle` | Swap back to the previous scheme | shell | [Change how it looks](../guide/appearance.md#switch-scheme) |
 | `F6` | Switch the colour scheme from anywhere | terminal | [Change how it looks](../guide/appearance.md#switch-scheme) |

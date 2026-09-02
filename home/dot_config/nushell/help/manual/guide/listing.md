@@ -18,7 +18,7 @@ Plain `ls`. Rows are sorted by type then modified time, so directories group tog
 >
 > The builtin is captured as `core-ls` before being shadowed, because an alias target binds at parse time — without the capture the wrapper would call itself.
 
-See also: [`l / ll / la`](./listing.md#l-ll-la) · [`ls -D`](./listing.md#ls-d)
+See also: [`l / ll / la`](./listing.md#l-ll-la) · [`ls --du`](./listing.md#ls-du)
 
 ## `l / ll / la`
 
@@ -30,17 +30,17 @@ See also: [`l / ll / la`](./listing.md#l-ll-la) · [`ls -D`](./listing.md#ls-d)
 
 See also: [`ls`](./listing.md#ls)
 
-## `ls -D`
+## `ls --du`
 
 **List with real recursive directory sizes**
 
 *shell*
 
-Add `-D` to swap each directory's inode size for what it actually occupies on disk. One `du` spawn does the whole listing.
+Add `-d`/`--du` to swap each directory's inode size for what it actually occupies on disk — the builtin's own flag; this wrapper only adds the icon column on top of it.
 
 > **Why it is this way**
 >
-> Opt-in only, and it stays that way: a single `node_modules` would stall every listing in the tree if this were the default. It also cannot be spelled `du -sb` — macOS `du` has no `-b`, and the old implementation discarded the error, so every directory silently kept its inode size.
+> Opt-in only, and it stays that way: a single `node_modules` would stall every listing in the tree if this were the default.
 
 See also: [`ls`](./listing.md#ls)
 

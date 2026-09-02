@@ -8,7 +8,6 @@ const CAPSULE_HASH_LABEL = "capsule.dockerfile"
 const CAPSULE_DIR_LABEL = "capsule.dir"
 
 def _capsule_dockerfile [] { $env.HOME | path join ".config" "capsule" "Dockerfile" }
-def _capsule_recents [] { $env.HOME | path join ".cache" "capsule" "recents.nuon" }
 def _capsule_creds_dir [] { $env.HOME | path join ".cache" "capsule" "creds" }
 def _capsule_setup_script [] { $env.HOME | path join ".config" "capsule" "setup-credentials.sh" }
 
@@ -63,17 +62,6 @@ def _capsule_owned [] {
         }
     }
     | where {|row| $row.name | str starts-with $CAPSULE_PREFIX }
-}
-
-def _capsule_record [dir: string] {
-    try {
-        let f = (_capsule_recents)
-        mkdir ($f | path dirname)
-        let old = (if ($f | path exists) { open $f } else { [] })
-        [$dir] ++ ($old | where {|d| $d != $dir }) | first 20 | save -f $f
-    } catch {
-        print -e $"capsule: could not record ($dir) in the recents store \(non-fatal)"
-    }
 }
 
 def _capsule_creds_write [name: string, content: any] {
@@ -201,43 +189,10 @@ def _capsule_cred_mounts [] {
     $flags
 }
 
-# ── the recents picker (01-capsule/04, task C.4) ────────────────────────────
-
-def _capsule_recents_read [] {
-    let f = (_capsule_recents)
-    if not ($f | path exists) { return [] }
-    let stored = (try { open $f } catch { [] })
-    let live = ($stored | where {|d| ($d | path type) == "dir" })
-    if $live != $stored {
-        try { $live | save -f $f } catch {
-            print -e "capsule: could not prune the recents store (non-fatal)"
-        }
-    }
-    $live
-}
-
-def _capsule_shquote [p: string] {
-    "'" + ($p | str replace -a "'" "'\\''") + "'"
-}
-
-def _capsule_recents_pick [dirs: list] {
-    let src = $"printf '%s\\n' ($dirs | each {|d| _capsule_shquote $d } | str join ' ')"
-    let raw = (try {
-        ^tv --source-command $src --input-header "Recent" --no-sort --no-preview --keybindings 'enter="confirm_selection"'
-    } catch { "" })
-    $raw | lines | where {|l| ($l | str trim) != "" } | get -o 0 | default "" | str trim
-}
-
 def capsule [dir?: path, --rebuild] {
     let target = ($dir | default $env.PWD | path expand)
     if ($target | path type) != "dir" {
         error make {msg: $"capsule: not a directory: ($target)"}
-    }
-    if (which docker | is-empty) {
-        error make {msg: "capsule: docker not found on PATH — start Docker Desktop"}
-    }
-    if not ((_capsule_dockerfile) | path exists) {
-        error make {msg: $"capsule: (_capsule_dockerfile) is missing — run chezmoi apply"}
     }
     let name = (_capsule_name $target)
     let state = (_capsule_state $name)
@@ -264,7 +219,6 @@ def capsule [dir?: path, --rebuild] {
             print -e "capsule: /opt/capsule/setup-credentials.sh failed — attaching anyway; credentials may be incomplete"
         }
     }
-    _capsule_record $target
     ^docker exec -it $name zsh
 }
 
@@ -283,21 +237,4 @@ def "capsule clean" [--all] {
         }
         $row.name
     }
-}
-
-def "capsule recent" [] {
-    if not $nu.is-interactive {
-        error make {msg: "capsule recent: interactive-only — tv needs a TTY"}
-    }
-    if (which tv | is-empty) {
-        error make {msg: "capsule recent: `tv` (television) is not installed — the picker needs it"}
-    }
-    let dirs = (_capsule_recents_read)
-    if ($dirs | is-empty) {
-        print "capsule recent: no recent workspaces yet — mount one with `capsule`"
-        return
-    }
-    let picked = (_capsule_recents_pick $dirs)
-    if ($picked | is-empty) { return }
-    capsule $picked
 }

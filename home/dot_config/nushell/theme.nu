@@ -2,19 +2,16 @@
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
-const THEME_SLOTS = ["a" "b"]
-const THEME_SLOT_FALLBACK = "base16-gruvbox-light-hard"
-
+# Reuses `_state_dir` (dirstack.nu) for the XDG_STATE_HOME default rather
+# than computing it again — its own subdir just joins onto that base.
 def _theme_state_dir [] {
-    let base = ($env.XDG_STATE_HOME? | default ($env.HOME | path join ".local" "state"))
-    let dir = ($base | path join "tinted-theming")
+    let dir = ((_state_dir) | path dirname | path join "tinted-theming")
     mkdir $dir
     $dir
 }
 
 def _theme_current [] {
-    let data = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
-    let f = ($data | path join "tinted-theming" "tinty" "current_scheme")
+    let f = ($env.XDG_DATA_HOME | path join "tinted-theming" "tinty" "current_scheme")
     if ($f | path exists) { open $f | str trim } else { "" }
 }
 
@@ -26,68 +23,34 @@ def _theme_default_scheme [] {
     if ($v | is-empty) { "base16-gruvbox-dark-hard" } else { $v }
 }
 
-# ── A/B slots (F6) ────────────────────────────────────────────────────────────
+# ── previous scheme, for F6 ──────────────────────────────────────────────────
 
-def _theme_slot_file [slot: string] { (_theme_state_dir) | path join $"slot-($slot).txt" }
-def _theme_active_file [] { (_theme_state_dir) | path join "slot-active.txt" }
+def _theme_previous_file [] { (_theme_state_dir) | path join "previous.txt" }
 
-def _theme_other_slot [slot: string] { if $slot == "a" { "b" } else { "a" } }
-
-export def _theme_active_slot [] {
-    let f = (_theme_active_file)
-    let v = (if ($f | path exists) { open $f | str trim | str lowercase } else { "" })
-    if $v in $THEME_SLOTS { $v } else { "a" }
-}
-
-export def _theme_slot [slot: string] {
-    let f = (_theme_slot_file $slot)
+def _theme_previous [] {
+    let f = (_theme_previous_file)
     if ($f | path exists) { open $f | str trim } else { "" }
 }
 
-def _theme_slot_set [slot: string, id: string] { $id | save -f (_theme_slot_file $slot) }
-def _theme_active_set [slot: string] { $slot | save -f (_theme_active_file) }
+def _theme_previous_set [id: string] { $id | save -f (_theme_previous_file) }
 
-def _theme_slots_seed [] {
-    let cur = (_theme_current)
-    let was = (_theme_active_slot)
-
-    let active = (
-        if ($cur | is-not-empty) and $cur != (_theme_slot $was) and $cur == (_theme_slot (_theme_other_slot $was)) {
-            let fixed = (_theme_other_slot $was)
-            _theme_active_set $fixed
-            $fixed
-        } else { $was }
-    )
-    let other = (_theme_other_slot $active)
-
-    if ($cur | is-not-empty) and $cur != (_theme_slot $active) { _theme_slot_set $active $cur }
-    if ((_theme_slot $active) | is-empty) { _theme_slot_set $active (_theme_default_scheme) }
-    if ((_theme_slot $other) | is-empty) {
-        let d = (_theme_default_scheme)
-        _theme_slot_set $other (if $d == (_theme_slot $active) { $THEME_SLOT_FALLBACK } else { $d })
-    }
-}
-
-export def _theme_use_slot [slot: string] {
-    _theme_slots_seed
-    let id = (_theme_slot $slot)
-    if ($id | is-empty) { return }
-    if $id != (_theme_current) { try { ^tinty apply $id e> /dev/null } }
-    _theme_active_set $slot
-    print $"theme: slot ($slot | str uppercase) — ($id)"
-}
-
+# Toggling twice is a swap, not a cycle: each call records the OUTGOING
+# scheme as `previous` before applying the target, so the second call always
+# swaps back to what the first call left behind.
 export def _theme_toggle [] {
-    _theme_slots_seed
-    _theme_use_slot (_theme_other_slot (_theme_active_slot))
+    let cur = (_theme_current)
+    let prev = (_theme_previous)
+    let target = (if ($prev | is-empty) { _theme_default_scheme } else { $prev })
+    if ($cur | is-not-empty) { _theme_previous_set $cur }
+    if $target != $cur { try { ^tinty apply $target e> /dev/null } }
+    print $"theme: ($target)"
 }
 
 def _theme_scheme_bg [id: string] {
     if ($id | is-empty) { return "" }
     let system = ($id | split row "-" | first)
     let slug = ($id | str replace $"($system)-" "")
-    let data = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share")
-        | path join "tinted-theming" "tinty")
+    let data = ($env.XDG_DATA_HOME | path join "tinted-theming" "tinty")
     let f = ([
         ($data | path join "repos" "schemes" $system $"($slug).yaml")
         ($data | path join "custom-schemes" $system $"($slug).yaml")
@@ -101,6 +64,9 @@ def _theme_osc_bg [hex: string] {
     print -n $"\e]11;($hex)\e\\"
 }
 
+# Restores the real background after a cancelled `tv theme` preview (Esc):
+# browsing only ever painted OSC 11, so the live scheme's own colour is
+# reasserted rather than anything being un-applied.
 def _theme_bg_restore [] {
     let bg = (_theme_scheme_bg (_theme_current))
     if ($bg | is-empty) { print -n "\e]111\e\\" } else { _theme_osc_bg $bg }
@@ -113,19 +79,12 @@ def _theme_catalog [] {
 }
 
 export def _theme_list [] {
-    _theme_slots_seed
-    let active = (_theme_active_slot)
-    let other = (_theme_other_slot $active)
     let current = (_theme_current)
-    let alt = (_theme_slot $other)
-    let head = ([$current $alt] | where { |x| $x | is-not-empty } | uniq)
+    let prev = (_theme_previous)
+    let head = ([$current $prev] | where { |x| $x | is-not-empty } | uniq)
     let body = (_theme_catalog | where { |x| $x not-in $head })
     let tagged = ($head | each { |x|
-        if $x == $current {
-            $"($x) \(($active | str uppercase) · current\)"
-        } else {
-            $"($x) \(($other | str uppercase)\)"
-        }
+        if $x == $current { $"($x) \(current\)" } else { $"($x) \(previous\)" }
     })
     $tagged ++ $body
 }
@@ -133,42 +92,24 @@ export def _theme_list [] {
 export def _theme_commit [id: string] {
     let id = ($id | str trim | str replace --regex ' \([^)]*\)$' '')
     if ($id | is-empty) { return }
-    _theme_slots_seed
+    let cur = (_theme_current)
+    if ($cur | is-not-empty) and $cur != $id { _theme_previous_set $cur }
     try { ^tinty apply $id e> /dev/null }
-    let slot = (_theme_active_slot)
-    _theme_slot_set $slot $id
-    print $"theme: ($id)  \(slot ($slot | str uppercase)\)"
+    print $"theme: ($id)"
 }
 
 def --wrapped theme [...rest] {
     let sub = ($rest | get 0? | default "" | into string)
-
-    if $sub in ["toggle" "slots" "a" "b"] {
-        _theme_slots_seed
-        match $sub {
-            "toggle" => { _theme_toggle }
-            "slots" => {
-                let active = (_theme_active_slot)
-                for s in $THEME_SLOTS {
-                    let mark = (if $s == $active { "*" } else { " " })
-                    print $"($mark) ($s | str uppercase)  (_theme_slot $s)"
-                }
-            }
-            _ => { _theme_use_slot $sub }
-        }
+    if $sub == "toggle" {
+        _theme_toggle
         return
     }
 
-    if (which tinty | is-empty) {
-        print "tinty not installed — install it, then clone the catalog with: tinty install"
-        return
-    }
+    # Not a tool-presence guard (tinty and tv are both install.sh's job) —
+    # this is `tinty install`, the scheme-catalog clone, which install.sh
+    # never runs.
     if ((_theme_catalog) | is-empty) {
         print "no schemes to list — run: tinty install"
-        return
-    }
-    if (which tv | is-empty) {
-        print "television (tv) not installed — run: chezmoi apply"
         return
     }
 

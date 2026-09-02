@@ -18,7 +18,7 @@ Claude Code starts in the directory you are in and inherits the environment. The
 >
 > With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it.
 
-See also: [`cr [...args]`](./agents.md#cr-args) · [`zc <query>`](./directories.md#zc-query) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
+See also: [`cr [...args]`](./agents.md#cr-args) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
 
 ## `cr [...args]`
 
@@ -90,13 +90,13 @@ See also: [`llm`](./agents.md#llm) · [`cll [model]`](./agents.md#cll-model)
 
 *shell*
 
-Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`) — the single exception is `zi`/`cdi`, which open fzf, and it is the only place fzf belongs. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given.
+Nothing to run — four rules that stop an agent guessing. Search with `rg` and find with `fd`, never `grep`/`find`. Pick with television (`tv`) — the single exception is `zi`, which opens fzf, and it is the only place fzf belongs. Nushell commands return structured data, so filter with `| where`, not `| grep`. And `cd` here can create the directory it is given.
 
 > **Why it is this way**
 >
 > Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing.
 
-See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · [`cd <path>`](./directories.md#cd-path) · [`zi / cdi`](./directories.md#zi-cdi)
+See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · [`cd <path>`](./directories.md#cd-path) · [`zi`](./directories.md#zi)
 
 ## `help --json`
 

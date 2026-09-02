@@ -32,15 +32,15 @@ Type `z` and any part of the path — `z dot` reaches ~/dev/dotfiles. Zoxide pic
 >
 > Every jump goes through the `cd` funnel, so the start dir, the dirstack and the recents log update no matter which route you took. A jump that does not move PWD logs nothing — a failed `z` leaves no trace.
 
-See also: [`zi / cdi`](./directories.md#zi-cdi) · [`zz`](./directories.md#zz) · [`<word>`](./directories.md#word)
+See also: [`zi`](./directories.md#zi) · [`zz`](./directories.md#zz) · [`<word>`](./directories.md#word)
 
-## `zi / cdi`
+## `zi`
 
 **Pick a directory from zoxide interactively**
 
 *shell*
 
-Run `zi` — or `cdi`, the same command under the name muscle memory reaches for — with no argument and the zoxide database opens in an fzf picker, ordered by frecency: type to narrow it, then `Enter` on a row and you land there. The picker is fzf, not television — it shells out to `zoxide query --interactive` — and it is the one accepted exception to tv owning every picker screen.
+Run `zi` with no argument and the zoxide database opens in an fzf picker, ordered by frecency: type to narrow it, then `Enter` on a row and you land there. The picker is fzf, not television — it shells out to `zoxide query --interactive` — and it is the one accepted exception to tv owning every picker screen.
 
 > **Why it is this way**
 >
@@ -57,26 +57,6 @@ See also: [`z <query>`](./directories.md#z-query)
 Run `zz` — it is `cd -`. Run it again to come back. It pairs with the bare-word jump: word, look, `zz`.
 
 See also: [`<word>`](./directories.md#word)
-
-## `zl <query>`
-
-**Jump to a directory and list it**
-
-*shell*
-
-Give it the same query `z` takes, directories only — there is no file-opening branch here, unlike `z`. It runs `la` in the directory it lands in, and because the PWD hook already lists after every interactive move, in a terminal that means you see the listing twice: `zl` adds a listing of its own rather than replacing the hook's.
-
-See also: [`z <query>`](./directories.md#z-query) · [`l / ll / la`](./listing.md#l-ll-la)
-
-## `zc <query>`
-
-**Jump to a directory and start Claude there**
-
-*shell*
-
-Same query as `z`, then `cc` in the directory you land in.
-
-See also: [`z <query>`](./directories.md#z-query) · [`cc [...args]`](./agents.md#cc-args)
 
 ## `cd <path>`
 

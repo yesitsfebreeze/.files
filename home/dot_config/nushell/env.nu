@@ -2,18 +2,6 @@
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
-# ── PATH <-> list conversions ───────────────────────────────────────────────
-$env.ENV_CONVERSIONS = {
-    "PATH": {
-        from_string: {|s| $s | split row (char esep) }
-        to_string: {|v| $v | str join (char esep) }
-    }
-    "Path": {
-        from_string: {|s| $s | split row (char esep) }
-        to_string: {|v| $v | str join (char esep) }
-    }
-}
-
 # ── PATH repair (R1) ────────────────────────────────────────────────────────
 $env.PATH = (
     $env.PATH
@@ -33,6 +21,7 @@ $env.PATH = (
 
 # ── Environment (R2) ────────────────────────────────────────────────────────
 $env.XDG_CONFIG_HOME = ($nu.home-dir | path join ".config")
+$env.XDG_DATA_HOME = ($env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share"))
 
 $env.RIPGREP_CONFIG_PATH = ($nu.home-dir | path join ".config" "ripgrep" "config")
 
@@ -41,17 +30,7 @@ $env.VISUAL = "nvim"
 
 $env.STARSHIP_SHELL = "nu"
 
-# Who the board is working as. Every `pearde` command that moves a PRD stamps
-# `· as <id>` on its line from this variable and refuses without it —
-# measured 2026-09-02: `pearde sweep --dry` with the variable unset answers
-# "refused — persona: `--as <id>` on the line, or PEARDE_AS in the
-# environment", and answers normally with it set. This is one of the two lines
-# `pearde install --apply` prints; the alias below in config.nu is the other.
-#
-# Switching persona is `$env.PEARDE_AS = <id>` typed here, not a subcommand:
-# `pearde persona` is not a command (measured — "unknown command
-# `persona`"), it is the pearde-persona skill, and a child process cannot
-# write its parent's environment anyway.
+# Who the board is working as; every `pearde` command reads it and refuses without it.
 $env.PEARDE_AS = "engineer"
 
 $env.SHELL = $nu.current-exe

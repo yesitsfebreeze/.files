@@ -2,12 +2,7 @@
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
-def _z_no_zoxide [] {
-    print -e "zoxide not installed — z/zi cannot jump. Install it, then run: chezmoi apply"
-}
-
 def --env _z_jump [rest: list<string>] {
-    if (which zoxide | is-empty) { _z_no_zoxide; return false }
     if ($rest | is-empty) or ($rest == ['-']) or (
         ($rest | length) == 1 and (($rest | first | path expand | path type) == 'dir')
     ) {
@@ -37,7 +32,6 @@ def --env --wrapped _z_nav [...rest: string] {
 }
 
 def --env --wrapped _zi_nav [...rest: string] {
-    if (which zoxide | is-empty) { _z_no_zoxide; return }
     let q = (^zoxide query --interactive -- ...$rest | complete)
     let path = ($q.stdout | str trim)
     if $q.exit_code != 0 or ($path | is-empty) { return }
@@ -48,16 +42,7 @@ def --env --wrapped _zi_nav [...rest: string] {
 
 alias z = _z_nav
 alias zi = _zi_nav
-alias cdi = zi
 alias zz = cd -
-
-def --env --wrapped zl [...rest: string] {
-    if (_z_jump $rest) { la }
-}
-
-def --env --wrapped zc [...rest: string] {
-    if (_z_jump $rest) { cc }
-}
 
 def --env _z_fallback [] {
     if not $nu.is-interactive { return }
@@ -69,7 +54,6 @@ def --env _z_fallback [] {
     let first = ($tokens | first)
     if (which $first | is-not-empty) { return }
     if ($first | str starts-with '-') or ($first | str starts-with '/') or ($first | str starts-with '~') or ($first | str contains '/') or ($first in ['.' '..']) { return }
-    if (which zoxide | is-empty) { return }
     let q = (^zoxide query --exclude $env.PWD -- ...$tokens | complete)
     if $q.exit_code != 0 { return }
     let path = ($q.stdout | str trim)

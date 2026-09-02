@@ -12,35 +12,25 @@ tinty owns the palette and everything else reads it downstream, so a scheme chan
 
 *shell*
 
-Run `theme` and the scheme catalog opens in television with the A/B slot pair at the top; browsing retints the window background live, `Enter` applies the pick into the active slot, and `Esc` leaves the theme exactly as it was.
+Run `theme` and the scheme catalog opens in television with the current and previous scheme at the top; browsing retints the window background live, `Enter` applies the pick, and `Esc` leaves the theme exactly as it was.
 
 > **Why it is this way**
 >
 > Browsing never runs `tinty apply` — the preview is one OSC 11 escape, because an apply per focused row would fire tinty's whole hook chain on every keystroke. The one real apply happens after tv exits, in the live shell, so the hooks see the real environment rather than a stripped television-action subprocess.
 
-See also: [`theme toggle`](./appearance.md#switch-scheme) · [`theme slots`](./appearance.md#theme-slots)
+See also: [`theme toggle`](./appearance.md#switch-scheme)
 
 ## `theme toggle` · `F6`
 
-**Switch to the other scheme slot**
+**Swap back to the previous scheme**
 
 Two routes to the same thing:
 
-- `theme toggle` *(shell)* — Run `theme toggle` — or press `F6` in the terminal, which is bound to it — and the scheme parked in the other slot is applied while the active pointer moves there. Run it again to come back.
+- `theme toggle` *(shell)* — Run `theme toggle` — or press `F6` in the terminal, which is bound to it — and the scheme active before the last change comes back, while the one you are leaving becomes the new "previous". Run it again and you are back where you started: it is a swap, not a cycle.
 - `F6` *(terminal)* — Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh.
 
 > **Why it is this way**
 >
-> The slots are deliberately A/B, not light/dark: a slot holds whatever was last picked while it was active, and picking in the picker retunes the active slot rather than choosing one — light versus dark is just the common way to use the pair.
+> Bound in the multiplexer rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the theme tool's hook chain would otherwise block the server for its duration. The scheme reaches the terminal as escape sequences written straight to it, not through a file only one emulator could read — which is why the key is worth pressing on a machine you ssh'd into. It is the one key that is never forwarded to a nested session: the palette belongs to the outermost terminal.
 
-See also: [`theme`](./appearance.md#theme) · [`theme slots`](./appearance.md#theme-slots) · [`F5 F5`](./windows.md#f5-f5)
-
-## `theme slots`
-
-**See both scheme slots and which one is live**
-
-*shell*
-
-Run `theme slots` to print slot A and slot B with `*` marking the active one; `theme a` or `theme b` activates that slot directly and applies its scheme.
-
-See also: [`theme toggle`](./appearance.md#switch-scheme)
+See also: [`theme`](./appearance.md#theme) · [`F5 F5`](./windows.md#f5-f5)

@@ -7,41 +7,16 @@
 export def --env finder [
     --start: string = ""
 ] {
-    if (which tv | is-empty) {
-        error make { msg: "finder: `tv` (television) is not installed — required dependency" }
-    }
     if not $nu.is-interactive {
         error make { msg: "finder: interactive-only — tv requires a TTY" }
     }
-
-    let channel = if ($start | is-not-empty) {
-        $start
-    } else {
-        let picked = (_finder_pick_channel)
-        if ($picked | is-empty) { return [] }
-        $picked
+    if ($start | is-empty) {
+        error make { msg: "finder: --start <channel> is required" }
     }
-
-    let unhijack = 'enter="confirm_selection";tab="toggle_selection"'
-
-    if $channel == "cht" {
-        let raw = (try {
-            tv cht --keybindings $unhijack --expect ctrl-p
-        } catch { "" })
-        let parsed = (_finder_parse $raw)
-        if $parsed.key == "ctrl-p" {
-            let lang = ($parsed.entries | get -o 0 | default "" | str trim)
-            if ($lang | is-empty) { return [] }
-            return (_finder_cht_query $lang $unhijack)
-        }
-        let entries = ($parsed.entries | where { |l| ($l | str trim) != "" })
-        if ($entries | is-empty) { return [] }
-        for line in $entries { _recents_add "Any" $line "cht" }
-        return $entries
-    }
+    let channel = $start
 
     let raw = (try {
-        tv $channel --keybindings $unhijack
+        tv $channel --keybindings 'enter="confirm_selection";tab="toggle_selection"'
     } catch { "" })
     let entries = ($raw | lines | where { |l| ($l | str trim) != "" })
     if ($entries | is-empty) { return [] }
@@ -54,23 +29,6 @@ export def --env finder [
     $decoded
 }
 
-# ── the cht-query step ──────────────────────────────────────────────────────
-
-def _finder_cht_query [lang: string, unhijack: string] {
-    let src = $"bash -c \"curl -sf --max-time 15 'cht.sh/($lang)/:list' | sed -e 's|^|($lang)/|'\""
-    let raw = (try {
-        tv cht-query --keybindings $unhijack --source-command $src
-    } catch { "" })
-    let entries = ($raw | lines | where { |l| ($l | str trim) != "" })
-    if ($entries | is-empty) { return [] }
-    let decoded = (_finder_decode { produces: "ChtSheet", results: $entries })
-    if ($decoded | is-empty) {
-        error make { msg: $"finder: the cht-query decode dropped all ($entries | length) selected rows" }
-    }
-    for line in $entries { _recents_add "ChtSheet" $line "cht-query" }
-    $decoded
-}
-
 # ── type lookup ─────────────────────────────────────────────────────────────
 
 def _finder_type [channel: string] {
@@ -78,33 +36,8 @@ def _finder_type [channel: string] {
         "files" | "dirs" | "recent-dirs" | "recent-files" => "FileList"
         "text" | "docs" => "GrepList"
         "git-log" => "Commits"
-        "cht-query" => "ChtSheet"
         _ => "Any"
     }
-}
-
-# ── channel picker ──────────────────────────────────────────────────────────
-
-def _finder_pick_channel [] {
-    let names = (tv list-channels | lines | each { |l| $l | str trim }
-        | where { |l| ($l != "") and ($l != "channels") })
-    if ($names | is-empty) { return "" }
-
-    let src = $"printf '%s\\n' (_finder_shquote_list $names)"
-    let raw = (try {
-        tv channels --input-header "channels    [enter] open   [esc] back" --keybindings 'enter="confirm_selection"' --source-command $src
-    } catch { "" })
-    $raw | lines | where { |l| ($l | str trim) != "" } | get -o 0 | default "" | str trim
-}
-
-# ── shell quoting ───────────────────────────────────────────────────────────
-
-def _finder_shquote [p: string] {
-    "'" + ($p | str replace -a "'" "'\\''") + "'"
-}
-
-def _finder_shquote_list [ps: list] {
-    $ps | each { |p| _finder_shquote $p } | str join " "
 }
 
 # ── tv --expect output decoder ──────────────────────────────────────────────
@@ -148,9 +81,6 @@ def _finder_decode [stage] {
             $results | each { |line| { hash: ($line | str trim) } }
                 | where { |r| $r.hash =~ '^[0-9a-f]{7,}$' }
         }
-        "ChtSheet" => {
-            $results | each { |line| { sheet: ($line | str trim) } }
-        }
         _ => $results
     }
 }
@@ -165,13 +95,9 @@ def --env _finder_open [sel: list] {
         ^$env.EDITOR $"+($first.line)" $first.file
     } else if ("hash" in $cols) {
         ^git show $first.hash
-    } else if ("sheet" in $cols) {
-        ^bash -c $"curl -sf --max-time 20 'cht.sh/($first.sheet)' | less -R"
     } else {
         if (($first | path type) == "dir") {
             cd $first
         } else { ^$env.EDITOR $first }
     }
 }
-
-# ── the 04-shell/07 seam, as built ──────────────────────────────────────────

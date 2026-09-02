@@ -2,3 +2,7 @@
 .config/nushell/help/use-review.nuon
 .config/nushell/help/why-review.nuon
 .config/television/cable/manual.toml
+.config/nushell/copymode.nu
+.config/television/cable/cht.toml
+.config/television/cable/cht-query.toml
+.config/television/cable/channels.toml

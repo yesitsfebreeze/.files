@@ -13,7 +13,7 @@ A capsule is a dev container bound to a directory: drop in, work, leave. Credent
 Two routes to the same thing:
 
 - `Ctrl+Shift+D` *(terminal)* — Press `Ctrl+Shift+D` in any pane: `capsule` runs on that pane's directory and you end up at a shell in `/workspace` inside the container, with the directory's contents there and your credentials working. Press it again later and you are back in the same running container, immediately.
-- `capsule [dir]` *(shell)* — Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in zsh at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and, if the container is still running, you are back in it in well under a second; if it was stopped it starts and attaches, and if the image definition changed it rebuilds the image first, which takes as long as docker takes. Every successful mount is recorded for the recent-workspace picker.
+- `capsule [dir]` *(shell)* — Run `capsule` to put the current directory in a container, or `capsule <dir>` for another one. You land in zsh at `/workspace`, which is the directory itself — edits inside are edits outside. Run it again in the same directory and, if the container is still running, you are back in it in well under a second; if it was stopped it starts and attaches, and if the image definition changed it rebuilds the image first, which takes as long as docker takes. `z <project>; capsule` reaches a directory you mounted before.
 
 > **Why it is this way**
 >

@@ -343,6 +343,8 @@ THE DB PATH IS `$nu.history-path`, NEVER A LITERAL. Measured 2026-08-22 on the p
 
 ALT-R'S TARGET IS NOT DEFINED HERE. `tv_shell_history` comes from the generated television init (`tv init nu`, written at apply time by home/run_after_generate-shell-init.sh, whose comment names this node). The `nu-history` cable channel behind it — the sqlite-aware override — belongs to 04-shell/04-television, which depends on this node and owns that file. Until it lands, Alt-R runs tv's builtin nu-history channel: degraded content, correct wiring. The cwd query, shared by the picker and the inline cycle (R1): this directory's distinct commands, newest use first, capped at 5000.
 
+THE `\\:` IN `text.toml` IS TWO ESCAPES, NOT ONE. `home/dot_config/television/cable/text.toml`'s templates (`output`, `preview.command`, `preview.offset`, `ui.preview_panel.header`, `actions.edit.command`) all split on `\\:` in the TOML source. TOML's own escaping turns that into the single-backslash `\:` tv actually receives, which is the escaped-colon delimiter its template engine splits on — a bare `:` would also split on every colon inside the matched line, not just the field boundary, and a single un-escaped `\:` is invalid TOML. Anyone rewriting a `split:` template here needs both backslashes or the channel silently mis-splits.
+
 The missing-db guard returns [] and precedes the open (D3): reedline creates the sqlite on the first interactive Enter, so a fresh machine (and any --no-history run) has none — unguarded, `open` throws, and every Up press and Ctrl-R becomes a red error at the prompt.
 
 ```
