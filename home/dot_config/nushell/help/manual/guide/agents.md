@@ -257,3 +257,18 @@ Press `<leader>xd` to deny the inline diff Claude proposed, restoring the buffer
 
 See also: [`<leader>xa`](./agents.md#leader-xa)  
 Spec: `prds/08-claude-agent/02-nvim-plugin/prd.md`
+
+## `pearde [cmd]`
+
+**Work the PRD board this repository plans with**
+
+*shell*
+
+Run `pearde` on its own for the board on one page, `pearde help` for the subcommands, `pearde plan` for what runs next. It is a python entry point in ~/dev/infra/pearde, aliased here because the tool installs no binary of its own.
+
+> **Why it is this way**
+>
+> This alias is half of a pair and does not work alone. Every subcommand that MOVES a PRD stamps who did it, reading `$env.PEARDE_AS` from env.nu, and refuses outright when it is unset — measured 2026-09-02, `pearde sweep --dry` without it answers `refused — persona:` and does nothing. The alias points at the SOURCE repo, never at the `.claude/skills/pearde` symlink inside a project: every install on this machine links into that one repo, so a project-local path would answer only inside that project.
+
+See also: [`cc [...args]`](./agents.md#cc-args) · [`help --json`](./agents.md#help-json)  
+Spec: `prds/00-delivery/corrections/pearde-shell-wiring/prd.md`

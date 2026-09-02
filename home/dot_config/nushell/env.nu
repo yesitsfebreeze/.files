@@ -1,6 +1,6 @@
 # env.nu
 # Why this file is shaped the way it is:
-#   docs-site → Internals → Nushell modules
+#   manual → internals/nushell-modules
 
 # ── PATH <-> list conversions ───────────────────────────────────────────────
 $env.ENV_CONVERSIONS = {
@@ -41,10 +41,42 @@ $env.VISUAL = "nvim"
 
 $env.STARSHIP_SHELL = "nu"
 
+# Who the board is working as. Every `pearde` command that moves a PRD stamps
+# `· as <id>` on its line from this variable and refuses without it —
+# measured 2026-09-02: `pearde sweep --dry` with the variable unset answers
+# "refused — persona: `--as <id>` on the line, or PEARDE_AS in the
+# environment", and answers normally with it set. This is one of the two lines
+# `pearde install --apply` prints; the alias below in config.nu is the other.
+#
+# Switching persona is `$env.PEARDE_AS = <id>` typed here, not a subcommand:
+# `pearde persona` is not a command (measured — "unknown command
+# `persona`"), it is the pearde-persona skill, and a child process cannot
+# write its parent's environment anyway.
+$env.PEARDE_AS = "engineer"
+
 $env.SHELL = $nu.current-exe
 
 # ── Start dir (R7) ──────────────────────────────────────────────────────────
-if $nu.is-interactive {
+#
+# TRAP: only OUTSIDE tmux. This `cd` is unconditional, it runs on every
+# interactive shell, and it runs AFTER the launcher has placed the process —
+# so inside tmux it silently defeated every `-c` in tmux.conf. Measured
+# 2026-09-01: `tmux split-window -c /usr/local` landed the new pane in
+# whatever startdir.txt happened to hold, which is the last directory visited
+# in ANY pane. A split is meant to inherit the pane it was split from and a
+# `F5 <digit>` window is meant to be a clean `~`; both were reading one global
+# file instead.
+#
+# Under tmux the launcher is the one that knows: every pane is created with an
+# explicit `-c`, and `tmux-main` seeds the SESSION with startdir.txt so the
+# first pane of a fresh server still comes up where you left off. That is
+# where R7 lives now — one read when the environment starts, not one per
+# shell. `mkcd` keeps writing the file; only the reader moved.
+#
+# The bare-`nu` case keeps the old behaviour, and it is not hypothetical:
+# `tmux-main`'s no-tmux fallback execs nushell directly, and that shell has no
+# launcher to inherit a directory from.
+if $nu.is-interactive and ($env.TMUX? | is-empty) {
     let dev_dir = ($nu.home-dir | path join "dev")
     mkdir $dev_dir
     let state = ($env.XDG_STATE_HOME? | default ($nu.home-dir | path join ".local" "state"))

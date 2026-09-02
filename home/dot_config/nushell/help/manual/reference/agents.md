@@ -17,6 +17,7 @@ Every entry links to where the guide explains it.
 | `llm` | See every model and what is left on it | shell | [Run coding agents](../guide/agents.md#llm) |
 | `llm quota` | Read or record the balance per provider | shell | [Run coding agents](../guide/agents.md#llm-quota) |
 | `llm regen` | Rebuild the proxy's routing from live inventories | shell | [Run coding agents](../guide/agents.md#llm-regen) |
+| `pearde [cmd]` | Work the PRD board this repository plans with | shell | [Run coding agents](../guide/agents.md#pearde-cmd) |
 | `<leader>x` | Show what <leader>x can do | nvim normal | [Run coding agents](../guide/agents.md#leader-x) |
 | `<leader>xc` | Toggle Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xc) |
 | `<leader>xf` | Focus Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xf) |

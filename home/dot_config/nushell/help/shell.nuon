@@ -170,32 +170,6 @@
 
     # -------------------------------------------------------------------- find
     {
-        key: "Ctrl-Space / F1"
-        title: "Open the finder and act on what you pick"
-        use: "Press `Ctrl-Space` (or `F1`). The channel list opens first — type a few letters of the channel you want (`fil`, `dir`, `text`, `git-log`), enter, then pick a row. What happens next follows the type: a file opens in nvim, a directory cds the shell and lists it, a grep hit opens the editor on that line, a commit opens in `git show`. `Tab` multi-selects."
-        topic: "find"
-        task: "files"
-        step: 1
-        mode: "shell"
-        also: ["Ctrl-T", "Ctrl-Q", "finder"]
-        why: "Enter has to be un-hijacked per run (`--keybindings 'enter=\"confirm_selection\"'`) because three channels bind it to an action of their own instead of confirming: `text` edits in place, `zoxide` cds in a nested shell, `recent-files` edits. Note that the `text` override is local to this config, not stock tv. tv panics outright without a TTY, so this and every other picker entry point is interactive-only by construction."
-        verify: [{kind: "keybinding", name: "tv_remote"}, {kind: "keybinding", name: "tv_remote_f1"}]
-        source: "prds/04-shell/04-television/prd.md"
-    }
-    {
-        key: "Ctrl-T"
-        title: "Insert a path into the line you are typing"
-        use: "Mid-command, press `Ctrl-T`. The channel list opens first, exactly as it does for `Ctrl-Space` — pick a channel, then pick a row, and it is inserted at the cursor, shell-quoted, for you to carry on typing. Esc at either step leaves the line exactly as it was. This is the fzf reflex, on television."
-        topic: "find"
-        task: "files"
-        step: 2
-        mode: "shell"
-        also: ["Ctrl-Space / F1"]
-        why: "Both keys end up in `_finder_pick_channel` over `tv list-channels`, so a cable file you add for one is on the other too, with nothing to register twice. The two differ only in what happens to the pick: this one edits it onto the command line instead of opening it."
-        verify: [{kind: "keybinding", name: "finder_pick"}]
-        source: "prds/04-shell/04-television/prd.md"
-    }
-    {
         key: "Ctrl-Q"
         title: "Reopen something you picked or jumped to recently"
         use: "Press `Ctrl-Q` for one list of everything recent across every channel — jumps, files opened via `z`, finder picks — newest first. `enter` opens it by type. `ctrl-r` replays instead: it cds to the directory the pick was made in and re-runs the channel it came from, so a grep result reopens the same search where you ran it. An empty log prints a hint rather than an empty picker."
@@ -203,7 +177,7 @@
         task: "history"
         step: 5
         mode: "shell"
-        also: ["Ctrl-Space / F1", "mkcd"]
+        also: ["F3", "mkcd"]
         # Two handles, one gesture: the key, and the command it runs. Naming
         # only the key left `quicklist` reported undocumented in the reverse
         # direction while the entry describing it sat right here.
@@ -218,7 +192,7 @@
         task: "files"
         step: 3
         mode: "shell"
-        also: ["Ctrl-Space / F1", "tv channel"]
+        also: ["F3", "tv channel"]
         why: "Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI."
         verify: [{kind: "command", name: "finder"}]
         source: "prds/04-shell/04-television/prd.md"
@@ -226,13 +200,13 @@
     {
         cmd: "tv channel"
         title: "Understand what a channel is, and add one"
-        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file, and it appears in the `Ctrl-Space` remote alongside the built-ins; teach `finder` how to decode its rows and every opener works on it too."
+        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` is the one thing it does NOT join for free — the search-all corpus is a fixed list of lanes in `tv-all`, because a merged row is only useful if something knows what to do when you pick it, so a new channel worth searching from F3 is a lane and an opener added there."
         topic: "find"
         task: "files"
         step: 5
         kind: "concept"
         mode: "shell"
-        also: ["finder", "Ctrl-Space / F1"]
+        also: ["finder", "F3"]
         why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, the `cht` → `cht-query` pair, `channels` (the remote's own list, re-sourced per call), `nu-history` and `manual` (the manual's own fuzzy browser), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi`/`cdi` reach fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
         verify: [{kind: "prose"}]
         source: "prds/04-shell/04-television/prd.md"
@@ -245,7 +219,7 @@
         task: "files"
         step: 4
         mode: "shell"
-        also: ["Ctrl-Space / F1", "idioms"]
+        also: ["F3", "idioms"]
         why: "`rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both."
         verify: [{kind: "alias", name: "grep"}]
         source: "prds/04-shell/02-aliases-utilities/prd.md"
@@ -256,9 +230,9 @@
         use: "`help --fuzzy` opens every entry in this manual as a picker; type what you half-remember (`select`, `jump`, `capsule`) and the preview shows the full entry — title, use, why, related. `enter` prints that entry into the scrollback; `ctrl-o` opens the PRD it came from in `$EDITOR`. Without a TTY it degrades to `help <query>`."
         topic: "find"
         task: "maintaining"
-        step: 2
+        step: 3
         mode: "shell"
-        also: ["help", "Ctrl-Space / F1"]
+        also: ["help", "F3"]
         verify: [{kind: "command", name: "help"}]
         source: "prds/06-help/03-browser/prd.md"
     }
@@ -496,12 +470,39 @@
         source: "prds/06-help/02-help-command/prd.md"
     }
     {
+        cmd: "docs"
+        title: "Grep the manual's prose and open it in the editor"
+        use: "`docs` — or `?`, which is the same command — opens a picker over every LINE of this manual's markdown: the guide, the reference, and the internals notes that hold the constraints the configuration is built around. Type a phrase you half-remember (`OSC 52`, `parse time`, `capsule`); enter opens that file in `$EDITOR` at that line. `help` addresses entries by name, `docs` addresses sentences."
+        topic: "config"
+        task: "maintaining"
+        step: 2
+        does: "search-manual"
+        mode: "shell"
+        also: ["?", "help", "help --fuzzy"]
+        why: "The manual was a documentation site that had to be built and served before it could be read, which meant it was not read. Markdown under `~/.config/nushell/help/manual`, `rg` and one television channel are the same search with nothing to start — and the file it lands you in is the file you edit."
+        verify: [{kind: "command", name: "docs"}]
+        source: "prds/06-help/06-manual-markdown/prd.md"
+    }
+    {
+        cmd: "?"
+        title: "Grep the manual's prose and open it in the editor"
+        use: "`?` is `docs` in one keystroke: the picker over every line of the manual."
+        topic: "config"
+        task: "maintaining"
+        step: 2
+        does: "search-manual"
+        mode: "shell"
+        also: ["docs"]
+        verify: [{kind: "alias", name: "?"}]
+        source: "prds/06-help/06-manual-markdown/prd.md"
+    }
+    {
         cmd: "help --check"
         title: "Check the manual against the live configuration"
         use: "`help --check` introspects the configured shell, Neovim and WezTerm and reports three things: bindings that exist with no entry, entries whose binding is gone, and entries whose text no longer matches the live description. Non-zero exit on any of them, so it can gate a commit. It spawns editors and terminals, so it is slow on purpose and never on the path of plain `help`."
         topic: "config"
         task: "maintaining"
-        step: 3
+        step: 4
         mode: "shell"
         also: ["help"]
         why: "This is the only reason the manual can be trusted rather than hoped over. Add a binding without an entry and the check fails; a documented key that stopped existing is the dangerous case, because it sends a reader somewhere that does nothing."
@@ -514,7 +515,7 @@
         use: "`rr` is `chezmoi update --force`: fetch the dotfiles repo and apply it over `~`. Applying twice changes nothing the second time."
         topic: "config"
         task: "maintaining"
-        step: 4
+        step: 5
         mode: "shell"
         verify: [{kind: "alias", name: "rr"}]
         source: "prds/04-shell/02-aliases-utilities/prd.md"
@@ -525,7 +526,7 @@
         use: "Type `pass ` and press Tab: the verbs come up, and so do the live entry names from `$PASSWORD_STORE_DIR`, without their `.gpg` suffix. Flags that are not declared still reach the real binary."
         topic: "config"
         task: "maintaining"
-        step: 5
+        step: 6
         mode: "shell"
         why: "Nushell ships no completion for pass, so this is an extern signature written by hand — which is also why an undeclared flag has to pass through rather than error."
         # `pass` itself is the external binary and nushell reports no handle
@@ -580,7 +581,7 @@
     {
         cmd: "cll [model]"
         title: "Start Claude Code on a chosen model"
-        use: "Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy with its fallback chain."
+        use: "Run `cll` with no argument and a picker opens, grouped by provider; pick a row and Claude Code starts on that model. `cll <model>` skips the picker. Rows named `native:*` bypass the proxy and run on the Max plan; everything else goes through the local proxy with its fallback chain. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves — 1M stays 1M instead of compacting at 200K."
         topic: "agents"
         task: "agents"
         step: 3
@@ -628,5 +629,18 @@
         why: "The routing config is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model."
         verify: [{kind: "command", name: "llm regen"}]
         source: "prds/04-shell/10-litellm-launcher/prd.md"
+    }
+    {
+        cmd: "pearde [cmd]"
+        title: "Work the PRD board this repository plans with"
+        use: "Run `pearde` on its own for the board on one page, `pearde help` for the subcommands, `pearde plan` for what runs next. It is a python entry point in ~/dev/infra/pearde, aliased here because the tool installs no binary of its own."
+        topic: "agents"
+        task: "agents"
+        step: 22
+        mode: "shell"
+        also: ["cc [...args]", "help --json"]
+        why: "This alias is half of a pair and does not work alone. Every subcommand that MOVES a PRD stamps who did it, reading `$env.PEARDE_AS` from env.nu, and refuses outright when it is unset — measured 2026-09-02, `pearde sweep --dry` without it answers `refused — persona:` and does nothing. The alias points at the SOURCE repo, never at the `.claude/skills/pearde` symlink inside a project: every install on this machine links into that one repo, so a project-local path would answer only inside that project."
+        verify: [{kind: "alias", name: "pearde"}]
+        source: "prds/00-delivery/corrections/pearde-shell-wiring/prd.md"
     }
 ]

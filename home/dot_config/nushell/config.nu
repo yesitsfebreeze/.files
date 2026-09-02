@@ -1,7 +1,7 @@
 # config.nu — the one nushell config the whole shell shares.
 #
 # Ten named anchors in a load-bearing order; sections append at their anchor.
-# Why any of this is shaped the way it is: docs-site → Internals → Nushell.
+# Why any of this is shaped the way it is: manual → internals/nushell.
 # Read it before changing a line marked TRAP.
 #
 # The rule everything else follows from: nushell binds names at PARSE time.
@@ -15,6 +15,10 @@ $env.config = {
     cursor_shape: {
         emacs: block
     }
+    # interactive `rm` goes to the macOS Trash — the safety net for a
+    # mistyped path. It applies to scripts too, so a script deleting a file
+    # the user never typed passes `-p` and unlinks: a trashed file plays the
+    # Finder trash sound and piles ~/.Trash up. See internals/nushell, `rm`.
     rm: { always_trash: true }
     table: {
         mode: rounded
@@ -73,6 +77,15 @@ alias ":q" = exit
 alias "/exit" = exit
 
 alias rr = chezmoi update --force
+
+# The board tool. `pearde` ships as a python entry point in its own repo with
+# no installed binary — `install --apply` builds symlinks for the skills and
+# then prints this alias and the `PEARDE_AS` export in env.nu for you to add
+# by hand; nothing in it writes a shell file. TRAP: the path is the SOURCE
+# repo, not the `.claude/skills/pearde` symlink inside a project — every
+# install on this machine points into ~/dev/infra/pearde, and an alias
+# pinned to one project's skills directory answers only inside that project.
+alias pearde = python3 ~/dev/infra/pearde/resources/pearde.py
 
 # TRAP: the display-var guards are what make this safe headless — wl-copy and
 # xclip hang forever with no compositor, so a `which` hit alone must not pick
@@ -312,28 +325,10 @@ if $nu.is-interactive {
 # ── THEME ──
 source ~/.config/nushell/theme.nu
 
-def tv_finder [] {
-    let sel = (finder)
-    if ($sel | is-empty) { return }
-    let parts = ($sel | each { |it|
-        let s = (match (($it | describe -d).type) {
-            "record" => ($it.file? | default ($it.hash? | default ($it.sheet? | default ($it | to nuon))))
-            _ => ($it | into string)
-        })
-        _finder_shquote $s
-    })
-    commandline edit --insert ($parts | str join " ")
-}
-
-def --env tv_remote [] {
-    if not $nu.is-interactive { return }
-    let channel = (_finder_pick_channel)
-    if ($channel | is-empty) { return }
-    if ($channel == "theme") { theme; return }
-    if ($channel == "quicklist") { quicklist; return }
-    if ($channel == "manual") { return (_help_browse "" "") }
-    _finder_open (finder --start $channel)
-}
+# `tv_finder` and `tv_remote` stood here and were removed on 2026-09-01 with
+# the three keys that were their only callers. Both opened `_finder_pick_channel`
+# — the channel list — and that question ("which channel is it in?") is the one
+# F3 no longer asks. `finder` itself is untouched and still takes `--start`.
 
 # ── KEYBINDINGS ──
 # LAST, and load-bearing: reedline resolves a duplicate (modifier, keycode) to
@@ -406,29 +401,30 @@ $env.config = (
     )
 )
 
+# The finder has no shell keybinding. Ctrl-Space, F1 and Ctrl-T all opened a
+# channel list from this prompt and were retired on 2026-09-01: the one way in
+# is now F3, bound in tmux.conf, which reaches the same channels from any pane
+# rather than only from a nushell prompt — inside nvim, inside a Claude pane,
+# inside anything. The `finder` command itself stays, for scripts and for
+# anyone who wants one named channel.
+#
+# TRAP: dropping our Ctrl-T record is NOT the same as freeing Ctrl-T. The
+# generated `tv init nu` binds it to tv's own `tv_smart_autocomplete`, so
+# removing ours would hand the key back to television rather than clear it —
+# a picker would still open, just a different one. `event: null` is nushell's
+# unbind, and it works here for the same reason the override did: reedline
+# resolves a duplicate (modifier, keycode) to the LATER entry, and this block
+# is appended after the init's. Ctrl-R and Alt-R keep their pickers on
+# purpose; only the channel list is gone.
 $env.config = (
     $env.config | upsert keybindings (
         $env.config.keybindings | append [
             {
-                name: tv_remote
-                modifier: control
-                keycode: space
-                mode: [vi_normal vi_insert emacs]
-                event: { send: executehostcommand, cmd: "tv_remote" }
-            }
-            {
-                name: tv_remote_f1
-                modifier: none
-                keycode: f1
-                mode: [vi_normal vi_insert emacs]
-                event: { send: executehostcommand, cmd: "tv_remote" }
-            }
-            {
-                name: finder_pick
+                name: tv_completion
                 modifier: control
                 keycode: char_t
                 mode: [vi_normal vi_insert emacs]
-                event: { send: executehostcommand, cmd: "tv_finder" }
+                event: null
             }
         ]
     )
