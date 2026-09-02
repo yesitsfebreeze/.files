@@ -12,10 +12,14 @@ needs:
 footprint:
   - .gitignore
   - .graphifyignore
-  - install
   - justfile
-  - home/dot_config/litellm/create_config.yaml
   - .pearde/workflows
+# `install` and `home/dot_config/litellm/create_config.yaml` stood here and
+# were removed from the footprint on 2026-09-02, after R3 and R4 deleted them.
+# `collect` resolves every footprint path to a repo and refuses the whole call
+# when one does not exist — "footprint install is not under <repo> — repo_of
+# matched no repo for it". A node that deletes a file cannot keep that file in
+# its own footprint and still be collectable. Both deletions are in `b233cc0`.
 workflow: delete-what-nothing-reads
 claim: impl-hygiene 2026-09-02 11:26
 ---
