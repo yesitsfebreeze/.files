@@ -69,10 +69,24 @@ Findings: `git-log.toml`'s edit action (R2 names it, it has none) and the
 the cable directory is even read, so 16 is the floor for this footprint,
 not 15 — the `ls cable ≤ 15` half of that box does hold, at 10).
 
+**Both halves were struck 2026-09-02** — see the PRD's first `## Acceptance`
+bullet. The reasoning above stayed true of the surface this node shipped; it
+stopped being a check on this node when
+`09-simplify/retire-the-unmanaged-television-channels` adopted nine `git-*`
+channels on the user's Q1 answer, taking the source to `19` files and the
+isolated fixture to `23` channels. The paragraph is left standing unchanged
+because it is the reading that held before the strike, and the two together
+are the record.
+
 ## Acceptance
 
-- [x] `ls home/dot_config/television/cable | wc -l` prints at most 15 —
-      `10`
+- [x] ~~`ls home/dot_config/television/cable | wc -l` prints at most 15 —
+      `10`~~ **Struck 2026-09-02** with the PRD bullet it mirrors: `10` was
+      true at `67784bb`, and
+      `09-simplify/retire-the-unmanaged-television-channels` then took the
+      directory to `19` on the user's Q1 answer. See that bullet for the
+      arithmetic and for the absence check that replaces it — a cap on a
+      directory a sibling's answer sizes is no longer a check on this node.
 - [x] `rg -l "border_type = .rounded." home/dot_config/television/config.toml`
       finds nothing
 - [x] `rg -c "EDITOR:-nvim" home/dot_config/television/cable/files.toml
@@ -100,8 +114,17 @@ set -eu
 cd /Users/feb/dev/dotfiles
 fail() { echo "FAIL: $*"; exit 1; }
 
-test "$(ls home/dot_config/television/cable | wc -l | tr -d ' ')" -le 15 \
-    || fail "cable directory has more than 15 files"
+# The `-le 15` cap that stood here was struck 2026-09-02 — see the PRD's
+# first `## Acceptance` bullet. It was green at `67784bb` and was repealed,
+# not failed, when `retire-the-unmanaged-television-channels` adopted nine
+# channels on the user's Q1 answer. Left as the cap it was, under `set -eu`
+# and first in the block, it aborted this whole proof at rc=1 and the six
+# checks behind it never ran. What replaces it is the claim this node's own
+# footprint decides: R1's five deletions stay deleted.
+for f in git-files git-branch zoxide alias env; do
+    test ! -e "home/dot_config/television/cable/$f.toml" \
+        || fail "R1 deletion $f.toml is back in the cable directory"
+done
 
 if rg -q 'border_type = "rounded"' home/dot_config/television/config.toml
 then fail "config.toml still restates the border_type default"; fi

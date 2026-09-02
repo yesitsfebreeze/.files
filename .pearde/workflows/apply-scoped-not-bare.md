@@ -3,7 +3,7 @@ atomic: apply-scoped-not-bare
 subject: the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside
 date: 2026-09-02
 updated: 2026-09-02
-runs: 5
+runs: 8
 ---
 
 ## Do

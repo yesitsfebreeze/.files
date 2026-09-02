@@ -3,7 +3,7 @@ atomic: carry-the-why-across-the-rewrite
 subject: the file shrank 404 → 198 lines and its constraint comments were the expensive part; re-lodging them beside the code that still needs them is what stops a rewrite from spending a day of somebody's past work
 date: 2026-09-02
 updated: 2026-09-02
-runs: 1
+runs: 2
 ---
 
 ## Do

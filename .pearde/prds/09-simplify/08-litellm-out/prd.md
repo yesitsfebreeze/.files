@@ -1,8 +1,8 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: specced        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 20        # higher first
-complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+complexity: 32      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
 blast-radius: mid
 repo:
 time:
@@ -20,6 +20,7 @@ footprint:
   - home/dot_config/nushell/litellm.nu
   - home/dot_config/nushell/help/shell.nuon
   - home/dot_config/nvim/lua/plugins/claude.lua
+workflow: cut-a-feature-its-readers-still-name
 ---
 
 # 08-litellm-out — the one thing here that is not a dotfile
@@ -62,3 +63,22 @@ dotfiles repo. This child moves it out, to the destination the user picks.
 
 - Fixing the 402s or the auth-store coupling — that is the stack's own work
   in its new home.
+
+## Questions
+
+### Q1: Where the model router lives
+
+You are choosing where the model-router stack lives: its own project, a hidden
+part of this one, or nowhere at all. It is around nine hundred lines with its
+own release cycle, it reads another tool's credential file, and every paid
+route is currently out of credit?
+
+1. **Its own project** — the router moves to a folder of its own under your development directory and installs itself onto your path from there. (recommended)
+2. **Kept here, opt-in** — the router stays here but a fresh machine only gets it if a marker file exists; this one keeps its copy.
+3. **Deleted** — the router goes entirely; the editor and the shell both open the assistant directly, on its own plan, with no proxy and no picker.
+
+<!-- for the board: 5 scripts under home/dot_local/bin (cll, litellm-env, litellm-gen-config, litellm-up, llm-quota) + home/dot_config/nushell/litellm.nu; config.nu:236 source line; help/shell.nuon rows cll/llm/llm quota/llm regen; help/nvim.nuon 4 refs; hand-written internals/nushell-modules.md §litellm.nu and internals/neovim.md; nvim/lua/plugins/claude.lua terminal_cmd; home/.chezmoiremove needed on ALL three answers; 00-delivery/decisions/fzf-model-picker gains the R4 line. Answer decides spec01's footprint entirely. -->
+
+## Answers
+
+**Q1** *(answered 2026-09-02 16:22)* — Its own project — the router moves to a folder of its own under the development directory and installs itself onto the path from there.

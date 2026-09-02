@@ -3,7 +3,7 @@ workflow: land-an-answered-fork
 subject: 08-claude-agent/02-nvim-plugin
 date: 2026-09-02
 updated: 2026-09-02
-runs: 2
+runs: 4
 ---
 
 ## Use when

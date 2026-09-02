@@ -11,3 +11,7 @@
 .config/television/cable/git-branch.toml
 .config/television/cable/git-files.toml
 .config/television/cable/zoxide.toml
+.config/television/cable/bg.toml
+.config/television/cable/burrito-sessions.toml
+.config/television/cable/opacity.toml
+.config/television/cable/opencode-sessions.toml

@@ -3,7 +3,7 @@ atomic: run-the-verify-twice
 subject: the first block passed on a violated assertion, because `! cmd` is exempt from `set -e`; a second run is also what catches a check that asserted the act instead of the post-state
 date: 2026-09-02
 updated: 2026-09-02
-runs: 2
+runs: 4
 ---
 
 ## Do

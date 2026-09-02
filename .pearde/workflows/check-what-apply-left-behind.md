@@ -3,7 +3,7 @@ atomic: check-what-apply-left-behind
 subject: "`chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone"
 date: 2026-09-02
 updated: 2026-09-02
-runs: 1
+runs: 2
 ---
 
 ## Do

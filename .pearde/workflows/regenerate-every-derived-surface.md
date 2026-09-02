@@ -3,7 +3,7 @@ atomic: regenerate-every-derived-surface
 subject: half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing
 date: 2026-09-02
 updated: 2026-09-02
-runs: 0
+runs: 1
 ---
 
 ## Do

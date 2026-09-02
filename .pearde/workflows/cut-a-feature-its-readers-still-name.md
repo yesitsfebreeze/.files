@@ -2,7 +2,7 @@
 workflow: cut-a-feature-its-readers-still-name
 subject: 09-simplify/03-help-system
 date: 2026-09-02
-runs: 0
+runs: 1
 ---
 
 ## Use when

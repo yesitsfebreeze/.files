@@ -84,11 +84,40 @@ Neovim 0.12.5; re-read before cutting.
 
 ## Acceptance
 
-- [x] The television surface this repo owns is at most 16 channels and at
+- [x] ~~The television surface this repo owns is at most 16 channels and at
       most 15 cable files in the tree: `tv list-channels | wc -l` is at most
       16 against an `XDG_CONFIG_HOME` holding only this repo's television
       configuration, and `ls home/dot_config/television/cable | wc -l` is at
-      most 15.
+      most 15.~~
+      **Both thresholds are struck 2026-09-02 — met, then repealed, not
+      failed.** They were green at `67784bb`, measured against an isolated
+      `XDG_CONFIG_HOME` holding only this repo's television configuration:
+      `16` channels over `10` cable files.
+      `09-simplify/retire-the-unmanaged-television-channels` then adopted
+      nine `git-*` channels on the user's own Q1 answer, taking the source
+      to `19` files and the same fixture to `23` channels — `10` built-ins
+      (`bash-history dirs docker-images env files git-branch git-diff
+      git-log git-repos text`) `+ 19` files `- 6` names held in common
+      `= 23`, the overlap having grown from four to six because `git-diff`
+      and `git-repos` are now both built-in names and adopted files. A cap
+      on this directory is therefore no longer a check on this node: a
+      sibling's answer sets the number, and re-setting the cap to today's
+      measurement would be a threshold with no derivation behind it — the
+      same test this box already applied to the struck `~/.config` clause
+      below. The standing claim this node keeps instead is the one its own
+      footprint decides — R1's five deletions stay deleted:
+      `bash -c 'cd /Users/feb/dev/dotfiles && for f in git-files git-branch
+      zoxide alias env; do test ! -e
+      home/dot_config/television/cable/$f.toml || exit 1; done && echo ok'`
+      → `ok`. That goes red if R1's work is undone, and cannot be moved by
+      a sibling adopting a channel.
+      `channels.toml` is deliberately absent from that list: R1 names it but
+      assigns it to `04-nushell`, and including it would put a check on this
+      node that another owns. The mirror half — "the ten files R1+R2 kept are
+      still present" — is deliberately absent too: it would re-create the
+      sibling-movability problem this strike exists to end, since a future
+      legitimate retirement would turn this node red for somebody else's
+      correct work.
       **Rewritten 2026-09-02 by `implementer-neovim-tv`** — the box as
       dispatched read `tv list-channels | wc -l` with no `XDG_CONFIG_HOME`
       named, which measures the machine's whole cable directory, not this

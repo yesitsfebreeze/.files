@@ -3,7 +3,7 @@ atomic: write-a-proof-not-a-build-script
 subject: run twice, exit 0 twice, nothing staged — the form the last run got wrong and that blocked a collect
 date: 2026-09-02
 updated: 2026-09-02
-runs: 1
+runs: 2
 ---
 
 ## Do
