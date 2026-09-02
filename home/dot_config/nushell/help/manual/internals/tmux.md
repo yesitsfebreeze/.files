@@ -589,7 +589,8 @@ label's background); `colour8`/base03 stands in until `colors.conf` sets the
 exact style.
 
 The digit's **background** says which window has focus and its **foreground**
-says which windows are busy, so the two signals never compete for one channel.
+says what Claude is doing in it — "The digit wears Claude's state", below — so
+the two signals never compete for one channel.
 
 The active label's colours live in a style *option*, not inline in the format,
 because a later `source-file` can replace a style option and cannot replace a
@@ -600,30 +601,10 @@ The bar is **two rows, both at the top**.
 Row 0 is ambient — the facts true of the whole session. Left to right: the
 clock; the **key-table chip**, which appears the instant `F5` arms the switcher
 and names the table (`jump`, or `jump-pane` when a digit has been pressed and
-the letter is still to come); the **`✳N` Claude counter**; and at the right the
-window digits.
+the letter is still to come); and at the right the window digits.
 
-Row 1 is *this window*. Left: the active pane's host (over ssh) and cwd, the
-**git branch** with a `*` when the tree is dirty, and a zoom or copy-mode flag.
-Right: the window's panes, each as **its letter and what it runs** — `A nu
-B nvim  C claude` — with the active one lit. That pairing is the row's reason
-to exist: the letter is the key `F5` addresses, so the row answers "which key
-gets me to the editor" without switching panes to find out. A single-pane
-window prints the command alone, since there is no letter worth pressing.
-
-A Claude pane is recognised by its **title**, never its command. Claude Code
-sets the pane title to `✳ <what it is doing>` and runs as its own version
-string, so `#{pane_current_command}` on a Claude pane reads `2.1.252` — measured
-2026-09-01 — and matching on that would break at the next Claude release and
-print a version number where a name belongs. A pane that has not set its title
-yet is simply not counted until it does.
-
-The counter is `#{n:#{W:#{P:…}}}`: `W` loops windows, `P` loops that window's
-panes, each Claude pane emits one character, and `n:` takes the length. No
-shell and no counter to keep in step — it cannot go stale, because it is
-computed at draw time from the panes themselves. **Trap:** both loops take two
-comma-separated arguments (`#{P:other,current}`), so a top-level comma inside
-one splits it rather than printing; commas nested inside a `#{?…}` are safe.
+Row 1 is *this window*: the active pane's host (over ssh) and cwd, the **git
+branch** with a `*` when the tree is dirty, and a zoom or copy-mode flag.
 
 The **git segment** is the one thing here that runs a command. It was left out
 of the first cut on the grounds that starship prints the same facts in the
@@ -694,6 +675,60 @@ A one-pane window has nothing to address, so the border is hidden there rather
 than spending a row of the grid saying `a` about the only pane there is. The
 `window-layout-changed` hook fires on every split, kill and layout change —
 every event that can change the count.
+
+## The digit wears Claude's state
+
+The window digit's foreground is what Claude is doing in that window: **colour4
+working**, **colour2 finished**, **colour3 waiting for you**, unlit when no
+Claude there has reported. `waiting` beats `working` in a window running two,
+because it is the one state that is asking for a human.
+
+The report comes from Claude Code itself, through hooks. `UserPromptSubmit` and
+`Stop` bracket a turn. `Notification` is the only event that fires while nothing
+is running, and since `cc` passes `--dangerously-skip-permissions` there is no
+permission prompt left to raise it, so here it means the **idle nudge** — a
+finished turn nobody has come back to. `SessionStart` and `SessionEnd` both
+clear, because the pane outlives the Claude in it and a green digit over a bare
+shell is worse than no colour at all.
+
+Nothing sniffs the panes, and the alternative is worth naming: a Claude pane
+cannot be recognised by its command, because Claude Code runs as its own version
+string and `#{pane_current_command}` on one reads `2.1.258` — measured
+2026-09-02 — so a matcher would print a version number where a name belongs and
+break at the next release.
+
+The state is a **pane** option, `@claude`, set by `~/.local/bin/tmux-claude-state`
+from `$TMUX_PANE`, which a hook inherits from the Claude that spawned it. Pane
+and not window: one window holds a Claude beside a shell often enough, and a
+pane option **dies with its pane**, so a Claude that is killed rather than
+exited leaves nothing behind — a window option would outlive it and strand the
+digit in a colour with no process left to clear it. Measured 2026-09-02: killing
+a `waiting` pane dropped its window straight back to the `working` of the pane
+beside it, with nothing to clean up.
+
+The digit gathers them at draw time with `#{P:…}`, so nothing is stored per
+window and no count can go stale. **Trap:** `#{P:…}` and `#{W:…}` each take two
+comma-separated arguments (`#{P:other,current}`), so a top-level comma inside one
+splits it rather than printing; every comma in `@claude-tint` is nested inside a
+`#{?…}` and safe. **Trap:** `#{E:…}` is what expands a user option holding a
+format, and a `#[fg=…]` arriving from one *is* honoured by the bar — measured
+2026-09-02 on 3.7c by drawing the bar in a nested server and reading the escapes
+back out of the pane it drew into.
+
+Every hook ends in `refresh-client -S`. Without it the colour waits for
+`status-interval`, and a turn that finishes in under five seconds goes green
+after it has already finished — which reads as a broken hook rather than a slow
+one.
+
+The hooks live in `~/.claude/settings.json`, which chezmoi does not manage:
+`run_after_install-claude-hooks.sh` merges the block in and replaces only the
+entries naming `tmux-claude-state`, the same way `register-mcp` shells out
+rather than writing `~/.claude.json` itself. **Trap:** every profile, not just
+the root file. `cc` runs Claude under `CLAUDE_CONFIG_DIR=~/.claude/<profile>`,
+and `_claude_share` *copies* settings.json into a profile at creation rather
+than symlinking it — so a block written only to the root reaches no session that
+`cc` ever starts, which is exactly how the first cut of this shipped and did
+nothing.
 
 ## Palette delivery
 

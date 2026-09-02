@@ -309,12 +309,13 @@
     {
         cmd: "cr [...args]"
         title: "Resume a Claude session in this directory"
-        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick."
+        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F4 s` types for you."
         topic: "agents"
         task: "agents"
         step: 2
+        does: "resume-claude"
         mode: "shell"
-        also: ["cc [...args]"]
+        also: ["cc [...args]", "F4 s"]
     }
     {
         cmd: "help --json"

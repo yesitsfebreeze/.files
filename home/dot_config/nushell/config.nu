@@ -249,23 +249,13 @@ alias core-help = help
 source ~/.config/nushell/help.nu
 
 # ── PALETTE ──
-# Re-assert the active tinty scheme so the last `tinty apply` survives into a
-# new shell. The artifact is sourced rather than `tinty init` because init
-# spawns the binary and its whole hook chain: ~5 ms vs ~128 ms per shell.
-#
-# TRAP: the guard is `$nu.is-interactive`, NOT `is-terminal --stdout`. The
-# latter reports the CURRENT pipeline's redirection and a parenthesised
-# sub-expression captures stdout, so as a condition it is false unconditionally
-# — the live config guards on it, which is why its re-assert never fired.
-if $nu.is-interactive {
-    let data = ($env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share"))
-    let palette = ($data | path join "tinted-theming" "tinty" "artifacts" "tinted-shell-scripts-file.sh")
-    if ($palette | path exists) {
-        try { ^bash $palette e> /dev/null }
-    } else if (which tinty | is-not-empty) {
-        try { ^tinty init e> /dev/null }
-    }
-}
+# No re-assert here: tmux-colors.sh's OSC push writes straight to the
+# client's tty (client-attached hook, and every `tinty apply`), which is
+# terminal-wide, not per-shell — a new pane inherits it for free. Removed
+# 2026-09-02; if a pane ever again opens on the wrong colours, restore the
+# `tinted-shell-scripts-file.sh` source this used to run under
+# `$nu.is-interactive` (manual → internals/tmux, Palette delivery, has the
+# per-server socket reasoning tmux-colors.sh depends on).
 
 # ── THEME ──
 source ~/.config/nushell/theme.nu

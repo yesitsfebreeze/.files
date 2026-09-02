@@ -17,6 +17,7 @@ Every entry links to where the guide explains it.
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
 | `F4` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
+| `F4 s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
 | `copymode` | Enter copy mode without touching a chord | shell | [Copy and paste](../guide/copy.md#enter-copy-mode) |
 | `drag` | Select with the mouse and have it on the clipboard | terminal | [Copy and paste](../guide/copy.md#drag) |
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |

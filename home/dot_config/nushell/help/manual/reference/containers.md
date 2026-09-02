@@ -10,8 +10,6 @@ Every entry links to where the guide explains it.
 |---|---|---|---|
 | `Ctrl+Shift+D` | Drop this directory into a capsule | terminal | [Work inside a container](../guide/containers.md#enter-capsule) |
 | `Ctrl+Shift+B` | Rebuild the capsule image and start over | terminal | [Work inside a container](../guide/containers.md#rebuild-capsule) |
-| `Ctrl+Shift+S` | Reopen a recent workspace here | terminal | [Work inside a container](../guide/containers.md#recent-workspace) |
-| `Ctrl+Shift+O` | Reopen a recent workspace in a new window | terminal | [Work inside a container](../guide/containers.md#recent-workspace) |
 | `capsule [dir]` | Drop a directory into a dev container | shell | [Work inside a container](../guide/containers.md#enter-capsule) |
 | `capsule --rebuild` | Rebuild the image and recreate the container | shell | [Work inside a container](../guide/containers.md#rebuild-capsule) |
 | `capsule list` | See which capsules exist | shell | [Work inside a container](../guide/containers.md#capsule-list) |

@@ -36,21 +36,6 @@ Two routes to the same thing:
 
 See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule) · [`capsule [dir]`](./containers.md#enter-capsule)
 
-## `Ctrl+Shift+S` · `Ctrl+Shift+O`
-
-**Reopen a recent workspace here**
-
-Two routes to the same thing:
-
-- `Ctrl+Shift+S` *(terminal)* — Press `Ctrl+Shift+S` and a fuzzy-selectable list of the directories you have most recently mounted opens, newest first: type to narrow it, then choose, and that directory's capsule is mounted in this pane. Directories that no longer exist are dropped as the list is read.
-- `Ctrl+Shift+O` *(terminal)* — Same picker as `Ctrl+Shift+S`, but it opens in a new OS window and leaves the pane you were in alone.
-
-> **Why it is this way**
->
-> The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting the terminal. The `Recent:` indicator this entry used to promise is gone with the derived status bar: the bar is the multiplexer's now and nothing sets its left side from a picker.
-
-See also: [`Ctrl+Shift+D`](./containers.md#enter-capsule)
-
 ## `capsule list`
 
 **See which capsules exist**

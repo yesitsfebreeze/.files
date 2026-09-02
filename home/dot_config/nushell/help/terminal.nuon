@@ -129,19 +129,31 @@
     {
         key: "F4"
         title: "Freeze the screen and select text with the keyboard"
-        use: "Press `F4` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` to move, `w` and `b` by word, `g` and `G` to the ends of the scrollback, `/` to search it. Press `c` where the selection should start; each further `c` widens it from the character to the word to the whole line and then back to the character. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied."
+        use: "Press `F4` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` opens a selection by hand for what those miss, `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection."
         topic: "terminal"
         task: "copy"
         step: 1
         does: "enter-copy-mode"
         mode: "terminal"
         also: ["copymode", "drag", "Ctrl+C"]
-        why: "A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. Leaving by ANY route clears the widen cycle, through a hook rather than through the exit keys — the mode is also entered by the mouse wheel and by `copymode`, and a cycle left half-armed for the next time was the failure the hook exists to prevent. Inside a nested session `F5 F4` sends the literal key down to the inner server, because a root binding is always taken by the outermost one."
+        why: "A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. The selection keys are the multiplexer's own, unchanged: a hand-rolled `c` cycle that grew the selection a step at a time was retired on 2026-09-02, because it needed a hook to reset itself on every exit and a cycle left half-armed for the next time was a real failure. What that costs is a word in a single keystroke — there is no such key, and the mouse double-click is the way to take one. The one motion that is not a default is `w`, and it is the word END: stock `w` is the start of the NEXT word and it wraps onto the line below, so it takes you off the line you were reading; the end-of-word motion never leaves its line and parks at the last word end. The Shift row and `p` are the selection keys the retired cycle was reaching for, one unit each instead of one key cycling through them, and they need no `Space` first. Shift is the whole rule: one unit, copied and gone in one key. Only the paragraph has a select-only twin, because `w` and `l` are motions and stay motions — `l` was tried as the line-end selection and handed back, since shadowing the vi cursor-right to save a Shift is not a trade worth making. `l` shadows the vi cursor-right, and that is the trade it was worth: the arrows move the cursor and always have, so `hjk` keeps three of the four and the fourth buys a selection key under the fingers. `P` and `p` are the pair with a constraint behind them: the multiplexer has no select-paragraph command, and the obvious build — grow whatever is selected by a paragraph — mis-anchors, so it takes the whole paragraph the cursor is in every time. Reading it as widening is what makes that right rather than a limitation. A cursor motion is not a way to widen a word selection: it leaves copy mode in the multiplexer's own word-selection state, where a motion grows by whole words and can reach backwards past the word taken. Inside a nested session `F5 F4` sends the literal key down to the inner server, because a root binding is always taken by the outermost one."
+    }
+    {
+        key: "F4 s"
+        title: "Resume the Claude session this pane already printed"
+        use: "In copy mode, reads back through this pane's scrollback for the newest `--resume` or `--continue` id, leaves the mode, and types `cr <id>` at the prompt WITHOUT running it — press Enter at the prompt, or edit the line first. Press the gesture again and it steps one id older, wrapping round to the newest; the status line says which of how many you are on. A pane that has never printed a session id says so and types nothing."
+        topic: "terminal"
+        task: "agents"
+        step: 2
+        does: "resume-claude"
+        mode: "terminal"
+        also: ["cr [...args]", "F4", "cc [...args]"]
+        why: "`cr` on its own offers every session recorded for the directory, and they are uuids: the list cannot tell you which one is the session that just died in front of you. The scrollback can, because that session printed its own id there. So the pick is made from what this pane has seen rather than from what the directory holds, and the two routes stay side by side. The multiplexer can find the text without help — copy mode's search takes an extended regex — but it cannot KEEP the part that matched: a format hands over the whole cursor line and has no capture group, which is the one reason there is a script behind this key at all. Copy mode is left before anything is typed, because a pane sitting in a mode swallows sent keys and there is no route from inside the mode to the shell. The line is typed and not run: which session to resume is a decision, and the gesture stops one key short of making it. The cycle keeps its place in two pane options and resets when the NEWEST id in the pane changes — that is, exactly when a new session has announced itself. There is no timer and no hook to leave half-armed, which is what the widening `c` cycle retired on 2026-09-02 could not manage. It is `s` and not that freed `c` because a hand reaching for `c` in this mode is reaching to start a copy, whatever the table currently says."
     }
     {
         cmd: "copymode"
         title: "Enter copy mode without touching a chord"
-        use: "Type `copymode` at a host prompt and the pane it runs in freezes into copy mode, exactly as `F4` leaves it — the same motions, the same widening `c` cycle. Outside tmux it says so rather than doing nothing."
+        use: "Type `copymode` at a host prompt and the pane it runs in freezes into copy mode, exactly as `F4` leaves it — the same motions, the same selection keys. Outside tmux it says so rather than doing nothing."
         topic: "terminal"
         task: "copy"
         step: 1
@@ -264,31 +276,5 @@
         mode: "terminal"
         also: ["capsule --rebuild", "Ctrl+Shift+D"]
         why: "The key looked contested — in the live config control+shift+B prompts for a desktop wallpaper — but that whole pipeline is rated DO NOT PORT, so it comes free with the port and there is nothing left to settle. Why a rebuild is ever needed at all lives on `capsule --rebuild`, not here."
-    }
-    {
-        key: "Ctrl+Shift+S"
-        title: "Reopen a recent workspace here"
-        use: "Press `Ctrl+Shift+S` and a fuzzy-selectable list of the directories you have most recently mounted opens, newest first: type to narrow it, then choose, and that directory's capsule is mounted in this pane. Directories that no longer exist are dropped as the list is read."
-        topic: "containers"
-        task: "containers"
-        step: 3
-        does: "recent-workspace"
-        mode: "terminal"
-        also: ["Ctrl+Shift+O", "Ctrl+Shift+D"]
-        why: "The list is written by the capsule tool on every successful mount, not by the terminal, so it is the same list however you started the container — and it survives restarting the terminal. The `Recent:` indicator this entry used to promise is gone with the derived status bar: the bar is the multiplexer's now and nothing sets its left side from a picker."
-        # Two handles, one gesture: the key, and `capsule recent`, which it
-        # runs and which is equally typeable at a prompt.
-    }
-    {
-        key: "Ctrl+Shift+O"
-        title: "Reopen a recent workspace in a new window"
-        use: "Same picker as `Ctrl+Shift+S`, but it opens in a new OS window and leaves the pane you were in alone."
-        topic: "containers"
-        task: "containers"
-        step: 3
-        does: "recent-workspace"
-        mode: "terminal"
-        also: ["Ctrl+Shift+S"]
-        why: "A window, not a tab, and that is the point: there are no tabs. This key replaced `Ctrl+Shift+T`, which was documented as an open collision — it was the terminal's own new-tab default AND the tab reconciler's manual path, so the name resolved either way and nothing said which. Both of those are gone, and the collision went with them. The picker runs the shell directly rather than attaching to the session, because it is a one-shot that should exit with itself."
     }
 ]

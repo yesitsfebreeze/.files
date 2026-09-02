@@ -9,7 +9,7 @@ Every entry links to where the guide explains it.
 | | what it does | where | guide |
 |---|---|---|---|
 | `cc [...args]` | Start Claude in this directory | shell | [Run coding agents](../guide/agents.md#cc-args) |
-| `cr [...args]` | Resume a Claude session in this directory | shell | [Run coding agents](../guide/agents.md#cr-args) |
+| `cr [...args]` | Resume a Claude session in this directory | shell | [Run coding agents](../guide/agents.md#resume-claude) |
 | `help --json` | Read this manual as structured data | shell | [Run coding agents](../guide/agents.md#help-json) |
 | `idioms` | Search with rg, find with fd, pick with tv | shell | [Run coding agents](../guide/agents.md#idioms) |
 | `cll [model]` | Start Claude Code on a chosen model | shell | [Run coding agents](../guide/agents.md#cll-model) |

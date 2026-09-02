@@ -18,17 +18,22 @@ Claude Code starts in the directory you are in and inherits the environment. The
 >
 > With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it.
 
-See also: [`cr [...args]`](./agents.md#cr-args) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
+See also: [`cr [...args]`](./agents.md#resume-claude) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
 
-## `cr [...args]`
+## `cr [...args]` · `F4 s`
 
 **Resume a Claude session in this directory**
 
-*shell*
+Two routes to the same thing:
 
-`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick.
+- `cr [...args]` *(shell)* — `cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F4 s` types for you.
+- `F4 s` *(terminal)* — In copy mode, reads back through this pane's scrollback for the newest `--resume` or `--continue` id, leaves the mode, and types `cr <id>` at the prompt WITHOUT running it — press Enter at the prompt, or edit the line first. Press the gesture again and it steps one id older, wrapping round to the newest; the status line says which of how many you are on. A pane that has never printed a session id says so and types nothing.
 
-See also: [`cc [...args]`](./agents.md#cc-args)
+> **Why it is this way**
+>
+> `cr` on its own offers every session recorded for the directory, and they are uuids: the list cannot tell you which one is the session that just died in front of you. The scrollback can, because that session printed its own id there. So the pick is made from what this pane has seen rather than from what the directory holds, and the two routes stay side by side. The multiplexer can find the text without help — copy mode's search takes an extended regex — but it cannot KEEP the part that matched: a format hands over the whole cursor line and has no capture group, which is the one reason there is a script behind this key at all. Copy mode is left before anything is typed, because a pane sitting in a mode swallows sent keys and there is no route from inside the mode to the shell. The line is typed and not run: which session to resume is a decision, and the gesture stops one key short of making it. The cycle keeps its place in two pane options and resets when the NEWEST id in the pane changes — that is, exactly when a new session has announced itself. There is no timer and no hook to leave half-armed, which is what the widening `c` cycle retired on 2026-09-02 could not manage. It is `s` and not that freed `c` because a hand reaching for `c` in this mode is reaching to start a copy, whatever the table currently says.
+
+See also: [`cc [...args]`](./agents.md#cc-args) · [`F4`](./copy.md#enter-copy-mode)
 
 ## `cll [model]`
 
@@ -166,7 +171,7 @@ See also: [`<leader>xc`](./agents.md#leader-xc)
 
 Press `<leader>xr` to open the session picker for this directory inside the Claude pane and continue the one you pick — the in-editor twin of `cr` in the shell.
 
-See also: [`<leader>xc`](./agents.md#leader-xc) · [`<leader>xC`](./agents.md#leader-xc) · [`cr [...args]`](./agents.md#cr-args)
+See also: [`<leader>xc`](./agents.md#leader-xc) · [`<leader>xC`](./agents.md#leader-xc) · [`cr [...args]`](./agents.md#resume-claude)
 
 ## `<leader>xC`
 
