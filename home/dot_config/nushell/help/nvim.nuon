@@ -127,24 +127,24 @@
     {
         key: "<S-Up> <S-Down> <S-Left> <S-Right>"
         title: "Select text with shift and the arrows"
-        use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. It behaves like every non-modal editor."
+        use: "Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. A plain (unshifted) arrow afterward collapses the selection and moves, the way it would in a normal editor — even one started with `v`. It behaves like every non-modal editor."
         topic: "edit"
         task: "editing"
         step: 11
         mode: "nvim:normal"
         also: ["h j k l (visual)", "<C-c> (visual)"]
-        why: "The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price."
+        why: "One option does the whole thing: `'keymodel'` set to `startsel,stopsel`. `stopsel` only covers the cursor keys (`:help 'keymodel'`), which is why an unshifted arrow collapses a selection regardless of how it started, but `h`/`j`/`k`/`l` never do — they are not special keys to `'keymodel'` and always extend."
     }
     {
         key: "h j k l (visual)"
-        title: "Move (collapse selection)"
-        use: "In a selection that shift started, a plain motion — `h`/`j`/`k`/`l` or an unshifted arrow — drops the selection and moves, the way it would in a normal editor. A count still applies: `3j` collapses and goes down three lines. In a selection you started with `v`, the same keys extend it, exactly as stock vim does."
+        title: "Extend the selection"
+        use: "`h`/`j`/`k`/`l` (and the unshifted arrows, from the keys above) extend a selection, exactly as stock vim does — whether the selection was started with `v` or with shift. A count still applies: `3j` extends three lines down."
         topic: "edit"
         task: "editing"
         step: 12
         mode: "nvim:visual"
         also: ["<S-Up> <S-Down> <S-Left> <S-Right>"]
-        why: "This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim."
+        why: "`'keymodel'`'s `stopsel` scopes to the cursor keys only (`:help 'keymodel'`), so `hjkl` sit outside it and always extend — there is no shift-started collapse-on-hjkl here, unlike the full shift-to-select port this replaced (`decisions/shift-select-scope` re-take, 2026-09-02)."
     }
     {
         key: "<C-c> (visual)"
@@ -275,27 +275,6 @@
 
     # ------------------------------------------------------------------- edit / lsp
     {
-        key: "gd and gI"
-        title: "Jump to a definition or an implementation"
-        use: "`gd` on a symbol goes to where it is defined, `gI` to where it is implemented. `<C-o>` comes back."
-        topic: "edit"
-        task: "code"
-        step: 3
-        mode: "nvim:normal"
-        also: ["Neovim's own LSP keys", "<leader>rn and <leader>ca"]
-        why: "These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`."
-    }
-    {
-        key: "<leader>rn and <leader>ca"
-        title: "Rename a symbol or take a code action"
-        use: "`<leader>rn` renames across the project — type the new name, enter. `<leader>ca` offers the actions the server has for the thing under the cursor. Both are buffer-local, so they appear once a server attaches."
-        topic: "edit"
-        task: "code"
-        step: 5
-        mode: "nvim:normal"
-        also: ["Neovim's own LSP keys", "gd and gI"]
-    }
-    {
         key: "Neovim's own LSP keys"
         title: "Use the LSP keys Neovim already ships"
         use: "`K` hovers. `grn` renames, `gra` acts, `grr` lists references, `gri` implementations, `gO` the symbols in the file. `]d` and `[d` walk diagnostics, which show inline with a `●`; to read one in full press `<C-w>d`, which is the key that opens the bordered float naming the server it came from."
@@ -303,8 +282,7 @@
         task: "code"
         step: 4
         mode: "nvim:normal"
-        also: ["gd and gI", "<leader>rn and <leader>ca"]
-        why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you."
+        why: "Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you. `lsp.lua` used to alias `gd`/`gI`/`<leader>rn`/`<leader>ca` onto the same built-ins; that duplication is gone (09-simplify/06-neovim-television R6)."
     }
     {
         key: "<leader>ss <leader>sl <leader>sd"

@@ -26,7 +26,7 @@ Every entry links to where the guide explains it.
 | `<leader>w and <leader>q` | Save and quit | nvim normal | [Edit text](../guide/editing.md#leader-w-and-leader-q) |
 | `<leader>p (visual)` | Paste (keep register) | nvim visual | [Edit text](../guide/editing.md#leader-p-visual) |
 | `<S-Up> <S-Down> <S-Left> <S-Right>` | Select text with shift and the arrows | nvim normal | [Edit text](../guide/editing.md#s-up-s-down-s-left-s-right) |
-| `h j k l (visual)` | Move (collapse selection) | nvim visual | [Edit text](../guide/editing.md#h-j-k-l-visual) |
+| `h j k l (visual)` | Extend the selection | nvim visual | [Edit text](../guide/editing.md#h-j-k-l-visual) |
 | `<C-c> (visual)` | Copy to clipboard | nvim visual | [Edit text](../guide/editing.md#c-c-visual) |
 | `<C-v> (visual)` | Paste over selection | nvim visual | [Edit text](../guide/editing.md#c-v-visual) |
 | `<Tab> <S-Tab> <C-n> <C-p> <C-Space> <C-e>` | Drive the completion menu | nvim insert | [Work with code](../guide/code.md#tab-s-tab-c-n-c-p-c-space-c-e) |
@@ -34,7 +34,5 @@ Every entry links to where the guide explains it.
 | `<leader>e` | Open the current directory as a buffer | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-e) |
 | `<leader>cf` | Format the buffer now | nvim normal | [Work with code](../guide/code.md#leader-cf) |
 | `<leader>t` | Work with markdown tables | nvim normal | [Work with code](../guide/code.md#leader-t) |
-| `gd and gI` | Jump to a definition or an implementation | nvim normal | [Work with code](../guide/code.md#gd-and-gi) |
-| `<leader>rn and <leader>ca` | Rename a symbol or take a code action | nvim normal | [Work with code](../guide/code.md#leader-rn-and-leader-ca) |
 | `Neovim's own LSP keys` | Use the LSP keys Neovim already ships | nvim normal | [Work with code](../guide/code.md#neovim-s-own-lsp-keys) |
 | `<leader>ss <leader>sl <leader>sd` | Restore the buffers you had open here | nvim normal | [Work with code](../guide/code.md#leader-ss-leader-sl-leader-sd) |

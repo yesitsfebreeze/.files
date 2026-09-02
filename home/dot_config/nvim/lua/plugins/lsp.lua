@@ -18,19 +18,6 @@ return {
         float = { border = "rounded", source = true },
       })
 
-      vim.api.nvim_create_autocmd("LspAttach", {
-        group = vim.api.nvim_create_augroup("lsp_attach", { clear = true }),
-        callback = function(event)
-          local function bmap(keys, fn, desc)
-            vim.keymap.set("n", keys, fn, { buffer = event.buf, desc = "LSP: " .. desc })
-          end
-          bmap("gd", vim.lsp.buf.definition, "Goto definition")
-          bmap("gI", vim.lsp.buf.implementation, "Goto implementation")
-          bmap("<leader>rn", vim.lsp.buf.rename, "Rename")
-          bmap("<leader>ca", vim.lsp.buf.code_action, "Code action")
-        end,
-      })
-
       vim.lsp.config("*", {
         capabilities = require("blink.cmp").get_lsp_capabilities(),
       })

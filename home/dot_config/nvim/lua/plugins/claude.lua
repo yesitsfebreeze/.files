@@ -6,20 +6,10 @@ return {
   {
     "coder/claudecode.nvim",
     cmd = {
-      "ClaudeCode",
-      "ClaudeCodeFocus",
-      "ClaudeCodeSelectModel",
-      "ClaudeCodeAdd",
-      "ClaudeCodeSend",
-      "ClaudeCodeTreeAdd",
-      "ClaudeCodeStatus",
-      "ClaudeCodeStart",
-      "ClaudeCodeStop",
-      "ClaudeCodeOpen",
-      "ClaudeCodeClose",
-      "ClaudeCodeDiffAccept",
-      "ClaudeCodeDiffDeny",
-      "ClaudeCodeCloseAllDiffs",
+      "ClaudeCode", "ClaudeCodeFocus", "ClaudeCodeSelectModel", "ClaudeCodeAdd",
+      "ClaudeCodeSend", "ClaudeCodeTreeAdd", "ClaudeCodeStatus", "ClaudeCodeStart",
+      "ClaudeCodeStop", "ClaudeCodeOpen", "ClaudeCodeClose", "ClaudeCodeDiffAccept",
+      "ClaudeCodeDiffDeny", "ClaudeCodeCloseAllDiffs",
     },
     keys = {
       -- <leader>x is the Claude group, deliberately not <leader>a: `a` sat on the
@@ -32,12 +22,7 @@ return {
       { "<leader>xm", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Claude model" },
       { "<leader>xb", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current buffer" },
       { "<leader>xs", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send to Claude" },
-      {
-        "<leader>xs",
-        "<cmd>ClaudeCodeTreeAdd<cr>",
-        desc = "Add file",
-        ft = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw", "snacks_picker_list" },
-      },
+      { "<leader>xs", "<cmd>ClaudeCodeTreeAdd<cr>", desc = "Add file", ft = { "oil", "snacks_picker_list" } },
       { "<leader>xa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept diff" },
       { "<leader>xd", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },
     },
@@ -48,18 +33,10 @@ return {
       -- goes through the litellm proxy profile. Toggling an ALREADY-RUNNING
       -- pane never re-runs the picker; only a fresh spawn does.
       terminal_cmd = "cll",
-      terminal = {
-        provider = "auto",
-        split_width_percentage = 0.30,
-      },
-      diff_opts = {
-        layout = "vertical",
-      },
+      terminal = { split_width_percentage = 0.30 },
+      diff_opts = { layout = "vertical" },
     },
-    dependencies = {
-      "folke/snacks.nvim",
-      "mr55p-dev/claude-tmux.nvim",
-    },
+    dependencies = { "folke/snacks.nvim", "mr55p-dev/claude-tmux.nvim" },
     config = function(_, opts)
       local ok_provider, claude_tmux = pcall(require, "claude-tmux")
       if ok_provider and claude_tmux.is_available() then
@@ -80,50 +57,14 @@ return {
         -- with `<C-y>`/`55` read back `<C-y>`/`55` and a 110-wide pane. That
         -- is the whole difference: only keys claudecode also defines are lost.
         opts.terminal.provider = claude_tmux.setup({
-          toggle_key = "<C-j>", -- nvim's window-down is untouched: the binding lands in tmux, pane-local
+          toggle_key = "<C-j>", -- nvim's window-down is untouched: lands in tmux, pane-local
           split_size = 30,
         })
       end
 
-      -- Login profile. claudecode spawns the plain `claude` binary, which
-      -- without CLAUDE_CONFIG_DIR lands on the default ~ profile — and the
-      -- logins live in the profile dirs the `cc` picker chooses from. Resolve
-      -- the same way ~/.local/bin/cll does: leave an inherited, logged-in
-      -- CLAUDE_CONFIG_DIR alone; else the profile ~/.claude/.last-login names,
-      -- when it is actually logged in; else nil, and default wins. Checked for
-      -- '"oauthAccount"' in the profile's .claude.json — settings.json can
-      -- exist in a logged-out profile (claude.nu seeds it on first pick), so
-      -- the marker, not file existence, decides. Computed at first load, not
-      -- per spawn: a fresh nvim after running `cc` picks up the new login.
-      if opts.env == nil and vim.env.CLAUDE_CONFIG_DIR == nil then
-        local root = vim.fn.expand("~/.claude")
-        local function logged_in(dir)
-          local f = io.open(dir .. "/.claude.json", "r")
-          if not f then return false end
-          local content = f:read("*a")
-          f:close()
-          return content ~= nil and content:find('"oauthAccount"', 1, true) ~= nil
-        end
-        local last_ok = false
-        local lf = io.open(root .. "/.last-login", "r")
-        if lf then
-          local last = (lf:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
-          lf:close()
-          if #last > 0 and last ~= "default" then
-            local dir = root .. "/" .. last
-            if logged_in(dir) then
-              opts.env = { CLAUDE_CONFIG_DIR = dir }
-              last_ok = true
-            end
-          end
-        end
-        if not last_ok and not logged_in(root) then
-          -- nothing logged in anywhere the plugin can find: open default and
-          -- let Claude's own login flow run, rather than point at a dead dir
-          opts.env = nil
-        end
-      end
-
+      -- Login profile is `cll`'s job (~/.local/bin/cll:212-221 resolves the
+      -- same CLAUDE_CONFIG_DIR from .last-login/.claude.json) — terminal_cmd
+      -- already spawns through it, so nothing here needs to duplicate it.
       require("claudecode").setup(opts)
     end,
   },

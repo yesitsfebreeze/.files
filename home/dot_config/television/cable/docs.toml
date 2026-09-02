@@ -6,11 +6,12 @@
 # dev` to read is a manual you do not read. Markdown plus rg plus tv is the
 # same search with nothing to start.
 #
-# THE COMPANION CHANNEL IS `manual`, AND THEY ARE NOT THE SAME SEARCH.
-# `manual` matches an ENTRY (a key or a command, by id and title) and prints
-# it; `docs` matches any LINE of prose in the manual and opens the file there.
-# Reach for `manual` when you half-remember a key, `docs` when you remember a
-# sentence.
+# THIS IS THE ONLY PICKER OVER THE MANUAL. A companion `manual` channel
+# matched an ENTRY (a key or a command, by id and title) and printed it; it was
+# deleted on 2026-09-02 with the rest of the second search surface, and this
+# file is the config of the one that survived. Half-remembering a key is
+# `help <thing>`, which resolves a name without a picker at all; remembering a
+# sentence is this channel.
 #
 # Row shape is rg's: `<relative path>:<line>:<text>`, which is what makes the
 # `text` channel's decode (finder.nu, GrepList) work unchanged here.

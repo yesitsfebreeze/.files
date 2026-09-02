@@ -5,12 +5,3 @@
 # television, …) bake their palette and never follow the terminal (R6).
 [ui]
 theme = "default"
-
-[ui.input_bar]
-border_type = "rounded"
-
-[ui.results_panel]
-border_type = "rounded"
-
-[ui.preview_panel]
-border_type = "rounded"

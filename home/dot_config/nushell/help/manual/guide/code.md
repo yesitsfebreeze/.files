@@ -30,20 +30,6 @@ The language server does the heavy lifting and Neovim's own built-in keys drive 
 >
 > Both keys look like they belong entirely to completion, and only one does. blink.cmp maps `<CR>` to `{"accept", "fallback"}`: `fallback` means "run whatever `<CR>` did before blink.cmp claimed it", and because autopairs sets up first in load order, that prior mapping is autopairs' own bracket-expand handler — so the expand survives, but only through blink.cmp's fallback chain, and only while no menu is open. `<BS>` has no such chain: it is the one map autopairs sets that nothing else claims, so its default wins outright.
 
-## `gd and gI`
-
-**Jump to a definition or an implementation**
-
-*nvim normal*
-
-`gd` on a symbol goes to where it is defined, `gI` to where it is implemented. `<C-o>` comes back.
-
-> **Why it is this way**
->
-> These two are aliases for keys Neovim already provides, kept because the fingers know them. They attach per buffer on `LspAttach`, so they only exist where a language server is running — introspecting them needs an attached buffer, not a bare `nvim --headless`.
-
-See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)
-
 ## `Neovim's own LSP keys`
 
 **Use the LSP keys Neovim already ships**
@@ -54,19 +40,7 @@ See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`<leade
 
 > **Why it is this way**
 >
-> Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you.
-
-See also: [`gd and gI`](./code.md#gd-and-gi) · [`<leader>rn and <leader>ca`](./code.md#leader-rn-and-leader-ca)
-
-## `<leader>rn and <leader>ca`
-
-**Rename a symbol or take a code action**
-
-*nvim normal*
-
-`<leader>rn` renames across the project — type the new name, enter. `<leader>ca` offers the actions the server has for the thing under the cursor. Both are buffer-local, so they appear once a server attaches.
-
-See also: [`Neovim's own LSP keys`](./code.md#neovim-s-own-lsp-keys) · [`gd and gI`](./code.md#gd-and-gi)
+> Documented although they are not ours: Neovim provides them itself from 0.11 onward, this config deliberately does not re-map them, and they are how you use this editor. They are the one exception to the rule that this manual documents what this configuration binds, not what the editor already gives you. `lsp.lua` used to alias `gd`/`gI`/`<leader>rn`/`<leader>ca` onto the same built-ins; that duplication is gone (09-simplify/06-neovim-television R6).
 
 ## `<leader>cf`
 

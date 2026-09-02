@@ -108,25 +108,25 @@ See also: [`<C-h> <C-j> <C-k> <C-l>`](./editing.md#c-h-c-j-c-k-c-l)
 
 *nvim normal*
 
-Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. It behaves like every non-modal editor.
+Hold shift and press an arrow: from normal mode it starts a selection, from an existing selection it extends it, and from insert mode it leaves insert and selects — from insert, `<S-Left>` catches the last two characters rather than one. A plain (unshifted) arrow afterward collapses the selection and moves, the way it would in a normal editor — even one started with `v`. It behaves like every non-modal editor.
 
 > **Why it is this way**
 >
-> The insert cursor sits between characters and leaving insert drops it onto the one behind, which every shift map out of insert has to correct for — in opposite directions. `<S-Right>` moves right once before entering visual, or the character under the cursor is left out; leftward there is nothing to correct, and the extra character is the price.
+> One option does the whole thing: `'keymodel'` set to `startsel,stopsel`. `stopsel` only covers the cursor keys (`:help 'keymodel'`), which is why an unshifted arrow collapses a selection regardless of how it started, but `h`/`j`/`k`/`l` never do — they are not special keys to `'keymodel'` and always extend.
 
 See also: [`h j k l (visual)`](./editing.md#h-j-k-l-visual) · [`<C-c> (visual)`](./editing.md#c-c-visual)
 
 ## `h j k l (visual)`
 
-**Move (collapse selection)**
+**Extend the selection**
 
 *nvim visual*
 
-In a selection that shift started, a plain motion — `h`/`j`/`k`/`l` or an unshifted arrow — drops the selection and moves, the way it would in a normal editor. A count still applies: `3j` collapses and goes down three lines. In a selection you started with `v`, the same keys extend it, exactly as stock vim does.
+`h`/`j`/`k`/`l` (and the unshifted arrows, from the keys above) extend a selection, exactly as stock vim does — whether the selection was started with `v` or with shift. A count still applies: `3j` extends three lines down.
 
 > **Why it is this way**
 >
-> This is the half most configs get wrong, and it needs a flag rather than a mapping: the flag records that the selection began with shift, and a `ModeChanged` autocmd clears it on leaving visual mode. Without that reset, the next `v` selection would inherit collapse-on-motion and stop behaving like vim.
+> `'keymodel'`'s `stopsel` scopes to the cursor keys only (`:help 'keymodel'`), so `hjkl` sit outside it and always extend — there is no shift-started collapse-on-hjkl here, unlike the full shift-to-select port this replaced (`decisions/shift-select-scope` re-take, 2026-09-02).
 
 See also: [`<S-Up> <S-Down> <S-Left> <S-Right>`](./editing.md#s-up-s-down-s-left-s-right)
 

@@ -2,59 +2,19 @@
 -- Why this file is shaped the way it is:
 --   manual → internals/neovim
 
-local fallback_theme = "gruvbox_dark"
-
 return {
-  {
-    "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    event = "VeryLazy",
-    opts = {
-      options = {
-        globalstatus = true,
-        component_separators = "",
-        section_separators = { left = "", right = "" },
-      },
-      sections = {
-        lualine_a = { "mode" },
-        lualine_b = { "branch", "diff", "diagnostics" },
-        lualine_c = { { "filename", path = 1 } },
-        lualine_x = { "encoding", "fileformat", "filetype" },
-        lualine_y = { "progress" },
-        lualine_z = { "location" },
-      },
+  "nvim-lualine/lualine.nvim",
+  dependencies = { "nvim-tree/nvim-web-devicons" },
+  event = "VeryLazy",
+  opts = {
+    options = {
+      theme = "tinted", globalstatus = true, component_separators = "",
+      section_separators = { left = "", right = "" },
     },
-    config = function(_, opts)
-      local function lualine_theme()
-        local ok, tn = pcall(require, "tinted-nvim")
-        if not ok then return fallback_theme end
-        local got, p = pcall(tn.get_palette)
-        if not got or not p then return fallback_theme end
-        local function s(fg, bg) return { fg = fg, bg = bg } end
-        local b = s(p.base05, p.base02)
-        local c = s(p.base04, p.base01)
-        return {
-          normal = { a = s(p.base00, p.base0D), b = b, c = c },
-          insert = { a = s(p.base00, p.base0B), b = b, c = c },
-          visual = { a = s(p.base00, p.base0E), b = b, c = c },
-          replace = { a = s(p.base00, p.base08), b = b, c = c },
-          command = { a = s(p.base00, p.base0A), b = b, c = c },
-          inactive = {
-            a = s(p.base03, p.base01),
-            b = s(p.base03, p.base01),
-            c = s(p.base03, p.base01),
-          },
-        }
-      end
-      opts.options.theme = lualine_theme()
-      require("lualine").setup(opts)
-      vim.api.nvim_create_autocmd("ColorScheme", {
-        group = vim.api.nvim_create_augroup("lualine_theme", { clear = true }),
-        callback = function()
-          opts.options.theme = lualine_theme()
-          require("lualine").setup(opts)
-        end,
-      })
-    end,
+    sections = {
+      lualine_a = { "mode" }, lualine_b = { "branch", "diff", "diagnostics" },
+      lualine_c = { { "filename", path = 1 } }, lualine_x = { "encoding", "fileformat", "filetype" },
+      lualine_y = { "progress" }, lualine_z = { "location" },
+    },
   },
 }

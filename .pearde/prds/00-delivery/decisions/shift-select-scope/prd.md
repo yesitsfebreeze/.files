@@ -67,6 +67,45 @@ answer A, and the gate now keeps decision rows off those pages mechanically.
 timing is still an open box in `gates/manual/wave4.md`, and still wants a
 human.
 
+## Re-take, 2026-09-02
+
+*[`09-simplify/06-neovim-television`](../../../09-simplify/06-neovim-television/prd.md)
+R5, built and measured against Neovim 0.12.5.*
+
+The 81-line port is replaced by the built-in: `vim.o.keymodel =
+"startsel,stopsel"` plus the `<C-c>`/`<C-v>` clipboard maps — 8 lines. This
+is not the downgrade the 2026-08-21 answer declined; it is a different
+mechanism doing most of the same work, measured rather than assumed (headless
+`-u NONE` under-reports it — the option needs a real pty, so the fixture ran
+inside tmux):
+
+- Shift+arrow selection, from normal **and** insert mode, collapses on a
+  following plain arrow exactly as the port did — insert-mode `<S-Right>`
+  reproduces the documented "catches two characters, not one" quirk without
+  the port's `lv<Right>` workaround; it is built into `'keymodel'` itself.
+- **Collapse on `h`/`j`/`k`/`l` is lost.** `:help 'keymodel'` scopes
+  `stopsel` to "the cursor keys, `<End>`, `<Home>`, `<PageUp>` and
+  `<PageDown>`" — letter motions are not special keys, so a shift-started
+  selection *extends* on `hjkl` instead of collapsing. The `nvim.nuon` entry
+  titled "Move (collapse selection)" for `h j k l (visual)` no longer holds
+  for a shift-started selection; only the arrow-key entry does.
+- **New regression the port did not have**: a selection started with plain
+  `v` now also collapses on the next unshifted *arrow* key (though still not
+  on `hjkl`), because `'keymodel'` cannot distinguish how a selection began.
+  The port's `shift_select` flag kept `v`-then-arrow extending, matching
+  stock vim; the built-in does not.
+
+Collapse-on-motion was the reason the full port was chosen over the
+simplification in 2026-08-21 ("the part that makes shift-select feel native
+instead of half-implemented"). It still holds for the arrow-key half of the
+surface and not for the letter-key half — a narrower claim than either the
+2026-08-21 full port or a clean built-in replacement would be. Recorded here
+rather than re-opening the fork, because R5 is instructions from an approved
+simplification epic, not a future agent finding the tests burdensome.
+
+The rating note on `03-editor/14-shift-select` is updated to reflect this
+narrower built-in behaviour rather than the 2026-08-21 full port.
+
 ## Out of scope
 - Implementing the answer. This node records a decision; the work lives in the
       nodes it gates.
