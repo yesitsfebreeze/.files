@@ -2,7 +2,8 @@
 atomic: respell-the-proven-fix-in-the-config-file
 subject: the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting
 date: 2026-09-02
-runs: 0
+updated: 2026-09-02
+runs: 1
 ---
 
 ## Do

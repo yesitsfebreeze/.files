@@ -2,7 +2,8 @@
 workflow: prove-a-key-binding-on-a-real-client
 subject: 05-terminal — tmux.conf to ~250 lines, one palette path
 date: 2026-09-02
-runs: 0
+updated: 2026-09-02
+runs: 1
 ---
 
 ## Use when

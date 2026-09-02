@@ -12,4 +12,5 @@
 
 ## Notes
 
+- [worker-knowledge-lands-on-the-pearde-board-not-this-one](worker-knowledge-lands-on-the-pearde-board-not-this-one.md) — decided · 2026-09-02 — worker knowledge lands on the pearde board not this one
 - [every-abort-measurement-was-missing-wget](every-abort-measurement-was-missing-wget.md) — decided · 2026-08-24 — Every board measurement of the offline first-save abort was taken on a PATH with no wget, which the machine has — the bug is unmeasured on a faithful PATH, not reproduced and not refuted
