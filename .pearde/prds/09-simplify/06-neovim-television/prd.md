@@ -19,6 +19,7 @@ footprint:
   - home/dot_config/nushell/help/nvim.nuon
   - .pearde/prds/00-delivery/decisions/shift-select-scope/prd.md
 workflow: land-an-answered-fork
+commit: 67784bb
 ---
 
 # 06-neovim-television — built-ins over wrappers, five channels not twenty-one
