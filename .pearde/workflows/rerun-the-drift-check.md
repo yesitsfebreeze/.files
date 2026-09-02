@@ -3,7 +3,7 @@ atomic: rerun-the-drift-check
 subject: "`help --check` is the one command that says the configuration and its manual still agree"
 date: 2026-09-02
 updated: 2026-09-02
-runs: 2
+runs: 3
 ---
 
 ## Do

@@ -2,7 +2,8 @@
 atomic: run-the-surface-that-consumed-it
 subject: `just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence
 date: 2026-09-02
-runs: 0
+updated: 2026-09-02
+runs: 1
 ---
 
 ## Do
@@ -21,3 +22,7 @@ runs: 0
   deployed target the deletion touched is still on disk.
 
 ## Fails when
+
+- The surface is a spec's own Verify block rather than a repo command. A
+  `git add` naming an already-deleted untracked path is `fatal: pathspec did
+  not match any files` and stages nothing — the whole block dies mid-way.

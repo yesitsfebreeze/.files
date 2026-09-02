@@ -1,95 +1,84 @@
 ---
-complexity: 12
+complexity: 8
 footprint:
   - home/dot_config/nvim/lua/plugins/claude.lua
   - home/dot_config/nvim/lazy-lock.json
 ---
 
-# spec01 — the claude.lua plugin spec, its lockfile pins and the live-store install
+# spec01 — claude.lua, its three lockfile pins, and the commit
 
-`home/dot_config/nvim/lua/plugins/claude.lua` exists in the tree and is
-probed working (probe/pass-one.md, PRD dir): claudecode.nvim as the one
-lazy spec — `cmd` stub list, the `<leader>a*` keymaps swept for collisions,
-`opts` with terminal/diff settings, snacks.nvim +
-mr55p-dev/claude-tmux.nvim as dependencies, and a `config()` that wires the
-claude-tmux provider table only when `$TMUX` answers true, leaving
-claudecode's `auto` (snacks) provider for non-tmux launches. What remains
-is the bookkeeping the build exposed: the lockfile pins and the live store
-that every nvim-launching gate seeds from.
+The plugin file is built, deployed and measured working; this unit is the
+bookkeeping left around it. `home/dot_config/nvim/lua/plugins/claude.lua`
+carries claudecode.nvim as the one lazy spec — the fourteen `cmd` stubs, the
+nine `<leader>x*` keys, `terminal_cmd = "cll"`, `folke/snacks.nvim` and
+`mr55p-dev/claude-tmux.nvim` as its dependencies, and a `config()` that swaps
+in the claude-tmux provider only when `is_available()` answers true.
+`lazy-lock.json` carries the three new pins. Both files are modified in the
+working tree and neither is committed. That commit is what is left.
+
+## What already stands, measured 2026-09-02
+
+Against the **deployed** `~/.config/nvim`, not a sandbox — `chezmoi apply`
+scoped to the one file, then `:ClaudeCode` fired from a real headless nvim
+inside a private tmux server (`tmux -L npprobe`, 200x50 client):
+
+- `FIRE-ClaudeCode true`, `TERMINAL-CMD cll`, `PROVIDER-TYPE table`,
+  `CT-AVAILABLE true`.
+- Merged claude-tmux config reads `split_side = "right"`, `split_size = 30`,
+  `toggle_key = "<C-j>"`, `split_width_percentage = 0.3`.
+- Panes: `%0 left=0 139x50`, `%1 left=140 60x50` — a right split.
+- `bind-key -T root C-j if-shell -F "#{==:#{pane_id},%1}" "select-pane -t %0"
+  "send-keys C-j"` is present in the tmux key table.
+- `help --check` → `clean`: stale 0, mismatched 0, undocumented 0.
+- `git diff --stat home/dot_config/nvim/lazy-lock.json` → `1 file changed,
+  3 insertions(+)`; 23 entries, sorted.
+- The live store holds claudecode.nvim `2390c6e`, claude-tmux.nvim `90b221c`,
+  snacks.nvim `882c996` at the pinned commits.
+
+## What is left
+
+The commit. Both files are `M` in a working tree holding roughly forty
+unrelated modifications, so the commit is scoped to these two paths and
+nothing else.
 
 ## Acceptance
 
-- [x] `lazy-lock.json` carries exactly three NEW entries — claude-tmux.nvim
-      `90b221c`, claudecode.nvim `2390c6e`, snacks.nvim `882c996c` (main-branch
-      40-hex pins, sorted into the file) — and NO other line moves from the
-      committed lock (measured trap: a full `Lazy! sync` rewrites every pin;
-      take the three lines, never the rewritten lock, probe/pass-one.md).
-- [x] The live store `~/.local/share/nvim/lazy/` holds the three clones at
-      those commits, installed WITHOUT network noise in a `HELP_CHECK=1`
-      run (help/lazy.lua's contract: the drift check observes, never
-      provisions) and without touching `~/.config/nvim` — which stays the
-      pre-rebuild deploy until cutover.
-- [x] A `HELP_CHECK=1` headless start of the repo config installs nothing,
-      loads neither plugin, and still produces all fourteen `:ClaudeCode*`
-      command stubs and the nine `<leader>a*` lazy key stubs (the `cmd=2`
-      and `SPEC-KEY` probe lines in probe/pass-one.md) — lazy-loading means
-      the plugin body never runs at startup.
-- [ ] Inside a real tmux session a headless nvim firing `:ClaudeCode` via
-      the command resolves `terminal.provider` to the claude-tmux table,
-      claude-tmux's returned config reads `{ toggle_key = "<C-j>",
-      split_size = 30, split_side = "bottom" }`, and a tmux pane running
-      `claude` exists in the probe's own session.
-- [x] Outside tmux the same fire resolves to the `auto` (snacks) fallback
-      path; claude-tmux's `is_available()` answers false and `require`
-      still succeeds — the fallback branch is live, not dead.
+- [x] `home/dot_config/nvim/lua/plugins/claude.lua` holds no `split_side` key
+      — only the comment explaining why the panel is not this file's choice
+      (Q2, answered 2026-09-02). `grep -n 'split_side =' ` over the file
+      matches only lines beginning with `--`.
+- [x] `git diff --stat HEAD -- home/dot_config/nvim/lazy-lock.json` reports
+      exactly `3 insertions(+)` and `0 deletions`, the entries being
+      claude-tmux.nvim `90b221c…`, claudecode.nvim `2390c6e…`,
+      snacks.nvim `882c996c…`, each a 40-hex `main`-branch pin, sorted into
+      place, with no other line moved.
+- [x] `chezmoi diff ~/.config/nvim/lua/plugins/claude.lua` prints nothing —
+      the source and the deployed file agree.
+- [x] `help --check` exits 0 and reports `stale: 0 · mismatched: 0 ·
+      undocumented: 0`, run in a shell that loaded the config
+      (`nu --env-config ~/.config/nushell/env.nu --config
+      ~/.config/nushell/config.nu -c 'help --check'` — `nu -c` alone loads no
+      config and answers on an empty corpus).
+- [~] One commit exists whose `--stat` names those two paths and no third.
 
 ## Verify and Proof
 
 ```sh
-# The four probes from pass one, run against a scratch config:
-#   probe.lua  — cmd stubs, keymaps, claude-tmux module, outside-tmux answer
-#   probe6.lua — merged state.config: provider / split width / diff layout
-#   probe8.lua — the real :ClaudeCode and :ClaudeCodeFocus fire, rc 0
-#   probe8/6 inside tmux -L <socket> — provider table, claude pane id
-# Copy from prds/08-claude-agent/02-nvim-plugin/probe/ and adapt the sandbox
-# staging used there; every gate below must keep passing as-is:
-bash tests/nvim-keymaps.sh
-bash gates/nvim-seed-registry.sh
-git diff --stat home/dot_config/nvim/lazy-lock.json   # exactly 3 added lines
+grep -n 'split_side =' home/dot_config/nvim/lua/plugins/claude.lua
+git diff --stat HEAD -- home/dot_config/nvim/lazy-lock.json
+chezmoi diff ~/.config/nvim/lua/plugins/claude.lua
+nu --env-config ~/.config/nushell/env.nu --config ~/.config/nushell/config.nu \
+   -c 'help --check'
+git show --stat --oneline HEAD -- home/dot_config/nvim/
 ```
 
-## Measured — implementer, 2026-09-02
+## Out of scope
 
-Sandbox: scratch XDG dirs, config copied from `home/dot_config/nvim`, store
-seeded from `~/.local/share/nvim/lazy` per `lazy-lock.json`, a `git` shim on
-PATH logging every call and refusing `clone|fetch|pull|remote|ls-remote`,
-`HELP_CHECK=1`, `~/.config/nvim` never read or written.
-
-- **Box 1** — `git diff --stat` → `1 file changed, 3 insertions(+)`; the three
-  added lines are exactly the specced pins; `json.load` → `23 entries;
-  sorted: True`.
-- **Box 2** — `git -C ~/.local/share/nvim/lazy/<p> rev-parse HEAD` →
-  `2390c6e45c…` (claudecode.nvim), `90b221c423…` (claude-tmux.nvim),
-  `882c996cf2…` (snacks.nvim); all three on branch `main`. Both headless runs
-  recorded `git calls: 0`.
-- **Box 3** — `CMD-STUBS=14/14`, `PRELOAD-claudecode=false`,
-  `ANY-claudecode-in-package.loaded=false`, `git calls: 0`, and nine leader
-  key stubs. **Prefix divergence, not a miss**: the tree's uncommitted
-  `claude.lua` moved the group from `<leader>a` to `<leader>x` with a reason
-  in-file, so the measured stubs are `<Space>xc xf xr xC xm xb xa xd` plus
-  `<Space>xs` in v/x mode, under the group `<Space>x` — nine `<leader>x*`
-  where the spec text says `<leader>a*`. Count and shape match; the letter
-  does not.
-- **Box 4** — **not met.** See the report; `split_side` cannot read `bottom`
-  under the `:ClaudeCode` path.
-- **Box 5** — outside tmux: `PROVIDER-TYPE=string VAL=auto`,
-  `CT-REQUIRE=true`, `CT-IS-AVAILABLE=false`, `FIRE-ClaudeCode=true`,
-  `TERMINAL-CMD=cll`, `SPLITW=0.3`, `DIFF-LAYOUT=vertical`.
-
-**Seeding trap, measured and worth keeping.** Seeding the staged store with
-**symlinks** into the live store makes lazy.nvim report every seeded plugin
-`not installed` — its root scan reads the dirent type, and a symlink is
-`link`, not `directory`. The first run failed on that alone (`Plugin
-claudecode.nvim is not installed`, and the same for tinted-nvim,
-persistence.nvim, oil.nvim). Re-seeding with `cp -Rc` (APFS clonefile, so
-still cheap) made all 23 load. Any future staging must copy, never link.
+- No checks written. Q1, answered 2026-09-02: the `tests/` and `gates/`
+  retirement stands, and this integration is proven by deploying it and using
+  it. The former spec02 named `tests/nvim-claude.sh` and
+  `gates/nvim-seed-registry.sh`, both deleted by `ad3f1a6`; it is deleted, not
+  rewritten.
+- No manual entries. `home/dot_config/nushell/help/nvim.nuon` belongs to
+  `08-claude-agent/04-help-entries`; one stale sentence there is a finding in
+  the report, not work here.

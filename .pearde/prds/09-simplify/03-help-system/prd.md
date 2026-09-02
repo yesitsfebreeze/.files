@@ -1,0 +1,87 @@
+---
+state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+origin: requested  # requested = the user asked | derived = the board found it
+priority: 36        # higher first
+complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+blast-radius: mid
+repo:
+time:
+  est:
+  actual:
+needs:
+  - 09-simplify/01-hygiene
+footprint:
+  - home/dot_config/nushell/help.nu
+  - home/dot_config/nushell/help-check.nu
+  - home/dot_config/nushell/help
+  - home/dot_config/nushell/config.nu
+  - home/dot_config/nvim/lua/config/lazy.lua
+  - home/dot_config/television/cable/manual.toml
+  - scripts/generate-manual.mjs
+---
+
+# 03-help-system — one corpus, one generator, one search
+
+Parent: [`09-simplify`](../prd.md) · meta, no C/U
+
+Purpose: the manual is the one piece of process that survives as a feature:
+four `.nuon` surfaces, a generator, `?` over the result. Around it grew a
+497-line drift checker that spawns a headless nvim, a second tmux server and
+a WezTerm probe to keep 191 `verify:` records true; two review files whose
+only reader was a deleted test; and five renderers of the same corpus. This
+child keeps nuon → markdown → `?` and plain `help <thing>`, and deletes the
+rest. Measured 2026-09-02; line numbers drift, re-read before cutting.
+
+## Requirements
+
+- [ ] **R1** — `help-check.nu` is deleted, with the `--check` flag on
+      `def help` (help.nu:325, 357), the `source help-check.nu` line
+      (config.nu:303), the `HELP_CHECK` branch in `nvim/lua/config/lazy.lua`
+      (lines 5, 9-12, 32-33), and `internals/help.md` lines 333-691 (the
+      checker's own design).
+- [ ] **R2** — `use-review.nuon` and `why-review.nuon` are deleted, with
+      their rows in `help/README.md` (lines 25-26). Nothing in `home/` or
+      `scripts/` opens them; their only reader was
+      `tests/help-content-model.nu`.
+- [ ] **R3** — The `verify:` field is removed from every entry in
+      `shell.nuon`, `nvim.nuon`, `terminal.nuon`, `capsule.nuon`, and the
+      `source:` field where it names a spec or test. `generate-manual.mjs`
+      and `help.nu` stop reading them.
+- [ ] **R4** — `help --fuzzy`, `_help_rows`, `_help_preview`, `_help_browse`
+      (help.nu:227-288) and `cable/manual.toml` are deleted. `?` is the one
+      search. The `help --fuzzy` entry leaves `shell.nuon`.
+- [ ] **R5** — `help --md`, `--all`, `--entry`, `--topic`, `--delegate`
+      (help.nu:168-203, 319-321, 365-378), the eight-branch flag ladder
+      (:333-355) and `_help_host_only` (:164-166) are deleted. What stays:
+      `help`, `help <topic>`, `help <thing>`, `help --json`. The five
+      near-identical "run `chezmoi apply`" errors (help.nu:7-54) become one.
+- [ ] **R6** — `help/README.md` becomes the schema table for an entry plus
+      "edit the nuon, run `just manual`". Lines 53-106 and 200-366 describe
+      the deleted checker and go.
+- [ ] **R7** — Stale claims are fixed at their source and regenerated:
+      `tasks.nuon:92` ("this site"), `topics.nuon:37-38` (WezTerm owns jump
+      mode), `shell.nuon:5-13` (four "not yet live" behaviours that are
+      live), `help.nu:281` (cutover has not run), `internals/help.md:5`.
+- [ ] **R8** — Every `tests/`, `gates/` and `docs-site` citation leaves
+      `manual/internals/*.md` (about 30 lines across `help.md`,
+      `nushell-modules.md`, `neovim.md`, `capsule.md`, `wezterm.md`,
+      `unverified.md`). `unverified.md` keeps its list of unverified
+      behaviours and loses the gate vocabulary around it.
+- [ ] **R9** — `just manual` is run last; `guide/` and `reference/` are
+      regenerated and committed with the sources.
+
+## Acceptance
+
+- [ ] `nu -l -c 'help | length'` prints a number, and `nu -l -c 'help --json | from json | length'` prints the same number
+- [ ] `nu -l -c 'help navigate'` and `nu -l -c 'help z'` render; `nu -l -c 'help --check'` fails with "unknown flag"
+- [ ] `rg -l 'tests/|gates/|docs-site' home/dot_config/nushell` prints nothing
+- [ ] `test ! -e home/dot_config/nushell/help-check.nu && test ! -e home/dot_config/nushell/help/use-review.nuon && test ! -e home/dot_config/television/cable/manual.toml`
+- [ ] `nvim --headless +qa` exits 0 with no `HELP_CHECK` reference in `lazy.lua`
+- [ ] after `chezmoi apply`, `?` opens the picker and Enter lands in nvim at the hit
+- [ ] `wc -l home/dot_config/nushell/help.nu` prints at most 180
+
+## Out of scope
+
+- The `.nuon` entries for commands other children delete — each child
+  removes its own entries and runs `just manual`.
+- `docs.toml` — kept as is.

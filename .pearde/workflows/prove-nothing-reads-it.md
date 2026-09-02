@@ -2,13 +2,19 @@
 atomic: prove-nothing-reads-it
 subject: `cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result
 date: 2026-09-02
-runs: 0
+updated: 2026-09-02
+runs: 1
 ---
 
 ## Do
 
 1. `cmp <path> <the file it is said to duplicate>` when the claim is
    duplication, and record both byte counts.
+
+   When the duplicate is already deleted, `cmp` is gone with it. Compare the
+   survivor's byte count to the count the earlier pass recorded and say which
+   pass measured it — a byte count carried forward is evidence, an unlabelled
+   one is a claim.
 2. `grep -rn --exclude-dir=.git '<basename>' .` and read every hit. A hit
    inside a plan document or a PRD is not a reader; a hit in a recipe, a
    script or a config is.

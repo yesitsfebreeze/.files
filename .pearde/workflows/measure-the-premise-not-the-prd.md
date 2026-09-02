@@ -2,7 +2,8 @@
 atomic: measure-the-premise-not-the-prd
 subject: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
 date: 2026-09-02
-runs: 0
+updated: 2026-09-02
+runs: 1
 ---
 
 ## Do
@@ -23,3 +24,7 @@ runs: 0
   marked reproduced or not.
 
 ## Fails when
+
+- The premise was already acted on by an earlier pass. Then the command
+  measures the *result*, not the premise, and reproduces trivially. Measure
+  the survivor instead and say which pass changed it.

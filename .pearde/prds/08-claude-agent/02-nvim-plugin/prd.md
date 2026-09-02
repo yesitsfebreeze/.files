@@ -1,10 +1,10 @@
 ---
-state: analyzing        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 # from:            # derived only — the PRD whose work surfaced this one
 priority: 15        # higher first
-complexity: 30      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
-blast-radius:      # analyst, at spec time — high|mid|low. What breaks if this is wrong
+complexity: 8      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+blast-radius: low
 repo:              # the sub-repo the code lands in; delete if n/a
 # workflow:        # OPTIONAL — how this kind of job is done: a slug in
 #                  #   prds/workflows/. @references/workflow.md.
@@ -14,7 +14,8 @@ time:              # OPTIONAL. See @references/parts/order.md
   actual:          # a record. Nothing reads it
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 needs:
-claim: analyst-nvim 2026-09-02 11:17
+workflow: land-an-answered-fork
+claim: impl-nvim 2026-09-02 11:44
 ---
 
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
