@@ -14,6 +14,7 @@ footprint:
   - home/dot_config/television/cable
   - home/.chezmoiremove
 workflow: land-an-answered-fork
+commit: bb86993
 ---
 
 # retire the unmanaged television channels
