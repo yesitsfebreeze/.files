@@ -1,9 +1,0 @@
-
-# machine-local, and two of them hold the same credential
-wiki/.obsidian-api-key
-wiki/.graphify/
-wiki/Dashboard.report.md
-.obsidian/
-
-# rebuilt by `pearde health score`
-health/

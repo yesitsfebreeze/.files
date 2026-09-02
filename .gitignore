@@ -22,3 +22,12 @@
 # cache below is not. The secret that used to sit in .pearde/wiki/ is ignored
 # by .pearde/.gitignore and is gone from every reachable commit.
 .pearde/graphify/cache/
+
+# machine-local per board — regenerable
+pearde/.state/
+pearde/wiki/
+pearde/.claims/
+pearde/.lanes/
+pearde/graphify/
+pearde/.obsidian-superseded-*/
+/.pearde
