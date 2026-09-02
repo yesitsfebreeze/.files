@@ -80,6 +80,28 @@ run-scripts pending — `generate-shell-init.sh`, `register-mcp.sh`,
 `chezmoi apply --dry-run` (exit 0), one scoped `chezmoi apply <path>` (exit 0),
 and the shell-init generator directly. No file target is left undeployed.
 
+## One thing still uncommitted — needs the orchestrator
+
+`6a65c29` ("07-provisioning — a Brewfile and sixty lines") landed this node,
+but the `internals/neovim.md` blob it carries (`8c2dc1d`) is **one edit behind
+the working tree** (`4b920c2`). The two lines missing from it are exactly the
+`PKGS` repointings spec03 requires:
+
+```
+- That is why install.sh provisions the four binaries rather than assuming them.
++ That is why the `Brewfile` carries the four binaries rather than assuming them.
+- install.sh's PKGS carries git=git, and font-caskaydia-cove-nerd-font too,
++ The `Brewfile` carries git, and font-caskaydia-cove-nerd-font too,
+```
+
+The working tree is correct, deployed and verifying green; the commit is not.
+`git diff -- home/dot_config/nushell/help/manual/internals/neovim.md` shows the
+whole of it — two hunks, nothing else. Left uncommitted rather than committed
+by me: committing is the orchestrator's, and `neovim.md` is a file three nodes
+have written this session, so a commit from here could pick up work that is
+not mine. Until it lands, spec03's third acceptance line is true of the tree
+and false of `HEAD`.
+
 ## Findings — reported, not fixed
 
 - **`run_after_seed-mason-registry.sh` now has no caller.** R2 removed
@@ -144,10 +166,11 @@ is no pair of sources agreeing on one claim.
 | 4 | prove-nothing-reads-it | passed. Every identifier grepped tree-wide; one reader found, out of scope, reported not fixed |
 | 5 | apply-scoped-not-bare | passed, and it fired for real — the neovim.md edit needed a scoped apply |
 | 6 | run-the-surface-that-consumed-it | passed. `just --list` names nothing deleted; `chezmoi apply --dry-run` exits 0; three deployed targets still resolve |
-| 7 | assert-the-post-state-twice | passed. Three consecutive runs, exit 0, `diff` identical. It failed once first, for a real reason, and the fix was step 5 |
+| 7 | assert-the-post-state-twice | passed. Three consecutive runs, exit 0, `diff` identical. It went red twice first — once for a real stale deploy (fixed by step 5), once because the assertion was repo-wide in a tree three nodes are working in at the same time |
 
 No back-edge was taken. Step 7's first failure was diagnosed and fixed inside
-step 5's own remit rather than by re-entering step 6.
+step 5's own remit rather than by re-entering step 6; its second was a defect
+in the assertion itself, corrected and then proved still able to fail.
 
 **Step 1 hit its own documented `Fails when`.** Every premise had been acted on
 by pass one, so a command measuring it would have measured the *result*. The
