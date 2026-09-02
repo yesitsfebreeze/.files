@@ -1,22 +1,45 @@
 Verdict: DONE
 
-Resumed run. An earlier `implementer-neovim-tv` on this claim was cut off by
-a usage limit one turn short of its report, leaving the whole build
-uncommitted in the working tree. This pass re-ran every check in both specs
-against the tree as it stood rather than trusting the ticks, deployed the one
-path that was still pending, measured the acceptance clauses that only a real
-pty can answer, found and fixed one live regression, and committed.
+Resumed run, plus one scoped tail after review. An earlier
+`implementer-neovim-tv` on this claim was cut off by a usage limit one turn
+short of its report, leaving the whole build uncommitted in the working tree.
+This pass re-ran every check in both specs against the tree as it stood
+rather than trusting the ticks, deployed the paths still pending, measured
+the acceptance clauses that only a real pty can answer, found and fixed one
+live regression, and committed. The tail then landed the chezmoi retirement
+this node owed, and rewrote two acceptance boxes that had been measuring the
+wrong thing.
 
 **14 of 14 spec acceptance boxes verified green by re-running both
 `## Verify and Proof` blocks end to end** — `spec01-channels-and-lua OK`,
-`spec02-mason-hook OK`. No box was found ticked-but-false, so none was
-unticked. **4 of 6 PRD acceptance boxes are now ticked** (two closed this
-pass by live measurement; two left red on purpose with the measurement
-written into the box — see `## Findings`).
+`spec02-mason-hook OK`, re-run once more after the tail and still green. No
+box was found ticked-but-false, so none was unticked. **5 of 6 PRD acceptance
+boxes are now ticked.** The one left red is box 1, and it is red at `23`
+against a ceiling of `15` for a reason no work inside this footprint can
+reach — see `## Findings` and `## Handed off`.
 
 ## What this pass changed
 
-One file: `home/dot_config/television/cable/theme.toml`.
+Two files: `home/dot_config/television/cable/theme.toml` and
+`home/.chezmoiremove`.
+
+### `home/.chezmoiremove` — R1's deletions reach the machine (tail)
+
+R1 deleted five cable channels from the source tree, and that is all a source
+deletion does: `chezmoi apply` never removes a file it has stopped managing,
+so `alias`, `env`, `git-branch`, `git-files` and `zoxide` were still sitting
+in `$HOME/.config/television/cable`, still listed by `tv`. In a chezmoi repo
+"deleted" has to mean gone from the machine, and this repo already has the
+mechanism for saying so: `home/.chezmoiremove`, added by `03-help-system` for
+exactly this reason and reused by `04-nushell` one commit before this one,
+from outside its own declared footprint. Five lines appended, then a
+`chezmoi apply` naming the five target paths — never bare. All five are gone
+from `$HOME`; the directory fell `28` → `23` and `tv list-channels` fell
+`30` → `27`. Only three of the five names left the channel list, because
+`env` and `git-branch` are also baked-in `tv` channel names, so deleting
+those two files changes no count.
+
+### `home/dot_config/television/cable/theme.toml` — a dead picker
 
 `tv theme` — the picker behind the `theme` shell command, and the subject of
 PRD acceptance box 4 — listed **nothing at all**. Its source command is
@@ -121,40 +144,33 @@ OSC 11 backgrounds and Esc emitted a fourth restoring the original, with
   module breaks the moment that module grows a cross-module call. Only
   `theme.toml` was affected today; `quicklist.toml` and `recent-dirs.toml`
   already source what they need.
-- **`tv list-channels` prints 30 on this machine, not 16 — and no source
-  deletion can change that.** `chezmoi apply` never removes a file it has
-  stopped managing, so `$HOME/.config/television/cable` still holds all five
-  channels R1 deleted (`alias`, `env`, `git-branch`, `git-files`, `zoxide`)
-  plus thirteen older unmanaged ones. Against an isolated `XDG_CONFIG_HOME`
-  holding only this repo's television configuration the count is exactly
-  `16`, and an empty fixture gives `10`, so the PRD's correction reproduces
-  precisely — the floor is real. The repair is the mechanism `04-nushell`
-  already used for the same problem: append these five lines to
-  `home/.chezmoiremove`, which already carries eight entries —
-
-  ```
-  .config/television/cable/alias.toml
-  .config/television/cable/env.toml
-  .config/television/cable/git-branch.toml
-  .config/television/cable/git-files.toml
-  .config/television/cable/zoxide.toml
-  ```
-
-  `home/.chezmoiremove` is outside this PRD's footprint, so this is reported,
-  not done. Until it lands, R1 is true of the repo and false of the machine.
-- **The `tinty apply` clause of acceptance box 3 cannot pass, and could not
-  before this PRD either.** Nothing propagates a `tinty apply` into an
-  already-running nvim: `tmux-colors.sh` has no nvim hook at HEAD or in the
-  working tree, and `colorscheme.lua` configures `tinted-nvim` with
-  `apply_scheme_on_startup` and no watcher. Measured: two real `tinty apply`
-  calls against a live nvim left `colors_name` and `lualine_a_normal`
-  unmoved. The autocmd R3 deleted listened to `ColorScheme`, an *in-nvim*
-  event, so it followed `:colorscheme` and never `tinty apply`. R3 is not a
-  regression — its replacement follows a scheme change more cheaply than the
-  code it replaced. Closing the box needs a palette-delivery hook, which is
-  `05-terminal`'s footprint (`tinty/executable_tmux-colors.sh`), not this
-  node's. The machine's scheme was restored to `base16-gruvbox-dark-hard`
-  after the measurement.
+- **Box 1 was measuring the wrong surface, and is now red honestly.** As
+  dispatched it read `tv list-channels | wc -l` with no `XDG_CONFIG_HOME`
+  named, which measures the machine's entire cable directory rather than the
+  surface this repo owns — so it could be red for work no PRD here owns, and
+  it was. Rewritten to name all three numbers it actually means: the isolated
+  fixture (`16` channels over `10` files, green), the repo tree (`10`,
+  green), and the machine (`23`, **red** against 15). The five
+  `.chezmoiremove` lines closed this node's share of the gap. What remains is
+  `23 - 10 = 13` files that were never managed by this repo at all — `bg`,
+  `burrito-sessions`, `git-deletions`, `git-diff`, `git-reflog`,
+  `git-remotes`, `git-repos`, `git-stash`, `git-submodules`, `git-tags`,
+  `git-worktrees`, `opacity`, `opencode-sessions`. No source deletion and no
+  `.chezmoiremove` entry written here can reach a file chezmoi never owned.
+  The threshold was left at 15 rather than tuned to the number measured.
+- **The `tinty apply` clause of box 3 is struck, not waived.** It could never
+  have passed and this node never broke it: tinty's only hook is
+  `tinty/config.toml` running `tmux-colors.sh`, and `grep -n nvim` over that
+  script returns nothing, at HEAD and in the working tree — there is no nvim
+  leg in the palette path. The autocmd R3 deleted
+  (`7f98da4^:home/dot_config/nvim/lua/plugins/statusline.lua:51-57`) fires on
+  `ColorScheme`, an in-process event, so it followed `:colorscheme` and never
+  an outside `tinty apply`. Measured rather than argued: two real `tinty
+  apply` calls against a live nvim left `colors_name` and `lualine_a_normal`
+  unmoved, and the machine's scheme was restored to
+  `base16-gruvbox-dark-hard` afterwards. What R3 replaced the autocmd with is
+  proven green independently (three live `:colorscheme` changes, three
+  distinct `lualine_a_normal` colours), so the deletion is a drop-in.
 - **`manual.toml` gave a false alarm worth writing down.** The tree carried
   an unstaged deletion of `home/dot_config/television/cable/manual.toml` that
   no requirement names, and R1's list is exhaustive, so this pass restored it
@@ -180,6 +196,24 @@ OSC 11 backgrounds and Esc emitted a fourth restoring the original, with
   `MASON_SEED`, which `install.sh` exports". Neither half is true any more.
   Outside this footprint.
 
+## Handed off
+
+Two things leave this node named rather than dropped:
+
+- **Thirteen unmanaged television channels in `$HOME`** —
+  `09-simplify/retire-the-unmanaged-television-channels`. Listed above. They
+  predate this repo's ownership of the cable directory and are the whole of
+  box 1's remaining gap. Whoever takes them needs a decision first — adopt
+  them into the source tree or delete them from the machine — because
+  `.chezmoiremove` only speaks for paths this repo once managed.
+- **The palette does not reach a running nvim** —
+  `09-simplify/propagate-a-tinty-apply-into-a-running-nvim`. Struck from box 3
+  above.
+  Closing it needs a new leg in `tmux-colors.sh` (an `nvim --server …
+  --remote-send`, or a watcher on `current_scheme` in `colorscheme.lua`).
+  `tinty/executable_tmux-colors.sh` is `05-terminal`'s footprint and has a
+  live implementer on it, so nothing here went near it.
+
 ## Health floor
 
 The brief listed no file in the footprint under the health floor, and this
@@ -191,53 +225,23 @@ in a 40-line TOML file.
 | # | step | outcome |
 |---|------|---------|
 | 1 | take-the-answers-not-the-stale-report | **pass**. Read `## Answers` first: Q1 → **Automatic**, answered 14:14. The `report.md` on disk read `Verdict: SPECCED` and described an analyst pass — exactly the history this atomic warns about; treated as history, not as this run's state. Both answered-fork consequences map to a spec that carries them: spec02 for R7/Q1's keep-the-hook half, and for the `MASON_SEED` removal the answer's own premise required. |
-| 2 | apply-scoped-not-bare | **pass**. `chezmoi diff` first: 14 targets pending, only one of them mine. Applied by name — `chezmoi apply ~/.config/television/cable/theme.toml` — never bare. After it, all thirteen of `05-terminal`'s pending targets (`tmux.conf`, `wezterm.lua`, `tv-all`, `tmux-main`, the two tinty files, `config.nu`, `terminal.nuon`, the two `containers.md` pages) are still pending, untouched. The atomic's `## Fails when` shape appeared exactly as written: `chezmoi status` renders `generate-shell-init.sh`, `register-mcp.sh` and `seed-mason-registry.sh` as `R` at `$HOME` root. They are run-scripts chezmoi executes. Alarming, not a defect; not scoped around. |
+| 2 | apply-scoped-not-bare | **pass, run twice.** First pass: `chezmoi diff` first, 14 targets pending, only one of them mine. Applied by name — `chezmoi apply ~/.config/television/cable/theme.toml` — never bare. After it, all thirteen of `05-terminal`'s pending targets (`tmux.conf`, `wezterm.lua`, `tv-all`, `tmux-main`, the two tinty files, `config.nu`, `terminal.nuon`, the two `containers.md` pages) are still pending, untouched. The atomic's `## Fails when` shape appeared exactly as written: `chezmoi status` renders `generate-shell-init.sh`, `register-mcp.sh` and `seed-mason-registry.sh` as `R` at `$HOME` root. They are run-scripts chezmoi executes. Alarming, not a defect; not scoped around. **Re-run in the tail** for the `home/.chezmoiremove` retirement, which is the one shape this atomic does not warn about: a removal is applied by naming the *target* paths that should disappear, not the source file that lists them — `chezmoi apply ~/.config/television/cable/{alias,env,git-branch,git-files,zoxide}.toml`, five paths spelled out. Verified after: those five gone, the other eighteen files in that directory untouched, and all thirteen of `05-terminal`'s targets still pending — that node now has its own implementer on `tmux.conf`, `wezterm.lua`, `tv-all`, `tmux-main`, the tinty pair and the nushell surfaces, and nothing here went near them. |
 | 3 | read-the-merged-config-not-the-source | **pass**, and it earned its place. `keymodel`, `termguicolors` and `mouse` all read correctly only in a real pty; lualine's theme had to come from `get_config()` and its colours from `nvim_get_hl(…, {link=false})` — `lualine_a_normal` is a linked group, and reading it without `link=false` returns an empty table that looks like "the theme is broken". `claudecode`'s `terminal_cmd` had to come from `state.config` after a forced lazy-load, since the plugin is not loaded at startup. No probe quits nvim; each kills its own tmux server after the read, and the pane list was captured before teardown. |
-| 4 | rerun-the-drift-check | **fail — the command does not exist in this repo any more.** See `### Edits`. Back-edge to step 3 taken once; step 3 re-passed unchanged (the four pty probes above). Substituted this repo's actual gates, all clean: `just manual` is idempotent (`shasum` over `guide/` + `reference/` identical before and after — `aa7d0e8e49d0…`), closing R9; `just board-guard 09-simplify/06-neovim-television "<my paths>"` exits 0, so no path here is held under another node's live claim; `just board-guard-blocks` exits 0. |
+| 4 | rerun-the-drift-check | **fail — the command does not exist in this repo any more.** See `### Edits
 
-### Edits
-
-Step 4's atomic `rerun-the-drift-check` names a command this repo retired.
-`help --check` is gone: `.config/nushell/help-check.nu` is listed in
-`home/.chezmoiremove`, and running it now gives
-
-```
-Error: nu::parser::unknown_flag
-  x The `help` command doesn't have flag `check`.
-```
-
-Its `## Fails when` list is unreachable as written too — there is no
-`HC_ALLOW` allowlist anywhere in the tree to grep, and no `undocumented:` or
-`unresolved:` line to read. All three traps describe a checker that no longer
-runs. Replacement text for the atomic:
-
-> #### Do
->
-> 1. `just manual` — regenerate the manual's derived pages from the `.nuon`
->    surfaces. It writes into the tree; it does not deploy.
-> 2. Take a `shasum` over `help/manual/guide/` and `help/manual/reference/`
->    before and after, and compare.
-> 3. `just board-guard <prd> "<your paths>"` and `just board-guard-blocks`.
->
-> #### Done when
->
-> - The two shasums are identical — the generated pages already matched the
->   `.nuon` surfaces, so nothing in the manual is drifting behind the
->   configuration.
-> - `git status` shows a changed page for every `.nuon` you edited and no
->   others.
-> - Both guards exit 0.
->
-> #### Fails when
->
-> - You reach for `help --check`. It was retired with
->   `.config/nushell/help-check.nu` and is in `home/.chezmoiremove`;
->   `nu -c 'help --check'` returns `nu::parser::unknown_flag`, which reads as
->   a broken shell rather than a retired command. There is no `HC_ALLOW`
->   allowlist left to grep either.
-> - `just manual` is run but its output is only eyeballed. It prints a page
->   and entry count on every run whether or not anything changed; the shasum
->   pair is the only thing that says "no drift".
+One edit, and it is already landed: `rerun-the-drift-check` named
+`help --check`, a command this repo retired along with
+`.config/nushell/help-check.nu` (it is in `home/.chezmoiremove`), and whose
+whole `## Fails when` list — the `HC_ALLOW` allowlist, the `undocumented:`
+and `unresolved:` lines — describes a checker that no longer runs. The
+replacement text this run proposed (`just manual` plus a `shasum` pair over
+`guide/` and `reference/`, then both board guards) was applied verbatim to
+the atomic by the orchestrator and the counters bumped, so it is not
+re-proposed here. The tail found nothing further to edit: step 2 was re-run
+against a shape its `## Fails when` does not list, and that observation is
+recorded in the step's own row rather than as a change to the atomic, because
+it is an addition to `#### Do` for removals specifically, not a correction to
+anything the atomic gets wrong.
 
 ## Scores
 

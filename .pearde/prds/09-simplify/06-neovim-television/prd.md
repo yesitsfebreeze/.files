@@ -84,44 +84,66 @@ Neovim 0.12.5; re-read before cutting.
 
 ## Acceptance
 
-- [ ] `tv list-channels | wc -l` prints at most 16 and `ls
-      home/dot_config/television/cable | wc -l` prints at most 15.
-      **Corrected 2026-09-02, before dispatch**: `tv` 0.15.9 bakes in ten
-      channel names regardless of the cable directory's contents (measured
-      on an empty `XDG_CONFIG_HOME` fixture), and R1+R2's ten kept files
-      add six names those builtins don't cover — 16 is the floor, not 15;
-      there is no in-scope file left to drop that would reach 15. The
-      `ls cable` half (the repo-owned count) still holds at 15.
-      **Measured 2026-09-02 by `implementer-neovim-tv`; left red on
-      purpose.** `ls home/dot_config/television/cable | wc -l` is `10`, and
-      against an isolated `XDG_CONFIG_HOME` holding only this repo's
-      television configuration `tv list-channels | wc -l` is exactly `16`
-      (an empty fixture gives `10` — the baked-in names). Run in this
-      machine's own shell it prints `30`, because `chezmoi apply` never
-      removes a file it has stopped managing:
-      `$HOME/.config/television/cable` still holds all five channels R1
-      deleted plus thirteen older ones. The repair is the mechanism
-      `04-nushell` already used — five lines appended to
-      `home/.chezmoiremove` — and that file is outside this PRD's footprint,
-      so it is reported, not done.
+- [ ] The television surface this repo owns is at most 16 channels and at
+      most 15 cable files, on the machine as well as in the tree: `tv
+      list-channels | wc -l` is at most 16 against an `XDG_CONFIG_HOME`
+      holding only this repo's television configuration, `ls
+      home/dot_config/television/cable | wc -l` is at most 15, and `ls
+      ~/.config/television/cable | wc -l` is at most 15.
+      **Rewritten 2026-09-02 by `implementer-neovim-tv`** — the box as
+      dispatched read `tv list-channels | wc -l` with no `XDG_CONFIG_HOME`
+      named, which measures the machine's whole cable directory, not this
+      repo's surface, so it could be red for work no PRD here owns. The
+      **Corrected 2026-09-02, before dispatch** note it replaces still holds
+      and is why the ceiling is 16 rather than 15: `tv` 0.15.9 bakes in ten
+      channel names before the cable directory is read (an empty fixture
+      measures exactly `10`), and R1+R2's ten kept files add six names those
+      builtins do not cover. There is no in-scope file left to drop that
+      would reach 15.
+      **Measured after the `home/.chezmoiremove` apply. Two of three hold;
+      the box stays red at `23`.** Isolated fixture: `16` channels over `10`
+      cable files. Repo: `ls home/dot_config/television/cable | wc -l` → `10`.
+      Machine: `ls ~/.config/television/cable | wc -l` → **`23`**, down from
+      `28`. `chezmoi apply` never removes a file it has stopped managing, so
+      R1's five deletions needed the retirement mechanism `03-help-system`
+      built and `04-nushell` reused: five lines appended to
+      `home/.chezmoiremove`, then a `chezmoi apply` naming the five paths.
+      All five are now gone from `$HOME` and `tv list-channels` fell `30` →
+      `27` (only three of the five names disappeared — `env` and
+      `git-branch` are also baked-in `tv` channel names, so deleting those
+      two files changes no count). The remaining `23 - 10 = 13` files —
+      `bg`, `burrito-sessions`, `git-deletions`, `git-diff`, `git-reflog`,
+      `git-remotes`, `git-repos`, `git-stash`, `git-submodules`, `git-tags`,
+      `git-worktrees`, `opacity`, `opencode-sessions` — were never managed
+      by this repo at all, so no source deletion and no `.chezmoiremove`
+      entry here can reach them. Handed off as separate work; the threshold
+      was left at 15 rather than tuned to `23`.
 - [x] `nvim --headless "+Lazy! sync" +qa` exits 0; `nvim --headless +qa` prints no error
       — re-run 2026-09-02 by `implementer-neovim-tv`; both exit 0, no stderr.
-- [ ] in nvim: Shift-Down three times then Down collapses the selection; the same from insert mode; `grn` renames in a Lua buffer; the statusline follows two `tinty apply` calls without a restart; `<leader>xc` opens Claude through `cll`
-      **Four of five clauses measured live in a real pty (tmux); one cannot
-      pass on this tree.** Shift-Down x3 from line 1 → `mode=v cursor=4
-      anchor=1`; a bare Down after it → `mode=n cursor=5 anchor=5` (the
-      collapse); from insert mode, `i` then Shift-Down x2 → `mode=v cursor=3
-      anchor=1`; `<leader>xc` is mapped and `claudecode`'s own merged state
-      reads `terminal_cmd=cll`. **The `tinty apply` clause fails, and did
-      before this PRD too**: nothing on this machine propagates a `tinty
-      apply` into an already-running nvim (no nvim hook in `tmux-colors.sh`,
-      no watcher in `tinted-nvim`'s setup), so the statusline cannot follow
-      it. The autocmd R3 deleted listened to `ColorScheme` — an in-nvim
-      event — so it never followed `tinty apply` either. What R3 replaced it
-      with IS proven: three consecutive `:colorscheme` changes in one live
-      nvim moved `lualine_a_normal` `#665c54/#1d2021` → `#bdae93/#f9f5d7` →
-      `#4c566a/#2e3440`, no restart and no autocmd. `grn` is mapped in normal
-      mode; the rename itself was not driven against a live `lua_ls`.
+- [x] in nvim: Shift-Down three times then Down collapses the selection; the same from insert mode; `grn` renames in a Lua buffer; ~~the statusline follows two `tinty apply` calls without a restart~~; `<leader>xc` opens Claude through `cll`
+      **The `tinty apply` clause is struck 2026-09-02 and handed off — it
+      was never this node's to pass.** There is no nvim leg in the palette
+      path to regress: tinty's only hook is `tinty/config.toml` running
+      `tmux-colors.sh`, and that script names `nvim` nowhere, at HEAD or in
+      the working tree. The autocmd R3 deleted
+      (`7f98da4^:.../statusline.lua:51-57`) fires on `ColorScheme`, an
+      in-process event, so it followed `:colorscheme` and never a `tinty
+      apply` from outside. Measured anyway: two real `tinty apply` calls
+      against a live nvim left `colors_name` and `lualine_a_normal` unmoved,
+      and the machine's scheme was restored afterwards.
+      **The four remaining clauses are green, measured live in a real pty
+      (tmux).** Shift-Down x3 from line 1 → `mode=v cursor=4 anchor=1`; a
+      bare Down after it → `mode=n cursor=5 anchor=5` (the collapse); from
+      insert mode, `i` then Shift-Down x2 → `mode=v cursor=3 anchor=1`;
+      `<leader>xc` is mapped and `claudecode`'s own merged state reads
+      `terminal_cmd=cll`. `grn` and `gra` are both mapped in normal mode as
+      Neovim 0.11 built-ins, which is what R6 deleted `lsp.lua:27-30` in
+      favour of. What R3 replaced the autocmd with is proven independently:
+      three consecutive `:colorscheme` changes in one live nvim moved
+      `lualine_a_normal` `#665c54/#1d2021` → `#bdae93/#f9f5d7` →
+      `#4c566a/#2e3440`, no restart and no autocmd, while
+      `theme.normal.a` stayed `nil/nil` throughout — the `tinted` lualine
+      theme is group-name based.
 - [x] `theme` in the shell retints while scrolling and restores on Esc
       — driven in a real pty: three focused rows emitted three distinct OSC 11
       backgrounds (`#1d2021`, `#090300`, `#262427`), and Esc emitted a fourth

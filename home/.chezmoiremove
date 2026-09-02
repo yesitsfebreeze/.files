@@ -6,3 +6,8 @@
 .config/television/cable/cht.toml
 .config/television/cable/cht-query.toml
 .config/television/cable/channels.toml
+.config/television/cable/alias.toml
+.config/television/cable/env.toml
+.config/television/cable/git-branch.toml
+.config/television/cable/git-files.toml
+.config/television/cable/zoxide.toml
