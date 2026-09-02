@@ -15,6 +15,7 @@ time:              # OPTIONAL. See @references/parts/order.md
   # claim: <worker> <started>   # orchestrator-only, present while a worker holds this PRD
 needs:
 workflow: land-an-answered-fork
+commit: 026c634
 ---
 
 <!-- Ordering reads three axes and no clock: dependency (needs + footprint),
