@@ -1,8 +1,8 @@
 ---
-state: open        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: specced        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 34        # higher first
-complexity: 0      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
+complexity: 10      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
 blast-radius: high
 repo:
 time:
@@ -23,6 +23,7 @@ footprint:
   - home/dot_config/television/cable/cht.toml
   - home/dot_config/television/cable/cht-query.toml
   - home/dot_config/television/cable/channels.toml
+workflow: simplify-a-nushell-surface-and-deploy-it
 ---
 
 # 04-nushell — built-ins, one append, no tombstones

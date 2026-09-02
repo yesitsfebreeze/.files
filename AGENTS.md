@@ -60,18 +60,14 @@ schedule, its history — lives in the PRD itself; there is no side file.
 
 | Path | What it is |
 |---|---|
-| `.pearde/` | The board — `prds/` (a tree of `<node>/prd.md` files; the path is the id and the parent link), `settings.md`, `vision.md`, `memos/`, `workflows/` |
-| `.pearde/prds/**/prd.md` frontmatter | Also the plan: `est`, `needs`, and `priority` carry the schedule. `needs` are board node paths; a node implements only after every one is `done`. **The key is `needs`, in block form** — renamed from `deps` on 2026-08-24 because the tooling reads only `needs`, and only as a block list: an inline `needs: [a, b]` parses as one bogus path and an empty `needs: []` as the string `"[]"`. Write `needs:` bare when there are none |
-| `.claude/skills/pearde/README.md` | The board protocol — states, the loop, the worker briefs, and who may write what. A symlink: the skill lives in its own repo (`~/dev/infra/pearde`) and is not vendored here |
-| `.pearde/prds/README.md` | Index, build order, and the canonical exclusion list |
-| `home/dot_config/nushell/help/manual/` | The manual, as plain markdown shipped with the shell. `guide/` (task order, from `tasks.nuon`) and `reference/` (subject order, from `topics.nuon`) are both **generated** from the `.nuon` surfaces by `scripts/generate-manual.mjs` (`just manual`), so the pages and `help` cannot drift; `internals/` is hand-written and holds the constraints the configs used to carry as comments. Read it with `?` in the shell — the `docs` television channel greps every line and opens the hit in Neovim. There is no site: `docs-site/` was deleted on 2026-08-31 |
-| `docs/capabilities.md` | Rated inventory of the legacy `~/.files` repo |
-| `docs/capabilities-nushell.md` | Rated inventory of the live nushell daily driver |
-| `docs/capabilities-nvim.md` | Rated inventory of the live Neovim config |
-| `docs/capabilities-terminal.md` | Rated inventory of the live WezTerm config |
-| `docs/capabilities-provisioning.md` | Rated inventory of the chezmoi provisioning layer |
-| `docs/research-*.md` | Background research (e.g. dotfile managers) |
-| `AGENTS.md` | This file — the working contract, at the repo root. `CLAUDE.md` symlinks to it |
+| `home/` | The chezmoi source. Find it live with `chezmoi source-path` — never a literal path; `~/.local/share/chezmoi` is a stale clone, never the source |
+| `docs/` | Rated capability inventories and background research |
+| `home/dot_config/nushell/help/manual/` | The environment manual, read with `?` or `help` in the shell. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |
+| `.pearde/` | The board: `prds/` (PRDs and nothing else), `memos/`, `workflows/`, `settings.md`, `vision.md` |
+| `scripts/` | `board-guard.py` (claim/requirement checks), `generate-manual.mjs` |
+| `justfile` | Task runner: `push`, `manual`, the two board-guard targets |
+| `install.sh` | Package + provisioning bootstrap |
+| `.claude/skills/pearde/README.md` | The board protocol — a symlink to `~/dev/infra/pearde`, not vendored here |
 
 The mi-era planning machinery (`.mi/gantt/plan.json`, its ledger, the
 `delivery-gantt.md` fold, and the mi skills) is retired: its task data —
