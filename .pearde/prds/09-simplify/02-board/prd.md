@@ -15,6 +15,7 @@ footprint:
   - .pearde/prds
   - .pearde/memos
 workflow: delete-what-nothing-reads
+commit: b504db7
 ---
 
 # 02-board — the PRDs are the record; everything around them goes
