@@ -14,6 +14,7 @@ footprint:
   - .pearde/prds/09-simplify/01-hygiene/prd.md
 verify: ""
 workflow: prove-a-recorded-defect-from-its-artifacts
+commit: c999bbd
 ---
 
 # baseline-commit-absorbs-live-claims
