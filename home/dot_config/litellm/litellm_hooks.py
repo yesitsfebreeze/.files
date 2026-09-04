@@ -250,6 +250,18 @@ def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
     return out
 
 
+def behind(alias, models, data):
+    """A bare alias is a preference, not a pin: its own other hops first,
+    then the walk of its tier. Ollama went down for twenty minutes and a
+    session on glm-5.3-flash-cloud got 360 500s with no fallback (2026-09-04).
+    `alias@provider` gets none of this — a pin is a pin."""
+    m = models[alias]
+    own = [f"{alias}@{p}" for p in m["chain"][1:]]
+    walk = rank(models, _json(STATUS, {}), task_of(data), m["tier"], needs(data),
+                tokens=est_tokens(data), out=int(data.get("max_tokens") or 0))
+    return own + [a for a in walk if a != alias]
+
+
 def mark(alias, err, now=None):
     now = now or time.time()
     st = dict(_json(STATUS, {}))  # a lapsed park stays until the probe clears it; dropping it here un-parked models unprobed
@@ -327,6 +339,8 @@ class Router(CustomLogger):
             data.setdefault("metadata", {})["router_task"] = task
             # `user` survives litellm's fallback call; our metadata does not
             data.setdefault("user", f"task:{task}")
+        elif "@" not in model and model in (models := _json(MODELS, {})):
+            data["fallbacks"] = behind(model, models, data)
         # Claude Code replays its own `thinking` blocks every turn; only Claude
         # wants them back (signature check), openai-compatible upstreams 400.
         if call_type == "anthropic_messages" and not _CLAUDE.search(data.get("model") or ""):
@@ -458,6 +472,11 @@ if __name__ == "__main__":
         mark("g", "boom", now=2.0)
         assert "f" in _json(STATUS, {})                                  # a lapsed park is not dropped by another mark
         clear("f"); clear("g")
+        M3 = {"g": {"tier": "free", "chain": ["ollama"], "context": 10**6, "jobs": {}, "local": True},
+              "h": {"tier": "free", "chain": ["a", "b"], "context": 10**6, "jobs": {}},
+              "p": {"tier": "paid", "chain": ["a"], "context": 10**6, "jobs": {}}}
+        assert behind("g", M3, {"messages": []}) == ["h"]                # a bare alias walks its tier, never itself
+        assert behind("h", M3, {"messages": []}) == ["h@b", "g"]         # its own other hops first
         assert classify("This model's maximum context length is 32768 tokens") == "context"
         assert window_of("This model's maximum context length is 131072 tokens. However") == 131072
         assert window_of("Insufficient credits") is None

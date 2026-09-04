@@ -63,6 +63,12 @@ that case used to hand Claude Code the error whole. No model is asked how
 to route — the request path is a sort, ~1ms. If nothing is eligible at all it
 answers 503 "no model available right now" rather than hunting.
 
+A bare alias (`glm-5.3-flash-cloud`, `opus-5`) is a preference, not a pin:
+it goes out first, its own other hops ride behind it, then the walk of its
+tier. Ollama went down for twenty minutes and a session on
+`glm-5.3-flash-cloud` got 360 500s with nothing behind it (2026-09-04).
+`alias@provider` is a pin and gets no walk.
+
 The job score per model is computed at `sync`: our own record for that
 exact task label when there is one (success rate averaged with judge
 scores), else the Arena rank for the nearest job (text / code / vision /
