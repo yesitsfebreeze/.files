@@ -18,7 +18,12 @@ from litellm.integrations.custom_logger import CustomLogger
 STATE = os.path.expanduser("~/.local/state/litellm")
 MODELS, RECORD, STATUS = f"{STATE}/models.json", f"{STATE}/performance.jsonl", f"{STATE}/status.json"
 EPSILON = 0.1  # one request in ten leads with a random untried model, so the record grows
-COOLDOWN = {"no-credit": 6 * 3600, "rate-limited": 15 * 60, "unsupported": 24 * 3600, "error": 5 * 60}
+# A context refusal is not a broken model — it is a request too big for that
+# window. Park it a day (like unsupported): the walk drops to a wider model
+# and the record says how big the request was. A short cooldown here just
+# makes the same narrow model the first fallback on the next turn.
+COOLDOWN = {"no-credit": 6 * 3600, "rate-limited": 15 * 60, "unsupported": 24 * 3600,
+            "context": 24 * 3600, "error": 5 * 60}
 JOB_WORDS = {"code": ("code", "review", "test", "refactor", "debug", "fix", "impl", "script"),
              "vision": ("image", "screenshot", "vision", "photo", "diagram"),
              "search": ("search", "research", "lookup", "find"),
@@ -95,6 +100,13 @@ def classify(err):
         return "rate-limited"
     if any(k in e for k in ("not supported", "not found", "does not exist", "no such model", "404")):
         return "unsupported"
+    # A context-window refusal names the request size the model could not take.
+    # It is its own state rather than `error` because the fix is not "try
+    # again later" — the walk must drop to a wider model, and the record must
+    # say how big the request was so the next sync can size it right.
+    if any(k in e for k in ("context window", "context length", "context_length", "maximum context",
+                            "too many tokens", "prompt is too long", "too long for")):
+        return "context"
     return "error"
 
 
@@ -203,7 +215,11 @@ class Router(CustomLogger):
                                                    or (kwargs.get("litellm_params") or {}).get("user")})
         model = meta.get("model_group") or kwargs.get("model")  # the alias litellm actually ran
         rec = {"ts": time.time(), "kind": "call", "task": task, "model": model, "success": err is None,
-               "latency_s": (t1 - t0).total_seconds() if t0 and t1 else None}
+               "latency_s": (t1 - t0).total_seconds() if t0 and t1 else None,
+               # litellm hands the logging callbacks `model_call_details`: the
+               # request lives under `messages` / `optional_params`, never `data`.
+               "tokens": est_tokens({"messages": kwargs.get("messages"),
+                                     "tools": (kwargs.get("optional_params") or {}).get("tools")})}
         if err:
             rec["state"], rec["error"] = classify(err), err[:160]
         try:
@@ -252,6 +268,11 @@ if __name__ == "__main__":
               "u": {"tier": "free", "caps": {}, "context": None, "jobs": {"text": 0.4}}}
         assert rank(M2, {}, "x", None, set(), tokens=20000) == ["l", "u"]  # too small a window is out; unknown stays
         assert est_tokens({"messages": [{"role": "user", "content": "x" * 3500}]}) >= 1000
+        assert classify("This model's maximum context length is 32768 tokens") == "context"
+        # the fallback list litellm appends to every error names hundreds of
+        # models; a loose "context"/"exceeds"/"32k" match parked live ones a day
+        assert classify("Insufficient credits. Fallbacks=[{'a-32k': ['b']}]") == "no-credit"
+        assert classify("upstream 500. Available Model Group Fallbacks=['glm-128k']") == "error"
         clear("b"); assert "b" not in _json(STATUS, {})
         data = asyncio.run(router.async_pre_call_hook(None, None,
                            {"model": "auto:free", "metadata": {"tags": ["task:t"]}}, "completion"))
@@ -271,6 +292,8 @@ if __name__ == "__main__":
         assert r["model"] == "a" and r["state"] == "no-credit" and not r["success"]
         assert "a" in _json(STATUS, {})
         asyncio.run(router.async_log_success_event({"model": "x", "litellm_params": {"metadata": {"model_group": "a"}},
-                    "user": "task:t"}, None, now, now))
-        assert "a" not in _json(STATUS, {}) and json.loads(open(RECORD).readlines()[-1])["task"] == "t"
+                    "user": "task:t", "messages": [{"role": "user", "content": "x" * 3500}]}, None, now, now))
+        assert "a" not in _json(STATUS, {})
+        last = json.loads(open(RECORD).readlines()[-1])
+        assert last["task"] == "t" and last["tokens"] >= 1000  # the record sizes the request, not {}
     print("ok")

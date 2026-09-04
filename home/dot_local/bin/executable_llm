@@ -407,7 +407,16 @@ def sync():
                 continue
             lines.append(f"  - model_name: {name}")
             lines.append(f"    litellm_params: {deployment(p, m['hops'][p])}")
-            lines.append(f'    model_info: {{ tags: ["tier:{"free" if hop_price(p, m["hops"][p]) == (0.0, 0.0) else "paid"}"] }}')
+            # `max_input_tokens` is the one number the harness reads to size its
+            # context gauge. Without it the gauge divides by zero and reports
+            # 23710% "until auto-compact" forever — measured 2026-09-04 with
+            # `ANTHROPIC_MODEL=auto` landing on glm-5.3-flash-cloud, an ollama
+            # route whose window is 32768 but whose config entry carried none.
+            # Only when the window is known: a literal 0 is a narrower lie than
+            # no key, and litellm reads it as a window nothing fits in.
+            ctx = m.get("context")
+            tag = f'tier:{"free" if hop_price(p, m["hops"][p]) == (0.0, 0.0) else "paid"}'
+            lines.append(f'    model_info: {{ tags: ["{tag}"]{f", max_input_tokens: {ctx}" if ctx else ""} }}')
         if len(m["chain"]) > 1:
             fallbacks.append((alias, [f"{base}@{p}" for p in m["chain"][1:]]))
     lines += ["", "litellm_settings:", "  drop_params: true", "  num_retries: 1", "  request_timeout: 600",
@@ -468,6 +477,44 @@ def status(args):
             for sc, a in top:
                 n = own.get(a, {}).get("n", 0)
                 print(f"  {sc:.2f}  {a:<44} {models[a]['tier']:<5} {'(' + str(n) + ' calls)' if n else ''}")
+
+
+def needs(args):
+    """What each model has told us it needs, from the record — read after the
+    fact, never guessed. A `context` refusal on a model at N tokens means that
+    model needs a wider window (the request is the user's, not ours to shrink),
+    so the need is recorded against the model and the next sync sizes the walk
+    by it. `llm needs` lists every model with a need; `llm needs <alias>`
+    shows the evidence."""
+    by = {}
+    try:
+        for line in open(RECORD):
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            if r.get("success") or r.get("state") != "context" or not r.get("model"):
+                continue
+            e = by.setdefault(r["model"], {"n": 0, "tokens": [], "tasks": set()})
+            e["n"] += 1
+            if r.get("tokens"):
+                e["tokens"].append(r["tokens"])
+            if r.get("task"):
+                e["tasks"].add(r["task"])
+    except FileNotFoundError:
+        pass
+    if not by:
+        print("no model has recorded a need yet")
+        return
+    target = args[0] if args else None
+    rows = [(m, e) for m, e in by.items() if not target or m == target]
+    if target and not rows:
+        sys.exit(f"llm needs: {target} has no recorded need")
+    for m, e in sorted(rows, key=lambda kv: -kv[1]["n"]):
+        mx = max(e["tokens"]) if e["tokens"] else 0
+        print(f"{m:<44} context x{e['n']:<4} max request {mx:>7} tokens  {','.join(sorted(e['tasks']))[:60]}")
+        if target:
+            print(f"  need: a window wider than {mx} tokens")
+            print(f"  evidence: {e['n']} context refusals in performance.jsonl")
 
 
 def report(args):
@@ -784,6 +831,8 @@ def main():
         status(a[1:])
     elif cmd == "env":
         print(load_env())
+    elif cmd == "needs":
+        needs(a[1:])
     elif cmd == "report":
         report(a[1:])
     elif cmd == "judge":
