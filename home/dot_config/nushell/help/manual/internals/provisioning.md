@@ -102,3 +102,14 @@ wrong: a block there is ignored and `claude mcp list` reports no servers.
 that variable, and letting it through registers the server into whatever
 profile was last used. The path is absolute because the apply's PATH is not the
 login shell's.
+
+## Syncing the plugin set across logins
+
+`run_after_sync-claude-plugins.sh` unions `enabledPlugins` and
+`extraKnownMarketplaces` across `~/.claude/settings.json` and every profile's
+settings.json, then writes the union back to all of them. Plugins install once,
+globally (`~/.claude/plugins` is symlinked into each profile), but the enable
+map is per profile — `_claude_share` copies settings.json at creation — so a
+plugin enabled in one login was invisible to the rest. Enabled-anywhere wins;
+there is no per-profile disable. Model, statusLine, permissions and the login
+itself are never touched.

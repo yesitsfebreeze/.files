@@ -1,6 +1,7 @@
 ---
 state: done
 origin: derived
+from: 09-simplify/06-neovim-television
 priority: 22
 complexity: 11
 blast-radius: mid

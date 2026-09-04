@@ -1,0 +1,52 @@
+#!/bin/sh
+# tmux-copy-open-link — Enter in copy mode: a link under the cursor opens in
+# the default browser and copy mode ends; anything else falls through to the
+# ordinary copy-and-cancel Enter already did.
+#
+# Checked in order: an OSC 8 hyperlink first — that's what tmux itself
+# already tracks under the cursor (`#{copy_cursor_hyperlink}`), no computing
+# needed. Then a plain-text URL: the run of non-space characters touching the
+# cursor (a URL has no internal spaces, so this is the same word-boundary
+# walk tmux-copy-expand's "word" rung does) checked for a scheme, with a
+# sentence's trailing punctuation peeled off first — "see https://x.com."
+# ends in a period that is not part of the link.
+#
+# Called from tmux.conf's copy-mode-vi Enter binding with the pane id as $1.
+# `open` is macOS's own URL-to-default-browser handoff — no separate tool.
+# manual → internals/tmux, "Enter opens a link before it copies".
+
+PANE=${1:?tmux-copy-open-link: no pane}
+
+open_and_leave() {
+    open "$1" >/dev/null 2>&1 &
+    tmux send-keys -t "$PANE" -X cancel
+    exit 0
+}
+
+HYPERLINK=$(tmux display-message -p -t "$PANE" '#{copy_cursor_hyperlink}')
+[ -n "$HYPERLINK" ] && open_and_leave "$HYPERLINK"
+
+CX=$(tmux display-message -p -t "$PANE" '#{copy_cursor_x}')
+CY=$(tmux display-message -p -t "$PANE" '#{copy_cursor_y}')
+L=$(tmux capture-pane -p -J -t "$PANE" -S -0 | sed -n "$((CY + 1))p")
+LEN=$(printf '%s' "$L" | wc -c | tr -d ' ')
+char_at() { printf '%s' "$1" | cut -c $(( $2 + 1 )); }
+
+if [ -n "$L" ] && [ "$CX" -lt "$LEN" ] && [ "$(char_at "$L" "$CX")" != " " ]; then
+    S=$CX; E=$CX
+    while [ "$S" -gt 0 ] && [ "$(char_at "$L" $((S - 1)))" != " " ]; do S=$((S - 1)); done
+    while [ "$E" -lt $((LEN - 1)) ] && [ "$(char_at "$L" $((E + 1)))" != " " ]; do E=$((E + 1)); done
+    URL=$(printf '%s' "$L" | cut -c $((S + 1))-$((E + 1)))
+    while :; do
+        case $URL in
+            *.|*,|*\;|*:|*\!|*\?|*\)|*\]|*\>) URL=${URL%?} ;;
+            *) break ;;
+        esac
+    done
+    case $URL in
+        http://*|https://*) open_and_leave "$URL" ;;
+    esac
+fi
+
+# No link under the cursor: the ordinary copy-and-leave.
+tmux send-keys -t "$PANE" -FX copy-pipe-and-cancel "#{@copy-pipe}"

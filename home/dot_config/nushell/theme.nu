@@ -2,10 +2,12 @@
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
-# Reuses `_state_dir` (dirstack.nu) for the XDG_STATE_HOME default rather
-# than computing it again — its own subdir just joins onto that base.
+# Self-contained on purpose: F6 sources this file standalone in `nu -n`, so a
+# dependency on another module's helper breaks the toggle with "command not
+# found" — the reuse of dirstack's `_state_dir` did exactly that (2026-09-02).
 def _theme_state_dir [] {
-    let dir = ((_state_dir) | path dirname | path join "tinted-theming")
+    let base = ($env.XDG_STATE_HOME? | default ($nu.home-dir | path join ".local" "state"))
+    let dir = ($base | path join "tinted-theming")
     mkdir $dir
     $dir
 }

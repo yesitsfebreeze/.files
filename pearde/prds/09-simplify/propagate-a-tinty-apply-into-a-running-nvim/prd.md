@@ -1,6 +1,7 @@
 ---
 state: open
 origin: derived
+from: 09-simplify/06-neovim-television
 priority: 18
 complexity: 0
 blast-radius:

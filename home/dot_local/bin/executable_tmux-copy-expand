@@ -1,0 +1,152 @@
+#!/bin/sh
+# tmux-copy-expand — Space in copy mode grows the selection by one small
+# step from wherever it already is: one more word onto whichever side still
+# has room, and once the line is FULLY covered — both edges reached, not
+# merely "no more single-space gap" — one more line onto whichever side
+# still has room, stopping at a blank line. Continuous growth, not a jump to
+# a fixed-size unit, so going from a word to a line takes as many presses as
+# the line has words, the way widening a selection by hand would.
+#
+# A motion key clears the selection first (tmux.conf rebinds hjkl and the
+# arrows in copy-mode-vi to do that), so the next Space starts a fresh word
+# from wherever the cursor now stands.
+#
+# Self-driving, no arguments but the pane id: @expand-at (pane option) is
+# where the cursor stood after the last press, and @expand-span is the span
+# that press left selected ("rowstart,s,rowend,e" — e=9999 means "to the end
+# of that row", the same sentinel draw() already reads). A Space at the SAME
+# cursor position grows that span by one step; a Space anywhere else starts
+# over at the word under the cursor.
+#
+# Called from tmux.conf's copy-mode-vi Space binding with the pane id as $1.
+# manual → internals/tmux, "`Space` widens the selection".
+
+PANE=${1:?tmux-copy-expand: no pane}
+
+# ── where the cursor is ──────────────────────────────────────────────────────
+# copy_cursor_x/y are zero-based screen coordinates, the same rows a
+# capture-pane -S -0 read produces — measured, not derived.
+CX=$(tmux display-message -p -t "$PANE" '#{copy_cursor_x}')
+CY=$(tmux display-message -p -t "$PANE" '#{copy_cursor_y}')
+
+# One array element per screen row. -J joins wrapped lines, so a logical
+# line stays one row however the pane wraps it.
+TEXT=$(tmux capture-pane -p -J -t "$PANE" -S -0)
+ROW=$CY
+
+row_text()   { printf '%s\n' "$TEXT" | sed -n "$(($1 + 1))p"; }
+char_at()    { printf '%s' "$1" | cut -c $(( $2 + 1 )); }
+line_len()   { printf '%s' "$1" | wc -c | tr -d ' '; }
+total_rows() { printf '%s\n' "$TEXT" | wc -l | tr -d ' '; }
+is_blank()   { [ -z "$(printf '%s' "$1" | tr -d '[:space:]')" ]; }
+
+fail() { tmux send-keys -t "$PANE" -X clear-selection; exit 0; }
+
+# 1st press: the run of non-space characters touching the cursor — or,
+#   standing on a space, the run of spaces.
+word_span() {
+    L=$(row_text "$ROW"); [ -n "$L" ] || fail
+    LEN=$(line_len "$L")
+    [ "$CX" -lt "$LEN" ] || fail
+    if [ "$(char_at "$L" "$CX")" = " " ]; then ON_SPACE=1; else ON_SPACE=0; fi
+    S=$CX; E=$CX
+    while [ "$S" -gt 0 ]; do
+        P=$(char_at "$L" $((S - 1)))
+        { [ "$ON_SPACE" = 1 ] && [ "$P" = " " ]; } || { [ "$ON_SPACE" = 0 ] && [ "$P" != " " ]; } || break
+        S=$((S - 1))
+    done
+    while [ "$E" -lt $((LEN - 1)) ]; do
+        N=$(char_at "$L" $((E + 1)))
+        { [ "$ON_SPACE" = 1 ] && [ "$N" = " " ]; } || { [ "$ON_SPACE" = 0 ] && [ "$N" != " " ]; } || break
+        E=$((E + 1))
+    done
+    E=$((E + 1))
+    ROWSTART=$ROW; ROWEND=$ROW
+}
+
+# While the span is still one row and hasn't reached both edges: absorb one
+# more word onto each side that still has room — the gap of spaces before
+# it, then the non-space run past that gap.
+grow_word() {
+    L=$(row_text "$ROWSTART"); LEN=$(line_len "$L")
+    if [ "$S" -gt 0 ]; then
+        while [ "$S" -gt 0 ] && [ "$(char_at "$L" $((S - 1)))" = " " ]; do S=$((S - 1)); done
+        while [ "$S" -gt 0 ] && [ "$(char_at "$L" $((S - 1)))" != " " ]; do S=$((S - 1)); done
+    fi
+    if [ "$E" -lt "$LEN" ]; then
+        while [ "$E" -lt "$LEN" ] && [ "$(char_at "$L" "$E")" = " " ]; do E=$((E + 1)); done
+        while [ "$E" -lt "$LEN" ] && [ "$(char_at "$L" "$E")" != " " ]; do E=$((E + 1)); done
+    fi
+}
+
+# Once the line is fully covered: absorb one more line onto each side that
+# still has room and isn't blank — the same single-glues rule as grow_word,
+# one level up.
+grow_line() {
+    TOTAL=$(total_rows)
+    if [ "$ROWSTART" -gt 0 ]; then
+        is_blank "$(row_text $((ROWSTART - 1)))" || ROWSTART=$((ROWSTART - 1))
+    fi
+    if [ "$ROWEND" -lt $((TOTAL - 1)) ]; then
+        is_blank "$(row_text $((ROWEND + 1)))" || ROWEND=$((ROWEND + 1))
+    fi
+    S=0; E=9999
+}
+
+# ── which step: continue the last span, or start fresh at the word ─────────
+HERE="$CX,$CY"
+LAST_AT=$(tmux show -pqv -t "$PANE" @expand-at 2>/dev/null)
+LAST_SPAN=$(tmux show -pqv -t "$PANE" @expand-span 2>/dev/null)
+
+if [ "$LAST_AT" = "$HERE" ] && [ -n "$LAST_SPAN" ]; then
+    OLD_IFS=$IFS; IFS=,; set -- $LAST_SPAN; IFS=$OLD_IFS
+    ROWSTART=$1; S=$2; ROWEND=$3; E=$4
+    if [ "$ROWSTART" -eq "$ROWEND" ]; then
+        L=$(row_text "$ROWSTART"); LEN=$(line_len "$L")
+        if [ "$S" -eq 0 ] && [ "$E" -ge "$LEN" ]; then grow_line; else grow_word; fi
+    else
+        grow_line
+    fi
+else
+    word_span
+fi
+
+# ── draw: walk to the start, select, walk to the end ─────────────────────────
+# All motions are relative to the current cursor, and a selection includes
+# both its end cells, so a span [S,E) from a start at S is E - S - 1
+# cursor-rights. Crossing rows selects the full width of every line crossed,
+# so the horizontal trim on the last row re-anchors with start-of-line.
+draw() {
+    tmux send-keys -t "$PANE" -X clear-selection
+
+    UP=$((CY - ROWSTART)); [ "$UP" -lt 0 ] && UP=0
+    [ "$UP" -gt 0 ] && tmux send-keys -t "$PANE" -X -N "$UP" cursor-up
+    tmux send-keys -t "$PANE" -X start-of-line
+    [ "$S" -gt 0 ] && tmux send-keys -t "$PANE" -X -N "$S" cursor-right
+
+    tmux send-keys -t "$PANE" -X begin-selection
+
+    DOWN=$((ROWEND - ROWSTART))
+    MOVES=$((E - S - 1)); [ "$MOVES" -lt 0 ] && MOVES=0
+    if [ "$DOWN" -gt 0 ]; then
+        tmux send-keys -t "$PANE" -X -N "$DOWN" cursor-down
+        if [ "$E" -lt 9000 ]; then
+            tmux send-keys -t "$PANE" -X start-of-line
+            [ "$MOVES" -gt 0 ] && tmux send-keys -t "$PANE" -X -N "$MOVES" cursor-right
+        else
+            tmux send-keys -t "$PANE" -X end-of-line
+        fi
+    else
+        [ "$MOVES" -gt 0 ] && tmux send-keys -t "$PANE" -X -N "$MOVES" cursor-right
+    fi
+}
+
+draw
+
+# Where draw() left the cursor, and the span just drawn — read the cursor
+# back rather than assumed, since draw()'s row-crossing branch can land it
+# somewhere -N moves alone don't obviously total to.
+NX=$(tmux display-message -p -t "$PANE" '#{copy_cursor_x}')
+NY=$(tmux display-message -p -t "$PANE" '#{copy_cursor_y}')
+tmux set-option -p -t "$PANE" @expand-at "$NX,$NY"
+tmux set-option -p -t "$PANE" @expand-span "$ROWSTART,$S,$ROWEND,$E"
