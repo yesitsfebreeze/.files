@@ -67,13 +67,19 @@ grows.
 Every call's outcome is appended to `performance.jsonl`. Every refusal
 parks the model in `status.json` with the API's own reason, classified —
 `no-credit` ("insufficient balance / credits", 402), `rate-limited`
-("usage limit", 429), `unsupported` ("not supported"), else `error` — a
-`since`, and a cooldown (6h / 15m / 24h / 5m). A parked model is off the
-walk while any live one exists — one Claude Code turn used to try ~600 dead
-routes before it found a model — and returns, soonest-first, only when
-nothing else is left; it comes back by itself when the cooldown lapses and
-is cleared the moment it answers. `llm status clear [alias]`
-overrides.
+("usage limit", 429), `unsupported` ("not supported"), `context` (the
+window was too small), else `error` — a `since`, and an `until`: the reset
+time the API itself named (openrouter's `X-RateLimit-Reset`, "try again in
+30 seconds") when there is one, else a cooldown by kind (6h / 15m / 24h /
+24h / 5m). A parked model is off the walk while any live one exists — one
+Claude Code turn used to try ~600 dead routes before it found a model —
+and it does not come back by itself: once `until` has passed the proxy
+asks it for one token (a sweep a minute, twenty models a sweep) and clears
+it on an answer or parks it again on a refusal, so no user request leads
+with a model that is still dead and `llm status`'s "probe in" is a check
+the proxy will make. Only when nothing else is left do the parked come
+back, soonest-first, without a probe. A real answer clears a park too.
+`llm status clear [alias]` overrides.
 
 ## The registry
 

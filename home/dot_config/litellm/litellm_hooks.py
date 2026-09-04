@@ -9,8 +9,11 @@ first goes out, every other candidate rides as litellm's per-request
 `fallbacks` until one answers. No model is asked anything. ~1ms.
 
 Every call's outcome is appended to performance.jsonl; a refusal parks the
-model in status.json with the API's reason and a cooldown, an answer clears
-it. `llm sync` folds the record back into the scores.
+model in status.json with the API's reason and a time to probe it — the
+API's own reset time when it names one, else a cooldown by kind. A parked
+model stays off the walk until the proxy has asked it for one token and it
+answered; a refusal parks it again. `llm sync` folds the record back into
+the scores.
 """
 import json, os, random, re, time
 from litellm.integrations.custom_logger import CustomLogger
@@ -37,6 +40,7 @@ EPSILON = 0.1  # one request in ten leads with a random untried model, so the re
 # makes the same narrow model the first fallback on the next turn.
 COOLDOWN = {"no-credit": 6 * 3600, "rate-limited": 15 * 60, "unsupported": 24 * 3600,
             "context": 24 * 3600, "error": 5 * 60}
+PROBE_EVERY, PROBE_BATCH = 60, 20  # a sweep a minute, so 600 parks expiring together take half an hour, not a burst
 JOB_WORDS = {"code": ("code", "review", "test", "refactor", "debug", "fix", "impl", "script"),
              "vision": ("image", "screenshot", "vision", "photo", "diagram"),
              "search": ("search", "research", "lookup", "find"),
@@ -123,6 +127,19 @@ def classify(err):
     return "error"
 
 
+def unlock_at(err, now):
+    """When the API itself says the model is back — openrouter's reset
+    header (ms epoch), "try again in 30 seconds", "retry after 2 minutes" —
+    clamped to [1 min, 24 h] from now; None when it says nothing."""
+    e = err or ""
+    m = re.search(r"X-RateLimit-Reset\W+(\d{13})", e)
+    t = int(m.group(1)) / 1000 if m else None
+    if t is None:
+        m = re.search(r"(?:retry|try again)\s+(?:after|in)\s+(\d+)\s*(s|m|h)", e, re.I)
+        t = now + int(m.group(1)) * {"s": 1, "m": 60, "h": 3600}[m.group(2).lower()] if m else None
+    return min(max(t, now + 60), now + 86400) if t else None
+
+
 def est_tokens(data):
     """Rough size of the request in tokens: chars / 3.5, over messages, system
     and tools — conservative on purpose, an overflow costs a failed call."""
@@ -136,8 +153,9 @@ def rank(models, status, task, tier, need, now=None, tokens=0):
     one, else the nearest job's precomputed score. A local model is the last
     resort, never a preference: it answers only when every remote one is
     gone. A model whose window is smaller than this request is out; a parked
-    model is out too — unless nothing else is left, then the parked come back
-    soonest-first rather than the request failing. So the walk is the live
+    model is out too, whether or not its `until` has lapsed: only a probe or
+    a real answer clears it — unless nothing else is left, then the parked
+    come back soonest-first rather than the request failing. So the walk is the live
     shelf, not the graveyard: one Claude Code turn used to try ~600 dead
     routes before it found a model, and the one it found was a 3B
     (2026-09-04)."""
@@ -158,7 +176,7 @@ def rank(models, status, task, tier, need, now=None, tokens=0):
         cls = 2 if m.get("local") else (0 if m["tier"] == "paid" else 1)
         score = (cls, -s.get(task, s.get(job, 0.4)))
         e = status.get(a)
-        (parked if e and e.get("until", 0) > now else live).append((score, a, (e or {}).get("until", 0)))
+        (parked if e else live).append((score, a, (e or {}).get("until", 0)))
     live.sort(key=lambda t: t[0])
     parked.sort(key=lambda t: t[2])
     out = [a for _, a, _ in live] or [a for _, a, _ in parked]
@@ -178,7 +196,7 @@ def mark(alias, err, now=None):
     state = classify(err)
     prev = st.get(alias) or {}
     st[alias] = {"state": state, "since": prev.get("since") if prev.get("state") == state else now,
-                 "until": now + COOLDOWN[state], "reason": (err or "")[:160]}
+                 "until": unlock_at(err, now) or now + COOLDOWN[state], "reason": (err or "")[:160]}
     _write(STATUS, st)
 
 
@@ -189,8 +207,41 @@ def clear(alias):
         _write(STATUS, st)
 
 
+async def probe():
+    """Every parked model whose `until` has lapsed is asked for one token
+    before it may return to the walk: an answer clears it, a refusal parks
+    it again with the fresh reason. So a user request never leads with a
+    model that is still dead, and `llm status`'s "probe in" is a time the
+    proxy will actually check."""
+    import asyncio
+    while True:
+        await asyncio.sleep(PROBE_EVERY)
+        try:
+            from litellm.proxy.proxy_server import llm_router
+            now = time.time()
+            due = sorted((e.get("until", 0), a) for a, e in _json(STATUS, {}).items() if e.get("until", 0) <= now)
+            for _, a in due[:PROBE_BATCH]:
+                try:
+                    await asyncio.wait_for(llm_router.acompletion(
+                        model=a, messages=[{"role": "user", "content": "ok"}], max_tokens=1,
+                        metadata={"tags": ["dispatcher"]}), 60)
+                    clear(a)
+                except Exception as e:
+                    mark(a, str(e))
+        except Exception:
+            pass
+
+
 class Router(CustomLogger):
+    _probe = None
+
+    def _start_probe(self):
+        if Router._probe is None:
+            import asyncio
+            Router._probe = asyncio.ensure_future(probe())
+
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+        self._start_probe()
         model = data.get("model") or ""
         if model == "auto" or model.startswith("auto:"):
             tier = model.split(":", 1)[1] if ":" in model else None
@@ -275,6 +326,13 @@ if __name__ == "__main__":
         assert rank(M, S, "code", "free", set()) == ["a"]              # parked is off the walk while a live one exists
         S["a"] = {"state": "error", "since": 1, "until": time.time() + 30}
         assert rank(M, S, "code", "free", set()) == ["a", "b"]         # all parked: soonest back first
+        S = {"b": {"state": "no-credit", "since": 1, "until": time.time() - 60}}
+        assert rank(M, S, "code", "free", set()) == ["a"]              # lapsed is still parked until a probe clears it
+        assert unlock_at('429 {"headers":{"X-RateLimit-Reset":"1788566400000"}}', 1788566000) == 1788566400.0
+        assert unlock_at("Rate limited. Please try again in 30 seconds", 100) == 160  # never sooner than a minute
+        assert unlock_at("retry after 2 minutes", 100) == 220 and unlock_at("Insufficient credits", 100) is None
+        mark("c", "429 X-RateLimit-Reset: 1788566400000 free-models-per-day", now=1788566000.0)
+        assert _json(STATUS, {})["c"]["until"] == 1788566400.0
         M2 = {"s": {"tier": "free", "caps": {}, "context": 8000, "jobs": {"text": 0.9}},
               "l": {"tier": "free", "caps": {}, "context": 200000, "jobs": {"text": 0.5}},
               "u": {"tier": "free", "caps": {}, "context": None, "jobs": {"text": 0.4}}}

@@ -458,14 +458,15 @@ def status(args):
         json.dump(keep, open(STATUS, "w"), indent=2)
         print(f"cleared {len(st) - len(keep)}")
         return
-    parked = {a: e for a, e in st.items() if e.get("until", 0) > now}
+    parked = st  # every entry: a park lasts until the proxy's probe clears it
     ago = lambda t: f"{int((now - t) // 60)}m" if now - t < 3600 else f"{(now - t) / 3600:.1f}h"
     print(f"{len(models)} models, {sum(1 for m in models.values() if m['tier'] == 'free')} free, {len(parked)} parked")
     if parked:
         w = max(len(a) for a in parked)
-        print(f"\n{'parked':<{w}}  {'state':<12} {'since':>6} {'back in':>8}  reason")
+        print(f"\n{'parked':<{w}}  {'state':<12} {'since':>6} {'probe in':>8}  reason")
         for a, e in sorted(parked.items(), key=lambda kv: (kv[1]["state"], kv[1]["until"])):
-            print(f"{a:<{w}}  {e['state']:<12} {ago(e['since']):>6} {ago(2 * now - e['until']):>8}  {e.get('reason', '')[:60]}")
+            due = "due" if e["until"] <= now else ago(2 * now - e["until"])
+            print(f"{a:<{w}}  {e['state']:<12} {ago(e['since']):>6} {due:>8}  {e.get('reason', '')[:60]}")
     rec = record()
     if args[:1] == ["jobs"] or not args:
         jobs = sorted({j for m in models.values() for j in m.get("jobs", {})} - set(JOBS)) if rec else []
@@ -581,9 +582,8 @@ def rows(agent=None):
         models = json.load(open(MODELS))
     except FileNotFoundError:
         models = {}
-    now = time.time()
     try:
-        parked = {a: e for a, e in json.load(open(STATUS)).items() if e.get("until", 0) > now}
+        parked = json.load(open(STATUS))
     except FileNotFoundError:
         parked = {}
     nat = (agent or {}).get("native") or {}
