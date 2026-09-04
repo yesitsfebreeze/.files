@@ -18,18 +18,18 @@ from litellm.integrations.custom_logger import CustomLogger
 STATE = os.path.expanduser("~/.local/state/litellm")
 MODELS, RECORD, STATUS = f"{STATE}/models.json", f"{STATE}/performance.jsonl", f"{STATE}/status.json"
 
-# The proxy is only as authenticated as the env it was launched in, and a bare
-# `litellm --config` has none of the keys config.yaml resolves via os.environ/.
-# This module is imported by that config before any deployment is built, so
-# load them here: every launch is `llm serve`, whoever typed it.
-try:
-    for _line in open(f"{STATE}/credentials.env"):
-        _k, _, _v = _line.strip().removeprefix("export ").partition("=")
-        if _k and _v:
-            os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
-    os.environ.setdefault("LITELLM_MASTER_KEY", open(f"{STATE}/master.key").read().strip())
-except FileNotFoundError:
-    pass
+# litellm resolves every `os.environ/` in config.yaml before it imports this
+# module, so keys cannot be loaded here: a bare `litellm --config` with none
+# in its env parks the whole shelf as "Missing credentials" within minutes
+# (2026-09-04). Refuse to start instead — `llm serve` is the launch.
+if __name__ != "__main__":
+    try:
+        _want = [l.strip().removeprefix("export ").partition("=")[0].strip() for l in open(f"{STATE}/credentials.env")]
+    except FileNotFoundError:
+        _want = []
+    _missing = [k for k in _want if k and k not in os.environ]
+    if _missing:
+        raise SystemExit(f"litellm_hooks: {', '.join(_missing)} not in env — launch the proxy with `llm serve`")
 EPSILON = 0.1  # one request in ten leads with a random untried model, so the record grows
 # A context refusal is not a broken model — it is a request too big for that
 # window. Park it a day (like unsupported): the walk drops to a wider model
@@ -174,7 +174,7 @@ def rank(models, status, task, tier, need, now=None, tokens=0):
 
 def mark(alias, err, now=None):
     now = now or time.time()
-    st = _json(STATUS, {})
+    st = {a: e for a, e in _json(STATUS, {}).items() if e.get("until", 0) > now}  # expired entries go
     state = classify(err)
     prev = st.get(alias) or {}
     st[alias] = {"state": state, "since": prev.get("since") if prev.get("state") == state else now,
@@ -191,9 +191,8 @@ def clear(alias):
 
 class Router(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
-        meta = data.get("metadata") or {}
         model = data.get("model") or ""
-        if "dispatcher" not in (meta.get("tags") or []) and (model == "auto" or model.startswith("auto:")):
+        if model == "auto" or model.startswith("auto:"):
             tier = model.split(":", 1)[1] if ":" in model else None
             task, need = task_of(data), needs(data)
             ranked = rank(_json(MODELS, {}), _json(STATUS, {}), task, tier, need, tokens=est_tokens(data))

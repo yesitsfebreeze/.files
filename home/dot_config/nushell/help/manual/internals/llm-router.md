@@ -16,8 +16,9 @@ llm <agent> [model]   an agent on a model — `llm claude auto:free`, `llm pi
 ```
 
 One binary. `llm report <task> <model> <note…>` and `llm judge <task>
-<model> [file]` add to the record by hand (a free-text note; a cheap
-model's 1-5 score).
+<model> [file]` add to the record by hand (a free-text note; a 1-5 score
+from `minimax-m3-free`, or `auto:free` when it is rate-limited —
+`LLM_JUDGE_MODEL` overrides).
 
 `~/.config/litellm/agents.json` says what an agent is: its `cmd` and `env` (templated with
 `{model}`, `{base}`, `{key}`, `{context}`, `{home}`), an optional
@@ -33,9 +34,10 @@ Keys live in `~/.local/state/litellm/credentials.env`, plain
 `export VAR=value` lines, mode 600, one per provider — the VAR names are
 the `key` fields in `providers.json`. Nothing else's credential store is
 read. The proxy's own master key is generated next to it on first use.
-`litellm_hooks.py` loads both into the proxy's env at import, so a bare
-`litellm --config …` is as authenticated as `llm serve` — a proxy launched
-without them parks the whole shelf as "Missing credentials" within minutes.
+`llm serve` is the launch: litellm resolves every `os.environ/` before it
+imports the hook, so a bare `litellm --config …` without the keys in its env
+would park the whole shelf as "Missing credentials" within minutes — the
+hook refuses to start instead.
 
 ## How a request is routed
 

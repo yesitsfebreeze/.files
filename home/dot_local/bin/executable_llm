@@ -14,7 +14,7 @@
                 `llm claude`.
   llm env       print the exports (credentials.env + master key) for scripts
   llm report <task> <model> <note…>      a free-text note into the record
-  llm judge  <task> <model> [file]       a cheap model scores an output 1-5
+  llm judge  <task> <model> [file]       a free model scores an output 1-5
 
 Request path (litellm_hooks.py, loaded by the proxy): `model: auto` or
 `auto:<tier>` is answered from models.json — filter by tier, capability and
@@ -31,7 +31,7 @@ Files:  ~/.config/litellm/{providers,aliases,agents}.json + litellm_hooks.py  (d
         ~/.local/state/litellm/status.json       parked models
         ~/.config/litellm/config.yaml            generated for litellm
 """
-import collections, json, os, re, secrets, shlex, subprocess, sys, time, urllib.request
+import collections, json, os, re, secrets, shlex, signal, subprocess, sys, time, urllib.request
 
 HOME = os.path.expanduser("~")
 STATE = f"{HOME}/.local/state/litellm"
@@ -531,20 +531,32 @@ def judge(args):
     load_env()
     task, model = args[0], args[1]
     output = open(args[2]).read() if len(args) > 2 else sys.stdin.read()
-    grader = os.environ.get("LLM_JUDGE_MODEL", "auto")
+    # a free cloud model that answers the format (minimax-m3:free via
+    # openrouter, ~6s, measured 2026-09-04); rate-limited -> the free walk
+    grader = os.environ.get("LLM_JUDGE_MODEL", "minimax-m3-free")
     prompt = (f"Task: {task}\nModel under review: {model}\nOutput:\n{output}\n\n"
               "Score this output 1-5 for how well it did the task (5 = excellent). "
               "Reply with ONLY the digit, a dash, then one short sentence why.")
-    req = urllib.request.Request(f"{BASE}/v1/chat/completions",
-                                 data=json.dumps({"model": grader, "messages": [{"role": "user", "content": prompt}],
-                                                  "metadata": {"tags": ["dispatcher"]}}).encode(),
-                                 headers={"Authorization": f"Bearer {os.environ['LITELLM_MASTER_KEY']}",
-                                          "Content-Type": "application/json"})
-    verdict = json.load(urllib.request.urlopen(req, timeout=120))["choices"][0]["message"]["content"].strip()
-    try:
-        score = int(verdict.split("-", 1)[0].strip()[0])
-    except Exception:
-        score = None
+    def ask(m):
+        req = urllib.request.Request(f"{BASE}/v1/chat/completions",
+                                     data=json.dumps({"model": m, "messages": [{"role": "user", "content": prompt}],
+                                                      "max_tokens": 4000, "metadata": {"tags": ["dispatcher"]}}).encode(),
+                                     headers={"Authorization": f"Bearer {os.environ['LITELLM_MASTER_KEY']}",
+                                              "Content-Type": "application/json"})
+        return (json.load(urllib.request.urlopen(req, timeout=180))["choices"][0]["message"]["content"] or "").strip()
+    # a reasoning model can spend its whole budget thinking and hand back
+    # nothing; the free walk re-picks, so ask it again rather than give up
+    score, verdict = None, ""
+    for m in (grader, "auto:free", "auto:free"):
+        try:
+            verdict = ask(m)
+        except Exception as e:
+            print(f"llm judge: {m} failed ({str(e)[:80]})", file=sys.stderr)
+            continue
+        d = re.search(r"[1-5]", verdict)
+        if d:
+            grader, score = m, int(d.group())
+            break
     _append({"ts": time.time(), "kind": "judge", "task": task, "model": model, "grader": grader,
              "score": score, "verdict": verdict})
     print(verdict)
@@ -762,7 +774,10 @@ def cc(args, ask_agent=False):
             sync()
         print(f"llm {name}: starting litellm on {BASE[7:]} …", file=sys.stderr)
         os.makedirs(STATE, exist_ok=True)
-        log = open(f"{STATE}/proxy.log", "a")
+        lp = f"{STATE}/proxy.log"
+        if os.path.exists(lp) and os.path.getsize(lp) > 20_000_000:
+            os.replace(lp, lp + ".1")  # every error line carries the whole fallback list; 44 MB in a day
+        log = open(lp, "a")
         subprocess.Popen([sys.argv[0], "serve"], stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True)
         # poll liveliness, not the child: two launches racing both spawn one,
         # the loser dies on the bound port while the winner answers here
@@ -846,7 +861,5 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except BrokenPipeError:  # `llm status | head`
-        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # `llm status | head` ends quietly
+    main()

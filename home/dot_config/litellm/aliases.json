@@ -18,12 +18,14 @@
     "glm-5.3":         {"zenmux": "z-ai/glm-5.3", "openrouter": "z-ai/glm-5.3", "opencode-go": "glm-5.3"},
     "glm-5.2":         {"zenmux": "z-ai/glm-5.2", "openrouter": "z-ai/glm-5.2", "opencode": "glm-5.2", "opencode-go": "glm-5.2"},
     "deepseek-v4-pro": {"zenmux": "deepseek/deepseek-v4-pro", "openrouter": "deepseek/deepseek-v4-pro", "opencode": "deepseek-v4-pro", "opencode-go": "deepseek-v4-pro"},
-    "qwen3-max":       {"zenmux": "qwen/qwen3-max", "openrouter": "qwen/qwen3-max"}
+    "qwen3-max":       {"zenmux": "qwen/qwen3-max", "openrouter": "qwen/qwen3-max"},
+    "minimax-m3-free": {"openrouter": "minimax/minimax-m3:free"}
   },
   "canonical": {
     "claude-opus-5": "opus-5",
     "claude-sonnet-5": "sonnet-5",
     "claude-haiku-4-5-20251001": "haiku-4.5",
+    "claude-3-5-haiku-latest": "haiku-4.5",
     "claude-fable-5": "fable-5"
   }
 }
