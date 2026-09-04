@@ -17,6 +17,19 @@ from litellm.integrations.custom_logger import CustomLogger
 
 STATE = os.path.expanduser("~/.local/state/litellm")
 MODELS, RECORD, STATUS = f"{STATE}/models.json", f"{STATE}/performance.jsonl", f"{STATE}/status.json"
+
+# The proxy is only as authenticated as the env it was launched in, and a bare
+# `litellm --config` has none of the keys config.yaml resolves via os.environ/.
+# This module is imported by that config before any deployment is built, so
+# load them here: every launch is `llm serve`, whoever typed it.
+try:
+    for _line in open(f"{STATE}/credentials.env"):
+        _k, _, _v = _line.strip().removeprefix("export ").partition("=")
+        if _k and _v:
+            os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
+    os.environ.setdefault("LITELLM_MASTER_KEY", open(f"{STATE}/master.key").read().strip())
+except FileNotFoundError:
+    pass
 EPSILON = 0.1  # one request in ten leads with a random untried model, so the record grows
 # A context refusal is not a broken model — it is a request too big for that
 # window. Park it a day (like unsupported): the walk drops to a wider model

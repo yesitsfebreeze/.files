@@ -33,6 +33,9 @@ Keys live in `~/.local/state/litellm/credentials.env`, plain
 `export VAR=value` lines, mode 600, one per provider — the VAR names are
 the `key` fields in `providers.json`. Nothing else's credential store is
 read. The proxy's own master key is generated next to it on first use.
+`litellm_hooks.py` loads both into the proxy's env at import, so a bare
+`litellm --config …` is as authenticated as `llm serve` — a proxy launched
+without them parks the whole shelf as "Missing credentials" within minutes.
 
 ## How a request is routed
 
