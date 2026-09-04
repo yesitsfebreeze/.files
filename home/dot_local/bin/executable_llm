@@ -538,6 +538,11 @@ def status(args):
         for a, e in sorted(parked.items(), key=lambda kv: (kv[1]["state"], kv[1]["until"])):
             due = "due" if e["until"] <= now else ago(2 * now - e["until"])
             print(f"{a:<{w}}  {e['state']:<12} {ago(e['since']):>6} {due:>8}  {e.get('reason', '')[:60]}")
+        fixes = collections.Counter(e["fix"] for e in parked.values() if e.get("fix"))
+        if fixes:
+            print("\nto unlock (models each):")
+            for f, n in fixes.most_common():
+                print(f"  {n:>4}  {f}")
     rec = record()
     if args[:1] == ["jobs"] or not args:
         jobs = sorted({j for m in models.values() for j in m.get("jobs", {})} - set(JOBS)) if rec else []

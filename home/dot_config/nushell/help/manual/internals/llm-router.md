@@ -48,13 +48,19 @@ request carries against the model's stated caps (an image never goes to a
 model that says text-only; a tools list never to one that says no tools),
 and by parked-state; drop any whose window is smaller than the request
 plus the answer it asks for (`max_tokens`) — an unknown window is out, not
-"fits";
+"fits"; the size is chars / 3.5 with every image or page counted flat at
+1600 tokens, not by its base64 (six screenshots in tool results once
+weighed in as 9.1M tokens, and no window holds that);
 order **paid, then free, then local** — a local model (ollama) is the last
 resort, it answers only when every remote one is gone, never because it
 scored well — and within each of those by the job's precomputed score; the
 first goes out and *every* other candidate rides as litellm's per-request `fallbacks`,
-so a request fails only when the whole shelf has. No model is asked how to
-route — the request path is a sort, ~1ms. If nothing is eligible at all it
+so a request fails only when the whole shelf has. litellm walks that list
+when a model refuses before its first byte; the hook walks it when a model
+answers 200 and then puts its error in the stream (openrouter's "Provider
+returned error" 429 does), as long as nothing has reached the client yet —
+that case used to hand Claude Code the error whole. No model is asked how
+to route — the request path is a sort, ~1ms. If nothing is eligible at all it
 answers 503 "no model available right now" rather than hunting.
 
 The job score per model is computed at `sync`: our own record for that
@@ -72,14 +78,19 @@ parks the model in `status.json` with the API's own reason, classified —
 ("usage limit", 429), `unsupported` ("not supported"), `context` (the
 window was too small), else `error` — a `since`, and an `until`: the reset
 time the API itself named (openrouter's `X-RateLimit-Reset`, "try again in
-30 seconds") when there is one, else a cooldown by kind (6h / 15m / 24h /
-24h / 5m). A parked model is off the walk while any live one exists — one
+30 seconds") when there is one, else a cooldown by kind (6h / 2m / 24h /
+24h / 5m — a bare 429 is capacity, the same model answered 42s later). When
+the reason names something the user can do, the park carries it as `fix`
+("add credits: <url>", "opt in: <url>", "gone: drop it at sync") and
+`llm status` sums those up under "to unlock". A parked model is off the walk while any live one exists — one
 Claude Code turn used to try ~600 dead routes before it found a model —
 and it does not come back by itself: once `until` has passed the proxy
-asks it for one token (a sweep a minute, twenty models a sweep) and clears
-it on an answer or parks it again on a refusal, so no user request leads
-with a model that is still dead and `llm status`'s "probe in" is a check
-the proxy will make. Only when nothing else is left do the parked come
+asks it for one token (a sweep a minute, twenty models a sweep, no
+fallbacks so a sibling hop cannot answer for it) and clears it on an
+answer or parks it again on a refusal, so no user request leads with a
+model that is still dead and `llm status`'s "probe in" is a check the
+proxy will make. Nothing else drops a park — a mark used to sweep every
+lapsed entry out with it, and those returned to the walk unprobed. Only when nothing else is left do the parked come
 back, soonest-first, without a probe. A real answer clears a park too.
 `llm status clear [alias]` overrides.
 

@@ -6,7 +6,8 @@ litellm_hooks.py symlinks here; `llm sync` makes the link).
 by what the request carries (an image, a tools list) against the model's
 stated caps, and by parked-state; sort by that job's precomputed score;
 first goes out, every other candidate rides as litellm's per-request
-`fallbacks` until one answers. No model is asked anything. ~1ms.
+`fallbacks` until one answers — litellm walks them before the first byte,
+the streaming hook below walks them after it. No model is asked anything. ~1ms.
 
 Every call's outcome is appended to performance.jsonl; a refusal parks the
 model in status.json with the API's reason and a time to probe it — the
@@ -38,9 +39,26 @@ EPSILON = 0.1  # one request in ten leads with a random untried model, so the re
 # window. Park it a day (like unsupported): the walk drops to a wider model
 # and the record says how big the request was. A short cooldown here just
 # makes the same narrow model the first fallback on the next turn.
-COOLDOWN = {"no-credit": 6 * 3600, "rate-limited": 15 * 60, "unsupported": 24 * 3600,
+COOLDOWN = {"no-credit": 6 * 3600, "rate-limited": 2 * 60, "unsupported": 24 * 3600,
             "context": 24 * 3600, "error": 5 * 60}
+MEDIA_TOKENS = 1600  # what an image or page costs a model, whatever its base64 weighs
+# What a refusal asks of the user, by the phrase the API used (measured
+# 2026-09-04). First match wins; the URL in the message rides along.
+FIX = (("requires explicit opt in", "opt in"), ("provider you have enabled", "enable a provider for it"),
+       ("insufficient credits", "add credits"), ("insufficient balance", "top up"),
+       ("depleted your monthly", "buy credits"), ("balance greater than 0", "top up (anti-abuse gate)"),
+       ("free-models-per-day", "daily free quota: wait for the reset or add credits"),
+       ("batch api", "batch-only: drop it at sync"), ("support image input", "text-only: drop its image cap at sync"),
+       ("not valid", "gone: drop it at sync"), ("not supported", "gone: drop it at sync"),
+       ("no endpoints", "gone: drop it at sync"), ("0 endpoints", "gone: drop it at sync"))
 PROBE_EVERY, PROBE_BATCH = 60, 20  # a sweep a minute, so 600 parks expiring together take half an hour, not a burst
+# A user request that arrives after `until` would land on a model the proxy
+# hasn't confirmed is back. Probe a few minutes before the stated reset so
+# the answer (cleared, or re-parked with the new reason) is in by then — a
+# subscription the user has been told is back is in the walk, not behind a
+# cold start. No shorter than a minute, no longer than half the cooldown
+# (so context/unsupported parks don't get probed every five minutes).
+PROBE_EARLY = {"no-credit": 300, "rate-limited": 30, "unsupported": 3600, "context": 3600, "error": 60}
 JOB_WORDS = {"code": ("code", "review", "test", "refactor", "debug", "fix", "impl", "script"),
              "vision": ("image", "screenshot", "vision", "photo", "diagram"),
              "search": ("search", "research", "lookup", "find"),
@@ -79,13 +97,32 @@ def task_of(data):
     return t or (u.split("task:", 1)[1] if u.startswith("task:") else "untagged")
 
 
+def _blocks(o):
+    """Every dict in the request, however deep — a screenshot Claude Code
+    reads back comes nested in a tool_result, not at the top of a message."""
+    if isinstance(o, dict):
+        yield o
+        for v in o.values():
+            yield from _blocks(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _blocks(v)
+
+
+def _media(b):
+    """The base64 payload of an image/document block, else None."""
+    s = b.get("source")
+    if isinstance(s, dict) and isinstance(s.get("data"), str):
+        return s["data"]
+    u = b.get("image_url")
+    u = u.get("url") if isinstance(u, dict) else u
+    return u if isinstance(u, str) and u.startswith("data:") else None
+
+
 def needs(data):
     n = set()
-    for m in data.get("messages") or []:
-        c = m.get("content")
-        if isinstance(c, list) and any((b.get("type") or "").startswith(("image", "input_image"))
-                                       for b in c if isinstance(b, dict)):
-            n.add("image")
+    if any((b.get("type") or "").startswith(("image", "input_image")) for b in _blocks(data.get("messages"))):
+        n.add("image")
     if data.get("tools"):
         n.add("tools")
     return n
@@ -150,9 +187,22 @@ def unlock_at(err, now):
 
 def est_tokens(data):
     """Rough size of the request in tokens: chars / 3.5, over messages, system
-    and tools — conservative on purpose, an overflow costs a failed call."""
+    and tools — conservative on purpose, an overflow costs a failed call. An
+    image or page counts flat, not by its base64: six screenshots weighed in
+    as 9.1M tokens once and no window on the shelf holds that (2026-09-04)."""
     n = sum(len(json.dumps(data[k])) for k in ("messages", "system", "tools") if data.get(k))
-    return int(n / 3.5)
+    media = [m for b in _blocks(data.get("messages")) if (m := _media(b))]
+    return int((n - sum(map(len, media))) / 3.5) + len(media) * MEDIA_TOKENS
+
+
+def fix_of(err):
+    """What would unlock a refused model, in the user's hands — "add credits:
+    <url>", "opt in: <url>", "gone: drop it at sync" — or None when the
+    text says nothing anyone can act on."""
+    e = (err or "").lower()
+    verb = next((v for k, v in FIX if k in e), None)
+    m = re.search(r"https?://[^\s\"'<>)\]]+", err or "")
+    return f"{verb}: {m.group(0)}" if verb and m else verb
 
 
 def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
@@ -202,11 +252,13 @@ def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
 
 def mark(alias, err, now=None):
     now = now or time.time()
-    st = {a: e for a, e in _json(STATUS, {}).items() if e.get("until", 0) > now}  # expired entries go
+    st = dict(_json(STATUS, {}))  # a lapsed park stays until the probe clears it; dropping it here un-parked models unprobed
     state = classify(err)
     prev = st.get(alias) or {}
     st[alias] = {"state": state, "since": prev.get("since") if prev.get("state") == state else now,
                  "until": unlock_at(err, now) or now + COOLDOWN[state], "reason": (err or "")[:160]}
+    if fix := fix_of(err):
+        st[alias]["fix"] = fix
     _write(STATUS, st)
 
 
@@ -218,23 +270,32 @@ def clear(alias):
 
 
 async def probe():
-    """Every parked model whose `until` has lapsed is asked for one token
-    before it may return to the walk: an answer clears it, a refusal parks
-    it again with the fresh reason. So a user request never leads with a
-    model that is still dead, and `llm status`'s "probe in" is a time the
-    proxy will actually check."""
+    """Every parked model whose `until` is due (or close enough — a state-
+    specific lead time so a subscription the API says is back at 14:32 is in
+    the walk by 14:27, not discovered at 14:33) is asked for one token before
+    it may return to the walk: an answer clears it, a refusal parks it again
+    with the fresh reason. So a user request never leads with a model that
+    is still dead, and `llm status`'s "probe in" is a time the proxy will
+    actually check."""
     import asyncio
     while True:
         await asyncio.sleep(PROBE_EVERY)
         try:
             from litellm.proxy.proxy_server import llm_router
             now = time.time()
-            due = sorted((e.get("until", 0), a) for a, e in _json(STATUS, {}).items() if e.get("until", 0) <= now)
-            for _, a in due[:PROBE_BATCH]:
+            due = []
+            for a, e in _json(STATUS, {}).items():
+                u = e.get("until", 0)
+                lead = PROBE_EARLY.get(e.get("state", "error"), 60)
+                if u - lead <= now:
+                    due.append((u, a, e.get("state", "error")))
+            due.sort()
+            for _, a, _ in due[:PROBE_BATCH]:
                 try:
+                    # no fallbacks: a sibling hop answering must not clear this one
                     await asyncio.wait_for(llm_router.acompletion(
                         model=a, messages=[{"role": "user", "content": "ok"}], max_tokens=1,
-                        metadata={"tags": ["dispatcher"]}), 60)
+                        metadata={"tags": ["dispatcher"]}, disable_fallbacks=True), 60)
                     clear(a)
                 except Exception as e:
                     mark(a, str(e))
@@ -255,13 +316,13 @@ class Router(CustomLogger):
         model = data.get("model") or ""
         if model == "auto" or model.startswith("auto:"):
             tier = model.split(":", 1)[1] if ":" in model else None
-            task, need = task_of(data), needs(data)
+            task, need, tokens = task_of(data), needs(data), est_tokens(data)
             ranked = rank(_json(MODELS, {}), _json(STATUS, {}), task, tier, need,
-                          tokens=est_tokens(data), out=int(data.get("max_tokens") or 0))
+                          tokens=tokens, out=int(data.get("max_tokens") or 0))
             if not ranked:
                 from fastapi import HTTPException
                 raise HTTPException(status_code=503, detail={
-                    "error": f"no model available right now for {model} (task {task}, needs {sorted(need) or 'text'})"})
+                    "error": f"no model available right now for {model} (task {task}, needs {sorted(need) or 'text'}, ~{tokens} tokens)"})
             data["model"], data["fallbacks"] = ranked[0], ranked[1:]
             data.setdefault("metadata", {})["router_task"] = task
             # `user` survives litellm's fallback call; our metadata does not
@@ -274,6 +335,36 @@ class Router(CustomLogger):
                 if m.get("role") == "assistant" and isinstance(c, list):
                     m["content"] = [b for b in c if b.get("type") not in _THINK]
         return data
+
+    async def async_post_call_streaming_iterator_hook(self, user_api_key_dict, response, request_data):
+        """The walk continues past the first byte. An upstream that answers 200
+        and then puts its 429 in the stream (openrouter's "Provider returned
+        error") is past litellm's fallbacks — the error went to Claude Code
+        as-is and the turn was lost (2026-09-04). Here every stream is ours:
+        while nothing has been sent, a failed stream is replaced by the next
+        candidate's, and the record already parked the one that failed."""
+        rest = list(request_data.get("fallbacks") or [])
+        sent = False
+        while True:
+            try:
+                async for chunk in response:
+                    sent = True  # ponytail: any event counts, even a bare message_start; buffer up to the first delta if a client ever chokes on a restart
+                    yield chunk
+                return
+            except Exception:
+                if sent or not rest:
+                    raise
+                response = await self._restart(request_data, rest.pop(0), rest, user_api_key_dict)
+
+    async def _restart(self, data, model, rest, user_api_key_dict):
+        """The same request on the next candidate, by the route it came in on."""
+        from litellm.proxy.proxy_server import llm_router
+        from litellm.proxy.route_llm_request import route_request
+        url = (data.get("proxy_server_request") or {}).get("url") or ""
+        route = "anthropic_messages" if "/messages" in url else "acompletion"
+        call = await route_request(data={**data, "model": model, "fallbacks": rest}, route_type=route,
+                                   llm_router=llm_router, user_model=None, user_api_key_dict=user_api_key_dict)
+        return await call
 
     async def async_log_success_event(self, kwargs, response_obj, start_time, end_time):
         self._record(kwargs, None, start_time, end_time)
@@ -303,7 +394,7 @@ class Router(CustomLogger):
                 f.write(json.dumps(rec) + "\n")
         except Exception:
             pass
-        if model:
+        if model and not model.startswith("auto"):  # a 503 from the walk itself parks nothing
             mark(model, err) if err else clear(model)
 
 
@@ -353,6 +444,20 @@ if __name__ == "__main__":
         assert rank(M2, {}, "x", None, set(), tokens=5000) == ["s", "l"]
         assert rank(M2, {}, "x", None, set(), tokens=5000, out=4000) == ["l"]  # the answer it asks for counts
         assert est_tokens({"messages": [{"role": "user", "content": "x" * 3500}]}) >= 1000
+        shot = {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "A" * 5_000_000}}
+        nested = {"messages": [{"role": "user", "content": [{"type": "tool_result", "content": [shot]}]}]}
+        assert needs(nested) == {"image"}                                # a screenshot inside a tool_result is still an image
+        assert est_tokens(nested) < 2000                                 # and weighs a picture, not its base64
+        assert est_tokens({"messages": [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": "data:image/png;base64," + "A" * 500000}}]}]}) < 2000
+        assert fix_of("Insufficient credits. Add more using https://openrouter.ai/settings/credits\",\"code\":402") == "add credits: https://openrouter.ai/settings/credits"
+        assert fix_of("This model collects data ... requires explicit opt in: https://opencode.ai/workspace/w/go") == "opt in: https://opencode.ai/workspace/w/go"
+        assert fix_of("The requested model 'x' is not supported by any provider you have enabled") == "enable a provider for it"
+        assert fix_of("Provider returned error") is None
+        mark("f", "Insufficient credits. Add more using https://openrouter.ai/settings/credits", now=1.0)
+        assert _json(STATUS, {})["f"]["fix"].startswith("add credits")
+        mark("g", "boom", now=2.0)
+        assert "f" in _json(STATUS, {})                                  # a lapsed park is not dropped by another mark
+        clear("f"); clear("g")
         assert classify("This model's maximum context length is 32768 tokens") == "context"
         assert window_of("This model's maximum context length is 131072 tokens. However") == 131072
         assert window_of("Insufficient credits") is None
@@ -386,4 +491,28 @@ if __name__ == "__main__":
         assert "a" not in _json(STATUS, {})
         last = json.loads(open(RECORD).readlines()[-1])
         assert last["task"] == "t" and last["tokens"] >= 1000  # the record sizes the request, not {}
+
+        async def stream(*events, fail_at=None):
+            for i, ev in enumerate(events):
+                if i == fail_at:
+                    raise RuntimeError("Provider returned error")
+                yield ev
+        tried = []
+        async def restart(data, model, rest, key):
+            tried.append(model)
+            return stream("dead", fail_at=0) if model == "b" else stream("m1", "m2")
+        router._restart = restart
+        async def drain(resp, data):
+            return [c async for c in router.async_post_call_streaming_iterator_hook(None, resp, data)]
+        req = {"model": "a", "fallbacks": ["b", "c", "d"]}
+        assert asyncio.run(drain(stream("x", fail_at=0), req)) == ["m1", "m2"] and tried == ["b", "c"]  # a dead first byte walks
+        assert asyncio.run(drain(stream("m0", "m1"), req)) == ["m0", "m1"]                             # a good stream is untouched
+        try:
+            asyncio.run(drain(stream("m0", "m1", fail_at=1), req)); assert False
+        except RuntimeError:
+            pass                                                                                       # sent already: the error goes through
+        try:
+            asyncio.run(drain(stream("x", fail_at=0), {"model": "a"})); assert False
+        except RuntimeError:
+            pass                                                                                       # nothing left to walk
     print("ok")

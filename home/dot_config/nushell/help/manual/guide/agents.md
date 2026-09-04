@@ -83,7 +83,7 @@ See also: [`llm claude [model]`](./agents.md#llm-claude-model) · [`llm status`]
 
 *shell*
 
-Run `llm status` for the models the APIs refused — with the reason in their own words, since when, and when the router tries them again — and the top models per job from the record and the public boards. `llm status clear [model]` puts one, or all, back on the shelf now.
+Run `llm status` for the models the APIs refused — with the reason in their own words, since when, and when the router tries them again — what would unlock each one in the API's own terms (add credits at this URL, opt in, gone), and the top models per job from the record and the public boards. `llm status clear [model]` puts one, or all, back on the shelf now.
 
 > **Why it is this way**
 >
