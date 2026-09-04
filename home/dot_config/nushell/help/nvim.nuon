@@ -313,13 +313,13 @@
     {
         key: "<leader>xc"
         title: "Toggle Claude"
-        use: "Press `<leader>xc` to spawn Claude in a split to the right of the editor — cll's model picker runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `cll` exits and the empty pane closes."
+        use: "Press `<leader>xc` to spawn Claude in a split to the right of the editor — the router's model picker (`llm claude`) runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, `auto` lets the router pick per request, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `llm claude` exits and the empty pane closes."
         topic: "agents"
         task: "agents"
         step: 12
         mode: "nvim:normal"
-        also: ["<leader>xf", "cll [model]", "cc [...args]"]
-        why: "Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `cll` (claudecode's terminal_cmd), so model and proxy routing belong to cll: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what cll does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie)."
+        also: ["<leader>xf", "llm claude [model]", "cc [...args]"]
+        why: "Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `llm claude` (claudecode's terminal_cmd), so model and proxy routing belong to the router: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what the router does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie)."
     }
     {
         key: "<leader>xf"
@@ -354,12 +354,12 @@
     {
         key: "<leader>xm"
         title: "Select Claude model"
-        use: "Press `<leader>xm` to pick the model the Claude pane runs on, without leaving the editor. That model choice lives in the pane's own profile, so it survives while the pane is open; the next fresh pane re-picks at spawn through cll. Native models are Claude Code's own, served by the Max plan."
+        use: "Press `<leader>xm` to pick the model the Claude pane runs on, without leaving the editor. That model choice lives in the pane's own profile, so it survives while the pane is open; the next fresh pane re-picks at spawn through `llm claude`. Native models are Claude Code's own, served by the Max plan."
         topic: "agents"
         task: "agents"
         step: 17
         mode: "nvim:normal"
-        also: ["<leader>xc", "cll [model]"]
+        also: ["<leader>xc", "llm claude [model]"]
     }
     {
         key: "<leader>xb"

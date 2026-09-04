@@ -62,3 +62,12 @@ node, and a crossing belongs to a commit, not to a worker's judgment.
 
 - Re-opening the `zi`/`cdi` exception ([`decisions/fzf`](../fzf/prd.md)).
 - Migrating tv's existing picker screens to fzf. tv still owns those.
+
+**Where the picker lives, from 2026-09-04.** Back in this tree. The router
+was rewritten to one binary, `home/dot_local/bin/executable_llm`, with its
+registry under `home/dot_config/litellm/`, and the user reversed the
+own-project answer the same day: small enough, and always useful, so a
+dotfile after all. The fzf picker is `llm`'s `pick()` — `--ansi`,
+`--with-nth`, `--nth`, `--accept-nth`, the same four flags — and it now
+picks the agent too (`llm` with no argument: model, then agent). Still the
+second named exception to I3, still not a precedent.

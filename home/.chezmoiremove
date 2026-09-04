@@ -15,3 +15,9 @@
 .config/television/cable/burrito-sessions.toml
 .config/television/cable/opacity.toml
 .config/television/cable/opencode-sessions.toml
+.config/nushell/litellm.nu
+.local/bin/cll
+.local/bin/litellm-env
+.local/bin/litellm-gen-config
+.local/bin/litellm-up
+.local/bin/llm-quota

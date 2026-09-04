@@ -31,3 +31,4 @@ pearde/.lanes/
 pearde/graphify/
 pearde/.obsidian-superseded-*/
 /.pearde
+__pycache__/

@@ -27,12 +27,13 @@ return {
       { "<leader>xd", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },
     },
     opts = {
-      -- Spawn through cll, not the plain claude binary: the model picker runs
-      -- before Claude starts, so every fresh pane opens on a chosen model —
-      -- native:* hops ride the Max plan via cc's login picker, everything else
-      -- goes through the litellm proxy profile. Toggling an ALREADY-RUNNING
-      -- pane never re-runs the picker; only a fresh spawn does.
-      terminal_cmd = "cll",
+      -- Spawn through the router (~/dev/llm-router), not the plain claude
+      -- binary: the model picker runs before Claude starts, so every fresh
+      -- pane opens on a chosen model — native:* hops ride the Max plan via
+      -- cc's login picker, everything else goes through the litellm proxy
+      -- profile. Toggling an ALREADY-RUNNING pane never re-runs the picker;
+      -- only a fresh spawn does.
+      terminal_cmd = "llm claude",
       terminal = { split_width_percentage = 0.30 },
       diff_opts = { layout = "vertical" },
     },
@@ -62,9 +63,9 @@ return {
         })
       end
 
-      -- Login profile is `cll`'s job (~/.local/bin/cll:212-221 resolves the
-      -- same CLAUDE_CONFIG_DIR from .last-login/.claude.json) — terminal_cmd
-      -- already spawns through it, so nothing here needs to duplicate it.
+      -- Login profile is the router's job (`llm claude` resolves
+      -- CLAUDE_CONFIG_DIR per agents.json) — terminal_cmd already spawns
+      -- through it, so nothing here needs to duplicate it.
       require("claudecode").setup(opts)
     end,
   },

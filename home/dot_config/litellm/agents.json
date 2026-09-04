@@ -1,0 +1,41 @@
+{
+  "default": "claude",
+  "agents": {
+    "claude": {
+      "cmd": ["claude", "--dangerously-skip-permissions"],
+      "env": {
+        "CLAUDE_CONFIG_DIR": "{home}/.claude/litellm",
+        "ANTHROPIC_BASE_URL": "{base}",
+        "ANTHROPIC_AUTH_TOKEN": "{key}",
+        "ANTHROPIC_MODEL": "{model}",
+        "ANTHROPIC_SMALL_FAST_MODEL": "claude-haiku-4-5-20251001",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "{context}"
+      },
+      "unset": ["ANTHROPIC_API_KEY"],
+      "context_unless": ["claude-"],
+      "profile": {
+        "dir": "{home}/.claude/litellm",
+        "from": "{home}/.claude",
+        "link": ["plugins", "projects", "sessions", "session-env", "history.jsonl", "cache", "file-history",
+                 "shell-snapshots", "agent-memory", "hooks", "hub", "jobs", "plans", "backups", "paste-cache",
+                 "context-mode", "debug", "tasks", "teams", "telemetry"],
+        "copy": [".claude.json", "settings.json", "settings.local.json"],
+        "model_picker": "settings.json"
+      },
+      "native": {
+        "prefix": "native:",
+        "models": ["opus", "sonnet", "haiku", "fable"],
+        "tty": {
+          "cmd": ["nu", "-c", "source ~/.config/nushell/config.nu\ncc ...([--model, $env.CLL_NATIVE_MODEL] ++ ($env.CLL_NATIVE_ARGS? | default \"[]\" | from json))"],
+          "env": {"CLL_NATIVE_MODEL": "{model}", "CLL_NATIVE_ARGS": "{args_json}"}
+        },
+        "cmd": ["claude", "--model", "{model}", "--dangerously-skip-permissions"]
+      }
+    },
+    "pi": {
+      "cmd": ["pi", "--provider", "litellm", "--model", "{model}"],
+      "env": {}
+    }
+  }
+}

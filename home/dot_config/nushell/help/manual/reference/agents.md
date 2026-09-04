@@ -12,10 +12,10 @@ Every entry links to where the guide explains it.
 | `cr [...args]` | Resume a Claude session in this directory | shell | [Run coding agents](../guide/agents.md#resume-claude) |
 | `help --json` | Read this manual as structured data | shell | [Run coding agents](../guide/agents.md#help-json) |
 | `idioms` | Search with rg, find with fd, pick with tv | shell | [Run coding agents](../guide/agents.md#idioms) |
-| `cll [model]` | Start Claude Code on a chosen model | shell | [Run coding agents](../guide/agents.md#cll-model) |
-| `llm` | See every model and what is left on it | shell | [Run coding agents](../guide/agents.md#llm) |
-| `llm quota` | Read or record the balance per provider | shell | [Run coding agents](../guide/agents.md#llm-quota) |
-| `llm regen` | Rebuild the proxy's routing from live inventories | shell | [Run coding agents](../guide/agents.md#llm-regen) |
+| `llm` | Pick a model, then the agent to run it | shell | [Run coding agents](../guide/agents.md#llm) |
+| `llm claude [model]` | Start Claude Code on a chosen model | shell | [Run coding agents](../guide/agents.md#llm-claude-model) |
+| `llm sync` | Refresh the shelf: every model, its price, what it can do, how it ranks | shell | [Run coding agents](../guide/agents.md#llm-sync) |
+| `llm status` | See which models are parked and who is best at which job | shell | [Run coding agents](../guide/agents.md#llm-status) |
 | `pearde [cmd]` | Work the PRD board this repository plans with | shell | [Run coding agents](../guide/agents.md#pearde-cmd) |
 | `<leader>x` | Show what <leader>x can do | nvim normal | [Run coding agents](../guide/agents.md#leader-x) |
 | `<leader>xc` | Toggle Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xc) |

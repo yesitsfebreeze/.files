@@ -1,5 +1,5 @@
 ---
-state: claimed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
+state: failed        # open|analyzing|refine|question|specced|claimed|blocked|done|failed
 origin: requested  # requested = the user asked | derived = the board found it
 priority: 20        # higher first
 complexity: 32      # analyst, at spec time — 1-100. THE WEIGHT the board schedules by
@@ -21,7 +21,6 @@ footprint:
   - home/dot_config/nushell/help/shell.nuon
   - home/dot_config/nvim/lua/plugins/claude.lua
 workflow: cut-a-feature-its-readers-still-name
-claim: impl-router 2026-09-02 17:15
 ---
 
 # 08-litellm-out — the one thing here that is not a dotfile
@@ -83,3 +82,24 @@ route is currently out of credit?
 ## Answers
 
 **Q1** *(answered 2026-09-02 16:22)* — Its own project — the router moves to a folder of its own under the development directory and installs itself onto the path from there.
+
+**Q1, reversed 2026-09-04 (user).** The router came back: rewritten as one
+binary (`home/dot_local/bin/executable_llm`) plus a registry
+(`home/dot_config/litellm/{providers,aliases,agents}.json`,
+`litellm_hooks.py`), routing `auto` per request from a precomputed
+`models.json` — paid, then free, then local — with the record and the
+parked-state the APIs' own errors write. "Small enough, mature enough,
+always useful." R2–R5 stand as done for what they removed (the six-file
+stack, `litellm.nu`, the four `shell.nuon` rows); what replaced them is in
+`home/`, so this node's purpose — the one thing here that is not a dotfile
+— no longer describes the tree. Manual: `internals/llm-router.md`. Memo:
+`the-model-router-is-a-dotfile-after-all`.
+
+## Failure
+
+Superseded, not undone. The user reversed Q1 on 2026-09-04 — the router is
+a dotfile — after it was rewritten to one binary plus a registry (see
+`memos/the-model-router-is-a-dotfile-after-all`). This node's acceptance
+(`rg -l 'litellm|cll' home/` prints 0) is false by design now, so it cannot
+be done; its removals (R2–R5) happened and were replaced. Not to be
+retried: the lane `lane/09-simplify-08-litellm-out` must not merge.

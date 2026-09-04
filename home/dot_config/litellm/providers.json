@@ -1,0 +1,68 @@
+{
+  "skip": [
+    "embed",
+    "-batch",
+    ":batch",
+    "image",
+    "imagine",
+    "video",
+    "tts",
+    "whisper",
+    "audio",
+    "rerank",
+    "moderation",
+    "lyria",
+    "veo",
+    "sora",
+    "dall-e",
+    "transcribe",
+    "realtime",
+    "granite-router"
+  ],
+  "providers": [
+    {
+      "name": "zenmux",
+      "kind": "openai",
+      "base": "https://zenmux.ai/api/v1",
+      "key": "ZENMUX_API_KEY"
+    },
+    {
+      "name": "opencode",
+      "kind": "openai",
+      "base": "https://opencode.ai/zen/v1",
+      "key": "OPENCODE_API_KEY",
+      "store": "opencode"
+    },
+    {
+      "name": "opencode-go",
+      "kind": "openai",
+      "base": "https://opencode.ai/zen/go/v1",
+      "key": "OPENCODE_GO_API_KEY",
+      "store": "opencode-go"
+    },
+    {
+      "name": "openrouter",
+      "kind": "openrouter",
+      "base": "https://openrouter.ai/api/v1",
+      "key": "OPENROUTER_API_KEY"
+    },
+    {
+      "name": "huggingface",
+      "kind": "openai",
+      "base": "https://router.huggingface.co/v1",
+      "key": "HUGGINGFACE_API_KEY",
+      "cap": 300
+    },
+    {
+      "name": "ollama",
+      "kind": "ollama",
+      "base": "http://127.0.0.1:11434",
+      "free": true,
+      "num_ctx": 32768,
+      "skip": [
+        "embed",
+        "granite-router"
+      ]
+    }
+  ]
+}
