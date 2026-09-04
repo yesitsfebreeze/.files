@@ -4,6 +4,8 @@ subject: new-session -d` refuses a `display-popup`, so the binding read as broke
 date: 2026-09-02
 updated: 2026-09-02
 runs: 1
+tags:
+  - atomic
 ---
 
 ## Do

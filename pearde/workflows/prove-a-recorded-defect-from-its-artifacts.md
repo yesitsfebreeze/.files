@@ -3,6 +3,8 @@ workflow: prove-a-recorded-defect-from-its-artifacts
 subject: 00-delivery/corrections/baseline-commit-absorbs-live-claims
 date: 2026-09-02
 runs: 1
+tags:
+  - workflow
 ---
 
 ## Use when

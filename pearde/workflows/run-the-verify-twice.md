@@ -4,6 +4,8 @@ subject: the first block passed on a violated assertion, because `! cmd` is exem
 date: 2026-09-02
 updated: 2026-09-02
 runs: 5
+tags:
+  - atomic
 ---
 
 ## Do

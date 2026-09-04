@@ -4,6 +4,8 @@ subject: this shell's drift check fails on any alias with no manual entry, so th
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

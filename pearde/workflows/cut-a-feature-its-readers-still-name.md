@@ -4,6 +4,8 @@ subject: 09-simplify/03-help-system
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - workflow
 ---
 
 ## Use when

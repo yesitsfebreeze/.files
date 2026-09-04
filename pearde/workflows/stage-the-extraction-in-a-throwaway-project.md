@@ -4,6 +4,8 @@ subject: "the five scripts read as one bash set and two of them are python3; sta
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

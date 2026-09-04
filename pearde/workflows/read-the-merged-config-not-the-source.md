@@ -4,6 +4,8 @@ subject: the source file said nothing about which side the panel opens; only the
 date: 2026-09-02
 updated: 2026-09-02
 runs: 3
+tags:
+  - atomic
 ---
 
 ## Do

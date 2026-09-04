@@ -2,7 +2,9 @@
 workflow: delete-what-nothing-reads
 subject: 09-simplify/01-hygiene
 date: 2026-09-02
-runs: 1
+runs: 3
+tags:
+  - workflow
 ---
 
 ## Use when

@@ -2,8 +2,10 @@
 atomic: measure-the-premise-not-the-prd
 subject: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
 date: 2026-09-02
-updated: 2026-09-02
-runs: 6
+updated: 2026-09-04
+runs: 7
+tags:
+  - atomic
 ---
 
 ## Do
@@ -17,6 +19,13 @@ runs: 6
 3. A claim that does not reproduce is a finding for the report and the
    requirement is not implemented. Do not repair the requirement and do not
    ask about it — a premise with one correct action is not a fork.
+
+When the premise is a ref rather than a path, the survivor is an object,
+not a file: `git for-each-ref --format='%(refname)' | grep <name>` for
+what still stands, and `git fsck --lost-found | awk '$2=="commit"{print
+$3}'` piped through `git log -1 --format='%h %s'` for the tip a deleted
+branch left behind. `git reflog show <branch>` does not survive the ref —
+do not reach for it.
 
 ## Done when
 

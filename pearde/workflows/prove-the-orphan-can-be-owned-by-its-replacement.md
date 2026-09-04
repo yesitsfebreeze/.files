@@ -4,6 +4,8 @@ subject: "the contract asked for six `.chezmoiremove` entries; five of them name
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

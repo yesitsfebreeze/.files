@@ -3,6 +3,8 @@ workflow: wire-a-tool-into-the-shell
 subject: pearde-shell-wiring
 date: 2026-09-02
 runs: 2
+tags:
+  - workflow
 ---
 
 ## Use when

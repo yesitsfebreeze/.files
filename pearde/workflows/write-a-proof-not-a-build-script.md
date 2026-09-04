@@ -4,6 +4,8 @@ subject: run twice, exit 0 twice, nothing staged — the form the last run got w
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

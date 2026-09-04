@@ -4,6 +4,8 @@ subject: "`nu -c` loads no config and reports a correct change as absent — thi
 date: 2026-09-02
 updated: 2026-09-02
 runs: 4
+tags:
+  - atomic
 ---
 
 ## Do

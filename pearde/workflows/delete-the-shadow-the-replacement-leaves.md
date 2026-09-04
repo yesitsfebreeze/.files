@@ -4,6 +4,8 @@ subject: "`~/.local/bin` is ahead of the brew prefix, so the old binary would ha
 date: 2026-09-02
 updated: 2026-09-02
 runs: 0
+tags:
+  - atomic
 ---
 
 ## Do

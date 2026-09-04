@@ -2,7 +2,9 @@
 workflow: replace-a-hand-rolled-mechanism
 subject: 09-simplify/07-provisioning
 date: 2026-09-02
-runs: 0
+runs: 1
+tags:
+  - workflow
 ---
 
 ## Use when

@@ -4,6 +4,8 @@ subject: "`just manual` plus a shasum pair is what says the configuration and it
 date: 2026-09-02
 updated: 2026-09-02
 runs: 5
+tags:
+  - atomic
 ---
 
 ## Do

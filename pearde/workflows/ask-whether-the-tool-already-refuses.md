@@ -4,6 +4,8 @@ subject: a two-claim fixture showed `collect` already refuses cross-claim stagin
 date: 2026-09-02
 updated: 2026-09-02
 runs: 1
+tags:
+  - atomic
 ---
 
 ## Do

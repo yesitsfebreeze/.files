@@ -4,6 +4,8 @@ subject: 08-claude-agent/02-nvim-plugin
 date: 2026-09-02
 updated: 2026-09-02
 runs: 4
+tags:
+  - workflow
 ---
 
 ## Use when

@@ -4,6 +4,8 @@ subject: the report on disk carried a `Verdict:` line that read as current and d
 date: 2026-09-02
 updated: 2026-09-02
 runs: 4
+tags:
+  - atomic
 ---
 
 ## Do

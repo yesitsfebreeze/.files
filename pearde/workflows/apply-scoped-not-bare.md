@@ -4,6 +4,8 @@ subject: the working tree held unrelated pending changes; a bare `chezmoi apply`
 date: 2026-09-02
 updated: 2026-09-02
 runs: 9
+tags:
+  - atomic
 ---
 
 ## Do

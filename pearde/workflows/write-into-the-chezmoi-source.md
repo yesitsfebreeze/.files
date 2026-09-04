@@ -3,6 +3,8 @@ atomic: write-into-the-chezmoi-source
 subject: put both lines in `home/`, never in the deployed tree, so the change survives the next apply
 date: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

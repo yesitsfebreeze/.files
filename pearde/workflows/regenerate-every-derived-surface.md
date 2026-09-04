@@ -4,6 +4,8 @@ subject: half the manual is generated from the files being edited, so a source f
 date: 2026-09-02
 updated: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

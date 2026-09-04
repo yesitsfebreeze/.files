@@ -3,6 +3,8 @@ atomic: recover-the-contract
 subject: the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking
 date: 2026-09-02
 runs: 2
+tags:
+  - atomic
 ---
 
 ## Do

@@ -4,6 +4,8 @@ subject: "`chezmoi apply` left all four deleted files deployed, so the deletion 
 date: 2026-09-02
 updated: 2026-09-02
 runs: 3
+tags:
+  - atomic
 ---
 
 ## Do

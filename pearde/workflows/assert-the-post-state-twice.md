@@ -4,6 +4,8 @@ subject: a verify that passes once is a build script; three runs is what separat
 date: 2026-09-02
 updated: 2026-09-02
 runs: 0
+tags:
+  - atomic
 ---
 
 ## Do

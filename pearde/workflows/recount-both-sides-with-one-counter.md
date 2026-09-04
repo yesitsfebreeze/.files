@@ -4,6 +4,8 @@ subject: the two figures on the record were taken with two different counters; o
 date: 2026-09-02
 updated: 2026-09-02
 runs: 1
+tags:
+  - atomic
 ---
 
 ## Do

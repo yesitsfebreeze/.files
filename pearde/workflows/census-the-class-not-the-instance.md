@@ -4,6 +4,8 @@ subject: the one bad block was 8 lines in 5 files, and the commit it caused had 
 date: 2026-09-02
 updated: 2026-09-02
 runs: 1
+tags:
+  - atomic
 ---
 
 ## Do

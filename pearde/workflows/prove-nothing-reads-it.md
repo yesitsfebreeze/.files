@@ -3,7 +3,9 @@ atomic: prove-nothing-reads-it
 subject: `cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result
 date: 2026-09-02
 updated: 2026-09-02
-runs: 4
+runs: 5
+tags:
+  - atomic
 ---
 
 ## Do

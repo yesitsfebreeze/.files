@@ -4,6 +4,8 @@ subject: the file shrank 404 → 198 lines and its constraint comments were the 
 date: 2026-09-02
 updated: 2026-09-02
 runs: 3
+tags:
+  - atomic
 ---
 
 ## Do

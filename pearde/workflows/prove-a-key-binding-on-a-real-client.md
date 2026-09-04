@@ -4,6 +4,8 @@ subject: 05-terminal — tmux.conf to ~250 lines, one palette path
 date: 2026-09-02
 updated: 2026-09-02
 runs: 1
+tags:
+  - workflow
 ---
 
 ## Use when

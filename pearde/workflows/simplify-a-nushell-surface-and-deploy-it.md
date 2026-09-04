@@ -3,6 +3,8 @@ workflow: simplify-a-nushell-surface-and-deploy-it
 subject: 04-nushell — built-ins, one append, no tombstones
 date: 2026-09-02
 runs: 1
+tags:
+  - workflow
 ---
 
 ## Use when

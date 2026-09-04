@@ -4,6 +4,8 @@ subject: brew's tinty was installed beside the release copy and asked for the sa
 date: 2026-09-02
 updated: 2026-09-02
 runs: 0
+tags:
+  - atomic
 ---
 
 ## Do
