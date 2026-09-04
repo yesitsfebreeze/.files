@@ -183,19 +183,62 @@ def fetch_ollama(spec):
         return {}
     out = {}
     for m in tags:
-        ctx = None
-        try:
-            req = urllib.request.Request(f"{spec['base']}/api/show", data=json.dumps({"model": m["name"]}).encode(),
-                                         headers={"Content-Type": "application/json"})
-            d = json.load(urllib.request.urlopen(req, timeout=10))
-            lens = [v for k, v in d.get("model_info", {}).items() if k.endswith(".context_length")]
-            ctx = min(lens) if lens else None
-        except Exception:
-            pass
-        out[m["name"]] = {"context": min(ctx, spec.get("num_ctx", 32768)) if ctx else spec.get("num_ctx"),
-                          "max": None, "price": (0.0, 0.0),
+        ctx = (m.get("details") or {}).get("context_length")
+        if not ctx:
+            try:
+                req = urllib.request.Request(f"{spec['base']}/api/show", data=json.dumps({"model": m["name"]}).encode(),
+                                             headers={"Content-Type": "application/json"})
+                d = json.load(urllib.request.urlopen(req, timeout=10))
+                lens = [v for k, v in d.get("model_info", {}).items() if k.endswith(".context_length")]
+                ctx = min(lens) if lens else None
+            except Exception:
+                pass
+        if not m.get("remote_host"):
+            # served on this machine: num_ctx is the window. A `:cloud` model
+            # runs on ollama.com at its trained window — capping it to num_ctx
+            # launched Claude Code with a 32K limit on a 1M model, which
+            # stopped at 56K with "Prompt is too long" (2026-09-04).
+            ctx = min(ctx or spec.get("num_ctx", 32768), spec.get("num_ctx", 32768))
+        out[m["name"]] = {"context": ctx, "max": None, "price": (0.0, 0.0),
                           "caps": {"input": ["text"], "tools": None, "reasoning": None}}
     return out
+
+
+CONTEXT_FLOOR = 32768  # a window nobody states: small enough that a refusal is rare, and one refusal measures the truth
+_table = None
+
+
+def researched(hops):
+    """The window a model was trained to, when no provider states one, asked
+    of the sources that publish it: a huggingface hop's own config.json
+    (`max_position_embeddings`; a gated repo 403s), then litellm's public
+    model table (~3500 ids, matched by name core — the narrowest match, a
+    hosted variant is never wider than the base). None when neither knows."""
+    global _table
+    for p, mid in hops.items():
+        if p != "huggingface":
+            continue
+        try:
+            r = urllib.request.Request(f"https://huggingface.co/{mid}/resolve/main/config.json",
+                                       headers={"Authorization": f"Bearer {os.environ.get('HUGGINGFACE_API_KEY', '')}"})
+            found = [int(v) for v in re.findall(r'"max_position_embeddings":\s*(\d+)', urllib.request.urlopen(r, timeout=15).read().decode())]
+            if found:
+                return min(found)
+        except Exception:
+            pass
+    if _table is None:
+        _table = {}
+        try:
+            t = get("https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json")
+        except Exception:
+            import glob
+            paths = glob.glob(f"{HOME}/.local/share/uv/tools/litellm/lib/python3.*/site-packages/litellm/model_prices_and_context_window_backup.json")
+            t = json.load(open(paths[0])) if paths else {}
+        for k, v in t.items():
+            w = v.get("max_input_tokens") if isinstance(v, dict) else None
+            if w:
+                _table[core(k)] = min(_table.get(core(k), w), w)
+    return next((_table[core(n)] for n in hops.values() if core(n) in _table), None)
 
 
 def inventory(spec):
@@ -216,6 +259,7 @@ def core(name):
     name = name.split("/")[-1].lower()
     name = re.sub(r"-\d{8}$", "", name)
     name = re.sub(r":free$|-free$", "", name)
+    name = re.sub(r"-(fp8|bf16|fp16|int4|int8|awq|gptq|instruct|it)$", "", name)  # a quant or chat variant of the same model
     return re.sub(r"[^a-z0-9]", "", name)
 
 
@@ -275,6 +319,21 @@ def record():
     except FileNotFoundError:
         pass
     return st
+
+
+def windows():
+    """{alias: tokens} — the narrowest window a model has named in a context
+    refusal, as the hook recorded it. A fact from the model itself, so it
+    outranks whatever a provider or a table says."""
+    out = {}
+    try:
+        for line in open(RECORD):
+            r = json.loads(line) if line.strip() else {}
+            if r.get("window") and r.get("model"):
+                out[r["model"]] = min(out.get(r["model"], r["window"]), r["window"])
+    except FileNotFoundError:
+        pass
+    return out
 
 
 def job_score(s):
@@ -355,13 +414,28 @@ def sync():
         return (0 if pr == (0.0, 0.0) else 1, pr[0] + pr[1], order.index(p))
 
     models = {}
+    measured = windows()
+    src = collections.Counter()
     for alias, hops in aliases.items():
         chain = sorted((p for p in order if p in hops and hops[p] in inv[p]), key=lambda p: hop_cost(p, hops[p]))
         if not chain:
             continue
         p0 = chain[0]; v = inv[p0][hops[p0]]
         pr = hop_price(p0, hops[p0])
+        # the window is never unknown: an unknown one walked a 67K request into
+        # a 32K model and let Claude Code assume 200K (2026-09-04). Stated by a
+        # hop, else researched, else the floor — and never wider than a refusal
+        # this model has actually sent.
         ctx = next(((inv[p][hops[p]] or {}).get("context") for p in chain if (inv[p][hops[p]] or {}).get("context")), None)
+        how = "stated" if ctx else "researched"
+        ctx = ctx or researched({p: hops[p] for p in chain})
+        if not ctx:
+            ctx, how = CONTEXT_FLOOR, "floor"
+        if measured.get(alias, ctx) < ctx:
+            ctx, how = measured[alias], "measured"
+        src[how] += 1
+        if how == "floor":
+            print(f"  ~ {alias}: no source states a window, floor {CONTEXT_FLOOR}", file=sys.stderr)
         models[alias] = {"hops": {p: hops[p] for p in chain}, "chain": chain,
                          "tier": "free" if pr == (0.0, 0.0) else "paid", "price": pr,
                          # local = every hop is a local daemon: the last resort, never a preference
@@ -408,15 +482,11 @@ def sync():
             lines.append(f"  - model_name: {name}")
             lines.append(f"    litellm_params: {deployment(p, m['hops'][p])}")
             # `max_input_tokens` is the one number the harness reads to size its
-            # context gauge. Without it the gauge divides by zero and reports
-            # 23710% "until auto-compact" forever — measured 2026-09-04 with
-            # `ANTHROPIC_MODEL=auto` landing on glm-5.3-flash-cloud, an ollama
-            # route whose window is 32768 but whose config entry carried none.
-            # Only when the window is known: a literal 0 is a narrower lie than
-            # no key, and litellm reads it as a window nothing fits in.
-            ctx = m.get("context")
+            # context gauge; without it the gauge divides by zero and reports
+            # 23710% "until auto-compact" (measured 2026-09-04). Every model
+            # carries one now — a literal 0 would be a window nothing fits in.
             tag = f'tier:{"free" if hop_price(p, m["hops"][p]) == (0.0, 0.0) else "paid"}'
-            lines.append(f'    model_info: {{ tags: ["{tag}"]{f", max_input_tokens: {ctx}" if ctx else ""} }}')
+            lines.append(f'    model_info: {{ tags: ["{tag}"], max_input_tokens: {m["context"]} }}')
         if len(m["chain"]) > 1:
             fallbacks.append((alias, [f"{base}@{p}" for p in m["chain"][1:]]))
     lines += ["", "litellm_settings:", "  drop_params: true", "  num_retries: 1", "  request_timeout: 600",
@@ -431,7 +501,8 @@ def sync():
     open(f"{CONF}/config.yaml", "w").write("\n".join(lines))
     tiers = collections.Counter(m["tier"] for m in models.values())
     print(f"wrote {MODELS}: {len(models)} models ({tiers['free']} free, {tiers['paid']} paid); "
-          f"config.yaml; {sum(1 for m in models.values() if m.get('priors'))} with a public rank", file=sys.stderr)
+          f"config.yaml; {sum(1 for m in models.values() if m.get('priors'))} with a public rank; "
+          f"windows: {', '.join(f'{n} {how}' for how, n in src.most_common())}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------- serve / status / record
@@ -495,10 +566,12 @@ def needs(args):
             r = json.loads(line)
             if r.get("success") or r.get("state") != "context" or not r.get("model"):
                 continue
-            e = by.setdefault(r["model"], {"n": 0, "tokens": [], "tasks": set()})
+            e = by.setdefault(r["model"], {"n": 0, "tokens": [], "tasks": set(), "window": None})
             e["n"] += 1
             if r.get("tokens"):
                 e["tokens"].append(r["tokens"])
+            if r.get("window"):
+                e["window"] = min(e["window"] or r["window"], r["window"])
             if r.get("task"):
                 e["tasks"].add(r["task"])
     except FileNotFoundError:
@@ -512,9 +585,10 @@ def needs(args):
         sys.exit(f"llm needs: {target} has no recorded need")
     for m, e in sorted(rows, key=lambda kv: -kv[1]["n"]):
         mx = max(e["tokens"]) if e["tokens"] else 0
-        print(f"{m:<44} context x{e['n']:<4} max request {mx:>7} tokens  {','.join(sorted(e['tasks']))[:60]}")
+        w = f"window {e['window']:>7}" if e["window"] else "window unnamed  "
+        print(f"{m:<44} context x{e['n']:<4} max request {mx:>7} tokens  {w}  {','.join(sorted(e['tasks']))[:60]}")
         if target:
-            print(f"  need: a window wider than {mx} tokens")
+            print(f"  need: a window wider than {mx} tokens" + (f" — the model names {e['window']}" if e["window"] else ""))
             print(f"  evidence: {e['n']} context refusals in performance.jsonl")
 
 

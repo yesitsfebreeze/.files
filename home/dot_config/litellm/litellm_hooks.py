@@ -127,6 +127,14 @@ def classify(err):
     return "error"
 
 
+def window_of(err):
+    """The window a context refusal names ("maximum context length is 131072
+    tokens", "context length of 32768"), or None. A fact from the model, so
+    `llm sync` sizes it by this over anything a provider stated."""
+    m = re.search(r"context (?:length|window)\D{0,24}?(\d{4,8})", err or "", re.I)
+    return int(m.group(1)) if m else None
+
+
 def unlock_at(err, now):
     """When the API itself says the model is back — openrouter's reset
     header (ms epoch), "try again in 30 seconds", "retry after 2 minutes" —
@@ -143,17 +151,19 @@ def unlock_at(err, now):
 def est_tokens(data):
     """Rough size of the request in tokens: chars / 3.5, over messages, system
     and tools — conservative on purpose, an overflow costs a failed call."""
-    n = sum(len(json.dumps(data.get(k) or "")) for k in ("messages", "system", "tools"))
+    n = sum(len(json.dumps(data[k])) for k in ("messages", "system", "tools") if data.get(k))
     return int(n / 3.5)
 
 
-def rank(models, status, task, tier, need, now=None, tokens=0):
+def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
     """Every eligible alias, best first: paid before free before local, and
     within each of those by score — the task's own record if the sync saw
     one, else the nearest job's precomputed score. A local model is the last
     resort, never a preference: it answers only when every remote one is
-    gone. A model whose window is smaller than this request is out; a parked
-    model is out too, whether or not its `until` has lapsed: only a probe or
+    gone. A model whose window is smaller than this request plus the answer
+    it asks for is out — and so is one whose window is unknown: unknown once
+    meant "fits", which walked a 67K request into a 32K model (2026-09-04).
+    A parked model is out too, whether or not its `until` has lapsed: only a probe or
     a real answer clears it — unless nothing else is left, then the parked
     come back soonest-first rather than the request failing. So the walk is the live
     shelf, not the graveyard: one Claude Code turn used to try ~600 dead
@@ -170,7 +180,7 @@ def rank(models, status, task, tier, need, now=None, tokens=0):
             continue
         if "tools" in need and c.get("tools") is False:
             continue
-        if tokens and m.get("context") and m["context"] < tokens * 1.2:
+        if tokens and (m.get("context") or 0) < tokens * 1.2 + out:
             continue
         s = m.get("jobs", {})
         cls = 2 if m.get("local") else (0 if m["tier"] == "paid" else 1)
@@ -246,7 +256,8 @@ class Router(CustomLogger):
         if model == "auto" or model.startswith("auto:"):
             tier = model.split(":", 1)[1] if ":" in model else None
             task, need = task_of(data), needs(data)
-            ranked = rank(_json(MODELS, {}), _json(STATUS, {}), task, tier, need, tokens=est_tokens(data))
+            ranked = rank(_json(MODELS, {}), _json(STATUS, {}), task, tier, need,
+                          tokens=est_tokens(data), out=int(data.get("max_tokens") or 0))
             if not ranked:
                 from fastapi import HTTPException
                 raise HTTPException(status_code=503, detail={
@@ -285,6 +296,8 @@ class Router(CustomLogger):
                                      "tools": (kwargs.get("optional_params") or {}).get("tools")})}
         if err:
             rec["state"], rec["error"] = classify(err), err[:160]
+            if rec["state"] == "context" and window_of(err):
+                rec["window"] = window_of(err)
         try:
             with open(RECORD, "a") as f:
                 f.write(json.dumps(rec) + "\n")
@@ -336,9 +349,13 @@ if __name__ == "__main__":
         M2 = {"s": {"tier": "free", "caps": {}, "context": 8000, "jobs": {"text": 0.9}},
               "l": {"tier": "free", "caps": {}, "context": 200000, "jobs": {"text": 0.5}},
               "u": {"tier": "free", "caps": {}, "context": None, "jobs": {"text": 0.4}}}
-        assert rank(M2, {}, "x", None, set(), tokens=20000) == ["l", "u"]  # too small a window is out; unknown stays
+        assert rank(M2, {}, "x", None, set(), tokens=20000) == ["l"]       # too small a window is out, and so is an unknown one
+        assert rank(M2, {}, "x", None, set(), tokens=5000) == ["s", "l"]
+        assert rank(M2, {}, "x", None, set(), tokens=5000, out=4000) == ["l"]  # the answer it asks for counts
         assert est_tokens({"messages": [{"role": "user", "content": "x" * 3500}]}) >= 1000
         assert classify("This model's maximum context length is 32768 tokens") == "context"
+        assert window_of("This model's maximum context length is 131072 tokens. However") == 131072
+        assert window_of("Insufficient credits") is None
         # the fallback list litellm appends to every error names hundreds of
         # models; a loose "context"/"exceeds"/"32k" match parked live ones a day
         assert classify("Insufficient credits. Fallbacks=[{'a-32k': ['b']}]") == "no-credit"
@@ -361,6 +378,9 @@ if __name__ == "__main__":
         r = json.loads(open(RECORD).readline())
         assert r["model"] == "a" and r["state"] == "no-credit" and not r["success"]
         assert "a" in _json(STATUS, {})
+        asyncio.run(router.async_log_failure_event({"model": "x", "exception": "maximum context length is 32768 tokens",
+                    "litellm_params": {"metadata": {"model_group": "b", "router_task": "t"}}}, None, now, now))
+        assert json.loads(open(RECORD).readlines()[-1])["window"] == 32768  # the refusal's own number, for sync
         asyncio.run(router.async_log_success_event({"model": "x", "litellm_params": {"metadata": {"model_group": "a"}},
                     "user": "task:t", "messages": [{"role": "user", "content": "x" * 3500}]}, None, now, now))
         assert "a" not in _json(STATUS, {})

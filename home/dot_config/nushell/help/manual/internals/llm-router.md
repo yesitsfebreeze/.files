@@ -46,7 +46,9 @@ hook refuses to start instead.
 the proxy) does a lookup in `models.json`: filter by tier, by what the
 request carries against the model's stated caps (an image never goes to a
 model that says text-only; a tools list never to one that says no tools),
-and by parked-state; drop any whose window is smaller than the request;
+and by parked-state; drop any whose window is smaller than the request
+plus the answer it asks for (`max_tokens`) — an unknown window is out, not
+"fits";
 order **paid, then free, then local** — a local model (ollama) is the last
 resort, it answers only when every remote one is gone, never because it
 scored well — and within each of those by the job's precomputed score; the
@@ -96,7 +98,18 @@ sync`, its models are on the shelf:
 | `store` | for a provider whose `/models` carries no price or window: the key under `~/.pi/agent/models-store.json` that does (opencode) |
 | `cap` | at most this many auto-enumerated models |
 | `skip` | substrings of ids not to offer (embeddings) |
-| `num_ctx` | `ollama`: the window every local route is served at |
+| `num_ctx` | `ollama`: the window every route served on this machine gets; a `:cloud` model keeps its trained window |
+
+Every model carries a window, never a blank: the hop states it, else
+`sync` asks the sources that publish it — a huggingface hop's own
+`config.json` (`max_position_embeddings`; gated repos 403), then litellm's
+public model table matched by name core (the narrowest match) — else the
+floor, 32768, printed by name so it is seen. A context refusal names the
+real window; the hook records it and the next `sync` sizes the model by it
+over anything stated. `llm needs` shows those. The window feeds the walk,
+`max_input_tokens` in the litellm config, and `{context}` for the agent
+(`CLAUDE_CODE_MAX_CONTEXT_TOKENS` for Claude Code — a pinned model's own;
+`auto` leaves it unset, the walk sizes each turn).
 
 List order is the tie-break within a price tier when a model is served by
 several providers. `aliases.json` holds the curated names (`opus-5` → each
@@ -119,6 +132,12 @@ huggingface — its `/models` lists the upstream serving each model with
   routes go through litellm's native `ollama_chat/` with `num_ctx` from the
   registry for that reason. Local models also reject Claude Code's
   `thinking` param outright; it is dropped per deployment.
+- An ollama `:cloud` model reports its trained window in `/api/tags`
+  (`details.context_length`, 1M for glm-5.3-flash) and runs at it on
+  ollama.com; capped to `num_ctx` it launched Claude Code with a 32K
+  limit, which stopped at 56K with "Prompt is too long" (2026-09-04).
+  A blank window let the walk send a 67K request to a 32K model the same
+  day — unknown meant "fits".
 - litellm bridges `/v1/messages` to the Responses API by default;
   opencode.ai/zen/go answers that with 429/500 — bridged via chat instead.
 - Claude Code replays its own `thinking` blocks every turn; only Claude
