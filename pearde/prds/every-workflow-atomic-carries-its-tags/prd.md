@@ -6,6 +6,7 @@ complexity: 5
 blast-radius: low
 workflow: clear-a-doctors-problem-with-its-own-fixer
 actual: 0.2h
+commit: bb4120a
 ---
 
 # every workflow atomic carries its tags
