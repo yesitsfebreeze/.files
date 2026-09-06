@@ -23,15 +23,19 @@ the floor.
 the command line's `new-session` runs — which is what makes this safe to write
 as a conditional rather than a background job that lands too late.
 
-### Truecolour and undercurl are overrides, not reads
+### Truecolour and undercurl are features, not reads
 
 `*:RGB` tells tmux the *client* terminal can take direct-colour SGR, so 24-bit
 colour set inside a pane survives the trip out. Without it every palette this
 environment ships is quantised to 256 colours.
 
-Undercurl (`Smulx`) and coloured undercurl (`Setulc`) have **no standard
-terminfo capability**, so both are declared as overrides against the outer
-terminal rather than read from its entry. Neovim draws diagnostics with them.
+Undercurl and coloured undercurl (`Smulx`/`Setulc`) have no standard terminfo
+capability, but tmux carries both under the `usstyle` feature — that is what
+Neovim's diagnostic underlines ride on. TRAP: hand-writing the two capability
+strings instead prints their own operands into the pane the moment a `%` is
+missing — a run of `256/256{` next to every diagnostic, cleared on the next
+redraw, which is what makes it read as a rendering glitch rather than a config
+error.
 
 ### Hyperlinks are dropped unless the *client* feature is on
 

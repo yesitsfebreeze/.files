@@ -4,7 +4,7 @@
   llm           pick a model (auto included), then which agent runs it
   llm sync      providers.json -> every model, price, caps, window, public rank,
                 our own record -> models.json + litellm config.yaml
-  llm serve     run the proxy (litellm) on that config, foreground
+  llm serve     run the proxy (litellm) on that config — launchd does this
   llm status    what's parked and why, and who is best at which job
   llm cc [agent] [model] [args…]
                 an agent (agents.json: claude, pi, …) on a model: `auto`,
@@ -303,14 +303,23 @@ def priors(models):
     return out
 
 
+PARKING = {"no-credit", "rate-limited", "unsupported", "context"}  # a refusal about the account or the size, not the model's work
+
+
 def record():
-    """{task: {alias: {ok, n, judge: [...]}}} from performance.jsonl."""
+    """{task: {alias: {ok, n, judge: [...]}}} from performance.jsonl. A call
+    the model refused for credit, quota, existence or size is not a verdict
+    on its work — 18K of 34K failures were 402s, and they scored 118 live
+    models 0 (2026-09-06). "untagged" rows predate the hook labelling a bare
+    request by its job; they say nothing about which job."""
     st = {}
     try:
         for line in open(RECORD):
             if not line.strip():
                 continue
             r = json.loads(line)
+            if r.get("state") in PARKING or r.get("task") == "untagged":
+                continue
             s = st.setdefault(r.get("task"), {}).setdefault(r.get("model"), {"ok": 0, "n": 0, "judge": []})
             if r.get("kind") == "call":
                 s["n"] += 1; s["ok"] += 1 if r.get("success") else 0
@@ -336,11 +345,13 @@ def windows():
     return out
 
 
-def job_score(s):
-    """0-1: success rate, averaged with the judge's 1-5 mapped to 0-1."""
+def job_score(s, prior=0.5):
+    """0-1: success rate pulled toward the prior by three phantom calls (one
+    500 used to score a model 0 for good, one answer 1), averaged with the
+    judge's 1-5 mapped to 0-1."""
     if not s or not s["n"]:
         return None
-    rate = s["ok"] / s["n"]
+    rate = (s["ok"] + 3 * prior) / (s["n"] + 3)
     if s["judge"]:
         return round((rate + (sum(s["judge"]) / len(s["judge"]) - 1) / 4) / 2, 2)
     return round(rate, 2)
@@ -369,8 +380,9 @@ def scores(alias, m, rec):
             # better unknown for agent work — Claude Code is agent work
             s += 0.05 * bool((m.get("caps") or {}).get("tools")) + 0.05 * ((m.get("context") or 0) >= 128000)
         out[job] = round(s + free, 3)
+    mean = sum(out.values()) / len(out)
     for task, models in rec.items():
-        js = job_score(models.get(alias))
+        js = job_score(models.get(alias), out.get(task, mean) - free)
         if js is not None:
             out[task] = round(min(1.0, js + free), 3)
     return out
@@ -450,6 +462,7 @@ def sync():
     rec = record()
     for a, m in models.items():
         m["jobs"] = scores(a, m, rec)
+        m["tried"] = sorted(t for t, ms in rec.items() if ms.get(a, {}).get("n"))  # what the walk still has to learn about
     os.makedirs(STATE, exist_ok=True)
     tmp = MODELS + ".tmp"
     json.dump(models, open(tmp, "w"), indent=1); os.replace(tmp, MODELS)
@@ -493,12 +506,25 @@ def sync():
               # Claude Code speaks /v1/messages; litellm bridges it to the Responses API by
               # default, which opencode.ai/zen/go answers with 429/500 — bridge via chat.
               "  use_chat_completions_url_for_anthropic_messages: true",
-              "  callbacks: [litellm_hooks.router]", "", "router_settings:", "  fallbacks:"]
+              "  callbacks: [litellm_hooks.router]", "", "router_settings:",
+              # litellm stops a walk after five hops unless told otherwise; the
+              # hook's list is the whole live tier, and a sweep of the parked
+              f"  max_fallbacks: {max(len(models), 50)}", "  fallbacks:"]
     for name, fb in fallbacks:
         lines.append(f"    - {name}: [{', '.join(fb)}]")
     lines += ["", "general_settings:", "  master_key: os.environ/LITELLM_MASTER_KEY", ""]
     os.makedirs(CONF, exist_ok=True)
-    open(f"{CONF}/config.yaml", "w").write("\n".join(lines))
+    text = "\n".join(lines)
+    try:
+        changed = open(f"{CONF}/config.yaml").read() != text
+    except FileNotFoundError:
+        changed = True
+    open(f"{CONF}/config.yaml", "w").write(text)
+    if changed and proxy_live():
+        # the hook reads models.json live; a deployment that came or went
+        # needs the proxy restarted, and an un-restarted proxy was stale
+        # for days without anyone knowing
+        print("  config changed: " + ("proxy restarted" if restart() else "restart the proxy"), file=sys.stderr)
     tiers = collections.Counter(m["tier"] for m in models.values())
     print(f"wrote {MODELS}: {len(models)} models ({tiers['free']} free, {tiers['paid']} paid); "
           f"config.yaml; {sum(1 for m in models.values() if m.get('priors'))} with a public rank; "
@@ -506,11 +532,29 @@ def sync():
 
 
 # ---------------------------------------------------------------- serve / status / record
+LOG = f"{STATE}/proxy.log"
+JOB = f"gui/{os.getuid()}/litellm"  # the launchd service (~/Library/LaunchAgents/litellm.plist, KeepAlive)
+
+
 def serve(args):
+    """The proxy, foreground. Under launchd (no tty) it logs to proxy.log
+    itself, rotating at 20 MB on each start — every error line carries the
+    whole fallback list; 44 MB in a day once."""
     load_env()
     if not os.path.exists(f"{CONF}/config.yaml"):
         sync()
+    if not sys.stdout.isatty():
+        if os.path.exists(LOG) and os.path.getsize(LOG) > 20_000_000:
+            os.replace(LOG, LOG + ".1")
+        fd = os.open(LOG, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        os.dup2(fd, 1); os.dup2(fd, 2)
     os.execvp("litellm", ["litellm", "--config", f"{CONF}/config.yaml", "--port", str(PORT)] + args)
+
+
+def restart():
+    """The proxy on the current config, via launchd; False when it is not a
+    service here (a foreground `llm serve`), so the caller says so."""
+    return subprocess.run(["launchctl", "kickstart", "-k", JOB], capture_output=True).returncode == 0
 
 
 def status(args):
@@ -853,11 +897,9 @@ def cc(args, ask_agent=False):
             sync()
         print(f"llm {name}: starting litellm on {BASE[7:]} …", file=sys.stderr)
         os.makedirs(STATE, exist_ok=True)
-        lp = f"{STATE}/proxy.log"
-        if os.path.exists(lp) and os.path.getsize(lp) > 20_000_000:
-            os.replace(lp, lp + ".1")  # every error line carries the whole fallback list; 44 MB in a day
-        log = open(lp, "a")
-        subprocess.Popen([sys.argv[0], "serve"], stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True)
+        if not restart():  # no launchd service (another machine): a detached child
+            subprocess.Popen([sys.argv[0], "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             stdin=subprocess.DEVNULL, start_new_session=True)
         # poll liveliness, not the child: two launches racing both spawn one,
         # the loser dies on the bound port while the winner answers here
         for _ in range(120):

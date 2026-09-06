@@ -28,6 +28,25 @@ in-session model picker written to `model_picker` — and `native`, the
 no-proxy hop for the agent's own models. Claude Code and pi are in there;
 add an agent, no code.
 
+## The service
+
+The proxy is a launchd agent (`~/Library/LaunchAgents/litellm.plist`,
+`KeepAlive`): it is up from login, comes back within seconds of dying, and
+litellm takes about two minutes to load the shelf's ~2000 deployments —
+Claude Code's own retries cover that gap. `llm sync` runs nightly at 04:30
+(`litellm-sync.plist`, log in `~/.local/state/litellm/sync.log`) so the
+scores, the shelf and the windows are never older than a day; when the
+generated config differs from the one the proxy loaded it restarts the
+proxy (`launchctl kickstart -k`) — an un-restarted proxy was stale for
+days once, silently. A manual `llm sync` does the same, so run it between
+sessions. `chezmoi apply` (re)loads both agents only when the hook or a
+plist changed, because loading restarts the proxy and cuts every request
+in flight. The parked-model probe starts with the proxy, not with the
+first request, and sweeps its batch concurrently — a minute a sweep. Under
+launchd the proxy logs to `proxy.log` itself, rotated at 20 MB on start.
+On a machine without the agent, `llm <agent>` still spawns the proxy
+detached.
+
 ## Keys
 
 Keys live in `~/.local/state/litellm/credentials.env`, plain
@@ -42,24 +61,34 @@ hook refuses to start instead.
 ## How a request is routed
 
 `model: auto` (or `auto:free` / `auto:paid`) with `metadata.tags:
-["task:<label>"]` naming the job. The hook (`litellm_hooks.py`, loaded by
+["task:<label>"]` naming the job; without a tag the request is ranked and
+recorded under the job its shape says (a tools list is agent, an image is
+vision, a document is document, else text) — "untagged" used to be a column
+of its own that every Claude Code turn scored and no job read. The hook (`litellm_hooks.py`, loaded by
 the proxy) does a lookup in `models.json`: filter by tier, by what the
-request carries against the model's stated caps (an image never goes to a
-model that says text-only; a tools list never to one that says no tools),
+request carries against the model's stated caps (an image or a PDF never
+goes to a model that says text-only; a tools list never to one that says
+no tools),
 and by parked-state; drop any whose window is smaller than the request
 plus the answer it asks for (`max_tokens`) — an unknown window is out, not
 "fits"; the size is chars / 3.5 with every image or page counted flat at
 1600 tokens, not by its base64 (six screenshots in tool results once
 weighed in as 9.1M tokens, and no window holds that);
-order **paid, then free, then local** — a local model (ollama) is the last
-resort, it answers only when every remote one is gone, never because it
-scored well — and within each of those by the job's precomputed score; the
-first goes out and *every* other candidate rides as litellm's per-request `fallbacks`,
-so a request fails only when the whole shelf has. litellm walks that list
+order by the job's precomputed score, best first — free carries a small
+bonus so a tie goes to the cheaper model, and a local model (ollama) is the
+last resort, it answers only when every remote one is gone, never because
+it scored well; the first goes out and *every* other candidate rides as
+litellm's per-request `fallbacks`, so a request fails only when the whole
+shelf has (`max_fallbacks` in the generated config is the shelf size —
+litellm stops after five hops otherwise). litellm walks that list
 when a model refuses before its first byte; the hook walks it when a model
 answers 200 and then puts its error in the stream (openrouter's "Provider
-returned error" 429 does), as long as nothing has reached the client yet —
-that case used to hand Claude Code the error whole. No model is asked how
+returned error" 429 does), as long as no content has reached the client —
+the bridge's own `message_start` does not count, and a restart does not
+repeat it (the client SDK ends the stream on a second one). The restart
+carries the request, not what litellm hung on it in the first pass: re-sent
+whole, a Deployment object went into the upstream body and the walk failed
+in 17ms (2026-09-06). No model is asked how
 to route — the request path is a sort, ~1ms. If nothing is eligible at all it
 answers 503 "no model available right now" rather than hunting.
 
@@ -70,8 +99,10 @@ tier. Ollama went down for twenty minutes and a session on
 `alias@provider` is a pin and gets no walk.
 
 The job score per model is computed at `sync`: our own record for that
-exact task label when there is one (success rate averaged with judge
-scores), else the Arena rank for the nearest job (text / code / vision /
+exact label when there is one (success rate pulled toward the public prior
+by three phantom calls — one 500 used to score a model 0 for good — averaged
+with judge scores; a refusal for credit, quota, existence or size is parking,
+not a verdict, and does not count), else the Arena rank for the nearest job (text / code / vision /
 agent / document / search — a task label is mapped by keyword, an image
 request is vision, a tools request is agent), else OpenRouter usage rank,
 else unknown; free gets a small bonus so ties go to the cheaper model. One
@@ -97,7 +128,8 @@ answer or parks it again on a refusal, so no user request leads with a
 model that is still dead and `llm status`'s "probe in" is a check the
 proxy will make. Nothing else drops a park — a mark used to sweep every
 lapsed entry out with it, and those returned to the walk unprobed. Only when nothing else is left do the parked come
-back, soonest-first, without a probe. A real answer clears a park too.
+back, soonest-first and one sweep's worth (twenty), without a probe. A park
+whose alias left the shelf at a sync is dropped by the next sweep. A real answer clears a park too.
 `llm status clear [alias]` overrides.
 
 ## The registry

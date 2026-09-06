@@ -103,6 +103,15 @@ that variable, and letting it through registers the server into whatever
 profile was last used. The path is absolute because the apply's PATH is not the
 login shell's.
 
+## Loading the model router
+
+`run_onchange_after_load-litellm.sh` bootstraps the two launchd agents in
+`~/Library/LaunchAgents` (the litellm proxy with `KeepAlive`, and the
+nightly `llm sync`). It is `run_onchange`, keyed on the hook and both
+plists, because a load restarts the proxy and that cuts every request in
+flight — a plain `run_after` would do it on every apply. See
+`internals/llm-router.md`.
+
 ## Syncing the plugin set across logins
 
 `run_after_sync-claude-plugins.sh` unions `enabledPlugins` and

@@ -121,8 +121,11 @@ def _media(b):
 
 def needs(data):
     n = set()
-    if any((b.get("type") or "").startswith(("image", "input_image")) for b in _blocks(data.get("messages"))):
+    kinds = {(b.get("type") or "") for b in _blocks(data.get("messages"))}
+    if any(k.startswith(("image", "input_image")) for k in kinds):
         n.add("image")
+    if "document" in kinds:
+        n.add("file")
     if data.get("tools"):
         n.add("tools")
     return n
@@ -133,6 +136,8 @@ def job_of(task, need):
     first (an image is vision, tools is agent), then by keyword, else text."""
     if "image" in need:
         return "vision"
+    if "file" in need:
+        return "document"
     if "tools" in need:
         return "agent"
     t = task.lower()
@@ -140,6 +145,15 @@ def job_of(task, need):
         if any(w in t for w in words):
             return job
     return "text"
+
+
+def label(data, need):
+    """The key a request is ranked and recorded under: its `task:` tag, else
+    the job its shape says (agent / vision / document / text). "untagged" used
+    to be a key of its own, so 99.9% of the record — every Claude Code turn —
+    scored one column that said nothing about the work (2026-09-06)."""
+    t = task_of(data)
+    return job_of(t, need) if t == "untagged" else t
 
 
 def classify(err):
@@ -150,7 +164,7 @@ def classify(err):
     if any(k in e for k in ("insufficient balance", "insufficient credits", "balance greater than 0",
                             "payment required", "402", "no credit", "add credits")):
         return "no-credit"
-    if any(k in e for k in ("429", "rate limit", "ratelimit", "usage limit", "too many requests", "quota")):
+    if any(k in e for k in ("429", "rate limit", "ratelimit", "rate_limit", "usage limit", "too many requests", "quota")):
         return "rate-limited"
     if any(k in e for k in ("not supported", "not found", "does not exist", "no such model", "404")):
         return "unsupported"
@@ -205,18 +219,32 @@ def fix_of(err):
     return f"{verb}: {m.group(0)}" if verb and m else verb
 
 
+def _event(chunk):
+    return chunk.get("type") if isinstance(chunk, dict) else getattr(chunk, "type", None)
+
+
+def _plain(d):
+    """The JSON-able part of a request dict; anything else is litellm's own."""
+    def ok(v):
+        try:
+            json.dumps(v); return True
+        except (TypeError, ValueError):
+            return False
+    return {k: v for k, v in d.items() if k != "litellm_logging_obj" and ok(v)}
+
+
 def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
-    """Every eligible alias, best first: paid before free before local, and
-    within each of those by score — the task's own record if the sync saw
-    one, else the nearest job's precomputed score. A local model is the last
-    resort, never a preference: it answers only when every remote one is
-    gone. A model whose window is smaller than this request plus the answer
+    """Every eligible alias, best first by score — the task's own record if
+    the sync saw one, else the nearest job's precomputed score; free carries
+    a small bonus at sync so a tie goes to the cheaper model. A local model
+    is the last resort, never a preference: it answers only when every
+    remote one is gone. A model whose window is smaller than this request plus the answer
     it asks for is out — and so is one whose window is unknown: unknown once
     meant "fits", which walked a 67K request into a 32K model (2026-09-04).
     A parked model is out too, whether or not its `until` has lapsed: only a probe or
     a real answer clears it — unless nothing else is left, then the parked
-    come back soonest-first rather than the request failing. So the walk is the live
-    shelf, not the graveyard: one Claude Code turn used to try ~600 dead
+    come back soonest-first rather than the request failing — a probe sweep
+    of them, not the graveyard: one Claude Code turn used to try ~600 dead
     routes before it found a model, and the one it found was a 3B
     (2026-09-04)."""
     now = now or time.time()
@@ -226,24 +254,23 @@ def rank(models, status, task, tier, need, now=None, tokens=0, out=0):
         if tier and m["tier"] != tier:
             continue
         c = m.get("caps") or {}
-        if "image" in need and c.get("input") is not None and "image" not in c["input"]:
+        if c.get("input") is not None and not need & {"image", "file"} <= set(c["input"]):
             continue
         if "tools" in need and c.get("tools") is False:
             continue
         if tokens and (m.get("context") or 0) < tokens * 1.2 + out:
             continue
         s = m.get("jobs", {})
-        cls = 2 if m.get("local") else (0 if m["tier"] == "paid" else 1)
-        score = (cls, -s.get(task, s.get(job, 0.4)))
+        score = (1 if m.get("local") else 0, -s.get(task, s.get(job, 0.4)))
         e = status.get(a)
         (parked if e else live).append((score, a, (e or {}).get("until", 0)))
     live.sort(key=lambda t: t[0])
     parked.sort(key=lambda t: t[2])
-    out = [a for _, a, _ in live] or [a for _, a, _ in parked]
+    out = [a for _, a, _ in live] or [a for _, a, _ in parked[:PROBE_BATCH]]
     if live and random.random() < EPSILON:
         # lead with a model this task has no record for, so the record grows —
         # from the same class as the leader, never a local one over a remote
-        untried = [a for sc, a, _ in live if sc[0] == live[0][0][0] and task not in models[a].get("jobs", {})]
+        untried = [a for sc, a, _ in live if sc[0] == live[0][0][0] and task not in models[a].get("tried", ())]
         if untried:
             pick = random.choice(untried)
             out.remove(pick); out.insert(0, pick)
@@ -257,7 +284,8 @@ def behind(alias, models, data):
     `alias@provider` gets none of this — a pin is a pin."""
     m = models[alias]
     own = [f"{alias}@{p}" for p in m["chain"][1:]]
-    walk = rank(models, _json(STATUS, {}), task_of(data), m["tier"], needs(data),
+    need = needs(data)
+    walk = rank(models, _json(STATUS, {}), label(data, need), m["tier"], need,
                 tokens=est_tokens(data), out=int(data.get("max_tokens") or 0))
     return own + [a for a in walk if a != alias]
 
@@ -295,14 +323,18 @@ async def probe():
         try:
             from litellm.proxy.proxy_server import llm_router
             now = time.time()
-            due = []
-            for a, e in _json(STATUS, {}).items():
+            due, models = [], _json(MODELS, {})
+            for a, e in list(_json(STATUS, {}).items()):  # clear() edits the cached dict under the loop
+                if a.split("@")[0] not in models:
+                    clear(a)  # left the shelf at a sync; 77 batch ids were probed every five minutes for two days (2026-09-06)
+                    continue
                 u = e.get("until", 0)
                 lead = PROBE_EARLY.get(e.get("state", "error"), 60)
                 if u - lead <= now:
                     due.append((u, a, e.get("state", "error")))
             due.sort()
-            for _, a, _ in due[:PROBE_BATCH]:
+
+            async def one(a):
                 try:
                     # no fallbacks: a sibling hop answering must not clear this one
                     await asyncio.wait_for(llm_router.acompletion(
@@ -311,6 +343,7 @@ async def probe():
                     clear(a)
                 except Exception as e:
                     mark(a, str(e))
+            await asyncio.gather(*(one(a) for _, a, _ in due[:PROBE_BATCH]))  # a sweep is a minute, not twenty
         except Exception:
             pass
 
@@ -321,14 +354,22 @@ class Router(CustomLogger):
     def _start_probe(self):
         if Router._probe is None:
             import asyncio
-            Router._probe = asyncio.ensure_future(probe())
+            try:
+                Router._probe = asyncio.get_running_loop().create_task(probe())
+            except RuntimeError:
+                pass  # no loop yet: the first request starts it
 
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         self._start_probe()
         model = data.get("model") or ""
+        need = needs(data)
+        task = label(data, need)
+        data.setdefault("metadata", {})["router_task"] = task
+        # `user` survives litellm's fallback call; our metadata does not
+        data.setdefault("user", f"task:{task}")
         if model == "auto" or model.startswith("auto:"):
             tier = model.split(":", 1)[1] if ":" in model else None
-            task, need, tokens = task_of(data), needs(data), est_tokens(data)
+            tokens = est_tokens(data)
             ranked = rank(_json(MODELS, {}), _json(STATUS, {}), task, tier, need,
                           tokens=tokens, out=int(data.get("max_tokens") or 0))
             if not ranked:
@@ -336,9 +377,6 @@ class Router(CustomLogger):
                 raise HTTPException(status_code=503, detail={
                     "error": f"no model available right now for {model} (task {task}, needs {sorted(need) or 'text'}, ~{tokens} tokens)"})
             data["model"], data["fallbacks"] = ranked[0], ranked[1:]
-            data.setdefault("metadata", {})["router_task"] = task
-            # `user` survives litellm's fallback call; our metadata does not
-            data.setdefault("user", f"task:{task}")
         elif "@" not in model and model in (models := _json(MODELS, {})):
             data["fallbacks"] = behind(model, models, data)
         # Claude Code replays its own `thinking` blocks every turn; only Claude
@@ -358,11 +396,20 @@ class Router(CustomLogger):
         while nothing has been sent, a failed stream is replaced by the next
         candidate's, and the record already parked the one that failed."""
         rest = list(request_data.get("fallbacks") or [])
-        sent = False
+        sent = started = False
         while True:
             try:
                 async for chunk in response:
-                    sent = True  # ponytail: any event counts, even a bare message_start; buffer up to the first delta if a client ever chokes on a restart
+                    # litellm's /v1/messages bridge sends a synthetic message_start
+                    # before it has read a byte upstream: it proves nothing, and a
+                    # second one would end the client's stream (the SDK throws on
+                    # message_start before message_stop). Skip it on a restart.
+                    if _event(chunk) in ("message_start", "ping"):
+                        if started:
+                            continue
+                        started = True
+                    else:
+                        sent = True
                     yield chunk
                 return
             except Exception:
@@ -371,12 +418,18 @@ class Router(CustomLogger):
                 response = await self._restart(request_data, rest.pop(0), rest, user_api_key_dict)
 
     async def _restart(self, data, model, rest, user_api_key_dict):
-        """The same request on the next candidate, by the route it came in on."""
+        """The same request on the next candidate, by the route it came in on —
+        minus what litellm hung on it during the first pass (its logging
+        object, the Deployment in metadata): re-sent, those went into the
+        upstream body as "Object of type Deployment is not JSON serializable"
+        and the whole walk failed in 17ms (2026-09-06)."""
         from litellm.proxy.proxy_server import llm_router
         from litellm.proxy.route_llm_request import route_request
         url = (data.get("proxy_server_request") or {}).get("url") or ""
         route = "anthropic_messages" if "/messages" in url else "acompletion"
-        call = await route_request(data={**data, "model": model, "fallbacks": rest}, route_type=route,
+        body = _plain(data)
+        body.update(model=model, fallbacks=rest, metadata=_plain(data.get("metadata") or {}))
+        call = await route_request(data=body, route_type=route,
                                    llm_router=llm_router, user_model=None, user_api_key_dict=user_api_key_dict)
         return await call
 
@@ -413,6 +466,7 @@ class Router(CustomLogger):
 
 
 router = Router()
+router._start_probe()  # litellm loads this inside the proxy's startup event, so the sweep runs from boot, not from the first request
 
 
 if __name__ == "__main__":
@@ -429,12 +483,19 @@ if __name__ == "__main__":
         M3 = {"loc": {"tier": "free", "local": True, "caps": {}, "jobs": {"text": 0.99}},
               "fr": {"tier": "free", "caps": {}, "jobs": {"text": 0.3}},
               "pd": {"tier": "paid", "caps": {}, "jobs": {"text": 0.1}}}
-        assert rank(M3, {}, "x", None, set()) == ["pd", "fr", "loc"]   # paid > free > local, whatever the score
+        assert rank(M3, {}, "x", None, set()) == ["fr", "pd", "loc"]   # score decides, local last whatever its score
         assert rank(M3, {"pd": {"until": time.time() + 9}}, "x", None, set()) == ["fr", "loc"]
         assert rank(M, S, "code-review", "free", set()) == ["b", "a"]  # keyword -> code
         assert rank(M, S, "x", None, {"image"}) == ["p", "b"]          # image: a says text-only
         assert rank(M, S, "x", None, {"tools"}) == ["p", "b"]          # tools: a says no
         assert job_of("summarize this", set()) == "document" and job_of("hello", set()) == "text"
+        assert label({"metadata": {"tags": ["task:t"]}}, {"tools"}) == "t" and label({}, {"tools"}) == "agent"
+        assert label({}, set()) == "text"                                # untagged is ranked and recorded by its job
+        pdf = {"messages": [{"role": "user", "content": [{"type": "document", "source": {"type": "base64", "data": "AA"}}]}]}
+        assert needs(pdf) == {"file"} and job_of("x", {"file"}) == "document"
+        assert rank(M, S, "x", None, {"file"}) == ["b"]                   # a pdf never goes to a model that says text/image only
+        assert classify("Provider returned error, Metadata: {'error_type': 'rate_limit_exceeded'}") == "rate-limited"
+        assert _plain({"a": 1, "b": object(), "litellm_logging_obj": 1}) == {"a": 1}
         assert classify("Insufficient balance") == "no-credit" and classify("session usage limit") == "rate-limited"
         mark("b", "Insufficient credits", now=1000.0)
         assert _json(STATUS, {})["b"]["since"] == 1000.0
@@ -444,6 +505,12 @@ if __name__ == "__main__":
         assert rank(M, S, "code", "free", set()) == ["a"]              # parked is off the walk while a live one exists
         S["a"] = {"state": "error", "since": 1, "until": time.time() + 30}
         assert rank(M, S, "code", "free", set()) == ["a", "b"]         # all parked: soonest back first
+        many = {f"m{i}": {"tier": "free", "caps": {}, "jobs": {}} for i in range(40)}
+        assert len(rank(many, {a: {"until": i} for i, a in enumerate(many)}, "x", None, set())) == PROBE_BATCH  # a bounded sweep, not the graveyard
+        M["a"]["tried"] = ["t"]
+        EPSILON = 1.0
+        assert rank(M, {}, "t", "free", set())[0] == "b"                # exploration leads with the one the record has not seen
+        EPSILON = 0.0
         S = {"b": {"state": "no-credit", "since": 1, "until": time.time() - 60}}
         assert rank(M, S, "code", "free", set()) == ["a"]              # lapsed is still parked until a probe clears it
         assert unlock_at('429 {"headers":{"X-RateLimit-Reset":"1788566400000"}}', 1788566000) == 1788566400.0
@@ -534,4 +601,13 @@ if __name__ == "__main__":
             asyncio.run(drain(stream("x", fail_at=0), {"model": "a"})); assert False
         except RuntimeError:
             pass                                                                                       # nothing left to walk
+        start, block = {"type": "message_start"}, {"type": "content_block_start"}
+        async def restart(data, model, rest, key):
+            return stream(start, block)
+        router._restart = restart
+        assert asyncio.run(drain(stream(start, block, fail_at=1), req)) == [start, block]                   # the bridge's message_start proves nothing, and comes once
+        try:
+            asyncio.run(drain(stream(start, block, block, fail_at=2), req)); assert False
+        except RuntimeError:
+            pass                                                                                       # content reached the client: the error goes through
     print("ok")
