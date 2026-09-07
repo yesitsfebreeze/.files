@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[one-claim-per-memo]] | every memo carries one claim — the test is whether a second sentence in the body defends the first or starts another memo | writing a new memo, splitting a bundle, or adding a section heading to an existing memo |

@@ -1,5 +1,12 @@
 {
   "kind": "research",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "the-fresh-machine-provisioning-trace": {
+      "path": "research/the-fresh-machine-provisioning-trace.md",
+      "description": "a fresh machine went through install.sh + first-launch + first chezoi apply + first llm sync \u2014 what was measured, what was slower than expected, what would change",
+      "read_when": "trusting a \"the fresh machine path works\" claim, or running a clean install for the first time",
+      "links": {}
+    }
+  }
 }

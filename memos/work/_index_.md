@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[draft-the-record-from-the-board]] | migrate the board's live decisions and knowledge into memos/, then retire the four registers that no longer earn their place | asking what the memos migration did, or starting the next consolidation pass |

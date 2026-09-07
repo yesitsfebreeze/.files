@@ -1,5 +1,12 @@
 {
   "kind": "persona",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "engineer": {
+      "path": "persona/engineer.md",
+      "description": "the smallest change that ships, verified by a run, reported in numbers \u2014 the default worker when no persona is named",
+      "read_when": "reaching for the smallest change that ships, or asking who the default worker is",
+      "links": {}
+    }
+  }
 }

@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[the-fresh-machine-provisioning-trace]] | a fresh machine went through install.sh + first-launch + first chezoi apply + first llm sync — what was measured, what was slower than expected, what would change | trusting a "the fresh machine path works" claim, or running a clean install for the first time |

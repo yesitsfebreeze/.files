@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[engineer]] | the smallest change that ships, verified by a run, reported in numbers — the default worker when no persona is named | reaching for the smallest change that ships, or asking who the default worker is |

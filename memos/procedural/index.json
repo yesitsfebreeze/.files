@@ -1,5 +1,12 @@
 {
   "kind": "procedural",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "one-claim-per-memo": {
+      "path": "procedural/one-claim-per-memo.md",
+      "description": "every memo carries one claim \u2014 the test is whether a second sentence in the body defends the first or starts another memo",
+      "read_when": "writing a new memo, splitting a bundle, or adding a section heading to an existing memo",
+      "links": {}
+    }
+  }
 }

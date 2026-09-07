@@ -1,5 +1,14 @@
 {
   "kind": "work",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "draft-the-record-from-the-board": {
+      "path": "work/draft-the-record-from-the-board.md",
+      "description": "migrate the board's live decisions and knowledge into memos/, then retire the four registers that no longer earn their place",
+      "read_when": "asking what the memos migration did, or starting the next consolidation pass",
+      "links": {
+        "llm-launches-any-agent": "knowledge/llm-launches-any-agent.md"
+      }
+    }
+  }
 }
