@@ -1,7 +1,79 @@
 {
   "kind": "routine",
-  "memo_count": 4,
+  "memo_count": 48,
   "memos": {
+    "apply-scoped-not-bare": {
+      "path": "routine/apply-scoped-not-bare.md",
+      "description": "the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside",
+      "read_when": "executing apply-scoped-not-bare",
+      "links": {}
+    },
+    "ask-whether-the-tool-already-refuses": {
+      "path": "routine/ask-whether-the-tool-already-refuses.md",
+      "description": "a two-claim fixture showed `collect` already refuses cross-claim staging, which halved the spec and moved it to the real hole",
+      "read_when": "executing ask-whether-the-tool-already-refuses",
+      "links": {}
+    },
+    "assert-the-post-state-twice": {
+      "path": "routine/assert-the-post-state-twice.md",
+      "description": "a verify that passes once is a build script; three runs is what separates the two",
+      "read_when": "executing assert-the-post-state-twice",
+      "links": {}
+    },
+    "bisect-which-command-expands-the-format": {
+      "path": "routine/bisect-which-command-expands-the-format.md",
+      "description": "-e` arrived literal and `-d` did not, which is the whole defect; testing the same popup as a key binding, inside a template, and through `run-shell` is what separated the expander from the expandee",
+      "read_when": "executing bisect-which-command-expands-the-format",
+      "links": {}
+    },
+    "carry-the-why-across-the-rewrite": {
+      "path": "routine/carry-the-why-across-the-rewrite.md",
+      "description": "the file shrank 404 \u2192 198 lines and its constraint comments were the expensive part; re-lodging them beside the code that still needs them is what stops a rewrite from spending a day of somebody's past work",
+      "read_when": "executing carry-the-why-across-the-rewrite",
+      "links": {}
+    },
+    "census-the-class-not-the-instance": {
+      "path": "routine/census-the-class-not-the-instance.md",
+      "description": "the one bad block was 8 lines in 5 files, and the commit it caused had run five times, not once",
+      "read_when": "executing census-the-class-not-the-instance",
+      "links": {}
+    },
+    "check-what-apply-left-behind": {
+      "path": "routine/check-what-apply-left-behind.md",
+      "description": "`chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone",
+      "read_when": "executing check-what-apply-left-behind",
+      "links": {}
+    },
+    "clear-a-doctors-problem-with-its-own-fixer": {
+      "path": "routine/clear-a-doctors-problem-with-its-own-fixer.md",
+      "description": "every workflow atomic carries its tags",
+      "read_when": "executing clear-a-doctors-problem-with-its-own-fixer",
+      "links": {}
+    },
+    "cut-a-feature-its-readers-still-name": {
+      "path": "routine/cut-a-feature-its-readers-still-name.md",
+      "description": "09-simplify/03-help-system",
+      "read_when": "executing cut-a-feature-its-readers-still-name",
+      "links": {}
+    },
+    "delete-the-shadow-the-replacement-leaves": {
+      "path": "routine/delete-the-shadow-the-replacement-leaves.md",
+      "description": "`~/.local/bin` is ahead of the brew prefix, so the old binary would have won forever and the Brewfile entry would have been decorative",
+      "read_when": "executing delete-the-shadow-the-replacement-leaves",
+      "links": {}
+    },
+    "delete-what-nothing-reads": {
+      "path": "routine/delete-what-nothing-reads.md",
+      "description": "09-simplify/01-hygiene",
+      "read_when": "executing delete-what-nothing-reads",
+      "links": {}
+    },
+    "document-the-new-surface": {
+      "path": "routine/document-the-new-surface.md",
+      "description": "this shell's drift check fails on any alias with no manual entry, so the entry is part of the change, not a follow-up",
+      "read_when": "executing document-the-new-surface",
+      "links": {}
+    },
     "drill": {
       "path": "routine/drill.md",
       "description": "Conduct a deep plan/design interview, persist each Q&A, and move the topic file to a decision once a coherent picture exists.",
@@ -9,6 +81,18 @@
       "links": {
         "memo-writing": "system/memo-writing.md"
       }
+    },
+    "drive-the-surface-on-a-real-client": {
+      "path": "routine/drive-the-surface-on-a-real-client.md",
+      "description": "new-session -d` refuses a `display-popup`, so the binding read as broken on the convenient harness; a pty client turned \"unknown command\" into a real dispatch",
+      "read_when": "executing drive-the-surface-on-a-real-client",
+      "links": {}
+    },
+    "hand-fix-what-the-fixer-left": {
+      "path": "routine/hand-fix-what-the-fixer-left.md",
+      "description": "a fixer is scoped to one field; a problem outside that scope (here, a counter it never writes) is real work, not a retry",
+      "read_when": "executing hand-fix-what-the-fixer-left",
+      "links": {}
     },
     "improve": {
       "path": "routine/improve.md",
@@ -19,10 +103,172 @@
         "memo-writing": "system/memo-writing.md"
       }
     },
+    "land-an-answered-fork": {
+      "path": "routine/land-an-answered-fork.md",
+      "description": "08-claude-agent/02-nvim-plugin",
+      "read_when": "executing land-an-answered-fork",
+      "links": {}
+    },
+    "locate-the-check-that-flagged-it": {
+      "path": "routine/locate-the-check-that-flagged-it.md",
+      "description": "the purpose line was already stale (106/4 vs the live 312/6); reading the doctor script's own condition rather than the prose is what kept the fix aimed at the real check",
+      "read_when": "executing locate-the-check-that-flagged-it",
+      "links": {}
+    },
+    "measure-the-premise-not-the-prd": {
+      "path": "routine/measure-the-premise-not-the-prd.md",
+      "description": "two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state",
+      "read_when": "executing measure-the-premise-not-the-prd",
+      "links": {}
+    },
+    "name-the-surfacing-prd-from-its-own-record": {
+      "path": "routine/name-the-surfacing-prd-from-its-own-record.md",
+      "description": "every derived node names the prd whose work surfaced it",
+      "read_when": "executing name-the-surfacing-prd-from-its-own-record",
+      "links": {}
+    },
     "plan-execution": {
       "path": "routine/plan-execution.md",
       "description": "Execute a whole plan of work memos \u2014 run system/work.md per item, in the plan's order, until nothing is open.",
       "read_when": "running a whole plan end to end",
+      "links": {}
+    },
+    "prove-a-key-binding-on-a-real-client": {
+      "path": "routine/prove-a-key-binding-on-a-real-client.md",
+      "description": "05-terminal \u2014 tmux.conf to ~250 lines, one palette path",
+      "read_when": "executing prove-a-key-binding-on-a-real-client",
+      "links": {}
+    },
+    "prove-a-recorded-defect-from-its-artifacts": {
+      "path": "routine/prove-a-recorded-defect-from-its-artifacts.md",
+      "description": "00-delivery/corrections/baseline-commit-absorbs-live-claims",
+      "read_when": "executing prove-a-recorded-defect-from-its-artifacts",
+      "links": {}
+    },
+    "prove-in-a-shell-that-loaded-the-config": {
+      "path": "routine/prove-in-a-shell-that-loaded-the-config.md",
+      "description": "`nu -c` loads no config and reports a correct change as absent \u2014 this is the step that catches the false negative",
+      "read_when": "executing prove-in-a-shell-that-loaded-the-config",
+      "links": {}
+    },
+    "prove-nothing-reads-it": {
+      "path": "routine/prove-nothing-reads-it.md",
+      "description": "`cmp` and a whole-tree grep turned \"byte-identical duplicate\" and \"nothing references it\" from a claim into a result",
+      "read_when": "executing prove-nothing-reads-it",
+      "links": {}
+    },
+    "prove-the-orphan-can-be-owned-by-its-replacement": {
+      "path": "routine/prove-the-orphan-can-be-owned-by-its-replacement.md",
+      "description": "the contract asked for six `.chezmoiremove` entries; five of them named paths the replacement installs to, and the entry fires on every apply, so they would have uninstalled it forever",
+      "read_when": "executing prove-the-orphan-can-be-owned-by-its-replacement",
+      "links": {}
+    },
+    "prove-the-replacement-is-a-drop-in": {
+      "path": "routine/prove-the-replacement-is-a-drop-in.md",
+      "description": "brew's tinty was installed beside the release copy and asked for the same scheme, the same 538 entries and the same hook write BEFORE anything was deleted",
+      "read_when": "executing prove-the-replacement-is-a-drop-in",
+      "links": {}
+    },
+    "read-the-merged-config-not-the-source": {
+      "path": "routine/read-the-merged-config-not-the-source.md",
+      "description": "the source file said nothing about which side the panel opens; only the plugin's own merged table and the real pane geometry could say, and they disagreed with the manual",
+      "read_when": "executing read-the-merged-config-not-the-source",
+      "links": {}
+    },
+    "read-the-provenance-from-the-nodes-own-text": {
+      "path": "routine/read-the-provenance-from-the-nodes-own-text.md",
+      "description": "all four nodes carry their own \"Established ... by ... on `<prd>`\" sentence; reading it, and confirming the named directory exists, is what the contract requires instead of a guess",
+      "read_when": "executing read-the-provenance-from-the-nodes-own-text",
+      "links": {}
+    },
+    "recount-both-sides-with-one-counter": {
+      "path": "routine/recount-both-sides-with-one-counter.md",
+      "description": "the two figures on the record were taken with two different counters; one counter closed a reconciliation the board had failed three times",
+      "read_when": "executing recount-both-sides-with-one-counter",
+      "links": {}
+    },
+    "recover-the-contract": {
+      "path": "routine/recover-the-contract.md",
+      "description": "the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking",
+      "read_when": "executing recover-the-contract",
+      "links": {}
+    },
+    "regenerate-every-derived-surface": {
+      "path": "routine/regenerate-every-derived-surface.md",
+      "description": "half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing",
+      "read_when": "executing regenerate-every-derived-surface",
+      "links": {}
+    },
+    "replace-a-hand-rolled-mechanism": {
+      "path": "routine/replace-a-hand-rolled-mechanism.md",
+      "description": "09-simplify/07-provisioning",
+      "read_when": "executing replace-a-hand-rolled-mechanism",
+      "links": {}
+    },
+    "replay-the-incident-from-the-commit": {
+      "path": "routine/replay-the-incident-from-the-commit.md",
+      "description": "archiving the board tree out of the offending commit reproduced both independent reports, and found two paths neither reader had",
+      "read_when": "executing replay-the-incident-from-the-commit",
+      "links": {}
+    },
+    "rerun-the-drift-check": {
+      "path": "routine/rerun-the-drift-check.md",
+      "description": "`just manual` plus a shasum pair is what says the configuration and its manual still agree",
+      "read_when": "executing rerun-the-drift-check",
+      "links": {}
+    },
+    "rerun-the-flagged-check": {
+      "path": "routine/rerun-the-flagged-check.md",
+      "description": "re-ran `pearde doctor` and watched the no-from: count fall by exactly four on the canonical tree, which is what separated \"fixed\" from \"counted elsewhere\"",
+      "read_when": "executing rerun-the-flagged-check",
+      "links": {}
+    },
+    "respell-the-proven-fix-in-the-config-file": {
+      "path": "routine/respell-the-proven-fix-in-the-config-file.md",
+      "description": "the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting",
+      "read_when": "executing respell-the-proven-fix-in-the-config-file",
+      "links": {}
+    },
+    "run-the-boards-declared-fixer": {
+      "path": "routine/run-the-boards-declared-fixer.md",
+      "description": "doctor's own `fix:` line names the exact command that already knows how to close most of the count",
+      "read_when": "executing run-the-boards-declared-fixer",
+      "links": {}
+    },
+    "run-the-surface-that-consumed-it": {
+      "path": "routine/run-the-surface-that-consumed-it.md",
+      "description": "`just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence",
+      "read_when": "executing run-the-surface-that-consumed-it",
+      "links": {}
+    },
+    "run-the-verify-twice": {
+      "path": "routine/run-the-verify-twice.md",
+      "description": "the first block passed on a violated assertion, because `! cmd` is exempt from `set -e`; a second run is also what catches a check that asserted the act instead of the post-state",
+      "read_when": "executing run-the-verify-twice",
+      "links": {}
+    },
+    "simplify-a-nushell-surface-and-deploy-it": {
+      "path": "routine/simplify-a-nushell-surface-and-deploy-it.md",
+      "description": "04-nushell \u2014 built-ins, one append, no tombstones",
+      "read_when": "executing simplify-a-nushell-surface-and-deploy-it",
+      "links": {}
+    },
+    "stage-the-extraction-in-a-throwaway-project": {
+      "path": "routine/stage-the-extraction-in-a-throwaway-project.md",
+      "description": "the five scripts read as one bash set and two of them are python3; staging them from `git show` in a temp directory turned a relocatable set into a measured one, and surfaced the call back into the shell config they were leaving",
+      "read_when": "executing stage-the-extraction-in-a-throwaway-project",
+      "links": {}
+    },
+    "take-the-answers-not-the-stale-report": {
+      "path": "routine/take-the-answers-not-the-stale-report.md",
+      "description": "the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced",
+      "read_when": "executing take-the-answers-not-the-stale-report",
+      "links": {}
+    },
+    "wire-a-tool-into-the-shell": {
+      "path": "routine/wire-a-tool-into-the-shell.md",
+      "description": "pearde-shell-wiring",
+      "read_when": "executing wire-a-tool-into-the-shell",
       "links": {}
     },
     "work": {
@@ -34,6 +280,24 @@
         "plan-execution": "routine/plan-execution.md",
         "drill": "routine/drill.md"
       }
+    },
+    "write-a-proof-not-a-build-script": {
+      "path": "routine/write-a-proof-not-a-build-script.md",
+      "description": "run twice, exit 0 twice, nothing staged \u2014 the form the last run got wrong and that blocked a collect",
+      "read_when": "executing write-a-proof-not-a-build-script",
+      "links": {}
+    },
+    "write-into-the-chezmoi-source": {
+      "path": "routine/write-into-the-chezmoi-source.md",
+      "description": "put both lines in `home/`, never in the deployed tree, so the change survives the next apply",
+      "read_when": "executing write-into-the-chezmoi-source",
+      "links": {}
+    },
+    "write-the-traced-value-into-frontmatter": {
+      "path": "routine/write-the-traced-value-into-frontmatter.md",
+      "description": "added `from: <prd>` under `origin: derived` in each of the four files",
+      "read_when": "executing write-the-traced-value-into-frontmatter",
+      "links": {}
     }
   }
 }

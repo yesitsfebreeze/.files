@@ -4,7 +4,51 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[apply-scoped-not-bare]] | the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside | executing apply-scoped-not-bare |
+| [[ask-whether-the-tool-already-refuses]] | a two-claim fixture showed `collect` already refuses cross-claim staging, which halved the spec and moved it to the real hole | executing ask-whether-the-tool-already-refuses |
+| [[assert-the-post-state-twice]] | a verify that passes once is a build script; three runs is what separates the two | executing assert-the-post-state-twice |
+| [[bisect-which-command-expands-the-format]] | -e` arrived literal and `-d` did not, which is the whole defect; testing the same popup as a key binding, inside a template, and through `run-shell` is what separated the expander from the expandee | executing bisect-which-command-expands-the-format |
+| [[carry-the-why-across-the-rewrite]] | the file shrank 404 → 198 lines and its constraint comments were the expensive part; re-lodging them beside the code that still needs them is what stops a rewrite from spending a day of somebody's past work | executing carry-the-why-across-the-rewrite |
+| [[census-the-class-not-the-instance]] | the one bad block was 8 lines in 5 files, and the commit it caused had run five times, not once | executing census-the-class-not-the-instance |
+| [[check-what-apply-left-behind]] | `chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone | executing check-what-apply-left-behind |
+| [[clear-a-doctors-problem-with-its-own-fixer]] | every workflow atomic carries its tags | executing clear-a-doctors-problem-with-its-own-fixer |
+| [[cut-a-feature-its-readers-still-name]] | 09-simplify/03-help-system | executing cut-a-feature-its-readers-still-name |
+| [[delete-the-shadow-the-replacement-leaves]] | `~/.local/bin` is ahead of the brew prefix, so the old binary would have won forever and the Brewfile entry would have been decorative | executing delete-the-shadow-the-replacement-leaves |
+| [[delete-what-nothing-reads]] | 09-simplify/01-hygiene | executing delete-what-nothing-reads |
+| [[document-the-new-surface]] | this shell's drift check fails on any alias with no manual entry, so the entry is part of the change, not a follow-up | executing document-the-new-surface |
 | [[drill]] | Conduct a deep plan/design interview, persist each Q&A, and move the topic file to a decision once a coherent picture exists. | splitting work, designing anything non-trivial |
+| [[drive-the-surface-on-a-real-client]] | new-session -d` refuses a `display-popup`, so the binding read as broken on the convenient harness; a pty client turned "unknown command" into a real dispatch | executing drive-the-surface-on-a-real-client |
+| [[hand-fix-what-the-fixer-left]] | a fixer is scoped to one field; a problem outside that scope (here, a counter it never writes) is real work, not a retry | executing hand-fix-what-the-fixer-left |
 | [[improve]] | The improvement loop — sweep the record and the tree for the next open thread, research it, land the finding as a memo, repeat. | looking for what to work on next, or running a research pass |
+| [[land-an-answered-fork]] | 08-claude-agent/02-nvim-plugin | executing land-an-answered-fork |
+| [[locate-the-check-that-flagged-it]] | the purpose line was already stale (106/4 vs the live 312/6); reading the doctor script's own condition rather than the prose is what kept the fix aimed at the real check | executing locate-the-check-that-flagged-it |
+| [[measure-the-premise-not-the-prd]] | two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state | executing measure-the-premise-not-the-prd |
+| [[name-the-surfacing-prd-from-its-own-record]] | every derived node names the prd whose work surfaced it | executing name-the-surfacing-prd-from-its-own-record |
 | [[plan-execution]] | Execute a whole plan of work memos — run system/work.md per item, in the plan's order, until nothing is open. | running a whole plan end to end |
+| [[prove-a-key-binding-on-a-real-client]] | 05-terminal — tmux.conf to ~250 lines, one palette path | executing prove-a-key-binding-on-a-real-client |
+| [[prove-a-recorded-defect-from-its-artifacts]] | 00-delivery/corrections/baseline-commit-absorbs-live-claims | executing prove-a-recorded-defect-from-its-artifacts |
+| [[prove-in-a-shell-that-loaded-the-config]] | `nu -c` loads no config and reports a correct change as absent — this is the step that catches the false negative | executing prove-in-a-shell-that-loaded-the-config |
+| [[prove-nothing-reads-it]] | `cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result | executing prove-nothing-reads-it |
+| [[prove-the-orphan-can-be-owned-by-its-replacement]] | the contract asked for six `.chezmoiremove` entries; five of them named paths the replacement installs to, and the entry fires on every apply, so they would have uninstalled it forever | executing prove-the-orphan-can-be-owned-by-its-replacement |
+| [[prove-the-replacement-is-a-drop-in]] | brew's tinty was installed beside the release copy and asked for the same scheme, the same 538 entries and the same hook write BEFORE anything was deleted | executing prove-the-replacement-is-a-drop-in |
+| [[read-the-merged-config-not-the-source]] | the source file said nothing about which side the panel opens; only the plugin's own merged table and the real pane geometry could say, and they disagreed with the manual | executing read-the-merged-config-not-the-source |
+| [[read-the-provenance-from-the-nodes-own-text]] | all four nodes carry their own "Established ... by ... on `<prd>`" sentence; reading it, and confirming the named directory exists, is what the contract requires instead of a guess | executing read-the-provenance-from-the-nodes-own-text |
+| [[recount-both-sides-with-one-counter]] | the two figures on the record were taken with two different counters; one counter closed a reconciliation the board had failed three times | executing recount-both-sides-with-one-counter |
+| [[recover-the-contract]] | the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking | executing recover-the-contract |
+| [[regenerate-every-derived-surface]] | half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing | executing regenerate-every-derived-surface |
+| [[replace-a-hand-rolled-mechanism]] | 09-simplify/07-provisioning | executing replace-a-hand-rolled-mechanism |
+| [[replay-the-incident-from-the-commit]] | archiving the board tree out of the offending commit reproduced both independent reports, and found two paths neither reader had | executing replay-the-incident-from-the-commit |
+| [[rerun-the-drift-check]] | `just manual` plus a shasum pair is what says the configuration and its manual still agree | executing rerun-the-drift-check |
+| [[rerun-the-flagged-check]] | re-ran `pearde doctor` and watched the no-from: count fall by exactly four on the canonical tree, which is what separated "fixed" from "counted elsewhere" | executing rerun-the-flagged-check |
+| [[respell-the-proven-fix-in-the-config-file]] | the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting | executing respell-the-proven-fix-in-the-config-file |
+| [[run-the-boards-declared-fixer]] | doctor's own `fix:` line names the exact command that already knows how to close most of the count | executing run-the-boards-declared-fixer |
+| [[run-the-surface-that-consumed-it]] | `just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence | executing run-the-surface-that-consumed-it |
+| [[run-the-verify-twice]] | the first block passed on a violated assertion, because `! cmd` is exempt from `set -e`; a second run is also what catches a check that asserted the act instead of the post-state | executing run-the-verify-twice |
+| [[simplify-a-nushell-surface-and-deploy-it]] | 04-nushell — built-ins, one append, no tombstones | executing simplify-a-nushell-surface-and-deploy-it |
+| [[stage-the-extraction-in-a-throwaway-project]] | the five scripts read as one bash set and two of them are python3; staging them from `git show` in a temp directory turned a relocatable set into a measured one, and surfaced the call back into the shell config they were leaving | executing stage-the-extraction-in-a-throwaway-project |
+| [[take-the-answers-not-the-stale-report]] | the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced | executing take-the-answers-not-the-stale-report |
+| [[wire-a-tool-into-the-shell]] | pearde-shell-wiring | executing wire-a-tool-into-the-shell |
 | [[work]] | Execute work memos — pick the next open item, do it, pass its Check, split it through the drill when it cannot stay at level 10. | executing a work memo |
+| [[write-a-proof-not-a-build-script]] | run twice, exit 0 twice, nothing staged — the form the last run got wrong and that blocked a collect | executing write-a-proof-not-a-build-script |
+| [[write-into-the-chezmoi-source]] | put both lines in `home/`, never in the deployed tree, so the change survives the next apply | executing write-into-the-chezmoi-source |
+| [[write-the-traced-value-into-frontmatter]] | added `from: <prd>` under `origin: derived` in each of the four files | executing write-the-traced-value-into-frontmatter |
