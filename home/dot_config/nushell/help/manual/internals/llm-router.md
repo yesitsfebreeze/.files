@@ -13,6 +13,10 @@ llm status            what's parked and why; who is best at which job
 llm <agent> [model]   an agent on a model — `llm claude auto:free`, `llm pi
                       big-pickle`, `llm claude native:opus` (the Max plan);
                       no model → fzf picker. `llm cc` = the default agent.
+llm -a <program>      any agent on the proxy — registered or not: the program
+                      runs from PATH with the proxy env; agents.json's
+                      `launch` section carries the default args and env per
+                      program, nothing more.
 ```
 
 One binary. `llm report <task> <model> <note…>` and `llm judge <task>
@@ -26,7 +30,9 @@ from `minimax-m3-free`, or `auto:free` when it is rate-limited —
 a model switch inside the agent can't rewrite the real settings, with the
 in-session model picker written to `model_picker` — and `native`, the
 no-proxy hop for the agent's own models. Claude Code and pi are in there;
-add an agent, no code.
+add an agent, no code. The `launch` section is the lighter way in:
+`llm -a <program>` runs anything from PATH with a `launch[<program>]`
+entry's default `args` and `env` — an agent nobody registered still runs.
 
 ## The service
 

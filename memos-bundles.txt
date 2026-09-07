@@ -1,0 +1,4 @@
+# Memos that predate the one-claim law in memos/system/memo-atomicity.md: each
+# holds several claims under free-form '## ' sections. `just memos-check` fails
+# on any memo not listed here that does the same, and fails on any name listed
+# here whose file is now atomic. The list only shrinks.

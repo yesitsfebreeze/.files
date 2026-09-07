@@ -14,10 +14,11 @@ Nothing is ported because it exists; it is ported because a rating in
 |---|---|
 | `home/` | The chezmoi source. Find it live with `chezmoi source-path` — never a literal path; `~/.local/share/chezmoi` is a stale clone, never the source |
 | `docs/` | Rated capability inventories and background research |
+| `memos/` | The record: every settled claim as one memo, `SYSTEM.md` the entry point. `just memos-check` regenerates the index and gates it |
+| `pearde/` | The board: `prds/` (PRDs and nothing else), `workflows/`, `settings.md`, `vision.md`. `.pearde` is a symlink to it |
 | `home/dot_config/nushell/help/manual/` | The environment manual, read with `?` or `help` in the shell. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |
-| `.pearde/` | The board: `prds/` (PRDs and nothing else), `memos/`, `workflows/`, `settings.md`, `vision.md` |
-| `scripts/` | `board-guard.py` (claim/requirement checks), `generate-manual.mjs` |
-| `justfile` | Task runner: `push`, `manual`, the two board-guard targets |
+| `scripts/` | `board-guard.py` (claim/requirement checks), `memos-check.py` (the memos gate + index), `generate-manual.mjs` |
+| `justfile` | Task runner: `push`, `manual`, `memos-check`, the two board-guard targets |
 | `install.sh` | Package + provisioning bootstrap |
 | `.claude/skills/pearde/README.md` | The board protocol — a symlink to `~/dev/infra/pearde`, not vendored here |
 

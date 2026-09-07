@@ -1,0 +1,124 @@
+{
+  "kinds": {
+    "code-fact": {
+      "description": "something structurally true about a config or a script \u2014 what a module owns, what a function guarantees",
+      "read_when": "labelling a claim about how the code is built",
+      "memo_count": 0,
+      "declaration": "system/code-fact.md",
+      "index": "code-fact/index.json"
+    },
+    "decision": {
+      "description": "what was chosen and what it beat \u2014 dated",
+      "read_when": "writing or trusting a decision",
+      "memo_count": 7,
+      "declaration": "system/decision.md",
+      "index": "decision/index.json"
+    },
+    "documentation": {
+      "description": "how to use or operate \u2014 references, indexes, the protocol; must match reality, and may carry its own headings",
+      "read_when": "writing a reference or an index",
+      "memo_count": 8,
+      "declaration": "system/documentation.md",
+      "index": "documentation/index.json"
+    },
+    "fact": {
+      "description": "something true about the world that is not about this repo \u2014 the catch-all",
+      "read_when": "labelling a claim that no more specific word fits",
+      "memo_count": 0,
+      "declaration": "system/fact.md",
+      "index": "fact/index.json"
+    },
+    "grammar": {
+      "description": "one custom name \u2014 what the word names here, where it first appeared, and the names it sits next to",
+      "read_when": "meeting a word this repo uses in its own way, naming something new, or asking what a name already means",
+      "memo_count": 0,
+      "declaration": "system/grammar.md",
+      "index": "grammar/index.json"
+    },
+    "insight": {
+      "description": "a connection seen across memos \u2014 the non-obvious why, argued in the body; a bare claim is worth nothing",
+      "read_when": "writing or trusting an insight",
+      "memo_count": 2,
+      "declaration": "system/insight.md",
+      "index": "insight/index.json"
+    },
+    "knowledge": {
+      "description": "what the repo is \u2014 how a config works, what a contract is; true until the config changes, fixed in the same change",
+      "read_when": "writing or trusting a knowledge memo",
+      "memo_count": 3,
+      "declaration": "system/knowledge.md",
+      "index": "knowledge/index.json"
+    },
+    "persona": {
+      "description": "one worn preprompt \u2014 who is working, in the second person, with the practitioners each behaviour is taken from",
+      "read_when": "writing a persona memo, wearing one, consulting one, or dispatching work to one",
+      "memo_count": 0,
+      "declaration": "system/persona.md",
+      "index": "persona/index.json"
+    },
+    "preference": {
+      "description": "what the person wants, standing across sessions \u2014 a tool, a style, a default",
+      "read_when": "labelling something the person wants held past this conversation",
+      "memo_count": 0,
+      "declaration": "system/preference.md",
+      "index": "preference/index.json"
+    },
+    "procedural": {
+      "description": "how we do X \u2014 a learned workflow, rule or convention, one sentence long",
+      "read_when": "labelling a step or a rule rather than a fact",
+      "memo_count": 0,
+      "declaration": "system/procedural.md",
+      "index": "procedural/index.json"
+    },
+    "project": {
+      "description": "ongoing state of a thing being built \u2014 what runs, what is half-done, what it is blocked on",
+      "read_when": "labelling where a piece of work stands",
+      "memo_count": 0,
+      "declaration": "system/project.md",
+      "index": "project/index.json"
+    },
+    "question": {
+      "description": "what is asked and not yet settled \u2014 one topic per file, `Q:` / `A: ?` blocks",
+      "read_when": "opening a drill topic",
+      "memo_count": 0,
+      "declaration": "system/question.md",
+      "index": "question/index.json"
+    },
+    "reference": {
+      "description": "a pointer out of the record \u2014 a link, a document, a name to look up",
+      "read_when": "labelling an external address worth keeping",
+      "memo_count": 0,
+      "declaration": "system/reference.md",
+      "index": "reference/index.json"
+    },
+    "research": {
+      "description": "what was looked into \u2014 findings, open questions, what is not known yet; tentative, dated, names what would change it",
+      "read_when": "writing or trusting a research memo",
+      "memo_count": 0,
+      "declaration": "system/research.md",
+      "index": "research/index.json"
+    },
+    "routine": {
+      "description": "a procedure \u2014 steps that plug memos together into one run, `name:` the invocation handle; followed literally or not at all",
+      "read_when": "writing a routine",
+      "memo_count": 4,
+      "declaration": "system/routine.md",
+      "index": "routine/index.json"
+    },
+    "type": {
+      "description": "the one kind the gate hardcodes \u2014 a kind declaration, the only shape the index reads by name",
+      "read_when": "adding a kind, or asking why the folders are what they are",
+      "memo_count": 17,
+      "declaration": "system/type.md",
+      "index": "system/index.json"
+    },
+    "work": {
+      "description": "one unit of planned work \u2014 `level: 1-10`, `status: open | done | blocked`, a `## Do` and a `## Check`; done when the Check passes",
+      "read_when": "writing a work memo",
+      "memo_count": 0,
+      "declaration": "system/work-memo.md",
+      "index": "work/index.json"
+    }
+  },
+  "memo_count": 41
+}

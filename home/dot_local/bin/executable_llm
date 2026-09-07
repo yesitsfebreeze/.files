@@ -13,6 +13,10 @@
                 picker. `llm claude …` / `llm pi …` are the same; `cll` is
                 `llm claude`.
   llm env       print the exports (credentials.env + master key) for scripts
+  llm -a <program> [args…]
+                any agent on the proxy — registered or not: the program runs
+                from PATH with the proxy env; agents.json's `launch` section
+                carries the default args and env per program, nothing more
   llm report <task> <model> <note…>      a free-text note into the record
   llm judge  <task> <model> [file]       a free model scores an output 1-5
 
@@ -774,15 +778,19 @@ def proxy_live():
         return False
 
 
-def fill(x, v):
+def fill(x, v, braces="format"):
     """Expand {model} {base} {key} {context} {home} {args_json} in a string,
-    list or dict of strings."""
+    list or dict of strings. `braces="re"` substitutes only the known keys —
+    a launch-args string carrying TOML braces (model_providers.{…}) is not a
+    format string; a `format` KeyError there would refuse the whole agent."""
     if isinstance(x, str):
+        if braces == "re":
+            return re.sub(r"\{(\w+)\}", lambda m: v.get(m.group(1), m.group(0)), x)
         return x.format(**v)
     if isinstance(x, list):
-        return [fill(i, v) for i in x]
+        return [fill(i, v, braces) for i in x]
     if isinstance(x, dict):
-        return {k: fill(i, v) for k, i in x.items()}
+        return {k: fill(i, v, braces) for k, i in x.items()}
     return x
 
 
@@ -953,8 +961,51 @@ def cc(args, ask_agent=False):
     os.execvpe(cmd[0], cmd, env)
 
 
+def launch_any(program, args):
+    """`llm -a <program> [args…]` — any agent on the proxy, registered or not.
+    The program is never looked up: whatever is on PATH runs. What IS
+    registered is the plumbing an agent needs through the proxy — `args`
+    (its own default flags), `env` and `unset` (the credential pair) — keyed
+    by program name in agents.json under `launch`. An unregistered program
+    still runs: no default args, no env, proxy reachable by whatever env the
+    caller already carries."""
+    cfg = agents()
+    spec = (cfg.get("launch") or {}).get(program) or {}
+    load_env()
+    env = dict(os.environ)
+    for k in list((spec.get("env") or {})) + list(spec.get("unset") or []):
+        env.pop(k, None)
+    model = os.environ.get("LLM_MODEL", "auto:free")
+    v = {"model": model, "base": BASE, "key": os.environ["LITELLM_MASTER_KEY"], "context": "", "home": HOME}
+    if not proxy_live():
+        if not os.path.exists(MODELS):
+            sync()
+        print(f"llm {program}: starting litellm on {BASE[7:]} …", file=sys.stderr)
+        os.makedirs(STATE, exist_ok=True)
+        if not restart():
+            subprocess.Popen([sys.argv[0], "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             stdin=subprocess.DEVNULL, start_new_session=True)
+        for _ in range(120):
+            if proxy_live():
+                break
+            time.sleep(0.5)
+        else:
+            sys.exit(f"llm {program}: litellm did not answer within 60s — see {STATE}/proxy.log")
+    for k, val in fill(spec.get("env") or {}, v).items():
+        if val:
+            env[k] = val
+    print(f"llm {program}: {model} via litellm", file=sys.stderr)
+    os.execvpe(program, fill(spec.get("args") or [], v, braces="re") + args, env)
+
+
 def main():
     a = sys.argv[1:]
+    if a[:1] == ["-a"] or a[:2] == ["--agent"]:
+        rest = a[1:]
+        if not rest or rest[0].startswith("-"):
+            sys.exit("usage: llm -a <program> [args…] — program runs on the proxy")
+        launch_any(rest[0], rest[1:])
+        return
     if not a or a[0].startswith("-"):
         cc(a, ask_agent=True)  # bare `llm`: pick the model, then the agent
         return

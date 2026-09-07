@@ -44,3 +44,10 @@ board-guard prd="-" paths="":
 board-guard-blocks:
     python3 "{{ repo }}/scripts/board-guard.py" verify-blocks
     python3 "{{ repo }}/scripts/board-guard.py" requirements
+
+# The memos gate: every memo indexed, every link resolving, every folder its
+# kind, every kind declared, one claim per memo — and every index level
+# regenerated from the memos, because no index is authored by hand.
+[doc('Regenerate the memos indexes and run the memos gate.')]
+memos-check:
+    python3 "{{ repo }}/scripts/memos-check.py"

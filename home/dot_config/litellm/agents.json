@@ -1,5 +1,30 @@
 {
   "default": "claude",
+  "launch": {
+    "codex": {
+      "args": ["-c", "model_provider=\"litellm\"",
+               "-c", "model_providers.litellm={name=\"litellm\",base_url=\"{base}/v1\",wire_api=\"responses\",env_key=\"OPENAI_API_KEY\"}",
+               "-c", "model=\"{model}\""],
+      "env": {"OPENAI_API_KEY": "{key}"},
+      "unset": ["OPENAI_BASE_URL"]
+    },
+    "pi": {
+      "args": ["--provider", "litellm", "--model", "{model}"],
+      "env": {"LITELLM_MASTER_KEY": "{key}"}
+    },
+    "gemini": {
+      "args": [],
+      "env": {"GEMINI_API_KEY": "{key}"}
+    },
+    "aider": {
+      "args": ["--openai-api-base", "{base}", "--model", "openai/{model}"],
+      "env": {"OPENAI_API_KEY": "{key}"}
+    },
+    "opencode": {
+      "args": [],
+      "env": {"OPENAI_API_KEY": "{key}", "OPENAI_BASE_URL": "{base}"}
+    }
+  },
   "agents": {
     "claude": {
       "cmd": ["claude", "--dangerously-skip-permissions"],

@@ -1,0 +1,82 @@
+{
+  "kind": "documentation",
+  "memo_count": 8,
+  "memos": {
+    "the-open-work-index": {
+      "path": "documentation/the-open-work-index.md",
+      "description": "what is left \u2014 every open thread, ranked worst-first, and where each kind of thread lives",
+      "read_when": "picking up work",
+      "links": {
+        "work": "system/work.md",
+        "drill": "system/drill.md",
+        "the-index-is-derived": "system/the-index-is-derived.md"
+      }
+    },
+    "commands": {
+      "path": "system/commands.md",
+      "description": "Build, check, and navigate this repo \u2014 the commands a change runs",
+      "read_when": "running or verifying a repo change",
+      "links": {
+        "a-retirement-is-two-edits": "decision/a-retirement-is-two-edits.md",
+        "memo-index": "system/memo-index.md",
+        "the-manual-is-markdown": "decision/the-manual-is-markdown.md"
+      }
+    },
+    "memo-atomicity": {
+      "path": "system/memo-atomicity.md",
+      "description": "One memo carries one claim, its evidence, and its consequences",
+      "read_when": "before writing or splitting a memo",
+      "links": {
+        "memo-writing": "system/memo-writing.md",
+        "memo-layout": "system/memo-layout.md"
+      }
+    },
+    "memo-bundles": {
+      "path": "system/memo-bundles.md",
+      "description": "how the gate's bundles file works, and why the list only shrinks",
+      "read_when": "the gate names a bundle, or a bundle entry looks wrong",
+      "links": {
+        "memo-atomicity": "system/memo-atomicity.md"
+      }
+    },
+    "memo-index": {
+      "path": "system/memo-index.md",
+      "description": "Read the generated memo index progressively from the kind overview to a leaf entry and its source file.",
+      "read_when": "finding a memo without loading the whole record",
+      "links": {
+        "the-index-is-derived": "system/the-index-is-derived.md",
+        "SYSTEM": null
+      }
+    },
+    "memo-layout": {
+      "path": "system/memo-layout.md",
+      "description": "Where system memos, kind folders, and the generated index live",
+      "read_when": "first, every session",
+      "links": {
+        "the-index-is-derived": "system/the-index-is-derived.md",
+        "memo-writing": "system/memo-writing.md",
+        "memo-atomicity": "system/memo-atomicity.md",
+        "memo-index": "system/memo-index.md"
+      }
+    },
+    "memo-writing": {
+      "path": "system/memo-writing.md",
+      "description": "The memo frontmatter and templates for writing the record",
+      "read_when": "before writing or changing a memo",
+      "links": {
+        "memo-layout": "system/memo-layout.md",
+        "memo-atomicity": "system/memo-atomicity.md"
+      }
+    },
+    "tree": {
+      "path": "system/tree.md",
+      "description": "the repo tree \u2014 which directory holds what, and which file is authority for which question",
+      "read_when": "looking for where something lives",
+      "links": {
+        "memo-layout": "system/memo-layout.md",
+        "memo-index": "system/memo-index.md",
+        "the-frontier-law": "system/the-frontier-law.md"
+      }
+    }
+  }
+}

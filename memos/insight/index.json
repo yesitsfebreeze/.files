@@ -1,0 +1,18 @@
+{
+  "kind": "insight",
+  "memo_count": 2,
+  "memos": {
+    "the-frontier-law": {
+      "path": "system/the-frontier-law.md",
+      "description": "the tree is only what is current; git is the archive \u2014 no shims, no changelogs, no code without a caller",
+      "read_when": "before adding a comment, a backup file, or a changelog",
+      "links": {}
+    },
+    "the-index-is-derived": {
+      "path": "system/the-index-is-derived.md",
+      "description": "the index is a fold over the memos, regenerated whole, never hand-edited \u2014 a hand index drifts the day a memo moves",
+      "read_when": "adding an index, or asking why memos/README-style tables are generated",
+      "links": {}
+    }
+  }
+}

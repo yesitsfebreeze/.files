@@ -8,32 +8,23 @@
 .claude/settings.local.json
 .claude/CLAUDE.local.md
 .claude/worktrees/
-
+.claude/RESUME.md
 # pearde lives in its own repo (~/dev/infra/pearde); this is a local symlink
 .claude/skills/pearde
-# pearde view state — regenerable, rewritten continuously by the live service
-.pearde/.state/
-.pearde/.history.jsonl
-.pearde/.plan.json
-.pearde/.view.html
-.pearde/.claims/
 
-# The knowledge base and the graph vault ARE versioned; only the regenerable
-# cache below is not. The secret that used to sit in .pearde/wiki/ is ignored
-# by .pearde/.gitignore and is gone from every reachable commit.
-.pearde/graphify/cache/
-
-# machine-local per board — regenerable
+# pearde board view state — regenerable, rewritten continuously by the live
+# service; the board itself (.pearde/prds, .pearde/workflows, settings,
+# vision) is versioned
+.pearde
 pearde/.state/
-pearde/wiki/
 pearde/.claims/
 pearde/.lanes/
-pearde/graphify/
-pearde/.obsidian-superseded-*/
-/.pearde
-__pycache__/
-
-# pearde board: sessions and lanes are their own git repos, kept out of
-# this tree so `git add --all` never stages an embedded repository
 pearde/.sessions/
-pearde/.lanes/
+pearde/settings.md
+pearde/vision.md
+
+# kern store — machine-local
+.kern/
+
+# python cache
+__pycache__/

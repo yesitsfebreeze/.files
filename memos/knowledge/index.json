@@ -1,0 +1,26 @@
+{
+  "kind": "knowledge",
+  "memo_count": 3,
+  "memos": {
+    "every-abort-measurement-was-missing-wget": {
+      "path": "knowledge/every-abort-measurement-was-missing-wget.md",
+      "description": "every measurement of the offline first-save abort ran on a PATH with no wget, which the machine has \u2014 the bug is unmeasured on a faithful PATH",
+      "read_when": "measuring an offline behaviour, or trusting the mason abort numbers",
+      "links": {}
+    },
+    "llm-launches-any-agent": {
+      "path": "knowledge/llm-launches-any-agent.md",
+      "description": "`llm -a <program>` starts any agent on the proxy \u2014 the program is never registered, only its default args and env are",
+      "read_when": "launching an agent through the proxy, or adding one to agents.json",
+      "links": {}
+    },
+    "mason-refresh-off-trades-auto-bootstrap": {
+      "path": "knowledge/mason-refresh-off-trades-auto-bootstrap.md",
+      "description": "mason's registry refresh is off \u2014 launching Neovim offline discarded the first save; the fresh-machine bootstrap moves to install.sh",
+      "read_when": "touching nvim's lsp.lua, mason, or the fresh-machine install path",
+      "links": {
+        "every-abort-measurement-was-missing-wget": "knowledge/every-abort-measurement-was-missing-wget.md"
+      }
+    }
+  }
+}

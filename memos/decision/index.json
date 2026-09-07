@@ -1,0 +1,50 @@
+{
+  "kind": "decision",
+  "memo_count": 7,
+  "memos": {
+    "a-retirement-is-two-edits": {
+      "path": "decision/a-retirement-is-two-edits.md",
+      "description": "retiring a file from this configuration is two edits \u2014 the source file goes and its deployed target path is listed in home/.chezmoiremove \u2014 and the retirement is proven at the target path, never at the source or by an apply's exit code",
+      "read_when": "deleting anything from home/",
+      "links": {}
+    },
+    "tests-and-gates-retire": {
+      "path": "decision/tests-and-gates-retire.md",
+      "description": "tests/ and gates/ are deleted and the configs are stripped of their board scaffolding \u2014 this tree is one person's dev setup, not a shipped product",
+      "read_when": "adding a test or a gate, or asking where tests/ went",
+      "links": {
+        "the-manual-is-markdown": "decision/the-manual-is-markdown.md"
+      }
+    },
+    "the-manual-is-markdown": {
+      "path": "decision/the-manual-is-markdown.md",
+      "description": "the fumadocs site is deleted and the manual becomes plain markdown shipped with the shell, searched line by line through a television channel bound to `?`",
+      "read_when": "touching the manual, or asking why there is no docs site",
+      "links": {}
+    },
+    "the-model-router-is-a-dotfile-after-all": {
+      "path": "decision/the-model-router-is-a-dotfile-after-all.md",
+      "description": "the model router lives in home/ as one binary plus a registry; the 2026-09-02 answer that moved it to its own project is reversed",
+      "read_when": "touching the llm router, or asking where it lives",
+      "links": {}
+    },
+    "the-record-is-memos": {
+      "path": "decision/the-record-is-memos.md",
+      "description": "the record is memos/ \u2014 the board's memos, wiki, graphify vault and grammar fold into it, the PRD board survives, git is the archive",
+      "read_when": "asking where a memo, a wiki note or a graphify file went",
+      "links": {}
+    },
+    "tmux-owns-multiplexing": {
+      "path": "decision/tmux-owns-multiplexing.md",
+      "description": "tmux takes windows, panes, addressing and scrollback so the config survives a restart and follows an ssh; WezTerm keeps only what is local to this machine",
+      "read_when": "touching the multiplexer, tmux.conf or wezterm.lua",
+      "links": {}
+    },
+    "worker-knowledge-lands-here": {
+      "path": "decision/worker-knowledge-lands-here.md",
+      "description": "worker knowledge lands on this repo's record, not on another board's \u2014 every record is resolved from where the work is, never from where the script lives",
+      "read_when": "dispatching workers, or recording a worker's finding",
+      "links": {}
+    }
+  }
+}
