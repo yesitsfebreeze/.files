@@ -1,3 +1,0 @@
-FAIL: the tree diagram does not list the node '09-theme-switcher/'
-FAIL: the tree diagram does not list the node 'backlog-closeout/'
-FAIL: the build order does not place S.9

@@ -1,9 +1,0 @@
-FAIL: the stated critical path is not the longest path in plan.json
-        stated:   W0.3 -> P.1 -> P.2 -> P.4 -> S.1 -> S.5 -> S.7 -> H.4
-        computed: W0.3 -> P.1 -> P.2 -> P.4 -> S.1 -> S.2 -> S.3 -> S.8 -> S.4 -> S.6 -> S.5 -> S.7 -> H.3 -> H.5 -> H.4 -> H.1c
-FAIL: critical path is stated as 26.0 agent-hours; plan.json computes 49.5
-FAIL: the totals paragraph states no '≈ N agent-hours' figure
-FAIL: the section does not name plan.json as the source of the computation
-FAIL: stale claim survives: 'hangs off S.1' — plan.json has H.1 with no dependencies at all, so H.2 hangs off nothing in Track S
-FAIL: stale claim survives: '≈ 26 agent-hours' — the figure the backlog filed as arithmetically wrong
-FAIL: stale claim survives: '130–145 agent-hours' — the old total, computed over 49 tasks
