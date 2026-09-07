@@ -101,7 +101,7 @@
     "routine": {
       "description": "a procedure \u2014 steps that plug memos together into one run, `name:` the invocation handle; followed literally or not at all",
       "read_when": "writing a routine",
-      "memo_count": 4,
+      "memo_count": 48,
       "declaration": "system/routine.md",
       "index": "routine/index.json"
     },
@@ -120,5 +120,5 @@
       "index": "work/index.json"
     }
   },
-  "memo_count": 77
+  "memo_count": 121
 }
