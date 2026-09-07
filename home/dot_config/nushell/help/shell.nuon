@@ -425,48 +425,103 @@
         also: ["theme"]
     }
     {
-        cmd: "llm"
-        title: "Pick a model, then the agent to run it"
-        use: "Run `llm` on its own and two fuzzy lists follow: first the model — every provider's shelf grouped by provider, `auto` and `auto:free` included, `native:*` for the Max plan — then which agent runs it (Claude Code, pi, whatever agents.json lists). A `native:*` pick narrows the agent list to the agents that have that native; one candidate skips the second list."
+        cmd: "kern"
+        title: "Start Kern and its model service"
+        use: "Launch Kern normally. The machine hub owns routing, discovery, login state and recovery."
+        topic: "agents"
+        task: "agents"
+        step: 0
+        mode: "shell"
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
+    }
+    {
+        cmd: "kern launch claude"
+        title: "Launch a coding agent"
+        use: "The default model is auto:code. Use kern launch claude astra@chatgpt or kern launch codex auto:reasoning to select a model or frontier. Kern starts the service and attaches its MCP tools."
+        topic: "agents"
+        task: "agents"
+        step: 1
+        mode: "shell"
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
+    }
+    {
+        cmd: "kern login chatgpt"
+        title: "Sign in to ChatGPT"
+        use: "Uses the installed Codex login authority. Run kern login chatgpt --status to check credential availability. For API providers, pipe a key to kern login <provider> --key-stdin."
         topic: "agents"
         task: "agents"
         step: 2
         mode: "shell"
-        also: ["llm claude [model]", "llm status"]
-        why: "The model is the decision; the agent is how you talk to it. Asking in that order means the same shelf serves every agent, and adding an agent is an entry in agents.json, not a new launcher."
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
     }
     {
-        cmd: "llm claude [model]"
-        title: "Start Claude Code on a chosen model"
-        use: "Run `llm claude` with no argument and a picker opens, grouped by provider, each row carrying its tier and what the record says it is good at; pick a row and Claude Code starts on that model. `llm claude <model>` skips the picker. `auto` and `auto:free` let the router pick per request, best for the job first and every other model behind it until one answers; `native:opus` bypasses the proxy and runs on the Max plan. The proxy is started when it is down. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves. `llm pi <model>` is the same for pi — agents are entries in the router's agents.json, in ~/dev/llm-router."
+        cmd: "kern models"
+        title: "List model inventory"
+        use: "Lists discovered model aliases and provider routes."
         topic: "agents"
         task: "agents"
         step: 3
         mode: "shell"
-        also: ["llm sync", "llm status"]
-        why: "One binary owns the picker, the proxy and the launch, so every shell and nvim's `<leader>xc` get the same one. An earlier split — a nushell skin calling a script — meant a stale shell called a launcher that no longer existed."
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
     }
     {
-        cmd: "llm sync"
-        title: "Refresh the shelf: every model, its price, what it can do, how it ranks"
-        use: "Run `llm sync` after adding a provider to ~/dev/llm-router/providers.json, or when a provider gains or loses models: it fetches every provider's inventory, prices, capabilities and context windows, the public rankings (Arena per job, OpenRouter usage), folds in our own record, and writes models.json plus the proxy's config. Restart the proxy (`llm serve`) to pick the config up."
+        cmd: "kern models frontier"
+        title: "Inspect ranked model routes"
+        use: "Use kern models frontier vision --limit 10 for a particular task. Automatic routing filters input capabilities and context before ranking."
         topic: "agents"
         task: "agents"
         step: 4
         mode: "shell"
-        also: ["llm claude [model]", "llm status"]
-        why: "The routing is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model."
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
     }
     {
-        cmd: "llm status"
-        title: "See which models are parked and who is best at which job"
-        use: "Run `llm status` for the models the APIs refused — with the reason in their own words, since when, and when the router tries them again — what would unlock each one in the API's own terms (add credits at this URL, opt in, gone), and the top models per job from the record and the public boards. `llm status clear [model]` puts one, or all, back on the shelf now."
+        cmd: "kern models sync"
+        title: "Refresh provider discovery"
+        use: "Refreshes inventories and public ranking snapshots. Machine connections, agents and reviewed rankings are configured in Kern’s native kern.toml."
         topic: "agents"
         task: "agents"
         step: 5
         mode: "shell"
-        also: ["llm claude [model]", "llm sync"]
-        why: "A refused model parks itself from the error text and comes back by itself when the cooldown lapses, so a topped-up balance needs nobody to do anything — this is where you read that state rather than guess it."
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
+    }
+    {
+        cmd: "kern models status"
+        title: "Inspect route health and recovery"
+        use: "Shows durable incidents and verified recovery. Kern reloads changed credentials and probes known adjustments. Bounded model diagnosis may propose allowlisted adaptations that must pass a probe."
+        topic: "agents"
+        task: "agents"
+        step: 6
+        mode: "shell"
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
+    }
+    {
+        cmd: "kern models connections"
+        title: "Inspect provider connections"
+        use: "Shows configured providers and route health. Discovery is not proof of inference entitlement."
+        topic: "agents"
+        task: "agents"
+        step: 7
+        mode: "shell"
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
+    }
+    {
+        cmd: "kern models paths"
+        title: "Locate native model configuration"
+        use: "Prints Kern’s configuration, inventory and credential directories."
+        topic: "agents"
+        task: "agents"
+        step: 8
+        mode: "shell"
+        also: ["kern models", "kern models status"]
+        why: "Kern owns model access and recovery in one service."
     }
     {
         cmd: "pearde [cmd]"

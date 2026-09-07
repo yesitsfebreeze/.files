@@ -1,0 +1,559 @@
+[models]
+listen = [
+    "127.0.0.1:4140",
+    "127.0.0.1:4000",
+]
+skip = [
+    "embed",
+    "-batch",
+    ":batch",
+    "image",
+    "imagine",
+    "video",
+    "tts",
+    "whisper",
+    "audio",
+    "rerank",
+    "moderation",
+    "lyria",
+    "veo",
+    "sora",
+    "dall-e",
+    "transcribe",
+    "realtime",
+    "granite-router",
+]
+
+[models.routing]
+local_last = true
+local_providers = ["ollama"]
+max_attempts = 6
+first_output_timeout_secs = 45
+request_timeout_secs = 180
+max_concurrent_requests = 8
+
+[[models.providers]]
+name = "zenmux"
+kind = "openai"
+base = "https://zenmux.ai/api/v1"
+key = "ZENMUX_API_KEY"
+
+[[models.providers]]
+name = "opencode"
+kind = "openai"
+base = "https://opencode.ai/zen/v1"
+key = "OPENCODE_API_KEY"
+
+[[models.providers]]
+name = "opencode-go"
+kind = "openai"
+base = "https://opencode.ai/zen/go/v1"
+key = "OPENCODE_GO_API_KEY"
+
+[[models.providers]]
+name = "chatgpt"
+kind = "openai"
+base = "https://chatgpt.com/backend-api/codex"
+key = ""
+
+[models.providers.oauth]
+upstream = "https://chatgpt.com/backend-api/codex"
+auth = "~/.codex/auth.json"
+
+[[models.providers.oauth.models]]
+id = "responses/gpt-6-astra"
+context = 272000
+input_modalities = [
+    "text",
+    "image",
+]
+supported_parameters = [
+    "tools",
+    "reasoning",
+]
+
+[[models.providers]]
+name = "openrouter"
+kind = "openrouter"
+base = "https://openrouter.ai/api/v1"
+key = "OPENROUTER_API_KEY"
+
+[[models.providers]]
+name = "huggingface"
+kind = "openai"
+base = "https://router.huggingface.co/v1"
+key = "HUGGINGFACE_API_KEY"
+
+[[models.providers]]
+name = "ollama"
+kind = "ollama"
+base = "http://127.0.0.1:11434"
+free = true
+num_ctx = 32768
+
+[models.aliases.aliases.opus-5]
+zenmux = "anthropic/claude-opus-5"
+openrouter = "anthropic/claude-opus-5"
+opencode = "claude-opus-5"
+
+[models.aliases.aliases."opus-4.8"]
+zenmux = "anthropic/claude-opus-4.8"
+openrouter = "anthropic/claude-opus-4.8"
+opencode = "claude-opus-4-8"
+
+[models.aliases.aliases.sonnet-5]
+zenmux = "anthropic/claude-sonnet-5"
+openrouter = "anthropic/claude-sonnet-5"
+opencode = "claude-sonnet-5"
+
+[models.aliases.aliases."haiku-4.5"]
+zenmux = "anthropic/claude-haiku-4.5"
+openrouter = "anthropic/claude-haiku-4.5"
+opencode = "claude-haiku-4-5"
+
+[models.aliases.aliases.fable-5]
+zenmux = "anthropic/claude-fable-5"
+openrouter = "anthropic/claude-fable-5"
+opencode = "claude-fable-5"
+
+[models.aliases.aliases.astra]
+chatgpt = "responses/gpt-6-astra"
+
+[models.aliases.aliases."gpt-5.6-sol"]
+zenmux = "openai/gpt-5.6-sol"
+openrouter = "openai/gpt-5.6-sol"
+opencode = "gpt-5.6-sol"
+
+[models.aliases.aliases."gpt-5.6-luna"]
+zenmux = "openai/gpt-5.6-luna"
+openrouter = "openai/gpt-5.6-luna"
+opencode = "gpt-5.6-luna"
+opencode-go = "gpt-5.6-luna"
+
+[models.aliases.aliases."gpt-5.5"]
+zenmux = "openai/gpt-5.5"
+openrouter = "openai/gpt-5.5"
+opencode = "gpt-5.5"
+
+[models.aliases.aliases."gpt-5.5-pro"]
+zenmux = "openai/gpt-5.5-pro"
+openrouter = "openai/gpt-5.5-pro"
+opencode = "gpt-5.5-pro"
+
+[models.aliases.aliases."gpt-5.3-codex"]
+zenmux = "openai/gpt-5.3-codex"
+openrouter = "openai/gpt-5.3-codex"
+opencode = "gpt-5.3-codex"
+
+[models.aliases.aliases."gpt-5.4-mini"]
+zenmux = "openai/gpt-5.4-mini"
+openrouter = "openai/gpt-5.4-mini"
+opencode = "gpt-5.4-mini"
+
+[models.aliases.aliases."gemini-3.1-pro"]
+zenmux = "google/gemini-3.1-pro-preview"
+openrouter = "google/gemini-3.1-pro-preview"
+opencode = "gemini-3.1-pro"
+
+[models.aliases.aliases."gemini-3.7-flash"]
+zenmux = "google/gemini-3.7-flash"
+openrouter = "google/gemini-3.7-flash"
+opencode = "gemini-3.7-flash"
+
+[models.aliases.aliases.kimi-k3]
+zenmux = "moonshotai/kimi-k3"
+openrouter = "moonshotai/kimi-k3"
+opencode-go = "kimi-k3"
+
+[models.aliases.aliases."kimi-k2.7-code"]
+zenmux = "moonshotai/kimi-k2.7-code"
+openrouter = "moonshotai/kimi-k2.7-code"
+opencode-go = "kimi-k2.7-code"
+
+[models.aliases.aliases."glm-5.3"]
+zenmux = "z-ai/glm-5.3"
+openrouter = "z-ai/glm-5.3"
+opencode-go = "glm-5.3"
+
+[models.aliases.aliases."glm-5.2"]
+zenmux = "z-ai/glm-5.2"
+openrouter = "z-ai/glm-5.2"
+opencode = "glm-5.2"
+opencode-go = "glm-5.2"
+
+[models.aliases.aliases.deepseek-v4-pro]
+zenmux = "deepseek/deepseek-v4-pro"
+openrouter = "deepseek/deepseek-v4-pro"
+opencode = "deepseek-v4-pro"
+opencode-go = "deepseek-v4-pro"
+
+[models.aliases.aliases.qwen3-max]
+zenmux = "qwen/qwen3-max"
+openrouter = "qwen/qwen3-max"
+
+[models.aliases.aliases.minimax-m3-free]
+openrouter = "minimax/minimax-m3:free"
+
+[models.aliases.canonical]
+claude-opus-5 = "opus-5"
+claude-sonnet-5 = "sonnet-5"
+claude-haiku-4-5-20251001 = "haiku-4.5"
+claude-3-5-haiku-latest = "haiku-4.5"
+claude-fable-5 = "fable-5"
+
+[models.agents]
+default = "claude"
+
+[models.agents.launch.codex]
+args = [
+    "-c",
+    'model_provider="kern"',
+    "-c",
+    'model_providers.kern={name="kern",base_url="{base}/v1",wire_api="responses",env_key="OPENAI_API_KEY"}',
+    "-c",
+    'model="{model}"',
+    "-c",
+    'mcp_servers.kern={command="{kern}",args=["mcp"]}',
+]
+unset = ["OPENAI_BASE_URL"]
+subcommands = [
+    "exec",
+    "review",
+]
+
+[models.agents.launch.codex.env]
+OPENAI_API_KEY = "{key}"
+
+[models.agents.launch.pi]
+args = [
+    "--provider",
+    "kern",
+    "--model",
+    "{model}",
+]
+
+[models.agents.launch.pi.env]
+KERN_MODEL_KEY = "{key}"
+
+[models.agents.launch.gemini]
+args = []
+
+[models.agents.launch.gemini.env]
+GEMINI_API_KEY = "{key}"
+
+[models.agents.launch.aider]
+args = [
+    "--openai-api-base",
+    "{base}",
+    "--model",
+    "openai/{model}",
+]
+
+[models.agents.launch.aider.env]
+OPENAI_API_KEY = "{key}"
+
+[models.agents.launch.opencode]
+args = []
+
+[models.agents.launch.opencode.env]
+OPENAI_API_KEY = "{key}"
+OPENAI_BASE_URL = "{base}"
+
+[models.agents.launch.dsh]
+args = ["web"]
+
+[models.agents.launch.dsh.env]
+DSH_HOME = "{profile}"
+
+[models.agents.launch.dsh.profile]
+from = [
+    "{env.DSH_HOME}",
+    "{home}/.dsh",
+]
+link = "*"
+
+[[models.agents.launch.dsh.profile.write]]
+file = "settings.yaml"
+
+[models.agents.launch.dsh.profile.write.yaml.llm-pi-ai.providers.kern]
+apiKeyEnv = "KERN_MODEL_KEY"
+api = "openai-completions"
+baseURL = "{base}/v1"
+
+[models.agents.launch.dsh.profile.write.yaml.llm-pi-ai.providers.kern.compat]
+supportsDeveloperRole = false
+maxTokensField = "max_tokens"
+
+[models.agents.launch.dsh.profile.write.yaml.llm-pi-ai.providers.kern.models."$shelf"]
+id = "{id}"
+name = "{id}"
+contextWindow = "{context}"
+maxTokens = 16384
+
+[models.agents.launch.dsh.profile.write.yaml.agent-default-model]
+provider = "kern"
+model = "{model}"
+
+[[models.agents.launch.dsh.profile.write]]
+file = "cordis.patch.yml"
+
+[[models.agents.launch.dsh.profile.write.yaml_list]]
+
+[[models.agents.launch.dsh.profile.write.yaml_list.insert]]
+id = "kern-mcp"
+name = "@deepseek-ai/dsh-mcp-client"
+
+[models.agents.launch.dsh.profile.write.yaml_list.insert.config]
+serverName = "kern"
+transport = "stdio"
+command = "{kern}"
+args = ["mcp"]
+cwd = "{cwd}"
+
+[models.agents.agents.claude]
+cmd = [
+    "claude",
+    "--dangerously-skip-permissions",
+]
+unset = ["ANTHROPIC_API_KEY"]
+context_unless = ["claude-"]
+
+[models.agents.agents.claude.env]
+CLAUDE_CONFIG_DIR = "{home}/.claude/kern"
+ANTHROPIC_BASE_URL = "{base}"
+ANTHROPIC_AUTH_TOKEN = "{key}"
+ANTHROPIC_MODEL = "{model}"
+ANTHROPIC_SMALL_FAST_MODEL = "{background}"
+ANTHROPIC_DEFAULT_HAIKU_MODEL = "{background}"
+CLAUDE_CODE_MAX_CONTEXT_TOKENS = "{context}"
+
+[models.agents.agents.claude.profile]
+dir = "{home}/.claude/kern"
+from = "{home}/.claude"
+link = [
+    "plugins",
+    "projects",
+    "sessions",
+    "session-env",
+    "history.jsonl",
+    "cache",
+    "file-history",
+    "shell-snapshots",
+    "agent-memory",
+    "hooks",
+    "hub",
+    "jobs",
+    "plans",
+    "backups",
+    "paste-cache",
+    "context-mode",
+    "debug",
+    "tasks",
+    "teams",
+    "telemetry",
+]
+copy = [
+    ".claude.json",
+    "settings.json",
+    "settings.local.json",
+]
+
+[[models.agents.agents.claude.profile.write]]
+file = "settings.json"
+
+[models.agents.agents.claude.profile.write.json.modelPicker]
+replaceBuiltInOptions = true
+
+[models.agents.agents.claude.profile.write.json.modelPicker.options."$shelf"]
+model = "{id}"
+label = "{id}"
+description = "{tier}"
+
+[[models.agents.agents.claude.profile.write]]
+file = "kern-mcp.json"
+
+[models.agents.agents.claude.profile.write.json.mcpServers.kern]
+command = "{kern}"
+args = ["mcp"]
+
+[models.agents.agents.claude.native]
+prefix = "native:"
+models = [
+    "opus",
+    "sonnet",
+    "haiku",
+    "fable",
+]
+cmd = [
+    "claude",
+    "--model",
+    "{model}",
+    "--dangerously-skip-permissions",
+]
+
+[models.agents.agents.claude.native.tty]
+cmd = [
+    "nu",
+    "-c",
+    """
+source ~/.config/nushell/config.nu
+cc ...([--model, $env.CLL_NATIVE_MODEL] ++ ($env.CLL_NATIVE_ARGS? | default "[]" | from json))""",
+]
+
+[models.agents.agents.claude.native.tty.env]
+CLL_NATIVE_MODEL = "{model}"
+CLL_NATIVE_ARGS = "{args_json}"
+
+[models.agents.agents.pi]
+cmd = [
+    "pi",
+    "--provider",
+    "kern",
+    "--model",
+    "{model}",
+]
+
+[models.agents.agents.pi.env]
+PI_CODING_AGENT_DIR = "{profile}"
+
+[models.agents.agents.pi.profile]
+from = [
+    "{env.PI_CODING_AGENT_DIR}",
+    "{home}/.pi/agent",
+]
+link = "*"
+
+[[models.agents.agents.pi.profile.write]]
+file = "models.json"
+
+[models.agents.agents.pi.profile.write.json.providers.kern]
+baseUrl = "{base}/v1"
+apiKey = "$KERN_MODEL_KEY"
+api = "openai-completions"
+
+[models.agents.agents.pi.profile.write.json.providers.kern.models."$shelf"]
+id = "{id}"
+name = "{id}"
+reasoning = false
+input = [
+    "text",
+    "image",
+]
+contextWindow = "{context}"
+maxTokens = 16384
+
+[[models.frontiers.frontiers.code]]
+model = "astra"
+score = 57.9
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.code]]
+model = "claude-fable-5.1"
+score = 55.8
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.code]]
+model = "opus-5"
+score = 52.6
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.code]]
+model = "fable-5"
+score = 44.5
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.code]]
+model = "gpt-5.6-sol"
+score = 37.3
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.code]]
+model = "gemini-3.8-flash"
+score = 19.1
+benchmark = "Terminal-Bench 4.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.agent]]
+model = "astra"
+score = 72.6
+benchmark = "OSWorld 2.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.agent]]
+model = "opus-5"
+score = 70.2
+benchmark = "OSWorld 2.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.agent]]
+model = "gpt-5.6-sol"
+score = 65.7
+benchmark = "OSWorld 2.0 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.reasoning]]
+model = "astra"
+score = 95
+benchmark = "ARC-AGI-2 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.reasoning]]
+model = "gpt-5.6-sol"
+score = 92.5
+benchmark = "ARC-AGI-2 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.reasoning]]
+model = "opus-5"
+score = 90.4
+benchmark = "ARC-AGI-2 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.reasoning]]
+model = "claude-fable-5.1"
+score = 90
+benchmark = "ARC-AGI-2 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[[models.frontiers.frontiers.reasoning]]
+model = "fable-5"
+score = 89.2
+benchmark = "ARC-AGI-2 (vendor-reported)"
+source = "https://openai.com/index/gpt-6-astra/"
+date = "2026-09-03"
+effort = "high"
+
+[reason]
+url = "kern"
+model = "auto:reasoning"

@@ -12,10 +12,15 @@ Every entry links to where the guide explains it.
 | `cr [...args]` | Resume a Claude session in this directory | shell | [Run coding agents](../guide/agents.md#resume-claude) |
 | `help --json` | Read this manual as structured data | shell | [Run coding agents](../guide/agents.md#help-json) |
 | `idioms` | Search with rg, find with fd, pick with tv | shell | [Run coding agents](../guide/agents.md#idioms) |
-| `llm` | Pick a model, then the agent to run it | shell | [Run coding agents](../guide/agents.md#llm) |
-| `llm claude [model]` | Start Claude Code on a chosen model | shell | [Run coding agents](../guide/agents.md#llm-claude-model) |
-| `llm sync` | Refresh the shelf: every model, its price, what it can do, how it ranks | shell | [Run coding agents](../guide/agents.md#llm-sync) |
-| `llm status` | See which models are parked and who is best at which job | shell | [Run coding agents](../guide/agents.md#llm-status) |
+| `kern` | Start Kern and its model service | shell | [Run coding agents](../guide/agents.md#kern) |
+| `kern launch claude` | Launch a coding agent | shell | [Run coding agents](../guide/agents.md#kern-launch-claude) |
+| `kern login chatgpt` | Sign in to ChatGPT | shell | [Run coding agents](../guide/agents.md#kern-login-chatgpt) |
+| `kern models` | List model inventory | shell | [Run coding agents](../guide/agents.md#kern-models) |
+| `kern models frontier` | Inspect ranked model routes | shell | [Run coding agents](../guide/agents.md#kern-models-frontier) |
+| `kern models sync` | Refresh provider discovery | shell | [Run coding agents](../guide/agents.md#kern-models-sync) |
+| `kern models status` | Inspect route health and recovery | shell | [Run coding agents](../guide/agents.md#kern-models-status) |
+| `kern models connections` | Inspect provider connections | shell | [Run coding agents](../guide/agents.md#kern-models-connections) |
+| `kern models paths` | Locate native model configuration | shell | [Run coding agents](../guide/agents.md#kern-models-paths) |
 | `pearde [cmd]` | Work the PRD board this repository plans with | shell | [Run coding agents](../guide/agents.md#pearde-cmd) |
 | `<leader>x` | Show what <leader>x can do | nvim normal | [Run coding agents](../guide/agents.md#leader-x) |
 | `<leader>xc` | Toggle Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xc) |

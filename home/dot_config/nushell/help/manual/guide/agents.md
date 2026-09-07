@@ -6,6 +6,20 @@
 
 Claude Code starts in the directory you are in and inherits the environment. The proxy lets you pick a model per session and tells you what quota is left. This manual is also the agent's brief — `help --json` hands it the same content as structured data, which is what stops it reaching for `grep` when `rg` is the tool here.
 
+## `kern`
+
+**Start Kern and its model service**
+
+*shell*
+
+Launch Kern normally. The machine hub owns routing, discovery, login state and recovery.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
+
 ## `cc [...args]`
 
 **Start Claude in this directory**
@@ -19,6 +33,20 @@ Claude Code starts in the directory you are in and inherits the environment. The
 > With a single login profile it starts immediately — no picker. The multi-login machinery only wakes up once a second profile exists, so the common case pays nothing for it.
 
 See also: [`cr [...args]`](./agents.md#resume-claude) · [`credentials in a capsule`](./containers.md#credentials-in-a-capsule)
+
+## `kern launch claude`
+
+**Launch a coding agent**
+
+*shell*
+
+The default model is auto:code. Use kern launch claude astra@chatgpt or kern launch codex auto:reasoning to select a model or frontier. Kern starts the service and attaches its MCP tools.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
 
 ## `cr [...args]` · `F4 s`
 
@@ -35,61 +63,75 @@ Two routes to the same thing:
 
 See also: [`cc [...args]`](./agents.md#cc-args) · [`F4`](./copy.md#enter-copy-mode)
 
-## `llm`
+## `kern login chatgpt`
 
-**Pick a model, then the agent to run it**
-
-*shell*
-
-Run `llm` on its own and two fuzzy lists follow: first the model — every provider's shelf grouped by provider, `auto` and `auto:free` included, `native:*` for the Max plan — then which agent runs it (Claude Code, pi, whatever agents.json lists). A `native:*` pick narrows the agent list to the agents that have that native; one candidate skips the second list.
-
-> **Why it is this way**
->
-> The model is the decision; the agent is how you talk to it. Asking in that order means the same shelf serves every agent, and adding an agent is an entry in agents.json, not a new launcher.
-
-See also: [`llm claude [model]`](./agents.md#llm-claude-model) · [`llm status`](./agents.md#llm-status)
-
-## `llm claude [model]`
-
-**Start Claude Code on a chosen model**
+**Sign in to ChatGPT**
 
 *shell*
 
-Run `llm claude` with no argument and a picker opens, grouped by provider, each row carrying its tier and what the record says it is good at; pick a row and Claude Code starts on that model. `llm claude <model>` skips the picker. `auto` and `auto:free` let the router pick per request, best for the job first and every other model behind it until one answers; `native:opus` bypasses the proxy and runs on the Max plan. The proxy is started when it is down. The picked model's context window is declared at launch, so auto-compact fires against what the model actually serves. `llm pi <model>` is the same for pi — agents are entries in the router's agents.json, in ~/dev/llm-router.
+Uses the installed Codex login authority. Run kern login chatgpt --status to check credential availability. For API providers, pipe a key to kern login <provider> --key-stdin.
 
 > **Why it is this way**
 >
-> One binary owns the picker, the proxy and the launch, so every shell and nvim's `<leader>xc` get the same one. An earlier split — a nushell skin calling a script — meant a stale shell called a launcher that no longer existed.
+> Kern owns model access and recovery in one service.
 
-See also: [`llm sync`](./agents.md#llm-sync) · [`llm status`](./agents.md#llm-status)
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
 
-## `llm sync`
+## `kern models`
 
-**Refresh the shelf: every model, its price, what it can do, how it ranks**
+**List model inventory**
 
 *shell*
 
-Run `llm sync` after adding a provider to ~/dev/llm-router/providers.json, or when a provider gains or loses models: it fetches every provider's inventory, prices, capabilities and context windows, the public rankings (Arena per job, OpenRouter usage), folds in our own record, and writes models.json plus the proxy's config. Restart the proxy (`llm serve`) to pick the config up.
+Lists discovered model aliases and provider routes.
 
 > **Why it is this way**
 >
-> The routing is derived, never hand-edited — a hand-edited route outlives the model it names and fails at the moment you most want the model.
+> Kern owns model access and recovery in one service.
 
-See also: [`llm claude [model]`](./agents.md#llm-claude-model) · [`llm status`](./agents.md#llm-status)
+See also: [`kern models status`](./agents.md#kern-models-status)
 
-## `llm status`
+## `kern models frontier`
 
-**See which models are parked and who is best at which job**
+**Inspect ranked model routes**
 
 *shell*
 
-Run `llm status` for the models the APIs refused — with the reason in their own words, since when, and when the router tries them again — what would unlock each one in the API's own terms (add credits at this URL, opt in, gone), and the top models per job from the record and the public boards. `llm status clear [model]` puts one, or all, back on the shelf now.
+Use kern models frontier vision --limit 10 for a particular task. Automatic routing filters input capabilities and context before ranking.
 
 > **Why it is this way**
 >
-> A refused model parks itself from the error text and comes back by itself when the cooldown lapses, so a topped-up balance needs nobody to do anything — this is where you read that state rather than guess it.
+> Kern owns model access and recovery in one service.
 
-See also: [`llm claude [model]`](./agents.md#llm-claude-model) · [`llm sync`](./agents.md#llm-sync)
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
+
+## `kern models sync`
+
+**Refresh provider discovery**
+
+*shell*
+
+Refreshes inventories and public ranking snapshots. Machine connections, agents and reviewed rankings are configured in Kern’s native kern.toml.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
+
+## `kern models status`
+
+**Inspect route health and recovery**
+
+*shell*
+
+Shows durable incidents and verified recovery. Kern reloads changed credentials and probes known adjustments. Bounded model diagnosis may propose allowlisted adaptations that must pass a probe.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models)
 
 ## Search with rg, find with fd, pick with tv
 
@@ -102,6 +144,20 @@ Nothing to run — four rules that stop an agent guessing. Search with `rg` and 
 > Every one of these is a failure this environment has actually seen: reaching for a tool that is not installed, or piping a table into a line-oriented filter and getting nothing.
 
 See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · [`cd <path>`](./directories.md#cd-path) · [`zi`](./directories.md#zi)
+
+## `kern models connections`
+
+**Inspect provider connections**
+
+*shell*
+
+Shows configured providers and route health. Discovery is not proof of inference entitlement.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
 
 ## `help --json`
 
@@ -116,6 +172,20 @@ See also: [`grep`](./files.md#grep) · [`tv channel`](./files.md#tv-channel) · 
 > The field names are an interface: renaming one is a breaking change and has to be recorded in the agent-interface PRD.
 
 See also: [`help`](./maintaining.md#help) · [`idioms`](./agents.md#idioms)
+
+## `kern models paths`
+
+**Locate native model configuration**
+
+*shell*
+
+Prints Kern’s configuration, inventory and credential directories.
+
+> **Why it is this way**
+>
+> Kern owns model access and recovery in one service.
+
+See also: [`kern models`](./agents.md#kern-models) · [`kern models status`](./agents.md#kern-models-status)
 
 ## Understand how an agent comes up authenticated
 
@@ -145,13 +215,13 @@ See also: [`<leader>xc`](./agents.md#leader-xc)
 
 *nvim normal*
 
-Press `<leader>xc` to spawn Claude in a split to the right of the editor — the router's model picker (`llm claude`) runs first, so the pane starts on the model you pick (`native:*` rows ride the Max plan through `cc`'s login picker, `auto` lets the router pick per request, everything else goes through the litellm proxy). Press it again to hide and again to show; only a FRESH spawn re-picks. From the Claude pane, `<C-j>` returns to the editor. Esc in the picker aborts: `llm claude` exits and the empty pane closes.
+Press `<leader>xc` to start Claude through `kern launch claude` in a pane using the coding frontier. Toggle again to hide or show it. From the Claude pane, `<C-j>` returns to the editor.
 
 > **Why it is this way**
 >
-> Inside tmux the terminal provider is claude-tmux, so this is a REAL pane of the `main` tmux session that tmux owns — addressable by its pane keys, F5-visible, and not nvim's built-in terminal. `<C-j>` is bound pane-locally, so nvim's own `<C-j>` window-down and every other pane are untouched. Outside a tmux session the provider falls back to snacks' terminal; headless runs do the same. The pane spawns through `llm claude` (claudecode's terminal_cmd), so model and proxy routing belong to the router: a `native:*` pick hands to `cc`'s login picker, a proxied pick sets CLAUDE_CONFIG_DIR to the litellm profile and exports the proxy — overriding whatever login resolution exported. Claudecode's own IDE env (the SSE port) rides the same spawn line, so diffs and @-mentions keep working under either route. The profile resolution in this file seeds only what the router does not govern: an inherited, logged-in CLAUDE_CONFIG_DIR for the native hop, resolved as above (`oauthAccount` decides, `~/.claude/.last-login` breaks the tie).
+> Kern owns model selection, login state and recovery. The editor terminal provider preserves Claude IDE integration and tmux pane control.
 
-See also: [`<leader>xf`](./agents.md#leader-xf) · [`llm claude [model]`](./agents.md#llm-claude-model) · [`cc [...args]`](./agents.md#cc-args)
+See also: [`<leader>xf`](./agents.md#leader-xf) · [`kern launch claude`](./agents.md#kern-launch-claude) · [`cc [...args]`](./agents.md#cc-args)
 
 ## `<leader>xf`
 
@@ -191,7 +261,7 @@ See also: [`<leader>xr`](./agents.md#leader-xr)
 
 Press `<leader>xm` to pick the model the Claude pane runs on, without leaving the editor. That model choice lives in the pane's own profile, so it survives while the pane is open; the next fresh pane re-picks at spawn through `llm claude`. Native models are Claude Code's own, served by the Max plan.
 
-See also: [`<leader>xc`](./agents.md#leader-xc) · [`llm claude [model]`](./agents.md#llm-claude-model)
+See also: [`<leader>xc`](./agents.md#leader-xc) · [`kern launch claude`](./agents.md#kern-launch-claude)
 
 ## `<leader>xb`
 

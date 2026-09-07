@@ -27,13 +27,7 @@ return {
       { "<leader>xd", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },
     },
     opts = {
-      -- Spawn through the router (~/dev/llm-router), not the plain claude
-      -- binary: the model picker runs before Claude starts, so every fresh
-      -- pane opens on a chosen model — native:* hops ride the Max plan via
-      -- cc's login picker, everything else goes through the litellm proxy
-      -- profile. Toggling an ALREADY-RUNNING pane never re-runs the picker;
-      -- only a fresh spawn does.
-      terminal_cmd = "llm claude",
+      terminal_cmd = "kern launch claude",
       terminal = { split_width_percentage = 0.30 },
       diff_opts = { layout = "vertical" },
     },
