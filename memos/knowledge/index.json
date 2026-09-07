@@ -1,17 +1,47 @@
 {
   "kind": "knowledge",
-  "memo_count": 3,
+  "memo_count": 21,
   "memos": {
+    "always-trash-changes-what-rm-means": {
+      "path": "knowledge/always-trash-changes-what-rm-means.md",
+      "description": "rm.always_trash makes every rm a trash move, including the ones in scripts \u2014 `-p` on any path the user did not type",
+      "read_when": "writing a script that deletes files, or wondering where a deleted probe went",
+      "links": {}
+    },
+    "capsule-is-one-directory-one-container": {
+      "path": "knowledge/capsule-is-one-directory-one-container.md",
+      "description": "capsule is one directory, one container, one CLI \u2014 content-hash rebuild detection, creds by read-only directory mount, never an image layer",
+      "read_when": "touching capsule, the Dockerfile, or container credentials",
+      "links": {}
+    },
+    "claude-hooks-write-pane-state-not-version-strings": {
+      "path": "knowledge/claude-hooks-write-pane-state-not-version-strings.md",
+      "description": "the tmux digit wears Claude's state from hooks writing a pane option \u2014 pane, not window, because the option must die with its pane",
+      "read_when": "touching the status bar's Claude state, or the tmux-claude-state hook",
+      "links": {}
+    },
     "every-abort-measurement-was-missing-wget": {
       "path": "knowledge/every-abort-measurement-was-missing-wget.md",
       "description": "every measurement of the offline first-save abort ran on a PATH with no wget, which the machine has \u2014 the bug is unmeasured on a faithful PATH",
       "read_when": "measuring an offline behaviour, or trusting the mason abort numbers",
       "links": {}
     },
+    "install-sh-is-four-things-in-one-order": {
+      "path": "knowledge/install-sh-is-four-things-in-one-order.md",
+      "description": "install.sh is one order that is load-bearing \u2014 brew bootstrap, trust the tinty tap, bundle, MasonUpdate, chezmoi apply last",
+      "read_when": "touching provisioning, or a fresh machine that came up half-configured",
+      "links": {}
+    },
     "llm-launches-any-agent": {
       "path": "knowledge/llm-launches-any-agent.md",
       "description": "`llm -a <program>` starts any agent on the proxy \u2014 the program is never registered, only its default args and env are",
       "read_when": "launching an agent through the proxy, or adding one to agents.json",
+      "links": {}
+    },
+    "mason-never-refreshes-at-launch": {
+      "path": "knowledge/mason-never-refreshes-at-launch.md",
+      "description": "nvim's mason never refreshes its registry at launch \u2014 the offline fetch can discard a save, and the bootstrap moves to install.sh",
+      "read_when": "touching lsp.lua, mason, or the fresh-machine editor path",
       "links": {}
     },
     "mason-refresh-off-trades-auto-bootstrap": {
@@ -21,6 +51,86 @@
       "links": {
         "every-abort-measurement-was-missing-wget": "knowledge/every-abort-measurement-was-missing-wget.md"
       }
+    },
+    "nushell-binds-names-at-parse-time": {
+      "path": "knowledge/nushell-binds-names-at-parse-time.md",
+      "description": "nushell binds names at parse time and three kinds of name differently \u2014 def is order-free, alias and source are not",
+      "read_when": "reordering a source or alias in config.nu, or chasing a silently dead navigation",
+      "links": {}
+    },
+    "nvims-built-ins-over-plugins": {
+      "path": "knowledge/nvims-built-ins-over-plugins.md",
+      "description": "where nvim prefers built-ins over plugins \u2014 shift-select over a plugin, native LSP maps over which-key ones, vim.hl over the deprecated highlight",
+      "read_when": "adding a plugin to the editor, or asking why a map is not in keymaps.lua",
+      "links": {
+        "tinty-owns-the-palette-every-reader-follows": "knowledge/tinty-owns-the-palette-every-reader-follows.md"
+      }
+    },
+    "osc7-is-where-tmux-learns-the-cwd": {
+      "path": "knowledge/osc7-is-where-tmux-learns-the-cwd.md",
+      "description": "OSC 7 is the only way tmux learns where a nushell pane is \u2014 #{pane_current_path} is the process cwd, which nushell's cd never moves",
+      "read_when": "touching tmux's @cwd, nushell's osc7 setting, or chasing a split landing in the wrong directory",
+      "links": {}
+    },
+    "the-editor-claude-is-a-tmux-pane": {
+      "path": "knowledge/the-editor-claude-is-a-tmux-pane.md",
+      "description": "nvim's Claude pane is a real tmux pane through claude-tmux, spawned via cll so the model is picked at spawn and the login survives",
+      "read_when": "touching claude.lua, the nvim\u2194claude wiring, or a login profile that is not picked up",
+      "links": {}
+    },
+    "the-help-command-is-two-searches-over-one-corpus": {
+      "path": "knowledge/the-help-command-is-two-searches-over-one-corpus.md",
+      "description": "help reads entries from the .nuon surfaces, ? reads prose line by line through television \u2014 one corpus, four constraints",
+      "read_when": "touching help.nu, the manual, or the .nuon surfaces",
+      "links": {}
+    },
+    "the-launchd-agents-and-where-claude-reads-mcp": {
+      "path": "knowledge/the-launchd-agents-and-where-claude-reads-mcp.md",
+      "description": "the proxy is two launchd agents and the MCP server is registered in ~/.claude.json, not settings.json",
+      "read_when": "wiring the proxy's service, or debugging a missing MCP server",
+      "links": {}
+    },
+    "the-pwd-hook-fails-in-order": {
+      "path": "knowledge/the-pwd-hook-fails-in-order.md",
+      "description": "a PWD-hook closure error aborts its own tail and every later closure \u2014 the dirstack append must stay first",
+      "read_when": "appending a PWD closure, or chasing a dead dirstack",
+      "links": {}
+    },
+    "tinty-owns-the-palette-every-reader-follows": {
+      "path": "knowledge/tinty-owns-the-palette-every-reader-follows.md",
+      "description": "tinty owns the palette and every reader follows one tinty apply \u2014 tmux via ANSI slots, nvim by rebuilding lualine on ColorScheme, WezTerm over OSC",
+      "read_when": "changing the palette, touching a hex value, or asking why the statusline disagrees with the cursor",
+      "links": {}
+    },
+    "tmux-copy-pipe-is-one-binding-two-arms": {
+      "path": "knowledge/tmux-copy-pipe-is-one-binding-two-arms.md",
+      "description": "the tmux copy sink is an option every copy path must name \u2014 a sink chosen and never used is the bug that shipped for weeks",
+      "read_when": "touching tmux copy bindings, set-clipboard, or chasing a selection that does not paste",
+      "links": {}
+    },
+    "tmux-window-indices-are-the-address-scheme": {
+      "path": "knowledge/tmux-window-indices-are-the-address-scheme.md",
+      "description": "tmux window indices are the address scheme \u2014 renumber-windows off keeps a digit meaning the same window, and the key tables that ride on it",
+      "read_when": "touching tmux addressing, the F5 tables, or a digit binding",
+      "links": {}
+    },
+    "tv-needs-a-tty-and-the-unhijack-rides-every-call": {
+      "path": "knowledge/tv-needs-a-tty-and-the-unhijack-rides-every-call.md",
+      "description": "television needs a real TTY and its four action-bound channels are un-hijacked on every call; the guards and flags are all measured",
+      "read_when": "writing a tv channel, a picker, or an interactive-only entry point",
+      "links": {}
+    },
+    "wezterm-keeps-only-local-chrome": {
+      "path": "knowledge/wezterm-keeps-only-local-chrome.md",
+      "description": "WezTerm keeps only local chrome \u2014 and disable_default_key_bindings is load-bearing, because stock bindings ship a second set of pane keys",
+      "read_when": "editing wezterm.lua, or asking why a tmux key does nothing",
+      "links": {}
+    },
+    "xdg-constants-are-launch-time": {
+      "path": "knowledge/xdg-constants-are-launch-time.md",
+      "description": "$nu.default-config-dir and $nu.history-path are launch-time constants \u2014 assigning XDG_CONFIG_HOME in env.nu runs too late to move them",
+      "read_when": "touching XDG_CONFIG_HOME, the history path, or a config landing in ~/Library",
+      "links": {}
     }
   }
 }

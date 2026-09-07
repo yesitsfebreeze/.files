@@ -45,7 +45,7 @@
     "knowledge": {
       "description": "what the repo is \u2014 how a config works, what a contract is; true until the config changes, fixed in the same change",
       "read_when": "writing or trusting a knowledge memo",
-      "memo_count": 3,
+      "memo_count": 21,
       "declaration": "system/knowledge.md",
       "index": "knowledge/index.json"
     },
@@ -120,5 +120,5 @@
       "index": "work/index.json"
     }
   },
-  "memo_count": 41
+  "memo_count": 59
 }
