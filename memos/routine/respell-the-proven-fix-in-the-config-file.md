@@ -1,12 +1,14 @@
 ---
-atomic: respell-the-proven-fix-in-the-config-file
-subject: the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: respell-the-proven-fix-in-the-config-file
+description: the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting
+read_when: "executing respell-the-proven-fix-in-the-config-file"
 ---
+
+# respell-the-proven-fix-in-the-config-file
+
+_Origin: `pearde/workflows/respell-the-proven-fix-in-the-config-file.md` (workflow subject: "the fix passed as argv and then silently never fired written as a backslash-continued line in the file; only the `{}` block survived the nesting")_
+
 
 ## Do
 

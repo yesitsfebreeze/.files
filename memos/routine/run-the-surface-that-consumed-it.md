@@ -1,12 +1,14 @@
 ---
-atomic: run-the-surface-that-consumed-it
-subject: `just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence
-date: 2026-09-02
-updated: 2026-09-04
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: run-the-surface-that-consumed-it
+description: `just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence
+read_when: "executing run-the-surface-that-consumed-it"
 ---
+
+# run-the-surface-that-consumed-it
+
+_Origin: `pearde/workflows/run-the-surface-that-consumed-it.md` (workflow subject: "`just --list`, `chezmoi apply --dry-run`, `git check-ignore` and `workflows.py list` each name the deleted thing's consumer, so a wrong deletion shows as a broken surface, not as silence")_
+
 
 ## Do
 

@@ -115,10 +115,10 @@
     "work": {
       "description": "one unit of planned work \u2014 `level: 1-10`, `status: open | done | blocked`, a `## Do` and a `## Check`; done when the Check passes",
       "read_when": "writing a work memo",
-      "memo_count": 1,
+      "memo_count": 2,
       "declaration": "system/work-memo.md",
       "index": "work/index.json"
     }
   },
-  "memo_count": 121
+  "memo_count": 122
 }

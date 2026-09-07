@@ -1,12 +1,14 @@
 ---
-atomic: prove-the-replacement-is-a-drop-in
-subject: brew's tinty was installed beside the release copy and asked for the same scheme, the same 538 entries and the same hook write BEFORE anything was deleted
-date: 2026-09-02
-updated: 2026-09-02
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: prove-the-replacement-is-a-drop-in
+description: brew's tinty was installed beside the release copy and asked for the same scheme, the same 538 entries and the same hook write BEFORE anything was deleted
+read_when: "executing prove-the-replacement-is-a-drop-in"
 ---
+
+# prove-the-replacement-is-a-drop-in
+
+_Origin: `pearde/workflows/prove-the-replacement-is-a-drop-in.md` (workflow subject: "brew's tinty was installed beside the release copy and asked for the same scheme, the same 538 entries and the same hook write BEFORE anything was deleted")_
+
 
 ## Do
 

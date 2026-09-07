@@ -1,11 +1,14 @@
 ---
-atomic: hand-fix-what-the-fixer-left
-subject: a fixer is scoped to one field; a problem outside that scope (here, a counter it never writes) is real work, not a retry
-date: 2026-09-04
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: hand-fix-what-the-fixer-left
+description: a fixer is scoped to one field; a problem outside that scope (here, a counter it never writes) is real work, not a retry
+read_when: "executing hand-fix-what-the-fixer-left"
 ---
+
+# hand-fix-what-the-fixer-left
+
+_Origin: `pearde/workflows/hand-fix-what-the-fixer-left.md` (workflow subject: "a fixer is scoped to one field; a problem outside that scope (here, a counter it never writes) is real work, not a retry")_
+
 
 ## Do
 

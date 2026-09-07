@@ -1,12 +1,14 @@
 ---
-atomic: regenerate-every-derived-surface
-subject: half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: regenerate-every-derived-surface
+description: half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing
+read_when: "executing regenerate-every-derived-surface"
 ---
+
+# regenerate-every-derived-surface
+
+_Origin: `pearde/workflows/regenerate-every-derived-surface.md` (workflow subject: "half the manual is generated from the files being edited, so a source fix that skips the generator ships a page that still says the old thing")_
+
 
 ## Do
 

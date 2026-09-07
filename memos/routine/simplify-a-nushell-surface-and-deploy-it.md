@@ -1,11 +1,14 @@
 ---
-workflow: simplify-a-nushell-surface-and-deploy-it
-subject: 04-nushell — built-ins, one append, no tombstones
-date: 2026-09-02
-runs: 1
-tags:
-  - workflow
+kind: routine
+name: simplify-a-nushell-surface-and-deploy-it
+description: 04-nushell — built-ins, one append, no tombstones
+read_when: "executing simplify-a-nushell-surface-and-deploy-it"
 ---
+
+# simplify-a-nushell-surface-and-deploy-it
+
+_Origin: `pearde/workflows/simplify-a-nushell-surface-and-deploy-it.md` (workflow subject: "04-nushell — built-ins, one append, no tombstones")_
+
 
 ## Use when
 

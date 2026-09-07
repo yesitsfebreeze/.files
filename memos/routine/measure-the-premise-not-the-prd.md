@@ -1,12 +1,14 @@
 ---
-atomic: measure-the-premise-not-the-prd
-subject: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
-date: 2026-09-02
-updated: 2026-09-04
-runs: 7
-tags:
-  - atomic
+kind: routine
+name: measure-the-premise-not-the-prd
+description: two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state
+read_when: "executing measure-the-premise-not-the-prd"
 ---
+
+# measure-the-premise-not-the-prd
+
+_Origin: `pearde/workflows/measure-the-premise-not-the-prd.md` (workflow subject: "two of six requirements rested on facts that were false on the day; acting on either would have destroyed live state")_
+
 
 ## Do
 

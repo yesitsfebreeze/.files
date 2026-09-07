@@ -1,12 +1,14 @@
 ---
-atomic: read-the-merged-config-not-the-source
-subject: the source file said nothing about which side the panel opens; only the plugin's own merged table and the real pane geometry could say, and they disagreed with the manual
-date: 2026-09-02
-updated: 2026-09-02
-runs: 3
-tags:
-  - atomic
+kind: routine
+name: read-the-merged-config-not-the-source
+description: the source file said nothing about which side the panel opens; only the plugin's own merged table and the real pane geometry could say, and they disagreed with the manual
+read_when: "executing read-the-merged-config-not-the-source"
 ---
+
+# read-the-merged-config-not-the-source
+
+_Origin: `pearde/workflows/read-the-merged-config-not-the-source.md` (workflow subject: "the source file said nothing about which side the panel opens; only the plugin's own merged table and the real pane geometry could say, and they disagreed with the manual")_
+
 
 ## Do
 

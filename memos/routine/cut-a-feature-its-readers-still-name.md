@@ -1,12 +1,14 @@
 ---
-workflow: cut-a-feature-its-readers-still-name
-subject: 09-simplify/03-help-system
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - workflow
+kind: routine
+name: cut-a-feature-its-readers-still-name
+description: 09-simplify/03-help-system
+read_when: "executing cut-a-feature-its-readers-still-name"
 ---
+
+# cut-a-feature-its-readers-still-name
+
+_Origin: `pearde/workflows/cut-a-feature-its-readers-still-name.md` (workflow subject: "09-simplify/03-help-system")_
+
 
 ## Use when
 

@@ -1,12 +1,14 @@
 ---
-atomic: replay-the-incident-from-the-commit
-subject: archiving the board tree out of the offending commit reproduced both independent reports, and found two paths neither reader had
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: replay-the-incident-from-the-commit
+description: archiving the board tree out of the offending commit reproduced both independent reports, and found two paths neither reader had
+read_when: "executing replay-the-incident-from-the-commit"
 ---
+
+# replay-the-incident-from-the-commit
+
+_Origin: `pearde/workflows/replay-the-incident-from-the-commit.md` (workflow subject: "archiving the board tree out of the offending commit reproduced both independent reports, and found two paths neither reader had")_
+
 
 ## Do
 

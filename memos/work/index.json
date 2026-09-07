@@ -1,6 +1,6 @@
 {
   "kind": "work",
-  "memo_count": 1,
+  "memo_count": 2,
   "memos": {
     "draft-the-record-from-the-board": {
       "path": "work/draft-the-record-from-the-board.md",
@@ -9,6 +9,12 @@
       "links": {
         "llm-launches-any-agent": "knowledge/llm-launches-any-agent.md"
       }
+    },
+    "retire-the-pearde-board": {
+      "path": "work/retire-the-pearde-board.md",
+      "description": "retire the pearde board, its guard, and its skill \u2014 the 216 PRDs and 44 workflows move into memos/ as the record and the procedures",
+      "read_when": "asking what the pearde board was, and why it is gone",
+      "links": {}
     }
   }
 }

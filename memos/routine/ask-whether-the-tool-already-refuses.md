@@ -1,12 +1,14 @@
 ---
-atomic: ask-whether-the-tool-already-refuses
-subject: a two-claim fixture showed `collect` already refuses cross-claim staging, which halved the spec and moved it to the real hole
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: ask-whether-the-tool-already-refuses
+description: a two-claim fixture showed `collect` already refuses cross-claim staging, which halved the spec and moved it to the real hole
+read_when: "executing ask-whether-the-tool-already-refuses"
 ---
+
+# ask-whether-the-tool-already-refuses
+
+_Origin: `pearde/workflows/ask-whether-the-tool-already-refuses.md` (workflow subject: "a two-claim fixture showed `collect` already refuses cross-claim staging, which halved the spec and moved it to the real hole")_
+
 
 ## Do
 

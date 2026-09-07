@@ -1,12 +1,14 @@
 ---
-atomic: delete-the-shadow-the-replacement-leaves
-subject: "`~/.local/bin` is ahead of the brew prefix, so the old binary would have won forever and the Brewfile entry would have been decorative"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: delete-the-shadow-the-replacement-leaves
+description: "`~/.local/bin` is ahead of the brew prefix, so the old binary would have won forever and the Brewfile entry would have been decorative"
+read_when: "executing delete-the-shadow-the-replacement-leaves"
 ---
+
+# delete-the-shadow-the-replacement-leaves
+
+_Origin: `pearde/workflows/delete-the-shadow-the-replacement-leaves.md` (workflow subject: ""`~/.local/bin` is ahead of the brew prefix, so the old binary would have won forever and the Brewfile entry would have been decorative"")_
+
 
 ## Do
 

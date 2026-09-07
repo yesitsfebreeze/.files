@@ -1,11 +1,14 @@
 ---
-workflow: clear-a-doctors-problem-with-its-own-fixer
-subject: every workflow atomic carries its tags
-date: 2026-09-04
-runs: 1
-tags:
-  - workflow
+kind: routine
+name: clear-a-doctors-problem-with-its-own-fixer
+description: every workflow atomic carries its tags
+read_when: "executing clear-a-doctors-problem-with-its-own-fixer"
 ---
+
+# clear-a-doctors-problem-with-its-own-fixer
+
+_Origin: `pearde/workflows/clear-a-doctors-problem-with-its-own-fixer.md` (workflow subject: "every workflow atomic carries its tags")_
+
 
 ## Use when
 

@@ -1,12 +1,14 @@
 ---
-atomic: prove-nothing-reads-it
-subject: `cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result
-date: 2026-09-02
-updated: 2026-09-02
-runs: 5
-tags:
-  - atomic
+kind: routine
+name: prove-nothing-reads-it
+description: `cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result
+read_when: "executing prove-nothing-reads-it"
 ---
+
+# prove-nothing-reads-it
+
+_Origin: `pearde/workflows/prove-nothing-reads-it.md` (workflow subject: "`cmp` and a whole-tree grep turned "byte-identical duplicate" and "nothing references it" from a claim into a result")_
+
 
 ## Do
 

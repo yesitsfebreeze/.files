@@ -1,12 +1,14 @@
 ---
-atomic: prove-the-orphan-can-be-owned-by-its-replacement
-subject: "the contract asked for six `.chezmoiremove` entries; five of them named paths the replacement installs to, and the entry fires on every apply, so they would have uninstalled it forever"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: prove-the-orphan-can-be-owned-by-its-replacement
+description: "the contract asked for six `.chezmoiremove` entries; five of them named paths the replacement installs to, and the entry fires on every apply, so they would have uninstalled it forever"
+read_when: "executing prove-the-orphan-can-be-owned-by-its-replacement"
 ---
+
+# prove-the-orphan-can-be-owned-by-its-replacement
+
+_Origin: `pearde/workflows/prove-the-orphan-can-be-owned-by-its-replacement.md` (workflow subject: ""the contract asked for six `.chezmoiremove` entries; five of them named paths the replacement installs to, and the entry fires on every apply, so they would have uninstalled it forever"")_
+
 
 ## Do
 

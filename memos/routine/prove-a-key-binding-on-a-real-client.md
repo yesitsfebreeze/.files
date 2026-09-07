@@ -1,12 +1,14 @@
 ---
-workflow: prove-a-key-binding-on-a-real-client
-subject: 05-terminal — tmux.conf to ~250 lines, one palette path
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - workflow
+kind: routine
+name: prove-a-key-binding-on-a-real-client
+description: 05-terminal — tmux.conf to ~250 lines, one palette path
+read_when: "executing prove-a-key-binding-on-a-real-client"
 ---
+
+# prove-a-key-binding-on-a-real-client
+
+_Origin: `pearde/workflows/prove-a-key-binding-on-a-real-client.md` (workflow subject: "05-terminal — tmux.conf to ~250 lines, one palette path")_
+
 
 ## Use when
 

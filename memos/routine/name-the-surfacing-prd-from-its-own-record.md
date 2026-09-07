@@ -1,11 +1,14 @@
 ---
-workflow: name-the-surfacing-prd-from-its-own-record
-subject: every derived node names the prd whose work surfaced it
-date: 2026-09-04
-runs: 0
-tags:
-  - workflow
+kind: routine
+name: name-the-surfacing-prd-from-its-own-record
+description: every derived node names the prd whose work surfaced it
+read_when: "executing name-the-surfacing-prd-from-its-own-record"
 ---
+
+# name-the-surfacing-prd-from-its-own-record
+
+_Origin: `pearde/workflows/name-the-surfacing-prd-from-its-own-record.md` (workflow subject: "every derived node names the prd whose work surfaced it")_
+
 
 ## Use when
 

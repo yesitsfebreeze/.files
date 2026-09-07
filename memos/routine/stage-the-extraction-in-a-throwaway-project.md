@@ -1,12 +1,14 @@
 ---
-atomic: stage-the-extraction-in-a-throwaway-project
-subject: "the five scripts read as one bash set and two of them are python3; staging them from `git show` in a temp directory turned a relocatable set into a measured one, and surfaced the call back into the shell config they were leaving"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: stage-the-extraction-in-a-throwaway-project
+description: "the five scripts read as one bash set and two of them are python3; staging them from `git show` in a temp directory turned a relocatable set into a measured one, and surfaced the call back into the shell config they were leaving"
+read_when: "executing stage-the-extraction-in-a-throwaway-project"
 ---
+
+# stage-the-extraction-in-a-throwaway-project
+
+_Origin: `pearde/workflows/stage-the-extraction-in-a-throwaway-project.md` (workflow subject: ""the five scripts read as one bash set and two of them are python3; staging them from `git show` in a temp directory turned a relocatable set into a measured one, and surfaced the call back into the shell config they were leaving"")_
+
 
 ## Do
 

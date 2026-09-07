@@ -1,11 +1,14 @@
 ---
-atomic: run-the-boards-declared-fixer
-subject: doctor's own `fix:` line names the exact command that already knows how to close most of the count
-date: 2026-09-04
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: run-the-boards-declared-fixer
+description: doctor's own `fix:` line names the exact command that already knows how to close most of the count
+read_when: "executing run-the-boards-declared-fixer"
 ---
+
+# run-the-boards-declared-fixer
+
+_Origin: `pearde/workflows/run-the-boards-declared-fixer.md` (workflow subject: "doctor's own `fix:` line names the exact command that already knows how to close most of the count")_
+
 
 ## Do
 

@@ -1,11 +1,14 @@
 ---
-workflow: prove-a-recorded-defect-from-its-artifacts
-subject: 00-delivery/corrections/baseline-commit-absorbs-live-claims
-date: 2026-09-02
-runs: 1
-tags:
-  - workflow
+kind: routine
+name: prove-a-recorded-defect-from-its-artifacts
+description: 00-delivery/corrections/baseline-commit-absorbs-live-claims
+read_when: "executing prove-a-recorded-defect-from-its-artifacts"
 ---
+
+# prove-a-recorded-defect-from-its-artifacts
+
+_Origin: `pearde/workflows/prove-a-recorded-defect-from-its-artifacts.md` (workflow subject: "00-delivery/corrections/baseline-commit-absorbs-live-claims")_
+
 
 ## Use when
 

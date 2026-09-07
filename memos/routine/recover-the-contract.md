@@ -1,11 +1,14 @@
 ---
-atomic: recover-the-contract
-subject: the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking
-date: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: recover-the-contract
+description: the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking
+read_when: "executing recover-the-contract"
 ---
+
+# recover-the-contract
+
+_Origin: `pearde/workflows/recover-the-contract.md` (workflow subject: "the PRD body was an unfilled template; two independent sources named the two lines, which is what made building possible without asking")_
+
 
 ## Do
 

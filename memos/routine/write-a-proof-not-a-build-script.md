@@ -1,12 +1,14 @@
 ---
-atomic: write-a-proof-not-a-build-script
-subject: run twice, exit 0 twice, nothing staged — the form the last run got wrong and that blocked a collect
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: write-a-proof-not-a-build-script
+description: run twice, exit 0 twice, nothing staged — the form the last run got wrong and that blocked a collect
+read_when: "executing write-a-proof-not-a-build-script"
 ---
+
+# write-a-proof-not-a-build-script
+
+_Origin: `pearde/workflows/write-a-proof-not-a-build-script.md` (workflow subject: "run twice, exit 0 twice, nothing staged — the form the last run got wrong and that blocked a collect")_
+
 
 ## Do
 

@@ -1,12 +1,14 @@
 ---
-atomic: recount-both-sides-with-one-counter
-subject: the two figures on the record were taken with two different counters; one counter closed a reconciliation the board had failed three times
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: recount-both-sides-with-one-counter
+description: the two figures on the record were taken with two different counters; one counter closed a reconciliation the board had failed three times
+read_when: "executing recount-both-sides-with-one-counter"
 ---
+
+# recount-both-sides-with-one-counter
+
+_Origin: `pearde/workflows/recount-both-sides-with-one-counter.md` (workflow subject: "the two figures on the record were taken with two different counters; one counter closed a reconciliation the board had failed three times")_
+
 
 ## Do
 

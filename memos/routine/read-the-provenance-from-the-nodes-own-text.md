@@ -1,11 +1,14 @@
 ---
-atomic: read-the-provenance-from-the-nodes-own-text
-subject: all four nodes carry their own "Established ... by ... on `<prd>`" sentence; reading it, and confirming the named directory exists, is what the contract requires instead of a guess
-date: 2026-09-04
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: read-the-provenance-from-the-nodes-own-text
+description: all four nodes carry their own "Established ... by ... on `<prd>`" sentence; reading it, and confirming the named directory exists, is what the contract requires instead of a guess
+read_when: "executing read-the-provenance-from-the-nodes-own-text"
 ---
+
+# read-the-provenance-from-the-nodes-own-text
+
+_Origin: `pearde/workflows/read-the-provenance-from-the-nodes-own-text.md` (workflow subject: "all four nodes carry their own "Established ... by ... on `<prd>`" sentence; reading it, and confirming the named directory exists, is what the contract requires instead of a guess")_
+
 
 ## Do
 

@@ -1,11 +1,14 @@
 ---
-workflow: replace-a-hand-rolled-mechanism
-subject: 09-simplify/07-provisioning
-date: 2026-09-02
-runs: 1
-tags:
-  - workflow
+kind: routine
+name: replace-a-hand-rolled-mechanism
+description: 09-simplify/07-provisioning
+read_when: "executing replace-a-hand-rolled-mechanism"
 ---
+
+# replace-a-hand-rolled-mechanism
+
+_Origin: `pearde/workflows/replace-a-hand-rolled-mechanism.md` (workflow subject: "09-simplify/07-provisioning")_
+
 
 ## Use when
 

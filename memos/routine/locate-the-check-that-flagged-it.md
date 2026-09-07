@@ -1,11 +1,14 @@
 ---
-atomic: locate-the-check-that-flagged-it
-subject: the purpose line was already stale (106/4 vs the live 312/6); reading the doctor script's own condition rather than the prose is what kept the fix aimed at the real check
-date: 2026-09-04
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: locate-the-check-that-flagged-it
+description: the purpose line was already stale (106/4 vs the live 312/6); reading the doctor script's own condition rather than the prose is what kept the fix aimed at the real check
+read_when: "executing locate-the-check-that-flagged-it"
 ---
+
+# locate-the-check-that-flagged-it
+
+_Origin: `pearde/workflows/locate-the-check-that-flagged-it.md` (workflow subject: "the purpose line was already stale (106/4 vs the live 312/6); reading the doctor script's own condition rather than the prose is what kept the fix aimed at the real check")_
+
 
 ## Do
 

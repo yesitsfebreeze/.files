@@ -1,12 +1,14 @@
 ---
-atomic: check-what-apply-left-behind
-subject: "`chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 3
-tags:
-  - atomic
+kind: routine
+name: check-what-apply-left-behind
+description: "`chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone"
+read_when: "executing check-what-apply-left-behind"
 ---
+
+# check-what-apply-left-behind
+
+_Origin: `pearde/workflows/check-what-apply-left-behind.md` (workflow subject: ""`chezmoi apply` left all four deleted files deployed, so the deletion was true of the repo and false of the machine, and one of them kept a picker channel pointing at a function that was gone"")_
+
 
 ## Do
 

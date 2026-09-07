@@ -1,12 +1,14 @@
 ---
-atomic: apply-scoped-not-bare
-subject: the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside
-date: 2026-09-02
-updated: 2026-09-02
-runs: 9
-tags:
-  - atomic
+kind: routine
+name: apply-scoped-not-bare
+description: the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside
+read_when: "executing apply-scoped-not-bare"
 ---
+
+# apply-scoped-not-bare
+
+_Origin: `pearde/workflows/apply-scoped-not-bare.md` (workflow subject: "the working tree held unrelated pending changes; a bare `chezmoi apply` would have deployed them alongside")_
+
 
 ## Do
 

@@ -1,11 +1,14 @@
 ---
-atomic: write-the-traced-value-into-frontmatter
-subject: added `from: <prd>` under `origin: derived` in each of the four files
-date: 2026-09-04
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: write-the-traced-value-into-frontmatter
+description: added `from: <prd>` under `origin: derived` in each of the four files
+read_when: "executing write-the-traced-value-into-frontmatter"
 ---
+
+# write-the-traced-value-into-frontmatter
+
+_Origin: `pearde/workflows/write-the-traced-value-into-frontmatter.md` (workflow subject: "added `from: <prd>` under `origin: derived` in each of the four files")_
+
 
 ## Do
 

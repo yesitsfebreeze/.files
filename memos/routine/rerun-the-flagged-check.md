@@ -1,11 +1,14 @@
 ---
-atomic: rerun-the-flagged-check
-subject: re-ran `pearde doctor` and watched the no-from: count fall by exactly four on the canonical tree, which is what separated "fixed" from "counted elsewhere"
-date: 2026-09-04
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: rerun-the-flagged-check
+description: re-ran `pearde doctor` and watched the no-from: count fall by exactly four on the canonical tree, which is what separated "fixed" from "counted elsewhere"
+read_when: "executing rerun-the-flagged-check"
 ---
+
+# rerun-the-flagged-check
+
+_Origin: `pearde/workflows/rerun-the-flagged-check.md` (workflow subject: "re-ran `pearde doctor` and watched the no-from: count fall by exactly four on the canonical tree, which is what separated "fixed" from "counted elsewhere"")_
+
 
 ## Do
 

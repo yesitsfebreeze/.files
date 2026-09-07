@@ -1,12 +1,14 @@
 ---
-atomic: prove-in-a-shell-that-loaded-the-config
-subject: "`nu -c` loads no config and reports a correct change as absent — this is the step that catches the false negative"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 4
-tags:
-  - atomic
+kind: routine
+name: prove-in-a-shell-that-loaded-the-config
+description: "`nu -c` loads no config and reports a correct change as absent — this is the step that catches the false negative"
+read_when: "executing prove-in-a-shell-that-loaded-the-config"
 ---
+
+# prove-in-a-shell-that-loaded-the-config
+
+_Origin: `pearde/workflows/prove-in-a-shell-that-loaded-the-config.md` (workflow subject: ""`nu -c` loads no config and reports a correct change as absent — this is the step that catches the false negative"")_
+
 
 ## Do
 

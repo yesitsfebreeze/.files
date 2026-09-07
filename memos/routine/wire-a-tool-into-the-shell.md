@@ -1,11 +1,14 @@
 ---
-workflow: wire-a-tool-into-the-shell
-subject: pearde-shell-wiring
-date: 2026-09-02
-runs: 2
-tags:
-  - workflow
+kind: routine
+name: wire-a-tool-into-the-shell
+description: pearde-shell-wiring
+read_when: "executing wire-a-tool-into-the-shell"
 ---
+
+# wire-a-tool-into-the-shell
+
+_Origin: `pearde/workflows/wire-a-tool-into-the-shell.md` (workflow subject: "pearde-shell-wiring")_
+
 
 ## Use when
 

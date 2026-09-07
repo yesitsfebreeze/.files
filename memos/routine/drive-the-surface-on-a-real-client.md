@@ -1,12 +1,14 @@
 ---
-atomic: drive-the-surface-on-a-real-client
-subject: new-session -d` refuses a `display-popup`, so the binding read as broken on the convenient harness; a pty client turned "unknown command" into a real dispatch
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: drive-the-surface-on-a-real-client
+description: new-session -d` refuses a `display-popup`, so the binding read as broken on the convenient harness; a pty client turned "unknown command" into a real dispatch
+read_when: "executing drive-the-surface-on-a-real-client"
 ---
+
+# drive-the-surface-on-a-real-client
+
+_Origin: `pearde/workflows/drive-the-surface-on-a-real-client.md` (workflow subject: "new-session -d` refuses a `display-popup`, so the binding read as broken on the convenient harness; a pty client turned "unknown command" into a real dispatch")_
+
 
 ## Do
 

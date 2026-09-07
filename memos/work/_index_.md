@@ -5,3 +5,4 @@
 | memo | is | read when |
 |---|---|---|
 | [[draft-the-record-from-the-board]] | migrate the board's live decisions and knowledge into memos/, then retire the four registers that no longer earn their place | asking what the memos migration did, or starting the next consolidation pass |
+| [[retire-the-pearde-board]] | retire the pearde board, its guard, and its skill — the 216 PRDs and 44 workflows move into memos/ as the record and the procedures | asking what the pearde board was, and why it is gone |

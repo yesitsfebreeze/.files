@@ -1,12 +1,14 @@
 ---
-atomic: document-the-new-surface
-subject: this shell's drift check fails on any alias with no manual entry, so the entry is part of the change, not a follow-up
-date: 2026-09-02
-updated: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: document-the-new-surface
+description: this shell's drift check fails on any alias with no manual entry, so the entry is part of the change, not a follow-up
+read_when: "executing document-the-new-surface"
 ---
+
+# document-the-new-surface
+
+_Origin: `pearde/workflows/document-the-new-surface.md` (workflow subject: "this shell's drift check fails on any alias with no manual entry, so the entry is part of the change, not a follow-up")_
+
 
 ## Do
 

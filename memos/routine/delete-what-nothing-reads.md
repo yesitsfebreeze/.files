@@ -1,11 +1,14 @@
 ---
-workflow: delete-what-nothing-reads
-subject: 09-simplify/01-hygiene
-date: 2026-09-02
-runs: 3
-tags:
-  - workflow
+kind: routine
+name: delete-what-nothing-reads
+description: 09-simplify/01-hygiene
+read_when: "executing delete-what-nothing-reads"
 ---
+
+# delete-what-nothing-reads
+
+_Origin: `pearde/workflows/delete-what-nothing-reads.md` (workflow subject: "09-simplify/01-hygiene")_
+
 
 ## Use when
 

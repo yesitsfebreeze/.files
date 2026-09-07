@@ -1,12 +1,14 @@
 ---
-atomic: census-the-class-not-the-instance
-subject: the one bad block was 8 lines in 5 files, and the commit it caused had run five times, not once
-date: 2026-09-02
-updated: 2026-09-02
-runs: 1
-tags:
-  - atomic
+kind: routine
+name: census-the-class-not-the-instance
+description: the one bad block was 8 lines in 5 files, and the commit it caused had run five times, not once
+read_when: "executing census-the-class-not-the-instance"
 ---
+
+# census-the-class-not-the-instance
+
+_Origin: `pearde/workflows/census-the-class-not-the-instance.md` (workflow subject: "the one bad block was 8 lines in 5 files, and the commit it caused had run five times, not once")_
+
 
 ## Do
 

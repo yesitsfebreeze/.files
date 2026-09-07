@@ -1,11 +1,14 @@
 ---
-atomic: write-into-the-chezmoi-source
-subject: put both lines in `home/`, never in the deployed tree, so the change survives the next apply
-date: 2026-09-02
-runs: 2
-tags:
-  - atomic
+kind: routine
+name: write-into-the-chezmoi-source
+description: put both lines in `home/`, never in the deployed tree, so the change survives the next apply
+read_when: "executing write-into-the-chezmoi-source"
 ---
+
+# write-into-the-chezmoi-source
+
+_Origin: `pearde/workflows/write-into-the-chezmoi-source.md` (workflow subject: "put both lines in `home/`, never in the deployed tree, so the change survives the next apply")_
+
 
 ## Do
 

@@ -1,12 +1,14 @@
 ---
-workflow: land-an-answered-fork
-subject: 08-claude-agent/02-nvim-plugin
-date: 2026-09-02
-updated: 2026-09-02
-runs: 4
-tags:
-  - workflow
+kind: routine
+name: land-an-answered-fork
+description: 08-claude-agent/02-nvim-plugin
+read_when: "executing land-an-answered-fork"
 ---
+
+# land-an-answered-fork
+
+_Origin: `pearde/workflows/land-an-answered-fork.md` (workflow subject: "08-claude-agent/02-nvim-plugin")_
+
 
 ## Use when
 

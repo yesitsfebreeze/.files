@@ -1,11 +1,14 @@
 ---
-atomic: bisect-which-command-expands-the-format
-subject: -e` arrived literal and `-d` did not, which is the whole defect; testing the same popup as a key binding, inside a template, and through `run-shell` is what separated the expander from the expandee
-date: 2026-09-02
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: bisect-which-command-expands-the-format
+description: -e` arrived literal and `-d` did not, which is the whole defect; testing the same popup as a key binding, inside a template, and through `run-shell` is what separated the expander from the expandee
+read_when: "executing bisect-which-command-expands-the-format"
 ---
+
+# bisect-which-command-expands-the-format
+
+_Origin: `pearde/workflows/bisect-which-command-expands-the-format.md` (workflow subject: "-e` arrived literal and `-d` did not, which is the whole defect; testing the same popup as a key binding, inside a template, and through `run-shell` is what separated the expander from the expandee")_
+
 
 ## Do
 

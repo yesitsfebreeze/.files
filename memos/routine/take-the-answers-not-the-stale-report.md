@@ -1,12 +1,14 @@
 ---
-atomic: take-the-answers-not-the-stale-report
-subject: the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced
-date: 2026-09-02
-updated: 2026-09-02
-runs: 4
-tags:
-  - atomic
+kind: routine
+name: take-the-answers-not-the-stale-report
+description: the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced
+read_when: "executing take-the-answers-not-the-stale-report"
 ---
+
+# take-the-answers-not-the-stale-report
+
+_Origin: `pearde/workflows/take-the-answers-not-the-stale-report.md` (workflow subject: "the report on disk carried a `Verdict:` line that read as current and described a contract two answers had already replaced")_
+
 
 ## Do
 

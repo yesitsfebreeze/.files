@@ -1,12 +1,14 @@
 ---
-atomic: rerun-the-drift-check
-subject: "`just manual` plus a shasum pair is what says the configuration and its manual still agree"
-date: 2026-09-02
-updated: 2026-09-02
-runs: 5
-tags:
-  - atomic
+kind: routine
+name: rerun-the-drift-check
+description: "`just manual` plus a shasum pair is what says the configuration and its manual still agree"
+read_when: "executing rerun-the-drift-check"
 ---
+
+# rerun-the-drift-check
+
+_Origin: `pearde/workflows/rerun-the-drift-check.md` (workflow subject: ""`just manual` plus a shasum pair is what says the configuration and its manual still agree"")_
+
 
 ## Do
 

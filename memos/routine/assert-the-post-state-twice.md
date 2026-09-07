@@ -1,12 +1,14 @@
 ---
-atomic: assert-the-post-state-twice
-subject: a verify that passes once is a build script; three runs is what separates the two
-date: 2026-09-02
-updated: 2026-09-02
-runs: 0
-tags:
-  - atomic
+kind: routine
+name: assert-the-post-state-twice
+description: a verify that passes once is a build script; three runs is what separates the two
+read_when: "executing assert-the-post-state-twice"
 ---
+
+# assert-the-post-state-twice
+
+_Origin: `pearde/workflows/assert-the-post-state-twice.md` (workflow subject: "a verify that passes once is a build script; three runs is what separates the two")_
+
 
 ## Do
 
