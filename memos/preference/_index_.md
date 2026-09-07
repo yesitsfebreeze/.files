@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[standing-biases-when-this-config-fights-itself]] | the standing biases for this config — delete over document, built-in over wrapper, no changelog comments in a config, deployment proven not asserted | the user is choosing between writing more, deleting more, or moving on |

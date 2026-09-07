@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[09-simplify-epic]] | the 09-simplify epic — the rebuild is built, this epic removes everything that is not the daily driver | tracking what is left of the simplification plan, or the final I5 deploy |

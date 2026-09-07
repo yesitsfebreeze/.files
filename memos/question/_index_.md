@@ -4,3 +4,5 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[how-do-llm-models-go-stale-when-the-shelf-does]] | when a provider changes its /models response (new ids, dropped ones, a price shift) how does the litellm shelf know — and what catches a stale shelf serving a 402 | trusting `llm status` numbers, or chasing a 402 from a model that was free yesterday |
+| [[should-the-board-still-carry-prds-after-09-simplify]] | the PRD board still holds 215 PRDs and a vision that is reached — does the board retire once 09-simplify lands, or does it keep tracking post-09 work | deciding whether to commit a 0/9 PRDs board retirement, or looking at the board's banding for what is open |

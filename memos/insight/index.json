@@ -1,7 +1,25 @@
 {
   "kind": "insight",
-  "memo_count": 2,
+  "memo_count": 5,
   "memos": {
+    "commands-and-routines-are-different-kinds-of-thing": {
+      "path": "insight/commands-and-routines-are-different-kinds-of-thing.md",
+      "description": "a command is a memo, a routine is a procedure \u2014 the second exists to be invoked, the first exists to be remembered",
+      "read_when": "deciding whether a procedure becomes a routine or a memo, or which one a reader reaches for",
+      "links": {}
+    },
+    "hard-won-constraints-belong-on-the-record": {
+      "path": "insight/hard-won-constraints-belong-on-the-record.md",
+      "description": "a non-obvious constraint with a measurement behind it belongs in memos \u2014 the manual is the source, memos are the surface a cold agent lands on",
+      "read_when": "writing any rule into a config file, or deciding whether the rule needs a memo or just a code comment",
+      "links": {}
+    },
+    "the-record-is-what-persists-when-the-layers-collapse": {
+      "path": "insight/the-record-is-what-persists-when-the-layers-collapse.md",
+      "description": "the four registers that measured five branches and a `kind: type` for each, in this repo and the kern one, all collapsed to the same shape \u2014 memos",
+      "read_when": "asking where a doc, an index or a gate should live",
+      "links": {}
+    },
     "the-frontier-law": {
       "path": "system/the-frontier-law.md",
       "description": "the tree is only what is current; git is the archive \u2014 no shims, no changelogs, no code without a caller",

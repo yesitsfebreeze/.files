@@ -1,5 +1,18 @@
 {
   "kind": "fact",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 2,
+  "memos": {
+    "nushell-1141-is-the-pinned-version": {
+      "path": "fact/nushell-1141-is-the-pinned-version.md",
+      "description": "nushell 0.114.1 is the pinned version \u2014 every measurement in the manual was taken on it",
+      "read_when": "upgrading nushell, or chasing a behaviour that the manual's measurements might no longer hold",
+      "links": {}
+    },
+    "tmux-3-7c-is-the-pinned-version": {
+      "path": "fact/tmux-3-7c-is-the-pinned-version.md",
+      "description": "tmux 3.7c is the pinned version \u2014 the tmux.conf behaviour and key-table semantics depend on it",
+      "read_when": "upgrading tmux, or asking why a behaviour broke",
+      "links": {}
+    }
+  }
 }

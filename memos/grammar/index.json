@@ -1,5 +1,18 @@
 {
   "kind": "grammar",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 2,
+  "memos": {
+    "home-is-the-cwd-the-source-of-the-config": {
+      "path": "grammar/home-is-the-cwd-the-source-of-the-config.md",
+      "description": "the dotfiles repo's working copy at `~/dev/dotfiles` is `home/`'s source; chezmoi deploys from it, the manual reads from it, the record lives beside it",
+      "read_when": "running a command that names a path, or writing one that another reader will copy",
+      "links": {}
+    },
+    "the-board-stays-the-board": {
+      "path": "grammar/the-board-stays-the-board.md",
+      "description": "the PRD board at pearde/ is a work-in-flight engine \u2014 memos record what is settled, the board records what is open",
+      "read_when": "deciding whether a question is a memo, a work item, or a board PRD; or chasing a record that has gone stale",
+      "links": {}
+    }
+  }
 }

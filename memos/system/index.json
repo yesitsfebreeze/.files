@@ -80,7 +80,7 @@
       "description": "ongoing state of a thing being built \u2014 what runs, what is half-done, what it is blocked on",
       "read_when": "labelling where a piece of work stands",
       "links": {
-        "work": "system/work.md"
+        "work": "routine/work.md"
       }
     },
     "question": {
@@ -88,7 +88,7 @@
       "description": "what is asked and not yet settled \u2014 one topic per file, `Q:` / `A: ?` blocks",
       "read_when": "opening a drill topic",
       "links": {
-        "drill": "system/drill.md",
+        "drill": "routine/drill.md",
         "decision": "system/decision.md"
       }
     },
@@ -119,7 +119,7 @@
       "description": "the one kind the gate hardcodes \u2014 a kind declaration, the only shape the index reads by name",
       "read_when": "adding a kind, or asking why the folders are what they are",
       "links": {
-        "work": "system/work.md"
+        "work": "routine/work.md"
       }
     },
     "work-memo": {
@@ -127,8 +127,8 @@
       "description": "one unit of planned work \u2014 `level: 1-10`, `status: open | done | blocked`, a `## Do` and a `## Check`; done when the Check passes",
       "read_when": "writing a work memo",
       "links": {
-        "work": "system/work.md",
-        "plan-execution": "system/plan-execution.md"
+        "work": "routine/work.md",
+        "plan-execution": "routine/plan-execution.md"
       }
     }
   }

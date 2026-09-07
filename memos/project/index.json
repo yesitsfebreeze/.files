@@ -1,5 +1,12 @@
 {
   "kind": "project",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "09-simplify-epic": {
+      "path": "project/09-simplify-epic.md",
+      "description": "the 09-simplify epic \u2014 the rebuild is built, this epic removes everything that is not the daily driver",
+      "read_when": "tracking what is left of the simplification plan, or the final I5 deploy",
+      "links": {}
+    }
+  }
 }

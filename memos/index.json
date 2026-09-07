@@ -3,7 +3,7 @@
     "code-fact": {
       "description": "something structurally true about a config or a script \u2014 what a module owns, what a function guarantees",
       "read_when": "labelling a claim about how the code is built",
-      "memo_count": 0,
+      "memo_count": 1,
       "declaration": "system/code-fact.md",
       "index": "code-fact/index.json"
     },
@@ -24,21 +24,21 @@
     "fact": {
       "description": "something true about the world that is not about this repo \u2014 the catch-all",
       "read_when": "labelling a claim that no more specific word fits",
-      "memo_count": 0,
+      "memo_count": 2,
       "declaration": "system/fact.md",
       "index": "fact/index.json"
     },
     "grammar": {
       "description": "one custom name \u2014 what the word names here, where it first appeared, and the names it sits next to",
       "read_when": "meeting a word this repo uses in its own way, naming something new, or asking what a name already means",
-      "memo_count": 0,
+      "memo_count": 2,
       "declaration": "system/grammar.md",
       "index": "grammar/index.json"
     },
     "insight": {
       "description": "a connection seen across memos \u2014 the non-obvious why, argued in the body; a bare claim is worth nothing",
       "read_when": "writing or trusting an insight",
-      "memo_count": 2,
+      "memo_count": 5,
       "declaration": "system/insight.md",
       "index": "insight/index.json"
     },
@@ -59,7 +59,7 @@
     "preference": {
       "description": "what the person wants, standing across sessions \u2014 a tool, a style, a default",
       "read_when": "labelling something the person wants held past this conversation",
-      "memo_count": 0,
+      "memo_count": 1,
       "declaration": "system/preference.md",
       "index": "preference/index.json"
     },
@@ -73,21 +73,21 @@
     "project": {
       "description": "ongoing state of a thing being built \u2014 what runs, what is half-done, what it is blocked on",
       "read_when": "labelling where a piece of work stands",
-      "memo_count": 0,
+      "memo_count": 1,
       "declaration": "system/project.md",
       "index": "project/index.json"
     },
     "question": {
       "description": "what is asked and not yet settled \u2014 one topic per file, `Q:` / `A: ?` blocks",
       "read_when": "opening a drill topic",
-      "memo_count": 0,
+      "memo_count": 2,
       "declaration": "system/question.md",
       "index": "question/index.json"
     },
     "reference": {
       "description": "a pointer out of the record \u2014 a link, a document, a name to look up",
       "read_when": "labelling an external address worth keeping",
-      "memo_count": 0,
+      "memo_count": 2,
       "declaration": "system/reference.md",
       "index": "reference/index.json"
     },
@@ -120,5 +120,5 @@
       "index": "work/index.json"
     }
   },
-  "memo_count": 59
+  "memo_count": 73
 }

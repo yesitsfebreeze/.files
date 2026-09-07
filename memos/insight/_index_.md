@@ -4,5 +4,8 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[commands-and-routines-are-different-kinds-of-thing]] | a command is a memo, a routine is a procedure — the second exists to be invoked, the first exists to be remembered | deciding whether a procedure becomes a routine or a memo, or which one a reader reaches for |
+| [[hard-won-constraints-belong-on-the-record]] | a non-obvious constraint with a measurement behind it belongs in memos — the manual is the source, memos are the surface a cold agent lands on | writing any rule into a config file, or deciding whether the rule needs a memo or just a code comment |
+| [[the-record-is-what-persists-when-the-layers-collapse]] | the four registers that measured five branches and a `kind: type` for each, in this repo and the kern one, all collapsed to the same shape — memos | asking where a doc, an index or a gate should live |
 | [[the-frontier-law]] | the tree is only what is current; git is the archive — no shims, no changelogs, no code without a caller | before adding a comment, a backup file, or a changelog |
 | [[the-index-is-derived]] | the index is a fold over the memos, regenerated whole, never hand-edited — a hand index drifts the day a memo moves | adding an index, or asking why memos/README-style tables are generated |

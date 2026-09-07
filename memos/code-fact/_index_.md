@@ -4,3 +4,4 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[term-size-columns-can-be-zero]] | the PWD-hook width guard `la | print` spins on an empty directory at 0 columns — `(term size).columns > 0` is the only stop | adding a PWD hook, or chasing a shell hang at 0 columns |

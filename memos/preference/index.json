@@ -1,5 +1,12 @@
 {
   "kind": "preference",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "standing-biases-when-this-config-fights-itself": {
+      "path": "preference/standing-biases-when-this-config-fights-itself.md",
+      "description": "the standing biases for this config \u2014 delete over document, built-in over wrapper, no changelog comments in a config, deployment proven not asserted",
+      "read_when": "the user is choosing between writing more, deleting more, or moving on",
+      "links": {}
+    }
+  }
 }

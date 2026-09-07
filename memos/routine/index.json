@@ -3,7 +3,7 @@
   "memo_count": 4,
   "memos": {
     "drill": {
-      "path": "system/drill.md",
+      "path": "routine/drill.md",
       "description": "Conduct a deep plan/design interview, persist each Q&A, and move the topic file to a decision once a coherent picture exists.",
       "read_when": "splitting work, designing anything non-trivial",
       "links": {
@@ -11,7 +11,7 @@
       }
     },
     "improve": {
-      "path": "system/improve.md",
+      "path": "routine/improve.md",
       "description": "The improvement loop \u2014 sweep the record and the tree for the next open thread, research it, land the finding as a memo, repeat.",
       "read_when": "looking for what to work on next, or running a research pass",
       "links": {
@@ -20,19 +20,19 @@
       }
     },
     "plan-execution": {
-      "path": "system/plan-execution.md",
+      "path": "routine/plan-execution.md",
       "description": "Execute a whole plan of work memos \u2014 run system/work.md per item, in the plan's order, until nothing is open.",
       "read_when": "running a whole plan end to end",
       "links": {}
     },
     "work": {
-      "path": "system/work.md",
+      "path": "routine/work.md",
       "description": "Execute work memos \u2014 pick the next open item, do it, pass its Check, split it through the drill when it cannot stay at level 10.",
       "read_when": "executing a work memo",
       "links": {
         "SYSTEM": null,
-        "plan-execution": "system/plan-execution.md",
-        "drill": "system/drill.md"
+        "plan-execution": "routine/plan-execution.md",
+        "drill": "routine/drill.md"
       }
     }
   }

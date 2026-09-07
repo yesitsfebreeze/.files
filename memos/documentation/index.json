@@ -7,8 +7,8 @@
       "description": "what is left \u2014 every open thread, ranked worst-first, and where each kind of thread lives",
       "read_when": "picking up work",
       "links": {
-        "work": "system/work.md",
-        "drill": "system/drill.md",
+        "work": "routine/work.md",
+        "drill": "routine/drill.md",
         "the-index-is-derived": "system/the-index-is-derived.md"
       }
     },

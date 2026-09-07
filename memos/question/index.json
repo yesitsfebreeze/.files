@@ -1,5 +1,18 @@
 {
   "kind": "question",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 2,
+  "memos": {
+    "how-do-llm-models-go-stale-when-the-shelf-does": {
+      "path": "question/how-do-llm-models-go-stale-when-the-shelf-does.md",
+      "description": "when a provider changes its /models response (new ids, dropped ones, a price shift) how does the litellm shelf know \u2014 and what catches a stale shelf serving a 402",
+      "read_when": "trusting `llm status` numbers, or chasing a 402 from a model that was free yesterday",
+      "links": {}
+    },
+    "should-the-board-still-carry-prds-after-09-simplify": {
+      "path": "question/should-the-board-still-carry-prds-after-09-simplify.md",
+      "description": "the PRD board still holds 215 PRDs and a vision that is reached \u2014 does the board retire once 09-simplify lands, or does it keep tracking post-09 work",
+      "read_when": "deciding whether to commit a 0/9 PRDs board retirement, or looking at the board's banding for what is open",
+      "links": {}
+    }
+  }
 }

@@ -4,3 +4,5 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[llm-launcher-arg-fill]] | the placeholders `llm`'s `agents.json` substitutes — every agent's `cmd`, `env`, `unset`, `profile` template | adding an agent to agents.json, or writing `args`/`env` that another agent's template needs to fill |
+| [[manual-is-markdown]] | the manual is the file `home/dot_config/nushell/help/manual/`; `?` and `help` read it after chezmoi apply | looking up a keybinding, a picker channel, or what a command does in this environment |

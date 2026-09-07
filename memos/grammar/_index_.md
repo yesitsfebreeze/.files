@@ -4,3 +4,5 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[home-is-the-cwd-the-source-of-the-config]] | the dotfiles repo's working copy at `~/dev/dotfiles` is `home/`'s source; chezmoi deploys from it, the manual reads from it, the record lives beside it | running a command that names a path, or writing one that another reader will copy |
+| [[the-board-stays-the-board]] | the PRD board at pearde/ is a work-in-flight engine — memos record what is settled, the board records what is open | deciding whether a question is a memo, a work item, or a board PRD; or chasing a record that has gone stale |

@@ -8,10 +8,8 @@
 | [[commands]] | Build, check, and navigate this repo — the commands a change runs | running or verifying a repo change |
 | [[decision]] | what was chosen and what it beat — dated | writing or trusting a decision |
 | [[documentation]] | how to use or operate — references, indexes, the protocol; must match reality, and may carry its own headings | writing a reference or an index |
-| [[drill]] | Conduct a deep plan/design interview, persist each Q&A, and move the topic file to a decision once a coherent picture exists. | splitting work, designing anything non-trivial |
 | [[fact]] | something true about the world that is not about this repo — the catch-all | labelling a claim that no more specific word fits |
 | [[grammar]] | one custom name — what the word names here, where it first appeared, and the names it sits next to | meeting a word this repo uses in its own way, naming something new, or asking what a name already means |
-| [[improve]] | The improvement loop — sweep the record and the tree for the next open thread, research it, land the finding as a memo, repeat. | looking for what to work on next, or running a research pass |
 | [[insight]] | a connection seen across memos — the non-obvious why, argued in the body; a bare claim is worth nothing | writing or trusting an insight |
 | [[knowledge]] | what the repo is — how a config works, what a contract is; true until the config changes, fixed in the same change | writing or trusting a knowledge memo |
 | [[memo-atomicity]] | One memo carries one claim, its evidence, and its consequences | before writing or splitting a memo |
@@ -20,7 +18,6 @@
 | [[memo-layout]] | Where system memos, kind folders, and the generated index live | first, every session |
 | [[memo-writing]] | The memo frontmatter and templates for writing the record | before writing or changing a memo |
 | [[persona]] | one worn preprompt — who is working, in the second person, with the practitioners each behaviour is taken from | writing a persona memo, wearing one, consulting one, or dispatching work to one |
-| [[plan-execution]] | Execute a whole plan of work memos — run system/work.md per item, in the plan's order, until nothing is open. | running a whole plan end to end |
 | [[preference]] | what the person wants, standing across sessions — a tool, a style, a default | labelling something the person wants held past this conversation |
 | [[procedural]] | how we do X — a learned workflow, rule or convention, one sentence long | labelling a step or a rule rather than a fact |
 | [[project]] | ongoing state of a thing being built — what runs, what is half-done, what it is blocked on | labelling where a piece of work stands |
@@ -33,4 +30,3 @@
 | [[tree]] | the repo tree — which directory holds what, and which file is authority for which question | looking for where something lives |
 | [[type]] | the one kind the gate hardcodes — a kind declaration, the only shape the index reads by name | adding a kind, or asking why the folders are what they are |
 | [[work-memo]] | one unit of planned work — `level: 1-10`, `status: open | done | blocked`, a `## Do` and a `## Check`; done when the Check passes | writing a work memo |
-| [[work]] | Execute work memos — pick the next open item, do it, pass its Check, split it through the drill when it cannot stay at level 10. | executing a work memo |

@@ -1,5 +1,18 @@
 {
   "kind": "reference",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 2,
+  "memos": {
+    "llm-launcher-arg-fill": {
+      "path": "reference/llm-launcher-arg-fill.md",
+      "description": "the placeholders `llm`'s `agents.json` substitutes \u2014 every agent's `cmd`, `env`, `unset`, `profile` template",
+      "read_when": "adding an agent to agents.json, or writing `args`/`env` that another agent's template needs to fill",
+      "links": {}
+    },
+    "manual-is-markdown": {
+      "path": "reference/manual-is-markdown.md",
+      "description": "the manual is the file `home/dot_config/nushell/help/manual/`; `?` and `help` read it after chezmoi apply",
+      "read_when": "looking up a keybinding, a picker channel, or what a command does in this environment",
+      "links": {}
+    }
+  }
 }

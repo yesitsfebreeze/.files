@@ -4,3 +4,5 @@
 
 | memo | is | read when |
 |---|---|---|
+| [[nushell-1141-is-the-pinned-version]] | nushell 0.114.1 is the pinned version — every measurement in the manual was taken on it | upgrading nushell, or chasing a behaviour that the manual's measurements might no longer hold |
+| [[tmux-3-7c-is-the-pinned-version]] | tmux 3.7c is the pinned version — the tmux.conf behaviour and key-table semantics depend on it | upgrading tmux, or asking why a behaviour broke |

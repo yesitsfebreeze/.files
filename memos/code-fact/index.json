@@ -1,5 +1,12 @@
 {
   "kind": "code-fact",
-  "memo_count": 0,
-  "memos": {}
+  "memo_count": 1,
+  "memos": {
+    "term-size-columns-can-be-zero": {
+      "path": "code-fact/term-size-columns-can-be-zero.md",
+      "description": "the PWD-hook width guard `la | print` spins on an empty directory at 0 columns \u2014 `(term size).columns > 0` is the only stop",
+      "read_when": "adding a PWD hook, or chasing a shell hang at 0 columns",
+      "links": {}
+    }
+  }
 }
