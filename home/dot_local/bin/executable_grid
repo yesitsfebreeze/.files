@@ -1,0 +1,106 @@
+#!/bin/bash
+# grid — F5: burrito's picker over tmux. Windows 1-9 are a 3x3 grid of
+# tiles, each a live snapshot of that window, addressed by the left hand:
+#
+#   q w e      1 2 3
+#   a s d  =   4 5 6
+#   z x c      7 8 9
+#
+# A tile key (or its digit) lands on that window, creating it at ~ if empty.
+# Arrows walk panes and keep the grid open; Shift+arrow splits, Ctrl+arrow
+# carries the pane (tmux's `pane-move` table); a second F5 is the cockpit;
+# Escape closes. tmux does every split and move — this only draws and reads.
+#
+#   grid CLIENT PANE WIDTH HEIGHT            (F5)
+#   grid --pick CLIENT PANE W H OUT          (inside the popup)
+#
+# manual → internals/tmux, "F5 — the grid".
+set -u
+keys=qweasdzxc
+
+# One synchronized frame, W x H inside the popup's border.
+draw() {
+    local W=$1 H=$2 tw th sid act buf r c i x y n l name
+    tw=$(((W - 2) / 3)) th=$(((H - 2) / 3))
+    sid=$(tmux display -p -t "$pane" '#{session_id}')
+    act=$(tmux display -p -t "$pane" '#{window_index}')
+    buf=$'\e[?2026h\e[?25l\e[H\e[2J\e[1;2H\e[1mburrito\e[0m'
+    for i in 1 2 3 4 5 6 7 8 9; do
+        r=$(((i - 1) / 3)) c=$(((i - 1) % 3))
+        y=$((2 + r * th)) x=$((1 + c * (tw + 1)))
+        name=$(tmux display -p -t "$sid:$i" '#{window_name}' 2>/dev/null)
+        if [ "$i" = "$act" ]; then
+            buf+=$'\e['"$y;${x}H"$'\e[1;7;34m'" ${keys:i-1:1} "$'\e[0;34m'" $i $name"$'\e[0m'
+        else
+            buf+=$'\e['"$y;${x}H"$'\e[1;34m'" ${keys:i-1:1} "$'\e[0;90m'" $i $name"$'\e[0m'
+        fi
+        if [ -z "$name" ]; then
+            buf+=$'\e['"$((y + th / 2));$((x + tw / 2 - 2))H"$'\e[90midle\e[0m'
+        else
+            # ponytail: a double-width glyph overruns its tile by a column;
+            # the separators are drawn after and cover most of it.
+            n=0
+            while IFS= read -r l && [ "$n" -lt $((th - 2)) ]; do
+                n=$((n + 1))
+                buf+=$'\e['"$((y + n));${x}H${l:0:tw}"
+            done < <(tmux capture-pane -p -t "$sid:$i")
+        fi
+    done
+    # burrito's borders: full-height columns, half-width rules between rows.
+    for ((y = 2; y <= H - 1; y++)); do
+        buf+=$'\e[90m\e['"$y;$((tw + 1))H│"$'\e['"$y;$((2 * tw + 2))H│"
+    done
+    l=$(printf '%*s' $((tw / 2)) '' | sed 's/ /─/g')
+    for r in 1 2; do
+        for c in 0 1 2; do
+            buf+=$'\e['"$((1 + r * th));$((1 + c * (tw + 1) + tw / 4))H$l"
+        done
+    done
+    buf+=$'\e['"$H;2H"'q-c window · ←↑↓→ pane · shift split · ctrl carry · F5 cockpit · esc close'
+    printf '%s\e[0m\e[?2026l' "$buf"
+}
+
+if [ "${1-}" = --pick ]; then
+    client=$2 pane=$3 out=$6
+    run() { tmux if -F -t "$pane" 1 "$(tmux display -p -t "$pane" "$1")"; }
+    while :; do
+        draw "$4" "$5"
+        IFS= read -rsn1 k || exit 0
+        if [ "$k" = $'\e' ]; then
+            # The rest of an escape sequence arrives in the same write; a
+            # lone Escape times out after 0.1 s and closes.
+            s=$(stty -g); stty -icanon min 0 time 1; k=$(dd bs=8 count=1 2>/dev/null); stty "$s"
+        fi
+        case $k in
+        '') exit 0 ;;
+        '[A' | OA) run 'select-pane -U' ;;
+        '[B' | OB) run 'select-pane -D' ;;
+        '[C' | OC) run 'select-pane -R' ;;
+        '[D' | OD) run 'select-pane -L' ;;
+        '[1;2A') run 'split-window -vb -c "#{E:@cwd}"'; exit 0 ;;
+        '[1;2B') run 'split-window -v -c "#{E:@cwd}"'; exit 0 ;;
+        '[1;2C') run 'split-window -h -c "#{E:@cwd}"'; exit 0 ;;
+        '[1;2D') run 'split-window -hb -c "#{E:@cwd}"'; exit 0 ;;
+        '[1;5A') run "swap-pane -d -t '{up-of}' ; switch-client -c '$client' -T pane-move"; exit 0 ;;
+        '[1;5B') run "swap-pane -d -t '{down-of}' ; switch-client -c '$client' -T pane-move"; exit 0 ;;
+        '[1;5C') run "swap-pane -d -t '{right-of}' ; switch-client -c '$client' -T pane-move"; exit 0 ;;
+        '[1;5D') run "swap-pane -d -t '{left-of}' ; switch-client -c '$client' -T pane-move"; exit 0 ;;
+        '[15~') printf cockpit > "$out"; exit 0 ;;
+        [1-9] | [qweasdzxc])
+            i=$k
+            case $k in [a-z]) i=${keys%%"$k"*} i=$((${#i} + 1)) ;; esac
+            sid=$(tmux display -p -t "$pane" '#{session_id}')
+            tmux select-window -t "$sid:$i" 2>/dev/null || tmux new-window -t "$sid:$i" -c "$HOME"
+            exit 0 ;;
+        esac
+        pane=$(tmux display -p -t "$pane" '#{window_id}' | xargs -I{} tmux display -p -t {} '#{pane_id}')
+    done
+fi
+
+client=$1 pane=$2
+w=$(($3 * 90 / 100)) h=$(($4 * 85 / 100)) out=$(mktemp)
+tmux display-popup -c "$client" -E -b rounded -S fg=colour8 -w "$w" -h "$h" -x C -y C \
+    "bash '$0' --pick '$client' '$pane' $((w - 2)) $((h - 2)) '$out'"
+next=$(cat "$out"); rm -f "$out"
+[ "$next" = cockpit ] || exit 0
+exec ~/.local/bin/cockpit "$client" "$(tmux display -p -c "$client" '#{pane_id}')" "$3" "$4"
