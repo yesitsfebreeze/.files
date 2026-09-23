@@ -1,0 +1,67 @@
+{
+  "checks": {
+    "one_parser": {
+      "command": "bash -c 'l=$(rg -l \"schemes/|custom-schemes\" home --glob \"!**/help/**\"); echo \"$l\"; [ $(printf \"%s\\n\" \"$l\" | grep -c .) -eq 1 ]'"
+    },
+    "no_dead_refs": {
+      "command": "bash -c '! rg -n \"theme-preview|_theme_bg_restore|_theme_osc_bg|_theme_scheme_bg|_theme_toggle|_theme_cfg_file|_theme_default_scheme|pearde/resources|PEARDE_AS|\\.pearde/memos\" home'"
+    },
+    "theme_size": {
+      "command": "bash -c 'n=0; for f in home/dot_config/tinted-theming/tinty/config.toml home/dot_config/tinted-theming/tinty/executable_theme.sh home/dot_config/television/cable/theme.toml home/dot_config/nushell/theme.nu home/dot_config/television/executable_theme-preview.sh home/dot_config/tinted-theming/tinty/executable_tmux-colors.sh; do [ -f \"$f\" ] && n=$((n+1)); done; l=$(cat home/dot_config/tinted-theming/tinty/config.toml home/dot_config/tinted-theming/tinty/executable_theme.sh home/dot_config/television/cable/theme.toml | wc -l); echo files=$n lines=$l; [ $n -le 4 ] && [ $l -le 200 ]'"
+    },
+    "memos_gate": {
+      "command": "just memos-check"
+    },
+    "manual_fresh": {
+      "command": "bash -c 'd=$(mktemp -d); cp -R home/dot_config/nushell/help/manual \"$d\"/m; just manual >/dev/null && diff -rq \"$d\"/m home/dot_config/nushell/help/manual'"
+    },
+    "scripts_parse": {
+      "command": "bash -c 'rc=0; for f in $(git ls-files home | grep -E \"(\\.sh$|/executable_)\"); do head -1 \"$f\" | grep -q bash && { bash -n \"$f\" || { echo \"$f\"; rc=1; }; }; head -1 \"$f\" | grep -qE \"^#!/bin/sh|env sh\" && { sh -n \"$f\" || { echo \"$f\"; rc=1; }; }; done; exit $rc'"
+    },
+    "lifecycle": {
+      "command": "bash .orly/lifecycle.sh"
+    },
+    "bounded_works": {
+      "command": "bash .orly/bounded-check.sh"
+    },
+    "scan_reaped": {
+      "command": "bash .orly/scan-reaped.sh"
+    },
+    "no_unbounded_wait": {
+      "command": "bash -c 'bad=$(rg -n \"nohup|security find-generic-password|pass show\" home install.sh --glob \"!**/help/**\" | grep -v bounded; rg -n \"curl \" install.sh home --glob \"!**/help/**\" --glob \"!**/Dockerfile\" | grep -v -- --max-time); echo \"$bad\"; [ -z \"$bad\" ]'"
+    },
+    "shellcheck": {
+      "command": "bash -c 'rc=0; for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" || continue; shellcheck -S warning -f gcc \"$f\" || rc=1; done; exit $rc'"
+    },
+    "channels_fast": {
+      "command": "bash .orly/channels.sh"
+    },
+    "no_flicker": {
+      "command": "bash .orly/no-flicker.sh"
+    },
+    "nu_parses": {
+      "command": "bash .orly/invariants.sh nu_parses"
+    },
+    "lua_parses": {
+      "command": "bash .orly/invariants.sh lua_parses"
+    },
+    "no_hex_below_tinty": {
+      "command": "bash .orly/invariants.sh no_hex_below_tinty"
+    },
+    "fzf_confined": {
+      "command": "bash .orly/invariants.sh fzf_confined"
+    },
+    "hard_constraints": {
+      "command": "bash .orly/invariants.sh hard_constraints"
+    },
+    "size_budget": {
+      "command": "bash .orly/invariants.sh size_budget"
+    },
+    "bash_32": {
+      "command": "bash .orly/invariants.sh bash_32"
+    },
+    "behaviour": {
+      "command": "python3 .orly/behaviour.py"
+    }
+  }
+}

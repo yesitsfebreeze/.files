@@ -145,7 +145,7 @@
     {
         cmd: "tv channel"
         title: "Understand what a channel is, and add one"
-        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` is the one thing it does NOT join for free — the search-all corpus is a fixed list of lanes in `tv-all`, because a merged row is only useful if something knows what to do when you pick it, so a new channel worth searching from F3 is a lane and an opener added there."
+        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` and `F8` list it at once; `tv-go` decides what picking one of its rows does, and anything it does not know lands on a fresh prompt unrun."
         topic: "find"
         task: "files"
         step: 5
@@ -405,18 +405,18 @@
     {
         cmd: "theme"
         title: "Pick a colour scheme with a live preview"
-        use: "Run `theme` and the scheme catalog opens in television with the current and previous scheme at the top; browsing retints the window background live, `Enter` applies the pick, and `Esc` leaves the theme exactly as it was."
+        use: "Run `theme` and the scheme picker opens with the current scheme at the top and only schemes of its kind — dark or light — below it; browsing retints the whole terminal — every pane, the status bar, the background — live, `Enter` applies the pick, and `Esc` leaves the theme exactly as it was."
         topic: "config"
         task: "appearance"
         step: 1
         mode: "shell"
-        also: ["theme toggle"]
-        why: "Browsing never runs `tinty apply` — the preview is one OSC 11 escape, because an apply per focused row would fire tinty's whole hook chain on every keystroke. The one real apply happens after tv exits, in the live shell, so the hooks see the real environment rather than a stripped television-action subprocess."
+        also: ["theme toggle", "F9"]
+        why: "Browsing never runs `tinty apply` — the preview is `theme.sh --preview`, which paints tmux and the terminal from the scheme file and records nothing, so a focused row costs one tmux call. The one real apply happens after tv exits, and `Esc` repaints the current scheme over whatever the preview left."
     }
     {
         cmd: "theme toggle"
-        title: "Swap back to the previous scheme"
-        use: "Run `theme toggle` — or press `F6` in the terminal, which is bound to it — and the scheme active before the last change comes back, while the one you are leaving becomes the new \"previous\". Run it again and you are back where you started: it is a swap, not a cycle."
+        title: "Switch between dark and light"
+        use: "Run `theme toggle` — or press `F6` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium)."
         topic: "config"
         task: "appearance"
         step: 2
@@ -522,16 +522,5 @@
         mode: "shell"
         also: ["kern models", "kern models status"]
         why: "Kern owns model access and recovery in one service."
-    }
-    {
-        cmd: "pearde [cmd]"
-        title: "Work the PRD board this repository plans with"
-        use: "Run `pearde` on its own for the board on one page, `pearde help` for the subcommands, `pearde plan` for what runs next. It is a python entry point in ~/dev/infra/pearde, aliased here because the tool installs no binary of its own."
-        topic: "agents"
-        task: "agents"
-        step: 22
-        mode: "shell"
-        also: ["cc [...args]", "help --json"]
-        why: "This alias is half of a pair and does not work alone. Every subcommand that MOVES a PRD stamps who did it, reading `$env.PEARDE_AS` from env.nu, and refuses outright when it is unset — measured 2026-09-02, `pearde sweep --dry` without it answers `refused — persona:` and does nothing. The alias points at the SOURCE repo, never at the `.claude/skills/pearde` symlink inside a project: every install on this machine links into that one repo, so a project-local path would answer only inside that project."
     }
 ]

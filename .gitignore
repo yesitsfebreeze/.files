@@ -28,3 +28,8 @@ pearde/vision.md
 
 # python cache
 __pycache__/
+# machine-local run state
+.pi/
+.orly/turns/
+.orly/log.jsonl
+memos/.compact.lock

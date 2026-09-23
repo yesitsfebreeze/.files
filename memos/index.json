@@ -10,7 +10,7 @@
     "decision": {
       "description": "what was chosen and what it beat \u2014 dated",
       "read_when": "writing or trusting a decision",
-      "memo_count": 7,
+      "memo_count": 8,
       "declaration": "system/decision.md",
       "index": "decision/index.json"
     },
@@ -120,5 +120,5 @@
       "index": "work/index.json"
     }
   },
-  "memo_count": 122
+  "memo_count": 123
 }

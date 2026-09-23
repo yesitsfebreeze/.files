@@ -11,7 +11,7 @@ read_when: "touching the multiplexer, tmux.conf or wezterm.lua"
 ## Decision
 
 tmux owns windows, panes, addressing, splits, scrollback and the status bar.
-WezTerm keeps font, grid centering, window opacity and blur, the launchd PATH
+WezTerm keeps font, window opacity and blur, the launchd PATH
 seeding, and the capsule `SendString` keys — everything that is true of *this
 machine* and false of an ssh session.
 

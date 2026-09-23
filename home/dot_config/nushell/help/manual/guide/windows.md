@@ -26,7 +26,7 @@ See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane shows its uppercase jump letter and directory above it, for example `A ~/dev`, with one space on each side of the letter. Inactive titles use normal text colour throughout, with a dim background behind the directory. The active pane reverses the letter, its two spaces, and the directory bar. The straight borders stay bright and pane contents keep their full colour regardless of focus. Press the matching lowercase letter. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane.
+Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane shows its uppercase jump letter and directory above it, for example `A ~/dev`, written on the border line like a popup's title. The focused pane's border is drawn in the accent colour; pane contents keep their full colour regardless of focus. Press the matching lowercase letter. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane.
 
 > **Why it is this way**
 >

@@ -1,0 +1,27 @@
+#!/bin/sh
+# bounded SECS CMD [ARG...] — run CMD with a deadline, and leave nothing behind.
+#
+# CMD runs in its own process group. At SECS the whole group gets TERM, then
+# KILL if any of it is still there two seconds later, so a grandchild (an rg under a scan, a gpg under
+# pass) dies with it. Killing `bounded` itself does the same. Exit status is
+# CMD's, 124 on the deadline.
+#
+# Why it exists: macOS ships no timeout(1), and a timeout that only stops
+# WAITING leaves the process running — 17 orphaned `pass show` spinning at
+# 50% CPU each were found that way on 2026-09-23. perl because it is always
+# on macOS and one exec is all this costs.
+exec perl -e '
+    my $t = shift;
+    my $p = fork // die "bounded: fork: $!\n";
+    if (!$p) { setpgrp(0, 0); exec { $ARGV[0] } @ARGV or exit 127 }
+    my $end = sub {
+        kill TERM => -$p;
+        for (1 .. 20) { waitpid $p, 1; last unless kill 0 => -$p; select undef, undef, undef, 0.1 }
+        kill KILL => -$p; exit $_[0];
+    };
+    $SIG{ALRM} = sub { $end->(124) };
+    $SIG{TERM} = $SIG{INT} = $SIG{HUP} = sub { $end->(143) };
+    alarm $t;
+    waitpid $p, 0;
+    exit($? & 127 ? 128 + ($? & 127) : $? >> 8);
+' "$@"

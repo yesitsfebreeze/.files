@@ -1,0 +1,1 @@
+Do `command_results` include, after the last edit to a theme file, running the `tv theme` channel's preview command for one scheme id and then a `tmux show` output of status-style containing a hex colour different from the one shown before the preview?

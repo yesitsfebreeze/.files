@@ -23,7 +23,7 @@ require("lazy").setup({
   },
   defaults = { lazy = false, version = false },
   rocks = { hererocks = false },
-  install = { colorscheme = { "base16-gruvbox-dark-hard" } },
+  install = { colorscheme = { "base16-gruvbox-material-dark-medium" } },
   checker = { enabled = true, notify = false },
   change_detection = { notify = false },
   performance = {

@@ -1,39 +1,22 @@
-# television cable channel: `tv theme` — the base16/base24 scheme picker that
-# backs the `theme` nushell command (theme.nu).
-#
-# source : _theme_list from theme.nu — the A/B slot pair first (the active
-#          one tagged " (A · current)", the other " (B)"), then the
-#          alphabetical catalog. That head ordering is the whole point of the
-#          channel, so sorting and frecency are both OFF; television
-#          otherwise reorders the list out from under it.
-# preview: theme-preview.sh paints a self-contained swatch from the scheme's
-#          own hex values and emits ONE OSC 11 so the real window background
-#          previews live. Browsing never fires tinty's hook chain — an apply
-#          per focused row would run the whole chain on every keystroke.
-# enter  : prints the focused id to stdout; theme.nu applies it afterwards,
-#          in the live interactive shell, so tinty's hooks run with the real
-#          env, not a stripped television-action subprocess.
-#
-# Both paths use a bare `~/…`: television hands the command to $SHELL — here
-# nu — which expands it, so the chezmoi template this file used to be bought
-# nothing (quicklist.toml, recent-dirs.toml and docs.toml already do this).
-# The source line sources dirstack.nu first because theme.nu's
-# `_theme_state_dir` calls `_state_dir` from there, and `nu -n` loads no
-# config — sourcing theme.nu alone leaves the list empty.
+# `tv theme` — the scheme list as a plain tv channel. F8, F9 and `theme` use
+# tv-go's fzf picker instead, which re-runs the preview on every focus.
 
 [metadata]
 name = "theme"
-description = "base16/base24 colour schemes — live preview, enter applies via tinty"
-requirements = ["nu", "tinty"]
+description = "base16/base24 colour schemes — live preview, enter applies"
+requirements = ["tinty"]
 
 [source]
-command = "nu -n -c 'source ~/.config/nushell/dirstack.nu; source ~/.config/nushell/theme.nu; _theme_list | to text'"
+command = "~/.config/tinted-theming/tinty/theme.sh --list"
 output = "{}"
 no_sort = true
 frecency = false
 
 [preview]
-command = "~/.config/television/theme-preview.sh '{}'"
+command = "~/.config/tinted-theming/tinty/theme.sh --preview '{}'"
+# The preview's job is the retint, a side effect: a cached row would show its
+# swatch but leave the terminal on the last scheme painted.
+cached = false
 
 [ui]
 preview_panel = { size = 65 }

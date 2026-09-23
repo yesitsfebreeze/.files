@@ -1,12 +1,20 @@
 {
   "kind": "decision",
-  "memo_count": 7,
+  "memo_count": 8,
   "memos": {
     "a-retirement-is-two-edits": {
       "path": "decision/a-retirement-is-two-edits.md",
       "description": "retiring a file from this configuration is two edits \u2014 the source file goes and its deployed target path is listed in home/.chezmoiremove \u2014 and the retirement is proven at the target path, never at the source or by an apply's exit code",
       "read_when": "deleting anything from home/",
       "links": {}
+    },
+    "astra-uses-the-codex-subscription-hop": {
+      "path": "decision/astra-uses-the-codex-subscription-hop.md",
+      "description": "Astra is available to LiteLLM-compatible agents through the saved Codex Pro login, with an explicit subscription pin",
+      "read_when": "using Astra with another agent or maintaining the ChatGPT bridge",
+      "links": {
+        "the-model-router-is-a-dotfile-after-all": "decision/the-model-router-is-a-dotfile-after-all.md"
+      }
     },
     "tests-and-gates-retire": {
       "path": "decision/tests-and-gates-retire.md",

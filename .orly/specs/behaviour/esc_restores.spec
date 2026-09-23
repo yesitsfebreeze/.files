@@ -1,0 +1,1 @@
+Do `command_results` include, after the last edit to a theme file, a preview of one scheme, then the picker's cancel/restore path, then a `tmux show` status-style output equal to the value printed before the preview?

@@ -16,14 +16,12 @@
 # red line on every single turn.
 [ -n "${TMUX_PANE:-}" ] || exit 0
 
-if [ -n "${1:-}" ]; then
-    tmux set -p -t "$TMUX_PANE" @claude "$1" 2> /dev/null
-else
-    tmux set -pu -t "$TMUX_PANE" @claude 2> /dev/null
-fi
-
-# TRAP: without this the bar waits for `status-interval`, so a turn that ends in
-# under five seconds goes green after it has already finished — which reads as a
-# broken hook rather than a slow one.
-tmux refresh-client -S 2> /dev/null
+# Only a CHANGE redraws: setting a pane option repaints every pane header and
+# the bar on every client, and a repeat report changes nothing on screen.
+# One tmux call; the state words and the pane id need no quoting.
+if [ -n "${1:-}" ]; then set="set -p -t $TMUX_PANE @claude $1"; else set="set -pu -t $TMUX_PANE @claude"; fi
+# TRAP: without the refresh the bar waits for `status-interval`, so a turn that
+# ends in under five seconds goes green after it has already finished — which
+# reads as a broken hook rather than a slow one.
+tmux if -F -t "$TMUX_PANE" "#{==:#{@claude},${1:-}}" '' "$set ; refresh-client -S" 2> /dev/null
 exit 0

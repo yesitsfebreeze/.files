@@ -29,7 +29,7 @@
         id: "files"
         title: "Find a file, a line, or a directory"
         summary: "The finder in the shell, telescope in the editor, and ripgrep underneath."
-        intro: "One key opens everything: `F3` asks what you are looking for, then tells you which channels have it — files, directories, file contents, git log, the manual, history — with a count each. Narrow to a channel, pick a row, and it opens in a new pane below you. `Shift+F3` is the same gesture across your whole machine, answering fastest-first so a jump costs nothing and a real hunt can be left to run. Both are tmux bindings, so they answer from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one."
+        intro: "One key opens everything: `F3` asks what you are looking for, then which channel to look in — files, directories, file contents, git log, the manual, history — and opens that channel with your query already typed. Pick a row and it opens in a new pane below you. It is a tmux binding, so it answers from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one."
     }
     {
         id: "history"

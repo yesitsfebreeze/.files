@@ -31,9 +31,6 @@ $env.VISUAL = "nvim"
 
 $env.STARSHIP_SHELL = "nu"
 
-# Who the board is working as; every `pearde` command reads it and refuses without it.
-$env.PEARDE_AS = "engineer"
-
 $env.SHELL = $nu.current-exe
 
 # ── Start dir (R7) ──────────────────────────────────────────────────────────
@@ -76,5 +73,9 @@ if $nu.is-interactive and (which ollama-host | is-not-empty) {
     }
 }
 
-# TypeSafe key for orly / fast-jev-compaction, read from the Keychain (never stored here)
-$env.TYPESAFE_API_KEY = (try { ^security find-generic-password -a typesafe/api-key -s kern -w | str trim } catch { "" })
+# TypeSafe key for orly / fast-jev-compaction, read from the Keychain (never
+# stored here). Interactive only, and bounded: a locked Keychain can block
+# `security` indefinitely, and this runs at every shell start.
+if $nu.is-interactive {
+    $env.TYPESAFE_API_KEY = (try { ^bounded 3 security find-generic-password -a typesafe/api-key -s kern -w | str trim } catch { "" })
+}

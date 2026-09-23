@@ -21,7 +21,6 @@ Every entry links to where the guide explains it.
 | `kern models status` | Inspect route health and recovery | shell | [Run coding agents](../guide/agents.md#kern-models-status) |
 | `kern models connections` | Inspect provider connections | shell | [Run coding agents](../guide/agents.md#kern-models-connections) |
 | `kern models paths` | Locate native model configuration | shell | [Run coding agents](../guide/agents.md#kern-models-paths) |
-| `pearde [cmd]` | Work the PRD board this repository plans with | shell | [Run coding agents](../guide/agents.md#pearde-cmd) |
 | `<leader>x` | Show what <leader>x can do | nvim normal | [Run coding agents](../guide/agents.md#leader-x) |
 | `<leader>xc` | Toggle Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xc) |
 | `<leader>xf` | Focus Claude | nvim normal | [Run coding agents](../guide/agents.md#leader-xf) |

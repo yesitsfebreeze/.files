@@ -1,13 +1,12 @@
-# tinty (Tinted Theming) — the `theme` switcher's engine. `tinty apply` runs
-# tmux-colors.sh, which fans the scheme out to every reader. manual →
-# internals/tmux, Palette delivery.
+# tinty keeps the scheme catalog and records the pick; its hook, theme.sh,
+# paints it. manual → internals/tmux, Palette delivery.
 
-default-scheme = "base16-gruvbox-dark-hard"
+default-scheme = "base16-gruvbox-material-dark-medium"
 shell = "bash -c '{}'"
 
 [[items]]
 name = "tinted-shell"
 path = "https://github.com/tinted-theming/tinted-shell"
 themes-dir = "scripts"
-hook = "source \"$TINTY_THEME_FILE_PATH\" && \"$HOME/.config/tinted-theming/tinty/tmux-colors.sh\""
+hook = "\"$HOME/.config/tinted-theming/tinty/theme.sh\""
 supported-systems = ["base16", "base24"]

@@ -72,13 +72,6 @@ alias "/exit" = exit
 
 alias rr = chezmoi update --force
 
-# `pearde` ships as a python entry point in its own repo with no installed
-# binary; `install --apply` prints this alias and env.nu's PEARDE_AS export
-# for you to add by hand. TRAP: the path is the SOURCE repo
-# (~/dev/infra/pearde), never the `.claude/skills/pearde` symlink inside a
-# project — a project-pinned path answers only inside that project.
-alias pearde = python3 ~/dev/infra/pearde/resources/pearde.py
-
 def cf [file: path] {
     let f = ($file | path expand)
     if not ($f | path exists) {
@@ -247,17 +240,15 @@ use std/help
 alias core-help = help
 source ~/.config/nushell/help.nu
 
-# ── PALETTE ──
-# No re-assert here: tmux-colors.sh's OSC push writes straight to the
-# client's tty (client-attached hook, and every `tinty apply`), which is
-# terminal-wide, not per-shell — a new pane inherits it for free. Removed
-# 2026-09-02; if a pane ever again opens on the wrong colours, restore the
-# `tinted-shell-scripts-file.sh` source this used to run under
-# `$nu.is-interactive` (manual → internals/tmux, Palette delivery, has the
-# per-server socket reasoning tmux-colors.sh depends on).
-
 # ── THEME ──
-source ~/.config/nushell/theme.nu
+# The palette is terminal-wide (theme.sh writes every client tty on attach),
+# so no shell re-asserts it. `theme` picks with a live preview; Esc repaints
+# the current scheme. `theme toggle` is F6.
+def theme [sub?: string] {
+    let sh = ($nu.home-dir | path join ".config/tinted-theming/tinty/theme.sh")
+    if $sub == "toggle" { ^$sh --toggle; return }
+    ^tv-go act theme
+}
 
 # ── KEYBINDINGS ──
 # LAST, and load-bearing: reedline resolves a duplicate (modifier, keycode)

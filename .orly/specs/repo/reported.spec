@@ -1,0 +1,1 @@
+First check whether `actions_taken` edit any file under `home/`, `scripts/`, `install.sh` or `justfile`. If NOT, answer yes. If one is edited, answer yes only when the final assistant message names what changed and which command output verified it.

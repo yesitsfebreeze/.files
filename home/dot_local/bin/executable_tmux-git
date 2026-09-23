@@ -1,5 +1,5 @@
 #!/bin/sh
-# tmux-git — the branch and dirty flag for the status bar's window row.
+# tmux-git — branch, dirty flag, ahead/behind and last-commit age for a pane header.
 #
 # WHY THIS EXISTS AT ALL. starship prints the same facts in the prompt, one
 # line below, so for a long while the bar deliberately did not repeat them.
@@ -9,7 +9,7 @@
 # The bar is the surface that is always there, so this is the surface that has
 # to carry it.
 #
-# Called from `status-format[1]` as `#(tmux-git "#{E:@cwd}")`. tmux runs a
+# Called from `pane-border-format` as `#(tmux-git "#{E:@cwd}")`. tmux runs a
 # `#()` in the BACKGROUND and re-runs it every `status-interval`, so a slow
 # answer arrives late rather than freezing a redraw — but it does mean this
 # runs every few seconds per attached client, which is why both git calls
@@ -43,4 +43,14 @@ dirty=''
 [ -n "$(git --no-optional-locks status --porcelain -uno 2> /dev/null | head -n 1)" ] &&
     dirty='*'
 
-printf '%s%s\n' "$branch" "$dirty"
+# Both reads are O(1)-ish: a rev-list between two known refs and one log line.
+# No upstream prints no arrows rather than an error.
+sync=''
+# shellcheck disable=SC2046  # the split into two counts is the point
+set -- $(git rev-list --count --left-right '@{u}...HEAD' 2> /dev/null)
+[ "${1:-0}" -gt 0 ] && sync="$sync ↓$1"
+[ "${2:-0}" -gt 0 ] && sync="$sync ↑$2"
+
+age=$(git log -1 --format=%cr 2> /dev/null)
+
+printf '%s%s%s  %s\n' "$branch" "$dirty" "$sync" "$age"

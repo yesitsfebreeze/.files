@@ -1,0 +1,291 @@
+{
+  "goal": "Continuously improve the dotfiles repo toward a simple, reliable, fast implementation of its purpose (RUN.md): each cycle understand the real execution path, pick one evidence-backed improvement (correctness, then subtraction, then measured speed), implement it completely with a regression check, verify with the gate, report, repeat. Stop when no worthwhile evidence-backed improvement remains. The theme system (one palette script, thin callers, instant F6, F9 live preview, Enter applies, Esc restores) stays working throughout.",
+  "specs": [
+    {
+      "id": "enter_applies",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, running the picker's apply path with a scheme id and then printing tinty's current_scheme file showing that same id?"
+    },
+    {
+      "id": "esc_restores",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, a preview of one scheme, then the picker's cancel/restore path, then a `tmux show` status-style output equal to the value printed before the preview?"
+    },
+    {
+      "id": "f6_roundtrip",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, two consecutive F6 toggles where the printed current_scheme after the second toggle equals the one printed before the first?"
+    },
+    {
+      "id": "f6_speed",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, an F6 timing run that printed a line `painted_ms=N` where N is 300 or less?"
+    },
+    {
+      "id": "new_terminal",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, a run of /tmp/ptytest.py against a freshly started tmux server whose output contains `fresh OSC4 seen: True`?"
+    },
+    {
+      "id": "preview_retint",
+      "instructions": "Do `command_results` include, after the last edit to a theme file, running the `tv theme` channel's preview command for one scheme id and then a `tmux show` output of status-style containing a hex colour different from the one shown before the preview?"
+    },
+    {
+      "id": "probe",
+      "instructions": "In an isolated tmux + XDG tree: a new terminal gets the palette, F6 round-trips within 300 ms, preview retints, Esc restores exactly, Enter applies.",
+      "require": {
+        "path": "checks.behaviour.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "bounded_works",
+      "instructions": "The `bounded` helper passes exit status through, returns 124 at its deadline, and leaves no process of the group alive either way.",
+      "require": {
+        "path": "checks.bounded_works.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "channels_fast",
+      "instructions": "Every tv channel the F8 overlay can open lists its rows within 2 s, with stdin closed, and leaves no process behind.",
+      "require": {
+        "path": "checks.channels_fast.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_flicker",
+      "instructions": "Scrolling the theme picker repaints nothing until the cursor stops, then paints the settled row.",
+      "require": {
+        "path": "checks.no_flicker.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_leaks",
+      "instructions": "Every theme, font and tv-go action exits and leaves no process behind (open, act, close, clean up).",
+      "require": {
+        "path": "checks.lifecycle.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_unbounded_wait",
+      "instructions": "Every background spawn (nohup), Keychain read, pass read and curl download under home/ and install.sh carries a deadline.",
+      "require": {
+        "path": "checks.no_unbounded_wait.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "scan_reaped",
+      "instructions": "Two F3 searches (tv-go find, text channel) each closed with Esc: nothing the first started (tv, its rg source) still runs when the second starts, and nothing either started survives the run.",
+      "require": {
+        "path": "checks.scan_reaped.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_dead_refs",
+      "instructions": "Nothing under home/ (code or manual) names a removed theme helper or the deleted preview script.",
+      "require": {
+        "path": "checks.no_dead_refs.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "one_parser",
+      "instructions": "Exactly one file under home/ (outside the manual) reads the tinty scheme catalog — the one palette parser.",
+      "require": {
+        "path": "checks.one_parser.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "theme_size",
+      "instructions": "At most four theme files exist and they total at most 200 lines (baseline 5 files, 406 lines at HEAD).",
+      "require": {
+        "path": "checks.theme_size.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "bash_32",
+      "instructions": "Every tracked bash script runs on macOS /bin/bash 3.2: no mapfile/readarray, associative arrays, case-folding expansions or &>>.",
+      "require": {
+        "path": "checks.bash_32.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "fzf_confined",
+      "instructions": "fzf is invoked only from tv-go; everywhere else television or telescope is the picker.",
+      "require": {
+        "path": "checks.fzf_confined.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "hard_constraints",
+      "instructions": "The greppable hard-won constraints hold: nushell use_kitty_protocol false, no lualine auto theme, LSP log level capped, no literal chezmoi source path, tmux sync feature on and terminal-features never appended.",
+      "require": {
+        "path": "checks.hard_constraints.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "lua_parses",
+      "instructions": "Every tracked Lua file (Neovim, WezTerm) compiles under luajit.",
+      "require": {
+        "path": "checks.lua_parses.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "manual_fresh",
+      "instructions": "Regenerating the manual changes nothing: the committed manual matches its .nuon sources.",
+      "require": {
+        "path": "checks.manual_fresh.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "memos_gate",
+      "instructions": "The memos gate (`just memos-check`) passes.",
+      "require": {
+        "path": "checks.memos_gate.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_hex_below_tinty",
+      "instructions": "tinty owns the palette: no hex colour literal appears in home/ outside tinted-theming.",
+      "require": {
+        "path": "checks.no_hex_below_tinty.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "no_weakened_gate",
+      "instructions": "First check whether `actions_taken` edit or delete any file under `.orly/` (config.json, a check script, behaviour.py, or a spec). If NOT, answer yes. If one is edited, answer yes only when the diff shown adds or tightens a condition and removes or loosens none."
+    },
+    {
+      "id": "nu_parses",
+      "instructions": "Every tracked nushell file parses without an error diagnostic (nu --ide-check).",
+      "require": {
+        "path": "checks.nu_parses.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "reported",
+      "instructions": "First check whether `actions_taken` edit any file under `home/`, `scripts/`, `install.sh` or `justfile`. If NOT, answer yes. If one is edited, answer yes only when the final assistant message names what changed and which command output verified it."
+    },
+    {
+      "id": "scripts_parse",
+      "instructions": "Every tracked bash/sh script under home/ passes a syntax check.",
+      "require": {
+        "path": "checks.scripts_parse.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "shellcheck",
+      "instructions": "Every tracked shell script under home/ and install.sh is shellcheck-clean at warning level.",
+      "require": {
+        "path": "checks.shellcheck.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "size_budget",
+      "instructions": "Complexity ceiling: no tracked code file exceeds 500 lines and all tracked code under home/, install.sh, justfile and scripts/ stays at or under 4100 lines.",
+      "require": {
+        "path": "checks.size_budget.exit",
+        "op": "equals",
+        "value": 0
+      }
+    }
+  ],
+  "checks": {
+    "one_parser": {
+      "command": "bash -c 'l=$(rg -l \"schemes/|custom-schemes\" home --glob \"!**/help/**\"); echo \"$l\"; [ $(printf \"%s\\n\" \"$l\" | grep -c .) -eq 1 ]'"
+    },
+    "no_dead_refs": {
+      "command": "bash -c '! rg -n \"theme-preview|_theme_bg_restore|_theme_osc_bg|_theme_scheme_bg|_theme_toggle|_theme_cfg_file|_theme_default_scheme|pearde/resources|PEARDE_AS|\\.pearde/memos\" home'"
+    },
+    "theme_size": {
+      "command": "bash -c 'n=0; for f in home/dot_config/tinted-theming/tinty/config.toml home/dot_config/tinted-theming/tinty/executable_theme.sh home/dot_config/television/cable/theme.toml home/dot_config/nushell/theme.nu home/dot_config/television/executable_theme-preview.sh home/dot_config/tinted-theming/tinty/executable_tmux-colors.sh; do [ -f \"$f\" ] && n=$((n+1)); done; l=$(cat home/dot_config/tinted-theming/tinty/config.toml home/dot_config/tinted-theming/tinty/executable_theme.sh home/dot_config/television/cable/theme.toml | wc -l); echo files=$n lines=$l; [ $n -le 4 ] && [ $l -le 200 ]'"
+    },
+    "memos_gate": {
+      "command": "just memos-check"
+    },
+    "manual_fresh": {
+      "command": "bash -c 'd=$(mktemp -d); cp -R home/dot_config/nushell/help/manual \"$d\"/m; just manual >/dev/null && diff -rq \"$d\"/m home/dot_config/nushell/help/manual'"
+    },
+    "scripts_parse": {
+      "command": "bash -c 'rc=0; for f in $(git ls-files home | grep -E \"(\\.sh$|/executable_)\"); do head -1 \"$f\" | grep -q bash && { bash -n \"$f\" || { echo \"$f\"; rc=1; }; }; head -1 \"$f\" | grep -qE \"^#!/bin/sh|env sh\" && { sh -n \"$f\" || { echo \"$f\"; rc=1; }; }; done; exit $rc'"
+    },
+    "lifecycle": {
+      "command": "bash .orly/lifecycle.sh"
+    },
+    "bounded_works": {
+      "command": "bash .orly/bounded-check.sh"
+    },
+    "scan_reaped": {
+      "command": "bash .orly/scan-reaped.sh"
+    },
+    "no_unbounded_wait": {
+      "command": "bash -c 'bad=$(rg -n \"nohup|security find-generic-password|pass show\" home install.sh --glob \"!**/help/**\" | grep -v bounded; rg -n \"curl \" install.sh home --glob \"!**/help/**\" --glob \"!**/Dockerfile\" | grep -v -- --max-time); echo \"$bad\"; [ -z \"$bad\" ]'"
+    },
+    "shellcheck": {
+      "command": "bash -c 'rc=0; for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" || continue; shellcheck -S warning -f gcc \"$f\" || rc=1; done; exit $rc'"
+    },
+    "channels_fast": {
+      "command": "bash .orly/channels.sh"
+    },
+    "no_flicker": {
+      "command": "bash .orly/no-flicker.sh"
+    },
+    "nu_parses": {
+      "command": "bash .orly/invariants.sh nu_parses"
+    },
+    "lua_parses": {
+      "command": "bash .orly/invariants.sh lua_parses"
+    },
+    "no_hex_below_tinty": {
+      "command": "bash .orly/invariants.sh no_hex_below_tinty"
+    },
+    "fzf_confined": {
+      "command": "bash .orly/invariants.sh fzf_confined"
+    },
+    "hard_constraints": {
+      "command": "bash .orly/invariants.sh hard_constraints"
+    },
+    "size_budget": {
+      "command": "bash .orly/invariants.sh size_budget"
+    },
+    "bash_32": {
+      "command": "bash .orly/invariants.sh bash_32"
+    },
+    "behaviour": {
+      "command": "python3 .orly/behaviour.py"
+    }
+  }
+}

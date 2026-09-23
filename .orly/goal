@@ -1,0 +1,3 @@
+rounds: 8
+
+Continuously improve the dotfiles repo toward a simple, reliable, fast implementation of its purpose (RUN.md): each cycle understand the real execution path, pick one evidence-backed improvement (correctness, then subtraction, then measured speed), implement it completely with a regression check, verify with the gate, report, repeat. Stop when no worthwhile evidence-backed improvement remains. The theme system (one palette script, thin callers, instant F6, F9 live preview, Enter applies, Esc restores) stays working throughout.

@@ -88,19 +88,17 @@ def _capsule_creds_fresh [] {
 }
 
 def _capsule_refresh_git [] {
+    # Bounded: a credential helper can block on a locked Keychain.
     let g = (try {
         with-env {GIT_TERMINAL_PROMPT: "0"} {
-            "protocol=https\nhost=github.com\n" | ^git credential fill | complete
+            "protocol=https\nhost=github.com\n" | ^bounded 5 git credential fill | complete
         }
     } catch { {exit_code: 1, stdout: ""} })
-    let user = (if $g.exit_code == 0 {
-        $g.stdout | lines | where {|l| $l | str starts-with "username=" }
-        | get 0? | default "" | str replace "username=" ""
-    } else { "" })
-    let pass = (if $g.exit_code == 0 {
-        $g.stdout | lines | where {|l| $l | str starts-with "password=" }
-        | get 0? | default "" | str replace "password=" ""
-    } else { "" })
+    let c = (if $g.exit_code == 0 {
+        $g.stdout | lines | parse "{k}={v}" | transpose -r -d | into record
+    } else { {} })
+    let user = ($c.username? | default "")
+    let pass = ($c.password? | default "")
     if ($user | is-not-empty) and ($pass | is-not-empty) {
         let u = ($user | url encode --all)
         let p = ($pass | url encode --all)
@@ -112,7 +110,7 @@ def _capsule_refresh_git [] {
 
 def _capsule_refresh_claude_credentials [] {
     let k = (try {
-        ^security find-generic-password -s "Claude Code-credentials" -w | complete
+        ^bounded 5 security find-generic-password -s "Claude Code-credentials" -w | complete
     } catch { {exit_code: 1, stdout: ""} })
     let host_file = ($env.HOME | path join ".claude" ".credentials.json")
     let payload = (if $k.exit_code == 0 {
@@ -137,14 +135,11 @@ def _capsule_refresh_claude_json [] {
         _capsule_creds_drop "claude.json"
         return
     }
-    let cols = ($j | columns)
     let keep = [
         "hasCompletedOnboarding" "theme" "installMethod"
         "userID" "firstStartTime" "oauthAccount"
     ]
-    let filtered = ($keep | reduce --fold {} {|k, acc|
-        if ($k in $cols) { $acc | upsert $k ($j | get $k) } else { $acc }
-    })
+    let filtered = ($j | select ...($keep | where {|k| $k in ($j | columns) }))
     _capsule_creds_write "claude.json" $"($filtered | to json)\n"
 }
 

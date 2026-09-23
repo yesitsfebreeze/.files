@@ -1,0 +1,53 @@
+#!/bin/sh
+# tmux-sys — CPU and memory gauges plus network Mbit/s down/up for the status bar.
+#
+# Called from `status-left` as `#(tmux-sys)`. tmux runs it in the BACKGROUND
+# every `status-interval`, so the ~80 ms per exec this host bills is never a
+# redraw stall. Every field is fixed width so the bar does not jitter.
+#
+# CPU is the sum of `ps` %cpu over all cores — a decayed average, not an
+# instantaneous sample. ponytail: `top -l 2` is exact but costs a second a tick.
+# Memory is active + wired + compressed pages over physical RAM, roughly
+# Activity Monitor's "Memory Used".
+# Network is the delta of the default route's interface byte counters since the
+# previous tick, kept in $TMPDIR; the first tick after a boot or an interface
+# change prints 0.
+
+state="${TMPDIR:-/tmp}/tmux-sys.net"
+iface=$(route -n get default 2> /dev/null | awk '/interface:/ { print $2 }')
+now=$(date +%s)
+
+{
+    sysctl -n hw.ncpu hw.memsize
+    ps -A -o %cpu=
+    echo --vm
+    vm_stat
+    echo --net
+    [ -n "$iface" ] && netstat -ibn -I "$iface" | awk 'NR == 2 { print $7, $10 }'
+    echo --prev
+    cat "$state" 2> /dev/null
+} | awk -v now="$now" -v iface="$iface" -v state="$state" '
+    function bar(p,   s, i, n) {
+        n = int(p / 20 + 0.5); s = ""
+        for (i = 0; i < 5; i++) s = s (i < n ? "█" : "░")
+        return s
+    }
+    NR == 1 { ncpu = $1; next }
+    NR == 2 { mem = $1; next }
+    /^--/ { sec = $1; next }
+    sec == "" { cpu += $1; next }
+    sec == "--vm" && /page size of/ { page = $8 }
+    sec == "--vm" && /^Pages (active|wired down|occupied by compressor):/ { gsub(/\./, "", $NF); used += $NF }
+    sec == "--net" { rx = $1; tx = $2 }
+    sec == "--prev" { pt = $1; pif = $2; prx = $3; ptx = $4 }
+    END {
+        c = cpu / ncpu; if (c > 100) c = 100
+        m = used * page * 100 / mem
+        down = up = 0
+        if (pif == iface && now > pt && rx >= prx) {
+            down = (rx - prx) * 8 / 1e6 / (now - pt)
+            up = (tx - ptx) * 8 / 1e6 / (now - pt)
+        }
+        if (iface != "") print now, iface, rx, tx > state
+        printf "cpu %s %3d%%  mem %s %3d%%  ↓%5.1f ↑%5.1f Mb/s\n", bar(c), c, bar(m), m, down, up
+    }'

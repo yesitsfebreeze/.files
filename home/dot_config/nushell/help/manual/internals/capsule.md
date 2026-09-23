@@ -10,7 +10,7 @@ Notes harvested from the capsule sources.
 const CAPSULE_IMAGE = "capsule:latest"
 ```
 
-capsule.nu — one directory, one dev container, one CLI (01-capsule/01, task C.2): `capsule [dir] [--rebuild]` plus the `list`/`clean` subcommands. Sourced by config.nu at the MODULES anchor; parses standalone under `nu -n` (theme.nu precedent), and no def here depends on anything config.nu sets up — which is what lets anything source it in isolation.
+capsule.nu — one directory, one dev container, one CLI (01-capsule/01, task C.2): `capsule [dir] [--rebuild]` plus the `list`/`clean` subcommands. Sourced by config.nu at the MODULES anchor; parses standalone under `nu -n`, and no def here depends on anything config.nu sets up — which is what lets anything source it in isolation.
 
 EVERY DOCKER CALL GOES THROUGH `^docker`, so a PATH shim can observe or stand in for every one, and this file can be exercised against a recording shim without ever touching the real daemon. `^` also forces the external, so a `docker` def or alias in scope cannot silently take over.
 

@@ -5,6 +5,7 @@
 | memo | is | read when |
 |---|---|---|
 | [[a-retirement-is-two-edits]] | retiring a file from this configuration is two edits — the source file goes and its deployed target path is listed in home/.chezmoiremove — and the retirement is proven at the target path, never at the source or by an apply's exit code | deleting anything from home/ |
+| [[astra-uses-the-codex-subscription-hop]] | Astra is available to LiteLLM-compatible agents through the saved Codex Pro login, with an explicit subscription pin | using Astra with another agent or maintaining the ChatGPT bridge |
 | [[tests-and-gates-retire]] | tests/ and gates/ are deleted and the configs are stripped of their board scaffolding — this tree is one person's dev setup, not a shipped product | adding a test or a gate, or asking where tests/ went |
 | [[the-manual-is-markdown]] | the fumadocs site is deleted and the manual becomes plain markdown shipped with the shell, searched line by line through a television channel bound to `?` | touching the manual, or asking why there is no docs site |
 | [[the-model-router-is-a-dotfile-after-all]] | the model router lives in home/ as one binary plus a registry; the 2026-09-02 answer that moved it to its own project is reversed | touching the llm router, or asking where it lives |

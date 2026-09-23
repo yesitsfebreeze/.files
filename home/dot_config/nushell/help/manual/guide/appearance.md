@@ -12,21 +12,21 @@ tinty owns the palette and everything else reads it downstream, so a scheme chan
 
 *shell*
 
-Run `theme` and the scheme catalog opens in television with the current and previous scheme at the top; browsing retints the window background live, `Enter` applies the pick, and `Esc` leaves the theme exactly as it was.
+Run `theme` and the scheme picker opens with the current scheme at the top and only schemes of its kind — dark or light — below it; browsing retints the whole terminal — every pane, the status bar, the background — live, `Enter` applies the pick, and `Esc` leaves the theme exactly as it was.
 
 > **Why it is this way**
 >
-> Browsing never runs `tinty apply` — the preview is one OSC 11 escape, because an apply per focused row would fire tinty's whole hook chain on every keystroke. The one real apply happens after tv exits, in the live shell, so the hooks see the real environment rather than a stripped television-action subprocess.
+> Browsing never runs `tinty apply` — the preview is `theme.sh --preview`, which paints tmux and the terminal from the scheme file and records nothing, so a focused row costs one tmux call. The one real apply happens after tv exits, and `Esc` repaints the current scheme over whatever the preview left.
 
-See also: [`theme toggle`](./appearance.md#switch-scheme)
+See also: [`theme toggle`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
 
 ## `theme toggle` · `F6`
 
-**Swap back to the previous scheme**
+**Switch between dark and light**
 
 Two routes to the same thing:
 
-- `theme toggle` *(shell)* — Run `theme toggle` — or press `F6` in the terminal, which is bound to it — and the scheme active before the last change comes back, while the one you are leaving becomes the new "previous". Run it again and you are back where you started: it is a swap, not a cycle.
+- `theme toggle` *(shell)* — Run `theme toggle` — or press `F6` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium).
 - `F6` *(terminal)* — Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh.
 
 > **Why it is this way**
@@ -34,3 +34,17 @@ Two routes to the same thing:
 > Bound in the multiplexer rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the theme tool's hook chain would otherwise block the server for its duration. The scheme reaches the terminal as escape sequences written straight to it, not through a file only one emulator could read — which is why the key is worth pressing on a machine you ssh'd into. It is the one key that is never forwarded to a nested session: the palette belongs to the outermost terminal.
 
 See also: [`theme`](./appearance.md#theme) · [`F5 F5`](./windows.md#f5-f5)
+
+## `F9`
+
+**Pick a colour scheme from anywhere**
+
+*terminal*
+
+Press `F9` in any pane — a shell, an editor, an agent — and the scheme picker opens over it. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F6` switches to, stays as it was.
+
+> **Why it is this way**
+>
+> It is `F8` with the channel step skipped, so it works over a full-screen program. F6 is a dark/light switch, so the picker is filtered to the active mode and a pick can only ever replace that mode's scheme.
+
+See also: [`F6`](./appearance.md#switch-scheme) · [`theme`](./appearance.md#theme)

@@ -29,10 +29,9 @@ What stays WezTerm's, and why each is local:
   typed input would race the shell's startup.
 - **Paste and copy-or-interrupt** (`Ctrl+V` paste, `Ctrl+C` copies when a
   selection exists else falls through to SIGINT).
-- **Grid centering**: the runtime owner of `window_padding` — the grid is an
-  integer number of cells, the sub-cell remainder goes into symmetric
-  padding, recomputed on resize/zoom/monitor swap by an idempotent guard
-  (writing config overrides re-fires the event that called the handler).
+- **Top-left grid**: `window_padding` stays zero and nothing rewrites it, so
+  the sub-cell remainder sits at the right and bottom edges. Centering the
+  grid made it shift on every fullscreen toggle and resize.
 - **SHIFT + click hyperlink**: `mouse_reporting = true` on the duplicate
   binding keeps it working while an application captures the mouse; SHIFT is
   the `bypass_mouse_reporting_modifiers` default; the click's DOWN stroke is

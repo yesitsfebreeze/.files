@@ -17,70 +17,30 @@ config.set_environment_variables = {
 		.. (os.getenv("PATH") or ""),
 }
 
--- No tab bar (enable_tab_bar = false below) — nothing to reserve height for.
-local function grid_padding(win_w, win_h, cell_w, cell_h)
-	local avail_w = win_w
-	local avail_h = win_h
-
-	local cols = math.floor(avail_w / cell_w)
-	local rows = math.floor(avail_h / cell_h)
-
-	local tot_x = math.floor(avail_w - cols * cell_w)
-	local tot_y = math.floor(avail_h - rows * cell_h)
-
-	return {
-		left = math.floor(tot_x / 2),
-		right = tot_x - math.floor(tot_x / 2),
-		top = math.floor(tot_y / 2),
-		bottom = tot_y - math.floor(tot_y / 2),
-	}
-end
-
-local function center_grid(window)
-	local mux_win = window:mux_window()
-	if not mux_win then
-		return
-	end
-	local mux_tab = mux_win:active_tab()
-	if not mux_tab then
-		return
-	end
-
-	local win = window:get_dimensions()
-	local tab = mux_tab:get_size()
-	if not win or not tab or tab.cols == 0 or tab.rows == 0 or tab.pixel_width == 0 or tab.pixel_height == 0 then
-		return
-	end
-	local cell_w = tab.pixel_width / tab.cols
-	local cell_h = tab.pixel_height / tab.rows
-	if cell_w <= 0 or cell_h <= 0 then
-		return
-	end
-
-	local overrides = window:get_config_overrides() or {}
-	local pad = overrides.window_padding or { left = 0, right = 0, top = 0, bottom = 0 }
-
-	local new_pad = grid_padding(win.pixel_width, win.pixel_height, cell_w, cell_h)
-
-	if
-		new_pad.left ~= pad.left
-		or new_pad.right ~= pad.right
-		or new_pad.top ~= pad.top
-		or new_pad.bottom ~= pad.bottom
-	then
-		overrides.window_padding = new_pad
-		window:set_config_overrides(overrides)
-	end
-end
-
-wezterm.on("window-resized", center_grid)
-wezterm.on("window-config-reloaded", center_grid)
-wezterm.on("update-status", center_grid)
-
-config.color_scheme = "Gruvbox dark, hard (base16)"
+config.color_scheme = "Gruvbox Material (Gogh)"
 config.enable_tab_bar = false
 
+-- The F8 `font` channel (font.sh) records its pick here, and the reload
+-- watch applies it to every window. Its live preview arrives as a user var
+-- and becomes a per-window override; an empty value drops the override.
+local font_file = home .. "/.local/state/wezterm/font.txt"
+wezterm.add_to_config_reload_watch_list(font_file)
+local picked = io.open(font_file)
+local family = picked and picked:read("l") or ""
+if picked then
+	picked:close()
+end
+wezterm.on("user-var-changed", function(window, _, name, value)
+	if name ~= "font" then
+		return
+	end
+	local o = window:get_config_overrides() or {}
+	o.font = value ~= "" and wezterm.font_with_fallback({ value, "CaskaydiaCove Nerd Font", "Menlo" }) or nil
+	window:set_config_overrides(o)
+end)
+
 config.font = wezterm.font_with_fallback({
+	family ~= "" and family or "CaskaydiaCove Nerd Font",
 	"CaskaydiaCove Nerd Font",
 	"CaskaydiaCove NF",
 	"JetBrainsMono Nerd Font",
@@ -91,18 +51,35 @@ config.font_size = 14.0
 config.line_height = 1.0
 config.font_dirs = { home .. "/Library/Fonts" }
 
+-- Every window is fullscreen from birth, and non-native: macOS's native mode
+-- gives each window its own Space, so switching windows or monitors animates
+-- a Space change and re-lays the grid mid-slide. Non-native just fills the
+-- screen the window is on. Alt+Enter still toggles it.
+config.native_macos_fullscreen_mode = false
+wezterm.on("window-config-reloaded", function(window)
+	if wezterm.GLOBAL.fullscreened == nil then
+		wezterm.GLOBAL.fullscreened = {}
+	end
+	local id = tostring(window:window_id())
+	if not wezterm.GLOBAL.fullscreened[id] then
+		wezterm.GLOBAL.fullscreened[id] = true
+		window:toggle_fullscreen()
+	end
+end)
+
 config.window_decorations = "RESIZE"
 config.default_cursor_style = "BlinkingBlock"
 config.window_background_opacity = 0.95
 config.macos_window_background_blur = 30
 config.audible_bell = "Disabled"
+-- Zero padding anchors the grid top-left; the sub-cell remainder sits at the
+-- right and bottom edges, so the grid never shifts on fullscreen or resize.
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.adjust_window_size_when_changing_font_size = false
 config.front_end = "OpenGL"
 config.max_fps = 60
 config.animation_fps = 60
 config.enable_kitty_keyboard = false
-config.status_update_interval = 5000
 config.disable_default_key_bindings = true
 
 config.keys = {

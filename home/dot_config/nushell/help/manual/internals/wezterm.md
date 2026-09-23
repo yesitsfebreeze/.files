@@ -1,6 +1,6 @@
 # WezTerm
 
-> The local chrome \u2014 font, grid centering, opacity, launchd PATH.
+> The local chrome \u2014 font, opacity, launchd PATH.
 
 WezTerm keeps only what is true of this machine; tmux owns multiplexing.
 
@@ -10,7 +10,7 @@ WezTerm keeps only what is true of this machine; tmux owns multiplexing.
 local wezterm = require("wezterm")
 ```
 
-WezTerm appearance: font, palette reader, derived tab bar, baseline, clock, F6 theme toggle — prds/02-terminal/01-appearance owns that scope. The self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's; later terminal nodes (F5, copy mode, grid centering) extend this file.
+WezTerm appearance: font, palette reader, derived tab bar, baseline, clock, F6 theme toggle — prds/02-terminal/01-appearance owns that scope. The self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's; later terminal nodes (F5, copy mode) extend this file.
 
 The launch environment — default_prog, set_environment_variables and the macOS PATH prefix — is prds/02-terminal/06-launchd-path's, and it sits immediately below: a GUI-launched WezTerm inherits launchd's environment, so nushell has to be named and its PATH seeded before the spawn.
 
@@ -45,131 +45,12 @@ Four DIRECTORIES, fixed, not a list computed from the installed package set: it 
 Getting the binary spawned is all this does; env.nu owns PATH inside the shell, and it wins by construction (R5). env.nu `prepend`s ~/.cargo/bin, ~/.opencode/bin and ~/.local/bin, `append`s the Homebrew and system dirs and `uniq`s, so the duplicates this prefix creates collapse and the shell's resolution order is env.nu's under either launch shape. Measured both ways on 0.114.1: the repaired PATH is .cargo/bin:.local/bin:/opt/homebrew/bin:... whether the launch PATH was this prefix or a terminal's inherited one.
 
 ```
-local TAB_BAR_RESERVE = 0
-```
-
-── 07-grid-centering: the runtime owner of window_padding ────────────────── Keep the grid centered. The grid is an integer number of cells, so it almost never divides the window exactly, and the sub-cell remainder would sit as an uneven gap on the right and bottom. center_grid measures the true cell size, recomputes how many whole cells fit, and pushes the leftover into padding -- so it adapts to any font size, DPI or resolution by itself (resize, interactive zoom, monitor swap). The left/right split is exactly symmetric; the top/bottom split is symmetric to within the tab-bar over-reserve explained below, which measured 0-2 px across the font sizes checked.
-
-This pair is the RUNTIME OWNER of window_padding. That is why config.window_padding further down the file is declared as four zeroes (prds/02-terminal/01-appearance R8): the declaration is only the neutral starting point, and every value after the first tick comes from here. The tab bar's pixel reserve, read by grid_padding below through an upvalue. ZERO because `config.enable_tab_bar = false` since the tmux cutover (07-multiplexer/08-wezterm-reduction) — there is no bar to reserve for, and reserving one pushed the grid up by cell_h + 1 with that much dead space at the bottom. Declared OUT HERE, above the sentinel, on purpose: see the long note inside grid_padding for the two shapes that were tried and rejected.
-
-```
-local function grid_padding(win_w, win_h, cell_w, cell_h)
-```
-
->>> grid-padding (pure): no wezterm calls in this block. The two sentinels exist so the block can be sliced out and run against measured geometries with no wezterm and no `config` in scope. The failure this node exists to fix -- an axis that computes zero for every input -- is invisible to a grep and needs no GUI to catch, so the arithmetic is kept pure and stays runnable on its own. Keep it that way: the purity is the only thing that makes the arithmetic checkable at all.
-
-```
-local bar_h = TAB_BAR_RESERVE or (math.ceil(cell_h) + 1)
-```
-
-RESERVE the tab bar, do not measure it. mux_tab:get_size() reports the PTY size, which is exactly rows * cell_h and therefore carries no information about the vertical remainder: deriving the chrome as height - grid_height - pad_top - pad_bottom measures the bar PLUS the remainder, the available height collapses back to rows * cell_h, and the vertical gap comes out zero by construction at every font size. Measured, not assumed: that is why this reserves the bar instead.
-
-The constant is EMPIRICAL. Measured against wezterm 20240203-110809-5046fc22 (dpi 144, CaskaydiaCove, line_height = 1.0, retro tab bar shown), the bar is cell_h or cell_h + 1 pixels tall at font sizes 9, 12, 14, 17 and 21. RE-MEASURE IT IF THE WEZTERM BUILD MOVES.
-
-It over-reserves on purpose, because the error is safe in one direction only. Over-reserving by d px costs d px of top/bottom asymmetry, plus one row in the boundary case where (win_h - bar) mod cell_h < d -- stable, reached in one tick, never flickering. UNDER-reserving over-pads, drops a row and parks a whole extra cell at the bottom, which is the flicker failure described further down in its stable form.
-
-THE RESERVE IS ZERO SINCE 2026-08-30, AND THAT IS THE WHOLE OF WHAT THE tmux CUTOVER DID TO THIS FUNCTION. Everything above still describes the arithmetic correctly and is kept, because the day a tab bar comes back this is the reasoning that has to come back with it.
-
-What changed: `config.enable_tab_bar = false` (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a row of pixels for one pushes the grid up by cell_h + 1 and leaves that much dead space at the bottom — an off-centre grid, which is the exact defect this node exists to prevent, arrived at from the other side.
-
-The old text said the reserve "assumes the tab bar is SHOWN, and the nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab hides the bar at one tab only, and the floor keeps nine". Both halves of that guarantee are gone — the floor and the option — which is why this had to move rather than being left as a harmless constant.
-
-It is written as a branch on the config rather than as a bare `0`, so the constant and its measurement survive and a future tab bar needs one line, not an archaeology dig. The constant is EMPIRICAL: measured against wezterm 20240203-110809-5046fc22 (dpi 144, CaskaydiaCove, line_height = 1.0, retro tab bar shown), the bar is cell_h or cell_h + 1 pixels tall at font sizes 9, 12, 14, 17 and 21. RE-MEASURE IT IF THE WEZTERM BUILD MOVES. THE RESERVE IS AN ARGUMENT SINCE 2026-08-30, AND ZERO AT THE ONE CALL SITE. Everything above still describes the arithmetic correctly and is kept, because the day a tab bar comes back this is the reasoning that has to come back with it — and the default below is that reasoning, still executable.
-
-What changed: `config.enable_tab_bar = false` (07-multiplexer/08-wezterm-reduction). There is no bar, so reserving a row of pixels for one pushes the grid up by cell_h + 1 and leaves that much dead space at the bottom — an off-centre grid, which is the exact defect this node exists to prevent, arrived at from the other side.
-
-The old text said the reserve "assumes the tab bar is SHOWN, and the nine-tab floor above is what guarantees it: hide_tab_bar_if_only_one_tab hides the bar at one tab only, and the floor keeps nine". BOTH halves of that guarantee are gone — the floor and the option — which is why this had to move rather than being left as a harmless constant. Found on the 2026-08-30 sweep by checking the option the reserve depended on, not by reading the prose.
-
-AN UPVALUE, not a parameter, not a hardcoded 0, and not a read of `config`. Three shapes were tried and two of them broke the pure slice:
-
-```
-* `config.enable_tab_bar and … or 0` — CRASHES the harness. This
-  block is PURE by contract; the sentinels exist so it can be sliced
-  out and run with no wezterm and no `config` in scope, and that
-  slice is the only thing that exercises the arithmetic at all.
-* a fifth PARAMETER — silently steals a slot. R8's pad-independence
-  check calls `grid_padding(w, h, cw, ch, 37, 41)` with deliberate
-  junk to prove extra arguments are ignored; a real fifth parameter
-  turns that 37 into a 37-pixel reserve. Measured: it broke all nine
-  cases.
-* THIS: an upvalue declared ABOVE the opening sentinel. In
-  wezterm.lua it is 0. In the sliced harness the name is undefined,
-  so it is nil and the measured formula below applies — which is
-  what keeps those nine cases meaningful instead of forcing nine
-  expected values to be re-derived from the very function they are
-  supposed to be checking — a tautology that would pass on any
-  arithmetic at all.
-```
-
-`or`, not a nil-check, and 0 survives it: 0 is TRUTHY in Lua.
-
-```
-local avail_w = win_w
-```
-
-ABSOLUTE, never incremental. Both axes are derived from the constant window and the cell only; the padding in force is not an input to this function on either axis, so a given font always yields the same padding regardless of zoom history and the grid cannot ratchet smaller over time.
-
-```
-local cols = math.floor(avail_w / cell_w)
-```
-
-Fit as many whole cells as the available space allows; the gap is whatever those cells leave over, which is in [0, cell).
-
-```
-local tot_x = math.floor(avail_w - cols * cell_w)
-```
-
-floor() the TOTAL gap before halving it, so the padding applied is never larger than the true gap. Over-padding by even a sub-pixel (possible whenever the cell is not a whole pixel, i.e. fractional DPI) shrinks the usable area below cols * cell and drops a column that the next tick adds back -- a flicker at the tick rate. Under-padding by less than a pixel is invisible and stable.
-
-```
-local function center_grid(window)
-```
-
-<<< grid-padding
-
-```
-local mux_win = window:mux_window()
-```
-
-Reach the tab through the MUX WINDOW, not through the active pane and its own tab accessor: an overlay (debug overlay, char select, launcher) makes the active pane a detached one whose tab is nil, which crashed centering mid-flight and left the stale padding in place. mux_window():active_tab() always resolves the real underlying tab, so update-status keeps centering even while an overlay is up.
-
-```
-local win = window:get_dimensions()
-```
-
-MEASURE, do not reconstruct. get_size() reports {cols, rows, pixel_width, pixel_height} for the grid's own rendered area, so cell = pixels / count is exact and independent of the padding in force -- which is what matters under fractional DPI (the cell is not a whole pixel) and during the multi-frame settle after a font zoom, where reconstructing the cell from window-minus-padding read stale padding and produced a wrong cell size.
-
-```
-local overrides = window:get_config_overrides() or {}
-```
-
-The padding in force is read for the change comparison at the bottom and for nothing else. It must never reach the arithmetic.
-
-```
-if new_pad.left ~= pad.left or new_pad.right ~= pad.right
-```
-
-Idempotency guard. Writing the config overrides RE-FIRES the event that called this handler, so writing unconditionally is a feedback loop; writing only on a real change makes idle ticks nearly free.
-
-```
-wezterm.on("window-resized", center_grid)
-```
-
-Recenter on anything that can change the grid geometry: window or screen size (window-resized, which also covers dragging between differently sized monitors), and config or font-size edits (window-config-reloaded). Registering window-config-reloaded is fine to do more than once -- wezterm.on accumulates handlers.
-
-```
-wezterm.on("update-status", center_grid)
-```
-
-Interactive font zoom fires NEITHER of the two above. That is the whole reason the periodic tick is a trigger here as well as in prds/02-terminal/02-startup-layout: it catches a zoom within one status_update_interval, which is 5 s (set further down). The guard above keeps these ticks nearly free.
-
-```
 config.color_scheme = "Gruvbox dark, hard (base16)"
 ```
 
 ── the palette: read over the wire, not out of a file ─────────────────────
 
-07-multiplexer/04-palette-delivery moved this. WezTerm used to `dofile` ~/.config/wezterm/colors.lua, keep it on the config-reload watch list and rebuild config.colors from it, because OSC emitted inside a pane reached only that pane. Under tmux the palette arrives as OSC 4/10/11 written straight to the client's tty by tinty's tmux-colors.sh hook, which retints the terminal itself — every pane at once, on any emulator that honours it, including one at the far end of an ssh where no colors.lua exists.
+07-multiplexer/04-palette-delivery moved this. WezTerm used to `dofile` ~/.config/wezterm/colors.lua, keep it on the config-reload watch list and rebuild config.colors from it, because OSC emitted inside a pane reached only that pane. Under tmux the palette arrives as OSC 4/10/11 written straight to the client's tty by tinty's theme.sh hook, which retints the terminal itself — every pane at once, on any emulator that honours it, including one at the far end of an ssh where no colors.lua exists.
 
 So the file, the watch registration and the whole derived tab-bar palette are gone. What is left is the one permitted scheme constant: the no-theme-picked fallback for a checkout that has never applied a theme. It is never the palette — the palette is whatever tinty last pushed — and naming a scheme here as the palette would be wrong within a day.
 
@@ -217,13 +98,19 @@ macOS frosts the desktop directly behind the translucent cell colour; there is n
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 ```
 
-Zeroed BECAUSE prds/02-terminal/07-grid-centering owns padding at runtime (finding T-4): the grid is an integer number of cells and the sub-cell remainder is pushed into symmetric padding there. Until that node lands the remainder sits as a gap on the right and bottom — expected, not a bug here.
+Zero, and nothing rewrites it at runtime: the grid is anchored top-left and the sub-cell remainder sits at the right and bottom edges. Centering it (the old `center_grid`) made the whole grid shift whenever fullscreen or a resize changed the remainder.
 
 ```
 config.adjust_window_size_when_changing_font_size = false
 ```
 
 By default WezTerm resizes the OS window to land on a whole number of cells; a fullscreen window cannot grow, so it leaves a large gap instead and appears to change size. Off = the window stays put and the grid reflows.
+
+```
+config.native_macos_fullscreen_mode = false  -- plus a window-config-reloaded handler
+```
+
+Every window goes fullscreen once, when it is created (the handler remembers window ids in `wezterm.GLOBAL`, so a config reload, such as a font pick, never toggles it back). Non-native because macOS's native fullscreen gives each window its own Space: switching windows or monitors then animates a Space change and re-lays the grid mid-slide. Non-native just fills whichever screen the window is on. Moving between the Retina panel (144 dpi) and the QHD monitor (72 dpi) still re-rasterizes the font; that is the dpi change, not the window, and pinning `dpi` would render text at the wrong size on one of them. `Alt+Enter` still toggles fullscreen.
 
 ```
 config.front_end = "OpenGL"
@@ -236,12 +123,6 @@ config.enable_kitty_keyboard = false
 ```
 
 Matched pair with nushell's `use_kitty_protocol = false` (prds/04-shell/01-core-config): with it on, reedline fires the kitty support query at startup and the pty returns the reply too late to consume, leaking `^[[?...u` over the prompt. Enabling only the WezTerm half reproduces the leak and buys nothing.
-
-```
-config.status_update_interval = 5000
-```
-
-The one tick that drives the tab reconcile, the grid centering and the clock. At 1 s it repainted the bar every second for a minute-resolution clock.
 
 ```
 config.disable_default_key_bindings = true
@@ -316,3 +197,7 @@ config.mouse_bindings = {
 ```
 
 SHIFT + left-click opens the hyperlink under the cursor. Three measured facts hold this up. mouse_reporting = true on the duplicate binding keeps it working while an application captures the mouse (DECSET 1002/1006) — tmux (`set -g mouse on`) and nvim do — because a binding without it is never considered there. SHIFT is the `bypass_mouse_reporting_modifiers` default, which strips the modifier before bindings match (wezterm#4536), so the bypass lives on ALT instead. And the click's DOWN stroke is Nopped: binding only Up still ships the press to the program (the mouse docs' "Gotcha on binding an 'Up' event only"), and tmux turns that press into copy-mode selection — the click is eaten. Both halves of the click are consumed in both reporting states.
+
+## Font
+
+The font comes from `~/.local/state/wezterm/font.txt` when that file exists, with the built-in fallback list behind it. The F8 `font` channel (`~/.config/wezterm/font.sh`) writes the file on Enter, and the config's reload watch applies it to every window. Its live preview is OSC 1337 `SetUserVar=font=…` written straight to each tmux client tty, past tmux, which would swallow it; the `user-var-changed` handler turns it into a per-window override, and an empty value, sent on Esc and after Enter, drops the override.

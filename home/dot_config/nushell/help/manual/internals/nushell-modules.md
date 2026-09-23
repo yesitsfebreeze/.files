@@ -377,7 +377,7 @@ The clamp floors at 0 and ceils at n−1, so Down before any Up injects the NEWE
 export def --env finder [
 ```
 
-finder.nu — the typed channel runner over `tv` (television): `finder`, the channel picker, the typed decoder, the open-by-type dispatcher, the --expect parser, the shell quoter and the cht → cht-query pipe. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-all`. The file parses standalone under `nu -n`.
+finder.nu — the typed channel runner over `tv` (television): `finder`, the channel picker, the typed decoder, the open-by-type dispatcher, the --expect parser, the shell quoter and the cht → cht-query pipe. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
 
 tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, stdout line 1 is the pressed key; a plain enter emits an empty first line.
 
@@ -552,169 +552,17 @@ REWRITTEN 2026-08-30 (07-multiplexer/09-manual-entries). It used to print an OSC
 
 `$env.TMUX` is the guard, not `which tmux`: what matters is whether THIS shell is inside a session, not whether the binary exists. Outside one there is no pane to freeze and nothing sensible to do but say so.
 
-## `theme.nu`
+## `theme` (config.nu) and `theme.sh`
 
 ```
-const THEME_SLOTS = ["a" "b"]
+def --wrapped theme [...rest] {
 ```
 
-theme.nu — the `theme` switcher, sourced by config.nu at the THEME anchor. The shell half of the palette: tinty owns the scheme — every real apply in this file goes through `^tinty apply`, and only tinty writes current_scheme — television owns the picker screen, and this file owns the switching: the A/B slots, the toggle F6 fronts, and the commit that runs after the picker closes.
+theme: three lines over `~/.config/tinted-theming/tinty/theme.sh`, which is the whole theme system. `theme` runs `tv theme`; Enter prints the id and the shell hands it to `theme.sh --apply`, Esc prints nothing and plain `theme.sh` repaints the current scheme over whatever the preview left. `theme toggle` is `theme.sh --toggle`, the same action as F6.
 
-The apply happens HERE, in the live interactive shell, after tv has fully exited — never in a television action. tv prints the chosen entry on Enter and nothing on Esc; applying after it returns means the OSC retint and tinty's hooks run with the real shell env, not a stripped television-action subprocess. The preview (theme-preview.sh) never applies at all: it paints a swatch from the scheme's own hex values and emits ONE OSC 11, because an apply per focused row would fire tinty's whole hook chain on every keystroke.
+theme.sh modes: plain (paint the current scheme — tinty's hook, tmux's client-session-changed hook, Esc), `--apply ID` (paint, record the pick as its variant's slot in `$XDG_STATE_HOME/tinted-theming/{dark,light}.txt`, then let `tinty apply` record it as current), `--toggle` (`--apply` the other variant's slot, gruvbox dark/light hard when empty), `--preview ID` (paint into a scratch conf, record nothing, print the swatch — the tv preview, so moving the cursor retints the whole terminal), `--list` (current, then every scheme of the same variant, one `rg` over the catalog — the tv source).
 
-Subcommands: theme                  open the tv picker; Enter applies into the ACTIVE slot theme toggle           flip to the other slot and apply it (what F6 runs) theme a | theme b      activate that slot and apply its scheme theme slots            print both slots, * marks the active one The two slots F6 flips between. Deliberately A/B, not light/dark: nothing here inspects a scheme's `variant`, so a slot holds whatever was last picked while it was active — light/dark is just the most common way to use them.
-
-```
-const THEME_SLOT_FALLBACK = "base16-gruvbox-light-hard"
-```
-
-Seed for the slot that has never been picked into. tinty's own `default-scheme` first, and gruvbox light hard only as the tiebreak when that would put the SAME scheme in both slots (which would make F6 a no-op).
-
-```
-def _theme_state_dir [] {
-```
-
-_theme_state_dir: resolve (and create) the slot state dir, cross-platform via XDG_STATE_HOME. Kept beside — not inside — tinty's data dir, so a `tinty install` or catalog re-clone never wipes the slots.
-
-```
-def _theme_current [] {
-```
-
-_theme_current: the last applied scheme id (tinty's current_scheme), or "".
-
-```
-def _theme_default_scheme [] {
-```
-
-_theme_default_scheme: tinty's configured `default-scheme`, the seed for a slot that has never been picked into.
-
-```
-def _theme_slot_file [slot: string] { (_theme_state_dir) | path join $"slot-($slot).txt" }
-```
-
-── A/B slots (F6) ──────────────────────────────────────────────────────────── Two parked schemes plus a pointer at which one is live. The picker never chooses a slot — it writes into whichever is ACTIVE — so the mental model stays "F6 switches mode, the picker sets the current mode's theme".
-
-```
-def _theme_other_slot [slot: string] { if $slot == "a" { "b" } else { "a" } }
-```
-
-_theme_other_slot: the slot F6 would move to.
-
-```
-export def _theme_active_slot [] {
-```
-
-_theme_active_slot: "a" or "b"; anything unreadable or unrecognised reads as "a", so a corrupt or empty state file can never wedge the toggle.
-
-```
-export def _theme_slot [slot: string] {
-```
-
-_theme_slot: the scheme id parked in a slot, "" when it has never been set.
-
-```
-def _theme_slots_seed [] {
-```
-
-_theme_slots_seed: make both slots valid before anything reads them. Also RECONCILES — the active slot is defined as "whatever is actually applied", so a bare `tinty apply` run outside this file (or a first run predating the slots entirely) is adopted into the active slot instead of leaving it pointing at a stale scheme. Called at the top of every entry point, which is what makes the feature retrofit onto an existing install with no migration step.
-
-```
-let active = (
-```
-
-Drift repair, in the order that loses the least. If the live scheme is the OTHER slot's, the POINTER is what is wrong (a `tinty apply` that failed after the pointer moved, or one run by hand against the alternate) — move the pointer. Overwriting the active slot there would collapse both slots onto one scheme and leave F6 a no-op with nothing to recover from.
-
-```
-if ($cur | is-not-empty) and $cur != (_theme_slot $active) { _theme_slot_set $active $cur }
-```
-
-Otherwise the live scheme is genuinely new (a bare `tinty apply`, or a first run predating the slots) — adopt it into the active slot, which is what keeps "the active slot IS what is applied" true.
-
-```
-export def _theme_use_slot [slot: string] {
-```
-
-_theme_use_slot: make `slot` active and apply what it holds. The apply is skipped when the scheme is already showing, so re-activating the live slot costs nothing and never fires tinty's hook chain for a no-op.
-
-```
-if $id != (_theme_current) { try { ^tinty apply $id e> /dev/null } }
-```
-
-Apply FIRST, move the pointer only once tinty has returned. `tinty apply` is synchronous through its whole hook chain (~100 ms+), and F6 can be pressed again inside that window: with the pointer written first, the second press's drift repair saw pointer=new but current_scheme=old, "corrected" the pointer back, and the toggle bounced to the slot it had just left — two presses, same theme. This order leaves the pair consistent at every instant a concurrent press can observe, so the worst case is re-applying the same slot instead of ping-ponging.
-
-```
-export def _theme_toggle [] {
-```
-
-_theme_toggle: the F6 action. Exported because the terminal invokes it out of band as `nu -n -c "source $HOME/.config/nushell/theme.nu; _theme_toggle"` — no interactive shell involved, so the print goes nowhere and the visible effect is entirely tinty's colors.lua write, which WezTerm's config-reload watch turns into a retint of every pane. That invocation is also why this file must parse standalone under `nu -n`: no reference to anything config.nu or env.nu defines.
-
-```
-def _theme_scheme_bg [id: string] {
-```
-
-_theme_scheme_bg: a scheme id's own background (palette.base00 hex), or "".
-
-```
-def _theme_osc_bg [hex: string] {
-```
-
-_theme_osc_bg: set the terminal background to a "#rrggbb" hex via OSC 11.
-
-```
-def _theme_bg_restore [] {
-```
-
-_theme_bg_restore: re-assert the background the terminal SHOULD be showing — the current scheme's base00. Used after the picker's per-focus preview retinted the background and Esc left the theme unchanged. An explicit OSC 11 set, not OSC 111: the reset restores WezTerm's config background (colors.lua), which can lag the live theme, and some hosts ignore 111 entirely — so 111 is only the last resort when the scheme's base00 is unknown.
-
-```
-def _theme_catalog [] {
-```
-
-_theme_catalog: every scheme id tinty can apply — the official base16/ base24 catalog plus anything under custom-schemes. The custom arm stays even though this tree ships no custom schemes: it is one flag, and it keeps any schemes the machine already carries listable. Deduped and alphabetical.
-
-```
-export def _theme_list [] {
-```
-
-_theme_list: the picker's source — BOTH slots first (the active one tagged " (A · current)", the other " (B)"), then the rest of the catalog. television preserves this order (the channel sets no_sort), so the pair F6 flips between sits at the very top and the alternate is always one keystroke away even though picking it would reassign the active slot. Tags are stripped back off on apply (_theme_commit) and in the preview ($1). Exported for the channel's [source] command.
-
-```
-let current = (_theme_current)
-```
-
-The live scheme, not the slot's record, so the head is honest even in the instant before a reconcile — _theme_slots_seed has just aligned them anyway.
-
-```
-export def _theme_commit [id: string] {
-```
-
-_theme_commit: apply a scheme and record it in the ACTIVE slot. Called by `theme` after tv has exited. The list head is tagged with a trailing parenthetical (" (A · current)", " (B)") — strip any of them back off so tinty gets the bare id; a scheme id never contains " (", so this cannot eat part of a real name. `e>` drops stderr but keeps stdout (the OSC) on the tty; `try` guards a nonzero exit.
-
-The pick lands in the ACTIVE slot: picking a theme retunes the mode you are in, it does not choose a mode. That is the whole contract with F6.
-
-```
-let sub = ($rest | get 0? | default "" | into string)
-```
-
---wrapped types each rest item as `glob`; `match` compares structurally and a glob never equals a string arm, so coerce to string before dispatching.
-
-```
-if $sub in ["toggle" "slots" "a" "b"] {
-```
-
-A/B slots — the same switch F6 makes, plus direct activation and a readout.
-
-```
-if (which tinty | is-empty) {
-```
-
-The catalog clone is a one-time `tinty install`, run nowhere automatically — so a missing binary or an empty catalog is guidance, never a blank picker.
-
-```
-let sel = (tv theme ...$rest | str trim)
-```
-
-television prints the chosen entry on Enter, nothing on Esc/Ctrl-C. Apply it HERE, after tv has fully exited (see the header comment). On Esc, explicitly re-assert the background the per-focus preview retinted.
+Why one bash script: every exec costs ~80 ms on this host (measured 2026-09-23). The old split — a nu module, a nu-sourcing tv source, a grep|sed preview script and a grep|sed hook — parsed the palette three times and made an apply take five seconds and F6 two. theme.sh parses the yaml with bash builtins and calls tmux once (`source-file` and `list-clients` in one command), so a paint is ~0.1 s; F6 paints before tinty records, so the colour changes first.
 
 ## `claude.nu`
 

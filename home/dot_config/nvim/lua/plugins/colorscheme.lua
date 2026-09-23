@@ -8,7 +8,7 @@ return {
   lazy = false,
   config = function()
     require("tinted-nvim").setup({
-      default_scheme = "base16-gruvbox-dark-hard",
+      default_scheme = "base16-gruvbox-material-dark-medium",
       apply_scheme_on_startup = true,
       ui = { transparent = true },
       highlights = {

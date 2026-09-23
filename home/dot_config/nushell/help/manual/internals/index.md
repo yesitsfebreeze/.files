@@ -14,7 +14,7 @@ here and add its row below in the same change.
 - [Nushell](./nushell.md) — Parse-time binding, the PWD hook, and why the width guard is a hang guard.
 - [tmux](./tmux.md) — Addressing, key tables, the copy sink, and the OSC 52 that a set-option silently kills.
 - [Neovim](./neovim.md) — The lazy.nvim stack, and the built-ins preferred over plugins.
-- [WezTerm](./wezterm.md) — The local chrome — font, grid centering, opacity, launchd PATH.
+- [WezTerm](./wezterm.md) — The local chrome — font, opacity, launchd PATH.
 - [Nushell modules](./nushell-modules.md) — history, finder, zoxide, theme, recents and the rest.
 - [The help command](./help.md) — How `help` and `?` are built, and the four constraints that shape them.
 - [Capsule](./capsule.md) — Container lifecycle, credentials, the image.

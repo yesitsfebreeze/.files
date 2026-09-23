@@ -46,8 +46,21 @@ in the pane buffer (`capture-pane -e` shows it) but never reaches WezTerm, so
 there is nothing at the cursor to shift-click — measured 2026-08-31 on
 tmux 3.7c with WezTerm attached as `xterm-256color`.
 
+### Redraws are synchronized
+
+`sync` makes tmux wrap every redraw in DEC mode 2026, so WezTerm paints only
+finished frames. Without it a pane-header redraw is an erase then a rewrite,
+and the two reach the screen separately: the header bar flickers every time a
+header repaints (a `#(tmux-git)` tick, a Claude state report). The four client
+features sit in two indexed entries, `terminal-features[3]` and `[4]`: `set -a`
+appended them again on every reload, and the list had reached 76 entries.
+
+tmux-claude-state only repaints on a change: setting a pane option redraws
+every header and the bar on every client, so a repeated report is skipped
+inside the same single `tmux if -F` call.
+
 TRAP: features are resolved **once, at client attach**. `tmux source-file`
-appends to the `terminal-features` option (visible in `tmux show -gs`) but an
+updates the `terminal-features` option (visible in `tmux show -s`) but an
 already-attached client keeps the set it was attached with — reloading is not
 enough, the client must detach and come back. Check the live value with
 `tmux display -p '#{client_termfeatures}'`; `hyperlinks` has to be in it.
@@ -135,7 +148,7 @@ empty, which keeps the old behaviour for a bare `nu` (the no-tmux fallback in
 
 `#{E:@cwd}` — set at the top of `tmux.conf` — is the pane's real working
 directory, and the only thing a gesture meaning "here" may use: the split
-binds, the F3/Shift+F3 popups' `-d`, the status bar.
+binds, the F3/F8 popups' `-d`, the status bar.
 
 **TRAP: `#{pane_current_path}` is not where the pane is.** It is the pane
 process's OS cwd, and nushell never changes it — `cd` moves `$env.PWD` and
@@ -159,8 +172,8 @@ box's path, which does not exist here. Only an OSC 7 naming this host is
 trusted, and anything else falls back to `#{pane_current_path}` — for an ssh
 pane that is the local cwd, which is the right answer.
 
-`#{E:@cwd}` is used rather than the expression, except in `status-format[1]`,
-the window row, which spells it out. That is not duplication for its own sake: `:...` names a
+`#{E:@cwd}` is used rather than the expression, except in `pane-border-format`,
+the pane header, which spells it out. That is not duplication for its own sake: `:...` names a
 *variable*, so a substitution cannot be applied to an expanded option —
 `#{s|^$HOME|~|:@cwd}` substitutes over the option's literal text and
 `:E:@cwd` yields `""`. The `~` collapse therefore rides inside the branch,
@@ -296,20 +309,14 @@ index the jump key uses: `#{a:N}` converts a character code and
 `#{e|+|:64,#{pane_index}}` makes pane 1 read `A`, pane 9 `I`.
 The bindings remain lowercase: `F5 a` selects pane A.
 
-The label starts at the left and includes the pane's directory, as in
-`A ~/dev`. It uses the same local-host OSC 7 check as the status bar, falling
-back to `pane_current_path` and shortening the home directory to `~`.
-Nushell does not update its process cwd, so OSC 7 is needed to follow `cd`.
-tmux reserves two border cells before the label. The uppercase letter has
-one space on each side. The letter and both spaces use reverse video only
-in the active pane; all three cells are non-reversed when inactive and use
-the normal theme text colour (`base05`) through `@pane-letter-style`.
-The directory and trailing fill use normal text (`base05`) on the dim
-background (`base02`) through `@pane-title-style`. These cells use reverse
-video only in the active pane, swapping those colours. Strikethrough is
-explicitly disabled, and all straight borders keep the bright border colour.
-Tinty supplies the letter and title styles and border colours, so a palette switch
-updates them together.
+The label is plain text on the border line, like a popup's title:
+`A  ~/dev main* ↑2  3 hours ago`. It uses the same local-host OSC 7 check as
+the status bar, falling back to `pane_current_path` and shortening the home
+directory to `~`. Nushell does not update its process cwd, so OSC 7 is needed
+to follow `cd`. There are no fills and no reverse video: focus is the border's
+own colour (`pane-active-border-style`, the scheme's accent `base0D`; inactive
+borders are `base03`), so a header repaint only rewrites text. Tinty sets both
+border colours, so a palette switch updates them together.
 
 Both `window-style` and `window-active-style` are `default`: pane contents
 retain the terminal and application colours regardless of focus. Only the
@@ -594,15 +601,19 @@ The active label's colours live in a style *option*, not inline in the format,
 because a later `source-file` can replace a style option and cannot replace a
 format's embedded `#[…]`.
 
-The bar is **two rows, both at the top**.
+The bar is **one row at the top** and holds only what is true of the whole
+session. Left to right: the clock; **`tmux-sys`** — CPU and memory as a
+five-cell bar plus percent, and the default interface's download/upload in
+Mbit/s since the previous tick, every field fixed width so the chip and digits
+never shift; the **key-table chip**, which appears the
+instant `F5` arms the switcher and names the table (`jump`, or `jump-pane` when
+a digit has been pressed and the letter is still to come); and at the right the
+window digits.
 
-Row 0 is ambient — the facts true of the whole session. Left to right: the
-clock; the **key-table chip**, which appears the instant `F5` arms the switcher
-and names the table (`jump`, or `jump-pane` when a digit has been pressed and
-the letter is still to come); and at the right the window digits.
-
-Row 1 is *this window*: the active pane's host (over ssh) and cwd, the **git
-branch** with a `*` when the tree is dirty, and a zoom or copy-mode flag.
+Everything about a pane lives in **that pane's header** — plain text on its
+top border: the jump letter, the host (over ssh), the cwd, the **git segment**
+(branch, `*` when dirty, `↑n`/`↓n` against the upstream, last-commit age), and
+a zoom or copy-mode flag.
 
 The **git segment** is the one thing here that runs a command. It was left out
 of the first cut on the grounds that starship prints the same facts in the
@@ -627,21 +638,21 @@ appears and clears instantly, but driving the same change from the CLI with
 appear until the next tick. That reads exactly like a broken format and is not
 one.
 
-Both rows sit wherever `status-position` says, because it is **one option for
-the whole bar**. Measured 2026-09-01 on **tmux 3.7c**: `status 2` with
+A second status row was dropped for the pane headers. Rows sit wherever
+`status-position` says, because it is **one option for the whole bar**. Measured 2026-09-01 on **tmux 3.7c**: `status 2` with
 `status-position top` drew both at screen rows 1 and 2, so tabs at the top with
 the window status at the bottom is not available. Neither is an overlay at the
 bottom — tmux's only overlay is a popup: it is per client, it covers pane
 content rather than reserving a row, and it takes every key while it is up
 (`-N` only cancels `-E`/`-k`, it does not make a popup passive).
 
-The window list is right-aligned; row 0's left segment leads with the clock.
+The window list is right-aligned; the bar's left segment leads with the clock.
 The clock takes the outermost cell because it is the one segment whose width
 never changes, so it is the only one that can anchor a corner — a cwd in front
 of it would move the time to a different column on every `cd`, which is exactly
 what makes a clock hard to read at a glance. Everything that moves with a `cd`
-is on row 1 for that reason, and the host sits next to the path there because
-over ssh the two are one fact.
+is in the pane headers for that reason, and the host sits next to the path there
+because over ssh the two are one fact.
 
 The list is placed by **`status-justify`**, never by a format, and `right` only
 reaches the terminal's right edge while `status-right` is **empty**: tmux
@@ -667,7 +678,7 @@ literal path by the time a tick reads it.
 That expansion happens in **double quotes only**. Written inside single quotes
 the `$HOME` reaches the format literally, nothing matches, and the row prints
 the full `/Users/...` path with no error to say why — measured 2026-09-01 while
-building row 1. It is why both arms of the SSH test are double-quoted.
+building the cwd segment. It is why both arms of the SSH test are double-quoted.
 
 Every pane keeps its top border label visible. The config removes the former
 `window-layout-changed` hook so splitting or closing a pane cannot hide it.
@@ -834,3 +845,9 @@ with `extended-keys on`, tmux emits `CSI >4;2m` on the client wire at attach
 with the feature line present **and** absent alike — on 3.7c the feature line is
 belt and braces, carried because the docs require it and because an older tmux
 gates the request on a matching `extkeys` feature.
+
+## `bounded` — every wait has a deadline
+
+`~/.local/bin/bounded SECS CMD…` runs CMD in its own process group and, at the deadline or when `bounded` itself is killed, sends TERM to the whole group and KILL to anything still there two seconds later. Exit status is CMD's, or 124 on the deadline. macOS has no `timeout(1)`, and a timeout that only stops waiting leaves the process running: on 2026-09-23 seventeen orphaned `pass show` reads were found spinning at 50% CPU each, which made every exec on the machine cost 70–250 ms.
+
+Every detached or possibly-blocking call in this repo goes through it: the Keychain and git-credential reads in env.nu (interactive shells only) and capsule.nu. install.sh's downloads carry `curl --max-time`. The `.orly/specs/lifecycle/` checks hold all of this: no process may outlive an action.

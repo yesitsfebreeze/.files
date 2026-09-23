@@ -1,0 +1,111 @@
+#!/bin/sh
+# tv-go — F8, F7, F9 and F3: pick a channel, then a row in it.
+#
+#   tv-go act         (F8) act on the row: open a file or a match below this
+#                     pane, cd to a directory in a new pane, apply a theme or
+#                     font; anything else lands on a new prompt, unrun
+#   tv-go type        (F7) type the row into this pane, whatever the channel
+#   tv-go act theme   (F9) skip the channel step
+#   tv-go find QUERY  (F3) F8 with QUERY already typed into the row list
+#
+# The pane is TV_ALL_ORIGIN, named by the binding because a popup has no
+# position of its own. manual → internals/tmux, "F8 / F7".
+#
+# fzf, not tv, for the two steps tv 0.15.9 cannot do: accept the channel the
+# moment typing leaves one (`one:accept`; tv's --select-1 only checks at
+# startup), and re-run a look preview on EVERY focus, revisits included (tv
+# caches each row's preview — upstream #969 — so going back never repainted).
+#
+# Look previews paint only the row you stop on — a retint per row flooded the
+# tty with palette writes and the frame flickered. `sleep 0.15` lets a scroll
+# move on (fzf kills a preview whose row lost focus), then the preview asks
+# fzf over --listen which row has focus and paints only if it is still this
+# one: under load the kill can land after the sleep, and a row already
+# scrolled past used to paint.
+#
+# TRAP: no `2>/dev/null` on a tv call — with stdout captured, tv draws the
+# whole UI on stderr, and silencing it blanks the popup.
+set -u
+ORIGIN=${TV_ALL_ORIGIN:-}
+mode=${1:-act} ch=${2:-} q=""
+[ "$mode" = find ] && { mode=act ch="" q=$(shift; printf '%s' "$*"); }
+# ANSI slots only, never hex: theme.sh retints slots 0-15 on every apply, so
+# fzf follows the scheme — and the live preview — for free. Rounded frame to
+# match tv's.
+export FZF_DEFAULT_OPTS="--reverse --border rounded --info inline-right \
+ --color 16,fg:7,bg:-1,hl:4,fg+:15,bg+:8,hl+:4,border:8,label:7 \
+ --color prompt:5,pointer:1,marker:2,info:8,header:8,spinner:6,preview-border:8"
+LOOKS="$HOME/.config/tinted-theming/tinty/theme.sh"
+FONT="$HOME/.config/wezterm/font.sh"
+
+[ -n "$ch" ] || ch=$(tv list-channels | fzf --bind one:accept --prompt 'channel> ' \
+    --header "${q:+“${q}” — }type until one is left, or enter; esc cancels")
+[ -n "$ch" ] || exit 0
+# limit=0: the reply holds no match list, so the only "text" is the focus.
+still='sleep 0.15; case $(curl -s --max-time 1 "localhost:$FZF_PORT?limit=0") in *\"text\":\"{}\"*) ;; *) exit 0 ;; esac'
+look() { fzf --listen --with-shell 'sh -c' --no-sort --prompt "$1> " --query "$q" \
+             --preview "$still; $2 --preview {}" --preview-window right,65%; }
+case $ch in
+theme) row=$("$LOOKS" --list | look theme "$LOOKS") ;;
+font)  row=$("$FONT" --list | look font "$FONT") ;;
+# Enter returns the row: several channels bind it to an action of their own
+# (text opens nvim, git-stash applies), which would run inside the popup.
+*)     row=$(tv "$ch" --no-remote --keybindings 'enter="confirm_selection"' \
+           ${q:+--input "$q"} | head -1) ;;
+esac
+
+# theme and font preview by side effect: settle it whether or not a row came
+# back, so Esc and F7 both leave the current look on screen.
+case $ch in
+theme) if [ -n "$row" ] && [ "$mode" = act ]; then "$LOOKS" --apply "$row"; else "$LOOKS"; fi ;;
+font)  if [ -n "$row" ] && [ "$mode" = act ]; then "$FONT" --apply "$row"; else "$FONT"; fi ;;
+esac
+[ -n "$row" ] || exit 0
+: "${ORIGIN:?tv-go: set TV_ALL_ORIGIN}"
+[ "$mode" = type ] && exec tmux send-keys -t "$ORIGIN" -l "$row"
+
+# ── act: picks land in a new pane BELOW the origin ──────────────────────────
+# Things you look AT open; things that CHANGE something land on a prompt unrun.
+# Single quotes inside a single-quoted shell word.
+_q() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
+# Rows become absolute: a relative one would be resolved twice, since the new
+# pane already starts in it (`cd scripts/` from inside scripts/ fails, and nu
+# --execute exits on it).
+# shellcheck disable=SC2088  # a literal "~/" from a row
+case $row in "~/"*) row="$HOME/${row#\~/}" ;; esac
+
+# TRAP: a full window refuses a split, and the popup has already closed —
+# fall back to a new window or the key reads as doing nothing.
+split() {
+    _d=$1; shift
+    tmux split-window -v -P -F '#{pane_id}' -t "$ORIGIN" -c "$_d" "$@" 2>/dev/null ||
+        tmux new-window -P -F '#{pane_id}' -c "$_d" "$@" 2>/dev/null
+}
+# prefill DIR TEXT: a new pane in DIR with TEXT on its prompt, unrun.
+# TRAP 1: splice `--execute "cd …"` into default-command, never type the cd:
+# reedline drops keys that arrive while it runs a line. Splice, don't replace
+# — default-command owns the XDG export, PATH lookup and fallback.
+# TRAP 2: `stty -echo` — send-keys lands while the pane is still cooked, so
+# without it the tty echoes the text and reedline draws it again.
+prefill() {
+    _dc=$(tmux show -gv default-command 2>/dev/null)
+    [ -n "$_dc" ] || _dc="exec \"\${SHELL:-/bin/sh}\""
+    _dc=$(printf '%s' "$_dc" | sed "s|exec nu |exec nu --execute \"cd '$(_q "$1")'\" |")
+    _p=$(split "$1" "stty -echo; $_dc") || return 0
+    [ -z "$2" ] || tmux send-keys -t "$_p" -l "$2"
+}
+edit() { split "$PWD" "\${EDITOR:-nvim} $1 -- '$(_q "$2")'" >/dev/null; }
+
+case $ch in
+theme|font) ;;
+files|recent-files) edit "" "$row" ;;
+text|docs)
+    n=$(printf '%s' "$row" | cut -d: -f2); case $n in ''|*[!0-9]*) n=1 ;; esac
+    edit "+$n" "${row%%:*}" ;;
+dirs|recent-dirs|git-repos)
+    # nu refuses a PWD with a trailing slash, and fd prints dirs with one.
+    case $row in /*) ;; *) row="$PWD/$row" ;; esac; row=${row%/}
+    prefill "$row" "" ;;
+git-log) split "$PWD" "git show '$(_q "$row")'" >/dev/null ;;
+*) prefill "$PWD" "$row" ;;
+esac

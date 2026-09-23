@@ -18,7 +18,7 @@
 # which is correct — the session keeps the directory it was born with.
 #
 # TRAP: the nu-launch ladder lives in exactly one place, tmux.conf's
-# default-command — this script and tv-all must not re-spell it.
+# default-command — this script and tv-go must not re-spell it.
 #
 # The `F5 <digit>` clean slate is unaffected because those binds pass `-c ~`
 # explicitly — checked: no `new-window` in tmux.conf relies on the session

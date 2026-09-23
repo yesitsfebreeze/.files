@@ -43,4 +43,9 @@ opt.listchars = { eol = "↵", tab = "→ ", multispace = "·", trail = "·", nb
 
 opt.laststatus = 3
 
+-- OFF is not enough: nvim 0.12 opens lsp.log and writes a START line on the
+-- first log call whatever the level, so it gains a line per launch forever.
+-- Cap it here, before `vim.lsp` loads and writes today's line.
+local lsp_log = vim.fs.joinpath(vim.fn.stdpath("log"), "lsp.log")
+if (vim.uv.fs_stat(lsp_log) or { size = 0 }).size > 1e6 then os.remove(lsp_log) end
 vim.lsp.log.set_level(vim.log.levels.OFF)

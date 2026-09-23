@@ -33,10 +33,8 @@ Two more measured facts about the tool:
   not `[]` — returning `[]` quietly is what hid a dead decode for the life
   of the live config.
 
-tv-all (`F3`/`Shift+F3`, `~/.local/bin/tv-all`, POSIX sh because the tmux
-server's environment is not a login shell's) answers "which channel is that
-in" by counting the query across every channel: fast lanes (recent
-dirs/files, history, aliases, under 0.2 s) land first and are actionable at
-once; files, directories and contents fill in behind as tv's `--watch`
-redraws. Counting one query across `$HOME` costs 29–74 s with ripgrep — dead
-as an interactive wait, which is why it is progressive.
+F3 is `tv-go find QUERY` (POSIX sh because the tmux server's environment is
+not a login shell's): the fzf channel step, then `tv <channel> --input QUERY`.
+It replaced tv-all, which counted one query across every channel and
+scanned `$HOME` in the background — 29–74 s with ripgrep, which is why that
+needed a progressive list, a cache and a reaper, and why it was cut.

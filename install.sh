@@ -17,7 +17,7 @@ export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 if ! have brew; then
     log "installing Homebrew"
     NONINTERACTIVE=1 /bin/bash -c \
-        "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+        "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
         || warn "Homebrew: bootstrap failed — install it by hand and re-run"
 fi
 # `hash -r`: bash caches resolved command paths, and PATH just changed.
@@ -39,10 +39,10 @@ fi
 # TRAP: the release assets are named with an UNDERSCORE, tmux-mcp_<os>_<arch>.
 if ! have tmux-mcp; then
     case "$(uname -m)" in arm64|aarch64) a=arm64 ;; *) a=amd64 ;; esac
-    t="$(curl -fsSL https://api.github.com/repos/MadAppGang/tmux-mcp/releases/latest \
+    t="$(curl -fsSL --max-time 30 https://api.github.com/repos/MadAppGang/tmux-mcp/releases/latest \
         | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
     d="$(mktemp -d)"
-    if [ -n "$t" ] && curl -fsSL -o "$d/a.tgz" \
+    if [ -n "$t" ] && curl -fsSL --max-time 300 -o "$d/a.tgz" \
         "https://github.com/MadAppGang/tmux-mcp/releases/download/$t/tmux-mcp_darwin_$a.tar.gz" \
         && tar -xf "$d/a.tgz" -C "$d"; then
         mkdir -p "$HOME/.local/bin"
