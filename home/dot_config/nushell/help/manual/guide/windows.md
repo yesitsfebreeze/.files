@@ -18,35 +18,49 @@ Press `F1` in any pane — a shell, the editor, an agent — and the cockpit ope
 >
 > Laid out as which-key.nvim so the whole surface reads at a glance, and it is plain tmux, so it works on a bare tmux over ssh; only the `u` group needs WezTerm. The keys are data, one row each in `~/.config/tmux/cockpit.tsv`, so adding one is adding a line. Search and git rows open the same pickers as `F8` with the channel step skipped. WezTerm has no command channel of its own, so its rows write an OSC 1337 user variable to the terminal and wezterm.lua runs the named action.
 
-See also: [`F8`](./files.md#f8) · [`F5 <digit>`](./windows.md#f5-digit) · [`F6`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
+See also: [`F8`](./files.md#f8) · [`F5`](./windows.md#f5) · [`F6`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
 
-## `F5 <digit>`
+## `F5`
 
-**Jump to a window by its number**
+**Open the grid of windows**
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then a digit 1-9: you are on that window. If there is no window with that number yet, it is created there and you land in it at `~`. Land on a window holding one pane and the switcher is already done — you are typing again. Land on one holding several and it waits for the pane letter, so `F5 1 b` puts you in the second pane of window 1 in two keys. `Escape` ends the wait, as does any other key, which is swallowed rather than typed.
+Press `F5` and a popup opens over everything: windows 1 to 9 as a three-by-three grid of tiles, each a live snapshot of that window, labelled with the left-hand key that reaches it — `l w d` on the top row, `r s t` in the middle, `x c v` at the bottom. Empty slots read `idle`. The top line lists the current window's panes by number, the one you are in highlighted. `Escape` closes it and nothing has changed.
 
 > **Why it is this way**
 >
-> A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. Whether the switcher stays on is read from the window AFTER the jump rather than before it: a pushed table is one-shot, so a binding that does not re-arm is what ends the mode, and the digit re-arms into a second table holding the nine pane letters and Escape and nothing else. `q` is deliberately absent from that second table: after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. A key with no binding in the pushed table is looked up once more in root and dropped if it misses, so the keystroke that ends the wait is swallowed, not typed. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you.
+> It is burrito's picker, drawn by a script over tmux: burrito was deleted as a multiplexer, but its grid was the right way to see nine windows at once. tmux still owns every window, split and move — the grid only draws and reads keys, so a bare tmux over ssh loses the picture, not the windows. The keys sit under the left hand in the grid's own shape, so the tile you look at and the key you press are in the same place.
 
-See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 q`](./windows.md#f5-q) · [`F5 F5`](./windows.md#f5-f5)
+See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit) · [`F5 F5`](./windows.md#f5-f5)
 
 ## `F5 <letter>`
 
-**Jump to a pane by its letter**
+**Jump to a window by its tile**
 
 *terminal*
 
-Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane shows its uppercase jump letter and directory above it, for example `A ~/dev`, written on the border line like a popup's title. The focused pane's border is drawn in the accent colour; pane contents keep their full colour regardless of focus. Press the matching lowercase letter. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane.
+Press `F5`, then the tile's key: you are on that window. If the slot is empty the window is created there and you land at `~`. Land on a window with one pane and the grid closes; with several, it stays open so a digit can pick the pane — `F5 l 2` is the second pane of window 1. Press the key of the window you are already on and the pane you are in zooms to fill it, or unzooms.
 
 > **Why it is this way**
 >
-> The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The label rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The label is always shown, including in a single-pane window and while the switcher is idle. The directory follows the pane’s OSC 7 report, with the process directory as fallback.
+> A tile is always a valid address: tmux window indices do not renumber, so the key creates the window rather than doing nothing, and nothing has to stay resident to hold a slot open. A new window starts at `~` and NOT at the current directory, unlike a split, on purpose: a window is a clean slate, a split divides the work in front of you. Pressing where you already are has nothing to jump to, so it zooms instead of being wasted.
 
-See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 q`](./windows.md#f5-q) · [`the status bar`](./windows.md#the-status-bar)
+See also: [`F5`](./windows.md#f5) · [`F5 <digit>`](./windows.md#f5-digit) · [`F5 q`](./windows.md#f5-q)
+
+## `F5 <digit>`
+
+**Jump to a pane by its number**
+
+*terminal*
+
+Press `F5`, then a digit: focus moves to that pane of the current window and the grid closes. Every pane shows its number and directory on its top border, for example `2  ~/dev`, so the digit to press is on screen. Press the number of the pane you are already in and it zooms to fill the window, or unzooms.
+
+> **Why it is this way**
+>
+> The digit addresses the pane INDEX, and tmux renumbers panes when one is killed, so a number does not keep its pane for life. The border shows the same index the key uses, so it is right the instant after a renumber. Letters went to windows and digits to panes because the left-hand grid is what you reach for most, and a window has at most nine tiles while a pane count is read off its border.
+
+See also: [`F5`](./windows.md#f5) · [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
 ## `F5 <arrow>`
 
@@ -54,13 +68,13 @@ See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f
 
 *terminal*
 
-Press `F5`, let go, then an arrow: focus moves to the pane on that side. The switcher stays on, so more arrows keep walking — `F5 Right Right Down` is one trip. `Escape` ends it, as does any key the switcher does not know, which is swallowed rather than typed.
+Press `F5`, then an arrow: focus moves to the pane on that side and the grid stays open, so more arrows keep walking — `F5 Right Right Down` is one trip. `Escape` closes it.
 
 > **Why it is this way**
 >
-> A letter is an address and an arrow is a direction: the letter wins when you can read the pane you want, the arrow when you only know it is over there. The arrows re-arm the switcher because walking is repeated by nature, where a letter lands you exactly and is done. Walking off the edge wraps to the far side, which is tmux's own rule for a pane on that side.
+> A digit is an address and an arrow is a direction: the digit wins when you can read the pane you want, the arrow when you only know it is over there. Walking keeps the grid open because it is repeated by nature. Walking off the edge wraps, which is tmux's own rule.
 
-See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 Ctrl+<arrow>`](./windows.md#f5-ctrl-arrow) · [`F5 <letter>`](./windows.md#f5-letter)
+See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 Ctrl+<arrow>`](./windows.md#f5-ctrl-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
 
 ## `F5 Shift+<arrow>`
 
@@ -68,11 +82,11 @@ See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 Ctrl+<arrow>
 
 *terminal*
 
-Press `F5`, let go, then Shift and an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the switcher is done — the cursor is in the new pane and typing goes there. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. A second split is a second `F5`.
+Press `F5`, then Shift and an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the grid closes with the cursor in the new pane. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it.
 
 > **Why it is this way**
 >
-> A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: that is the pane process's OS cwd, and nushell's `cd` never changes it. `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines.
+> A split inherits the current directory because you are dividing the work in front of you; a new window starts at `~` because it is a clean slate. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: nushell's `cd` never changes the process cwd. `osc133` stays OFF: double-marking left phantom prompt lines.
 
 See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Ctrl+<arrow>`](./windows.md#f5-ctrl-arrow) · [`F5 q`](./windows.md#f5-q)
 
@@ -82,13 +96,13 @@ See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Ctrl+<arrow>`](./windows
 
 *terminal*
 
-Press `F5`, let go, then Ctrl and an arrow: the pane you are in trades places with its neighbour on that side, and you stay in it. You are now carrying it: every further arrow, with or without Ctrl, swaps it one more step that way. `Enter` or `Escape` puts it down. Its letter changes with its place, because the letter is the position.
+Press `F5`, then Ctrl and an arrow: the pane you are in trades places with its neighbour on that side, the grid closes, and you are carrying the pane — every further arrow, with or without Ctrl, swaps it one more step that way. `Enter` or `Escape` puts it down. Its number changes with its place, because the number is the position.
 
 > **Why it is this way**
 >
-> It is a swap, not a re-layout: the two panes trade slots and every size stays put. Carrying is its own key table, `pane-move`, so the plain arrows there mean swap rather than walk. Focus follows the pane rather than the slot because the pane is what you were moving. macOS claims `Ctrl+<arrow>` for Spaces and Mission Control by default, so those shortcuts must be off in System Settings → Keyboard → Keyboard Shortcuts → Mission Control or the key never reaches the terminal.
+> It is a swap, not a re-layout: the two panes trade slots and every size stays put. Carrying is tmux's own key table, `pane-move`, so the plain arrows there mean swap rather than walk, and the status bar shows `pane-move` while it is on. macOS claims `Ctrl+<arrow>` for Spaces by default, so those shortcuts must be off in System Settings → Keyboard → Keyboard Shortcuts → Mission Control or the key never reaches the terminal.
 
-See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <letter>`](./windows.md#f5-letter)
+See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
 
 ## `F5 q`
 
@@ -96,13 +110,13 @@ See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Shift+<arrow>`](./window
 
 *terminal*
 
-Press `F5`, let go, then `q`: the pane you were in is gone and its neighbours take the space back. Nothing asks first and there is no undo. Close the only pane of the only window and the session goes with it, which is the one way this key does more than tidy up.
+Press `F5`, then `q`: the pane you were in is gone and its neighbours take the space back. Nothing asks first and there is no undo. Close the only pane of the only window and the session goes with it.
 
 > **Why it is this way**
 >
-> It lives in the switcher's first table and NOT in the pane-letter table a digit arms, which is the whole guard. Pressing `F5` is deliberate, so a `q` straight after it is deliberate too; after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. There is no confirmation prompt because a confirmation is a second gesture on a key whose point is being one, and because tmux keeps nothing to restore a killed pane from — the choice of table is the guard, and it is the only one.
+> `q` is not a tile key in the left-hand grid, so it cannot be hit while aiming at a window. There is no confirmation because the key's point is being one gesture, and tmux keeps nothing to restore a killed pane from.
 
-See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit)
+See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
 
 ## Read the bar across the top
 
@@ -138,17 +152,17 @@ Any of the three exits. They exist because muscle memory arrives from vim, from 
 
 ## `F5 F5`
 
-**Send F5 through to a nested session**
+**Open the cockpit from the grid**
 
 *terminal*
 
-Press the key twice — `F5 F5` — and the second press is sent to whatever is running in the pane instead of being handled here. That is how you reach the window, pane and split keys of a tmux you have ssh'd into: the outer session gets the first press, the inner one gets the second.
+Press `F5` twice and the grid gives way to the cockpit — the same which-key menu `F1` opens. One key for where you are going, the same key again for everything else.
 
 > **Why it is this way**
 >
-> This key is bound without a prefix, so the outermost session eats it always — which is the portability case biting itself the moment you ssh somewhere that also runs tmux. The double tap needs an explicit binding and does not fall out for free: without it the second press misses in the pushed table, is looked up again in the root table, finds the same key there and silently re-arms the mode. `F6` is deliberately NOT forwardable: the palette belongs to the outermost terminal, because that is the process that owns the colours and reads the escape sequence.
+> The second press is read by the grid itself, so it is never sent to the program in the pane. That means a tmux you have ssh'd into cannot be reached with `F5` from outside: the outermost session always takes it. `F6` is not forwardable either, on purpose: the palette belongs to the outermost terminal.
 
-See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <arrow>`](./windows.md#f5-arrow) · [`F6`](./appearance.md#switch-scheme)
+See also: [`F5`](./windows.md#f5) · [`F1`](./windows.md#f1) · [`F6`](./appearance.md#switch-scheme)
 
 ## `Ctrl+Alt+Super+drag`
 

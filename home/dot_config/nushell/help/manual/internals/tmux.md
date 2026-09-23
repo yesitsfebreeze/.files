@@ -110,7 +110,7 @@ are both 1 and the key matches the label.
 
 A lazily created window starts at `~`, deliberately **not** the `F5 Shift+<arrow>`
 split's rule, which inherits the active pane's cwd. The two gestures disagree
-on purpose: a split divides *this* work, a digit is a clean slate.
+on purpose: a split divides *this* work, a new window is a clean slate.
 
 Measured with the session path, the pane's cwd and the client's cwd all set to
 **different** directories — a first reading with two of them equal could not
@@ -218,89 +218,52 @@ sitting in must resolve the path itself first.
 makes `#{pane_current_command}` read `nu` — the value the status bar tints
 occupied windows from.
 
-## Key tables
+## F5 — the grid
 
-### A pushed table falls back to `root`, then drops
-
-This is the property the whole design rests on and it is not documented
-anywhere obvious. A key with no binding in the pushed table is looked up **a
-second time** in `root`. If root does not bind it either, it is **dropped** —
-it does not reach the program in the pane.
-
-So a mistyped letter cancels the mode and types nothing. WezTerm needed all 26
-letters bound to a no-op to get this; on tmux those binds would be dead code.
-
-The same second lookup is why the double-tap needs an explicit binding. Without
-`bind -T jump F5 send-keys F5`, the second `F5` misses in `jump`, hits
-`bind -n F5` in `root`, and silently **re-arms** the table instead of
-forwarding anything.
-
-No timeout is needed or possible. WezTerm's jump mode carried a 5 s timeout
-because its key table persisted; a tmux table is popped by the very next
-keystroke whatever it is, so the mode is only ever as deep as the number of
-bindings that deliberately push it again.
-
-### Re-arming is the only thing that keeps the switcher alive
-
-A binding that does **not** end with a `switch-client -T` therefore *ends* the
-mode. That is the whole of the gesture rule and it needed no extra machinery:
-a letter, a Shift+arrow split and `q` re-arm nothing and are complete on their
-own, so `F5 b` is two keystrokes and you are typing again.
-
-A plain arrow (walk to the neighbour) ends in `switch-client -T jump`, because
-walking is repeated: `F5 Right Right` is one trip. A Ctrl+arrow (swap with the
-neighbour) pushes a third table, `pane-move`, where every arrow swaps again and
-only `Enter` or `Escape` pops back to `root`. The swap takes `-d`, since without it focus stays on the slot and lands
-on the neighbour that just moved in.
-
-The digit re-arms conditionally, and it decides **after** the jump rather than
-before it:
+`F5` runs `~/.local/bin/grid`: burrito's picker drawn over tmux. It opens a
+popup 90% × 85% of the client holding windows 1-9 as a 3×3 grid of tiles, each
+a `capture-pane` snapshot of that window, labelled with the left-hand key that
+reaches it:
 
 ```
-bind -T jump 1 if -F '#{m:*|1|*,#{W:|#{window_index}|}}' 'select-window -t :1' 'new-window -t :1 -c ~' \
-             \; if -F '#{==:#{window_panes},1}' 'switch-client -T root' 'switch-client -T jump-pane'
+l w d      1 2 3
+r s t  =   4 5 6
+x c v      7 8 9
 ```
 
-Commands in a `\;` sequence resolve their target when they run, not when the
-key was pressed, so `#{window_panes}` in the second `if` reads the window
-`select-window` just moved to. One pane and the gesture is finished; more than
-one and the pane letter is still to come, so it pushes `jump-pane`.
+Burrito itself was deleted as a multiplexer (tmux owns windows and panes); only
+its interface came back. The script draws and reads keys and nothing else —
+every select, split, swap and kill is a tmux command against the pane `F5` was
+pressed in, so a bare tmux over ssh loses the picture, not the windows.
 
-`jump-pane` is a second table holding the nine letters and `Escape` and
-**nothing else**. In particular it does not hold `q`. `F5 q` kills the active
-pane with no confirmation and tmux keeps nothing to restore it from, so the
-guard is the table the key lives in: `F5` is a deliberate press and a `q`
-straight after it is deliberate too, while a `q` in the state a digit leaves
-you in is the first letter of a word you were about to type into the window you
-just landed on. The nine letter binds are written out twice for the same
-reason — tmux cannot forward a key from one table to another, and the
-duplication is cheaper than the hazard.
+A tile key selects that window, or creates it at `~` (not the current
+directory: a new window is a clean slate, a split divides the work in front of
+you). Onto a window with one pane the popup closes; with several it stays open
+for a digit. A digit selects that pane of the current window. The key of the
+window or pane you are already on toggles `resize-pane -Z` instead. Arrows walk
+panes and redraw; Shift+arrow splits (inheriting `@cwd`) and closes; `q` kills
+the pane; Ctrl+arrow swaps and hands over to tmux's `pane-move` table; a second
+`F5` closes the grid and opens the cockpit; a lone `Escape` closes.
 
-Measured 2026-09-01 by attaching the session from a pane of a second tmux
-server and reading `#{client_key_table}` after each key: `F5`→`jump`,
-digit onto a one-pane window→`root`, digit onto a two-pane window→`jump-pane`,
-letter→`root`, arrow→`root` (then a split; walking re-arms since), `q`→`root` with the pane gone. `F5` then `z` put
-no byte on the pane's pty, which is the drop above, measured rather than read.
+**Escape vs. an arrow.** Both start with `ESC`. The script reads one byte, and
+on `ESC` reads the rest with `stty min 0 time 1` — the tail of a sequence
+arrives in the same write, a lone Escape times out after 0.1 s. bash 3.2's
+`read -t` takes whole seconds only, which is why it is `stty` and `dd`.
 
-### The delimiter must not be a glob metacharacter
+**Window names come from one `list-windows`.** `display -t SESSION:4` on a
+missing window 4 does not fail: it falls back to another window and prints its
+name, so an empty slot would read as occupied. Measured.
 
-The window-existence test loops the window list and matches the index inside
-delimiters:
+**Carrying** stays a key table because it outlives the popup: in `pane-move`
+every arrow, with or without Ctrl, swaps again and only `Enter` or `Escape`
+pops back to `root`. The swap takes `-d`, since without it focus stays on the
+slot and lands on the neighbour that just moved in. A key with no binding in a
+pushed table is looked up a second time in `root` and dropped if that misses,
+so a stray key ends carrying and types nothing.
 
-```
-#{W:|#{window_index}|}   →  |1||4||7|
-```
-
-`#{m:}` is **fnmatch**, and `[` opens a character class. So the natural
-`#{m:*[1]*,#{W:[#{window_index}]}}` answers **true for window 11** when asked
-about window 1, and the binding then selects a window that does not exist.
-Measured. `|` is inert to fnmatch.
-
-The same trap governs the status bar's occupancy test, where the pane's command
-becomes the pattern and the shell list is the string: the bracket form answers
-true for `nushell` when asked about `nu`.
-
-`if-shell -F` tests a *format*, so no `/bin/sh` is spawned per keypress.
+`F5 F5` no longer forwards `F5` to a nested tmux: the second press is read by
+the grid. A root binding is always taken by the outermost server, so an inner
+tmux's `F5` is unreachable from outside.
 
 ### Pane borders
 
@@ -309,16 +272,14 @@ true for `nushell` when asked about `nu`.
 with only one pane. Stock tmux 3.7c rejects `rounded` for pane borders;
 rounded corners are available for popups only.
 
-### Pane letters are only honest with the border
+### Pane numbers are only honest with the border
 
-tmux **renumbers panes** when one is killed, so a letter does not keep its pane
-for life. `pane-border-format` derives the uppercase letter from the same
-index the jump key uses: `#{a:N}` converts a character code and
-`#{e|+|:64,#{pane_index}}` makes pane 1 read `A`, pane 9 `I`.
-The bindings remain lowercase: `F5 a` selects pane A.
+tmux **renumbers panes** when one is killed, so a number does not keep its
+pane for life. `pane-border-format` prints `#{pane_index}`, the same index the
+grid's digit selects, so the label is right the instant after a renumber.
 
 The label is plain text on the border line, like a popup's title:
-`A  ~/dev main* ↑2  3 hours ago`. It uses the same local-host OSC 7 check as
+`2  ~/dev main* ↑2  3 hours ago`. It uses the same local-host OSC 7 check as
 the status bar, falling back to `pane_current_path` and shortening the home
 directory to `~`. Nushell does not update its process cwd, so OSC 7 is needed
 to follow `cd`. There are no fills and no reverse video: focus is the border's
@@ -461,11 +422,10 @@ silently does nothing on others, which is the exact failure I1 exists to catch:
 correct on paper, silent in practice, invisible to anyone not sitting at the
 one terminal it was tried on.
 
-`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (jump) and
+`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (the grid) and
 `F6` (theme) in the row this config reserves for keys no program in a pane
-wants, and carries the same nesting escape they do —
-`bind -T jump F4 send-keys F4`, because a root binding is always taken by the
-outermost server.
+wants. A root binding is always taken by the outermost server, so a nested
+tmux never sees it.
 
 `C-b [` remains the entry that works on every terminal ever, and `copymode` is
 the same mode from a shell prompt.
@@ -689,12 +649,11 @@ the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to rig
 five-cell bar plus percent, and the default interface's download/upload in
 Mbit/s since the previous tick, every field fixed width so the chip and digits
 never shift; the **key-table chip**, which appears the
-instant `F5` arms the switcher and names the table (`jump`, or `jump-pane` when
-a digit has been pressed and the letter is still to come); and at the right the
-window digits.
+instant a table is pushed and names it (`pane-move` while a pane is carried);
+and at the right the window digits.
 
 Everything about a pane lives in **that pane's header** — plain text on its
-top border: the jump letter, the host (over ssh), the cwd, the **git segment**
+top border: the pane number, the host (over ssh), the cwd, the **git segment**
 (branch, `*` when dirty, `↑n`/`↓n` against the upstream, last-commit age), and
 a zoom or copy-mode flag.
 
@@ -714,10 +673,10 @@ a slow answer arrives late rather than freezing a redraw.
 
 The **key-table chip** is the awesome-tmux prefix-highlight idea rebuilt on the
 tables this config actually uses, there being no prefix key here to highlight —
-until it existed, nothing on screen said the switcher was armed. **Trap for
+until it existed, nothing on screen said a table was armed. **Trap for
 anyone re-measuring it:** a real keypress redraws the status, so the chip
 appears and clears instantly, but driving the same change from the CLI with
-`switch-client -T jump` does *not* mark the status dirty and the chip does not
+`switch-client -T pane-move` does *not* mark the status dirty and the chip does not
 appear until the next tick. That reads exactly like a broken format and is not
 one.
 

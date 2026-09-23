@@ -110,8 +110,8 @@
     },
     "tmux-window-indices-are-the-address-scheme": {
       "path": "knowledge/tmux-window-indices-are-the-address-scheme.md",
-      "description": "tmux window indices are the address scheme \u2014 renumber-windows off keeps a digit meaning the same window, and the key tables that ride on it",
-      "read_when": "touching tmux addressing, the F5 tables, or a digit binding",
+      "description": "tmux window indices are the address scheme \u2014 renumber-windows off keeps a digit meaning the same window, and the F5 grid that rides on it",
+      "read_when": "touching tmux addressing, the F5 grid, or a digit binding",
       "links": {}
     },
     "tv-needs-a-tty-and-the-unhijack-rides-every-call": {

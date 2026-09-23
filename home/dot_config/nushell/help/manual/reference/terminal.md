@@ -10,13 +10,14 @@ Every entry links to where the guide explains it.
 |---|---|---|---|
 | `q / :q / /exit` | Leave the shell | shell | [Move around windows and panes](../guide/windows.md#q-q-exit) |
 | `F1` | Open the cockpit: every surface action by mnemonic | terminal | [Move around windows and panes](../guide/windows.md#f1) |
-| `F5 <digit>` | Jump to a window by its number | terminal | [Move around windows and panes](../guide/windows.md#f5-digit) |
-| `F5 <letter>` | Jump to a pane by its letter | terminal | [Move around windows and panes](../guide/windows.md#f5-letter) |
+| `F5` | Open the grid of windows | terminal | [Move around windows and panes](../guide/windows.md#f5) |
+| `F5 <letter>` | Jump to a window by its tile | terminal | [Move around windows and panes](../guide/windows.md#f5-letter) |
+| `F5 <digit>` | Jump to a pane by its number | terminal | [Move around windows and panes](../guide/windows.md#f5-digit) |
 | `F5 <arrow>` | Walk between panes with the arrows | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
 | `F5 Shift+<arrow>` | Split the view in a direction | terminal | [Move around windows and panes](../guide/windows.md#f5-shift-arrow) |
 | `F5 Ctrl+<arrow>` | Move the pane you are in | terminal | [Move around windows and panes](../guide/windows.md#f5-ctrl-arrow) |
 | `F5 q` | Close the pane you are working in | terminal | [Move around windows and panes](../guide/windows.md#f5-q) |
-| `F5 F5` | Send F5 through to a nested session | terminal | [Move around windows and panes](../guide/windows.md#f5-f5) |
+| `F5 F5` | Open the cockpit from the grid | terminal | [Move around windows and panes](../guide/windows.md#f5-f5) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
 | `F4` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
