@@ -1,0 +1,44 @@
+#!/bin/bash
+# modal — a picker as a centred popup that opens already drawn: F3, F7, F8,
+# F9 and the cockpit's search, git and theme rows.
+#
+#   modal CLIENT ORIGIN_PANE DIR 'SHELL COMMAND'
+#
+# tmux paints a popup's box empty the moment it opens and the program's first
+# frame arrives later (~40 ms for tv-go on F8), and nothing holds a popup
+# back. So the command starts first, in a hidden session exactly the popup's
+# size; this waits until it holds a whole frame (non-blank, unchanged across
+# two polls), and only then opens the popup, which runs a nested `tmux attach`
+# to it: a client redraws a finished screen at once. When the command exits
+# the session ends, the nested client exits and the popup closes (-E).
+# The session has an empty key table and no prefix, so every key reaches the
+# picker. manual → internals/tmux.
+set -u
+client=$1 origin=$2 dir=$3 cmd=$4
+# TRAP: not `display -p -c CLIENT`: that expands client_* for another client.
+read -r cw ch < <(tmux list-clients -f "#{==:#{client_name},$client}" -F '#{client_width} #{client_height}')
+w=$((cw * 90 / 100)) h=$((ch * 85 / 100)) s="modal$$"
+# Its own server (-L modal, no config): a nested client of THIS server is
+# redrawn on every option change here (each header tick), clear first, and
+# the popup repaints mid-redraw: the top row blinked on every tick. tv-go
+# gets this server's $TMUX back, so it still acts on ORIGIN. Its client gets
+# no alternate screen and a `clear` that only homes the cursor: attach draws
+# its first frame over the snapshot below, which is that same frame, instead
+# of blanking the popup for one frame first.
+m="tmux -L modal -f /dev/null"
+$m new-session -d -s "$s" -x "$w" -y "$h" -c "$dir" \
+    "export TMUX='$TMUX' TV_ALL_ORIGIN='$origin'; $cmd" \; \
+    set -t "$s" status off \; set -t "$s" key-table none \; set -t "$s" prefix None \; \
+    set -s terminal-overrides '*:smcup@:rmcup@:clear=\E[H' || exit 1
+last=""
+# ponytail: 2 s bound on the wait; a picker slower than that is shown as-is.
+for _ in $(seq 200); do
+    now=$($m capture-pane -p -t "$s" 2>/dev/null) || exit 0
+    [ -n "$(printf '%s' "$now" | tr -d ' \n')" ] && [ "$now" = "$last" ] && break
+    last=$now
+    sleep 0.01
+done
+snap=$(mktemp)
+$m capture-pane -e -p -t "$s" | awk 'NR > 1 { printf "\r\n" } { printf "%s", $0 }' > "$snap"
+tmux display-popup -c "$client" -E -B -w "$w" -h "$h" -x C -y C \
+    "cat '$snap'; rm -f '$snap'; TMUX= exec $m attach -t '$s'"

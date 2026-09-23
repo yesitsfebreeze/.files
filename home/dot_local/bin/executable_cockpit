@@ -1,0 +1,86 @@
+#!/bin/bash
+# cockpit — F1's which-key: every surface action by mnemonic, laid out as
+# which-key.nvim. A popup the pickers' width, centred, its bottom edge on
+# theirs, holding the keys in columns: `k ➜ label`, the key's letter lit
+# inside its label where it occurs, actions before `+`groups, a `»`
+# breadcrumb on top and the help line last. A group's key redraws in place,
+# Backspace goes up, Escape closes, an action's key closes and runs it.
+#
+#   cockpit CLIENT PANE WIDTH HEIGHT     (F1)
+#   cockpit --pick TSV WIDTH OUT         (inside the popup; writes the path)
+#
+# cockpit.tsv: key path, icon, label, tmux command; no command is a group. A
+# command is expanded against the pane F1 was pressed in, so a row writes
+# `#{E:@cwd}` and `#{pane_id}` plainly. Only the open costs a frame (tmux
+# paints a popup's box before its program); every step after is one
+# synchronized redraw inside it. manual → internals/tmux, "F1 — the cockpit".
+set -u
+tsv=${XDG_CONFIG_HOME:-$HOME/.config}/tmux/cockpit.tsv
+
+# One frame for menu $1 of a popup $2 wide, all of it one synchronized write.
+frame() {
+    awk -F'\t' -v p="$1" -v w="$2" '
+    { k[NR] = $1; icon[$1] = $2; label[$1] = $3; cmd[$1] = $4 }
+    function rank(c) { return (cmd[c] == "" ? 2 : 0) + (substr(c, length(c)) ~ /[[:alnum:]]/ ? 0 : 1) }
+    # The first occurrence of the key in the label, any case, is lit.
+    function lit(key, t,   i) {
+        i = index(tolower(t), tolower(key))
+        return i ? substr(t, 1, i - 1) "\033[1;4;34m" substr(t, i, 1) "\033[22;24;39m" substr(t, i + 1) : t
+    }
+    END {
+        for (r = 0; r < 4; r++) for (i = 1; i <= NR; i++) {
+            c = k[i]
+            if (length(c) != length(p) + 1 || substr(c, 1, length(p)) != p || rank(c) != r) continue
+            n++; key[n] = substr(c, length(c)); plain[n] = (cmd[c] == "" ? "+" : "") label[c]
+            text[n] = "\033[1;34m" key[n] "\033[0m \033[90m➜\033[0m " icon[c] " " \
+                (cmd[c] == "" ? "\033[35m+" lit(key[n], label[c]) "\033[39m" : lit(key[n], label[c]))
+            if (length(plain[n]) > cw) cw = length(plain[n])
+        }
+        cw += 10; cols = int((w - 4) / cw); if (cols < 1) cols = 1
+        rows = int((n + cols - 1) / cols)
+        crumb = " \033[1mcockpit\033[0m"
+        for (q = 1; q <= length(p); q++) crumb = crumb " \033[90m»\033[0m " label[substr(p, 1, q)]
+        printf "\033[?2026h\033[?25l\033[H\033[2J%s\r\n\r\n", crumb
+        for (r = 1; r <= rows; r++) {
+            line = " "
+            for (col = 0; col < cols; col++) {
+                j = col * rows + r
+                if (j > n) break
+                line = line text[j] sprintf("%" (cw - length(plain[j]) - 6) "s", "")
+            }
+            printf "%s\r\n", line
+        }
+        printf "\r\n \033[90mesc close%s\033[0m\033[?2026l", (p == "" ? "" : " · bs back")
+    }' "$tsv"
+}
+
+if [ "${1-}" = --pick ]; then
+    tsv=$2 p=""
+    while :; do
+        frame "$p" "$3"
+        IFS= read -rsn1 c || exit 0
+        case $c in
+        $'\e') exit 0 ;;
+        $'\x7f' | $'\b') p=${p%?} ;;
+        *)  row=$(awk -F'\t' -v k="$p$c" '$1 == k { print ($4 == "" ? "g" : "a") }' "$tsv")
+            [ "$row" = g ] && p=$p$c
+            [ "$row" = a ] && { printf '%s' "$p$c" > "$4"; exit 0; } ;;
+        esac
+    done
+fi
+
+client=$1 pane=$2
+w=$(($3 * 90 / 100)) out=$(mktemp)
+# Tall enough for the largest menu: its rows, the breadcrumb, two blank lines,
+# the help line and the border.
+h=$(awk -F'\t' -v w="$w" '
+    { n[substr($1, 1, length($1) - 1)]++; if (length($3) + 11 > cw) cw = length($3) + 11 }
+    END { cols = int((w - 4) / cw); for (p in n) if ((r = int((n[p] + cols - 1) / cols)) > m) m = r; print m + 6 }' "$tsv")
+# A popup's -y is its bottom line; y is the pickers' (85% tall, centred).
+y=$((($4 - 1) / 2 + $4 * 85 / 100 / 2))
+tmux display-popup -c "$client" -E -b rounded -S fg=colour8 -w "$w" -h "$h" -x C -y "$y" \
+    "bash '$0' --pick '$tsv' $((w - 2)) '$out'"
+key=$(cat "$out"); rm -f "$out"
+[ -n "$key" ] || exit 0
+cmd=$(awk -F'\t' -v k="$key" '$1 == k { print $4 }' "$tsv")
+tmux if -F -t "$pane" 1 "$(tmux display -p -c "$client" -t "$pane" "$cmd")"

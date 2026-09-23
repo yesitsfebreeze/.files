@@ -125,6 +125,24 @@
       }
     },
     {
+      "id": "cockpit_whichkey",
+      "instructions": "F1 cockpit is laid out as which-key.nvim: multiple columns, `k ➜ icon label` with the key lit inside its label, actions before +groups, a » breadcrumb, the help line last, and group/Backspace keys move between menus.",
+      "require": {
+        "path": "checks.cockpit_whichkey.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "cockpit_wired",
+      "instructions": "F1 cockpit: tmux.conf parses and binds F1 to cockpit, every cockpit.tsv row is well-formed with an icon under a group, and every WezTerm action it sends is mapped in wezterm.lua.",
+      "require": {
+        "path": "checks.cockpit_wired.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
       "id": "fzf_confined",
       "instructions": "fzf is invoked only from tv-go; everywhere else television or telescope is the picker.",
       "require": {
@@ -138,6 +156,15 @@
       "instructions": "The greppable hard-won constraints hold: nushell use_kitty_protocol false, no lualine auto theme, LSP log level capped, no literal chezmoi source path, tmux sync feature on and terminal-features never appended.",
       "require": {
         "path": "checks.hard_constraints.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "leader_wired",
+      "instructions": "F1 leader (now the cockpit): tmux.conf parses, every cockpit.tsv row is well-formed under a group, and every WezTerm action it sends is mapped in wezterm.lua.",
+      "require": {
+        "path": "checks.leader_wired.exit",
         "op": "equals",
         "value": 0
       }
@@ -286,6 +313,15 @@
     },
     "behaviour": {
       "command": "python3 .orly/behaviour.py"
+    },
+    "cockpit_wired": {
+      "command": "bash .orly/invariants.sh cockpit_wired"
+    },
+    "cockpit_whichkey": {
+      "command": "bash .orly/invariants.sh cockpit_whichkey"
+    },
+    "leader_wired": {
+      "command": "bash .orly/invariants.sh cockpit_wired"
     }
   }
 }

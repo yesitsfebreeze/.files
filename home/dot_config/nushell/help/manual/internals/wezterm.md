@@ -107,10 +107,10 @@ config.adjust_window_size_when_changing_font_size = false
 By default WezTerm resizes the OS window to land on a whole number of cells; a fullscreen window cannot grow, so it leaves a large gap instead and appears to change size. Off = the window stays put and the grid reflows.
 
 ```
-config.native_macos_fullscreen_mode = false  -- plus a window-config-reloaded handler
+config.native_macos_fullscreen_mode = false  -- plus a window-resized handler
 ```
 
-Every window goes fullscreen once, when it is created (the handler remembers window ids in `wezterm.GLOBAL`, so a config reload, such as a font pick, never toggles it back). Non-native because macOS's native fullscreen gives each window its own Space: switching windows or monitors then animates a Space change and re-lays the grid mid-slide. Non-native just fills whichever screen the window is on. Moving between the Retina panel (144 dpi) and the QHD monitor (72 dpi) still re-rasterizes the font; that is the dpi change, not the window, and pinning `dpi` would render text at the wrong size on one of them. `Alt+Enter` still toggles fullscreen.
+Every window is fullscreen, always: on creation, on every config reload and on every resize, `fill` re-fills a window that is not fullscreen or whose pixel size matches no screen in `wezterm.gui.screens()`. The second case is the real one: a display change (resolution switch, screen arrangement) can shove a non-native fullscreen frame half off-screen while WezTerm still reports it fullscreen, and tmux's bottom bar vanishes with it. Toggling off re-fires the resize, which toggles back on against the current screen; a 2 s per-window throttle stops a screen that never matches from toggling forever. There is no fullscreen toggle key — it would be undone on the next resize. Non-native because macOS's native fullscreen gives each window its own Space: switching windows or monitors then animates a Space change and re-lays the grid mid-slide. Non-native just fills whichever screen the window is on. Moving between the Retina panel (144 dpi) and the QHD monitor (72 dpi) still re-rasterizes the font; that is the dpi change, not the window, and pinning `dpi` would render text at the wrong size on one of them.
 
 ```
 config.front_end = "OpenGL"
@@ -134,13 +134,9 @@ config.disable_default_key_bindings = true
 
 What is left is local chrome and nothing else: the capsule wrappers, paste, and the copy-or-interrupt Ctrl+C. Mouse selection is deliberately still WezTerm's (tmux's `mouse` option stays off), which is what keeps that last binding meaningful. WezTerm's DEFAULT bindings are switched off, and that is the load-bearing half of this section. `show-keys` on a stock config lists ActivateTab, ActivateTabRelative and SplitVertical/Horizontal — a full second set of window and pane keys, shipped, that no line of this file ever wrote. Left on, the epic's invariant ("WezTerm binds nothing that addresses a tab or a pane") would be false out of the box and untestable, because the bindings that break it are not in the file you would read to check.
 
-Everything genuinely local is re-added below by hand: fullscreen, font size, the macOS clipboard keys and quit. Deleting a default is cheap; discovering one silently shadowing a tmux key is not.
+Everything genuinely local is re-added below by hand: font size, the macOS clipboard keys and quit. Deleting a default is cheap; discovering one silently shadowing a tmux key is not.
 
-```
-{ key = "Enter", mods = "ALT", action = act.ToggleFullScreen },
-```
-
-── the defaults worth keeping, re-added by hand ──────────────────────── Fullscreen, font size and the macOS clipboard keys: all four are about this window on this desk, and none of them addresses a tab or a pane.
+── the defaults worth keeping, re-added by hand ──────────────────────── Font size and the macOS clipboard keys: all of them are about this window on this desk, and none of them addresses a tab or a pane.
 
 ```
 { key = "q", mods = "SUPER", action = act.QuitApplication },

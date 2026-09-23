@@ -8,8 +8,8 @@
 #   tv-go act theme   (F9) skip the channel step
 #   tv-go find QUERY  (F3) F8 with QUERY already typed into the row list
 #
-# The pane is TV_ALL_ORIGIN, named by the binding because a popup has no
-# position of its own. manual → internals/tmux, "F8 / F7".
+# The pane is TV_ALL_ORIGIN, named by the binding: tv-go runs in its own
+# window (`modal`), not the pane it acts on. manual → internals/tmux, "F8 / F7".
 #
 # fzf, not tv, for the two steps tv 0.15.9 cannot do: accept the channel the
 # moment typing leaves one (`one:accept`; tv's --select-1 only checks at
@@ -24,7 +24,7 @@
 # scrolled past used to paint.
 #
 # TRAP: no `2>/dev/null` on a tv call — with stdout captured, tv draws the
-# whole UI on stderr, and silencing it blanks the popup.
+# whole UI on stderr, and silencing it blanks the picker.
 set -u
 ORIGIN=${TV_ALL_ORIGIN:-}
 mode=${1:-act} ch=${2:-} q=""
@@ -49,7 +49,7 @@ case $ch in
 theme) row=$("$LOOKS" --list | look theme "$LOOKS") ;;
 font)  row=$("$FONT" --list | look font "$FONT") ;;
 # Enter returns the row: several channels bind it to an action of their own
-# (text opens nvim, git-stash applies), which would run inside the popup.
+# (text opens nvim, git-stash applies), which would run inside the picker.
 *)     row=$(tv "$ch" --no-remote --keybindings 'enter="confirm_selection"' \
            ${q:+--input "$q"} | head -1) ;;
 esac
@@ -74,7 +74,7 @@ _q() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
 # shellcheck disable=SC2088  # a literal "~/" from a row
 case $row in "~/"*) row="$HOME/${row#\~/}" ;; esac
 
-# TRAP: a full window refuses a split, and the popup has already closed —
+# TRAP: a full window refuses a split, and the picker window has closed —
 # fall back to a new window or the key reads as doing nothing.
 split() {
     _d=$1; shift

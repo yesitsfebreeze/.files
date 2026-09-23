@@ -62,6 +62,15 @@
     },
     "behaviour": {
       "command": "python3 .orly/behaviour.py"
+    },
+    "cockpit_wired": {
+      "command": "bash .orly/invariants.sh cockpit_wired"
+    },
+    "cockpit_whichkey": {
+      "command": "bash .orly/invariants.sh cockpit_whichkey"
+    },
+    "leader_wired": {
+      "command": "bash .orly/invariants.sh cockpit_wired"
     }
   }
 }

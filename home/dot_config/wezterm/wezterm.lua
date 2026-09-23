@@ -30,7 +30,17 @@ local family = picked and picked:read("l") or ""
 if picked then
 	picked:close()
 end
-wezterm.on("user-var-changed", function(window, _, name, value)
+-- The F1 cockpit's `wezterm` group (cockpit.tsv) names one of these actions.
+local cockpit = {
+	window = act.SpawnWindow,
+	bigger = act.IncreaseFontSize,
+	smaller = act.DecreaseFontSize,
+	reset = act.ResetFontSize,
+}
+wezterm.on("user-var-changed", function(window, pane, name, value)
+	if name == "wez" and cockpit[value] then
+		return window:perform_action(cockpit[value], pane)
+	end
 	if name ~= "font" then
 		return
 	end
@@ -51,21 +61,36 @@ config.font_size = 14.0
 config.line_height = 1.0
 config.font_dirs = { home .. "/Library/Fonts" }
 
--- Every window is fullscreen from birth, and non-native: macOS's native mode
+-- Every window is fullscreen, always, and non-native: macOS's native mode
 -- gives each window its own Space, so switching windows or monitors animates
 -- a Space change and re-lays the grid mid-slide. Non-native just fills the
--- screen the window is on. Alt+Enter still toggles it.
+-- screen the window is on — but a display change (resolution, arrangement)
+-- can shove that frame half off-screen while the state still says
+-- fullscreen, hiding tmux's bottom bar. So every resize re-checks: a window
+-- that is not fullscreen, or whose size matches no screen, is re-filled.
+-- The 2 s throttle stops a screen that never matches from toggling forever.
 config.native_macos_fullscreen_mode = false
-wezterm.on("window-config-reloaded", function(window)
-	if wezterm.GLOBAL.fullscreened == nil then
-		wezterm.GLOBAL.fullscreened = {}
+local function fill(window)
+	local d = window:get_dimensions()
+	if not d.is_full_screen then
+		return window:toggle_fullscreen()
 	end
-	local id = tostring(window:window_id())
-	if not wezterm.GLOBAL.fullscreened[id] then
-		wezterm.GLOBAL.fullscreened[id] = true
-		window:toggle_fullscreen()
+	for _, s in pairs(wezterm.gui.screens().by_name) do
+		if s.width == d.pixel_width and s.height == d.pixel_height then
+			return
+		end
 	end
-end)
+	local refit = wezterm.GLOBAL.refit or {}
+	local id, now = tostring(window:window_id()), os.time()
+	if now - (refit[id] or 0) < 2 then
+		return
+	end
+	refit[id] = now
+	wezterm.GLOBAL.refit = refit
+	window:toggle_fullscreen()
+end
+wezterm.on("window-config-reloaded", fill)
+wezterm.on("window-resized", fill)
 
 config.window_decorations = "RESIZE"
 config.default_cursor_style = "BlinkingBlock"
@@ -83,7 +108,6 @@ config.enable_kitty_keyboard = false
 config.disable_default_key_bindings = true
 
 config.keys = {
-	{ key = "Enter", mods = "ALT", action = act.ToggleFullScreen },
 	{ key = "=", mods = "SUPER", action = act.IncreaseFontSize },
 	{ key = "-", mods = "SUPER", action = act.DecreaseFontSize },
 	{ key = "0", mods = "SUPER", action = act.ResetFontSize },

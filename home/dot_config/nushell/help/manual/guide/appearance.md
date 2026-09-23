@@ -41,7 +41,7 @@ See also: [`theme`](./appearance.md#theme) · [`F5 F5`](./windows.md#f5-f5)
 
 *terminal*
 
-Press `F9` in any pane — a shell, an editor, an agent — and the scheme picker opens over it. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F6` switches to, stays as it was.
+Press `F9` in any pane — a shell, an editor, an agent — and the scheme picker floats over it in a centred box. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F6` switches to, stays as it was.
 
 > **Why it is this way**
 >

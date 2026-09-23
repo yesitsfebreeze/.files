@@ -55,6 +55,13 @@ header repaints (a `#(tmux-git)` tick, a Claude state report). The four client
 features sit in two indexed entries, `terminal-features[3]` and `[4]`: `set -a`
 appended them again on every reload, and the list had reached 76 entries.
 
+An open popup is repainted on every option change (tmux 3.7c; tmux PR
+#5398). Without `sync` that repaint is visible, and a tmux-drawn popup border
+flickers on each header tick. The picker popups are `-B`: the program inside
+draws its own frame, in one write with its content; a picker opens through
+`modal` (see "Pickers: shown once drawn"). The orly check
+`no_flicker` attaches a real client and fails without `sync`.
+
 tmux-claude-state only repaints on a change: setting a pane option redraws
 every header and the bar on every client, so a repeated report is skipped
 inside the same single `tmux if -F` call.
@@ -63,7 +70,8 @@ TRAP: features are resolved **once, at client attach**. `tmux source-file`
 updates the `terminal-features` option (visible in `tmux show -s`) but an
 already-attached client keeps the set it was attached with — reloading is not
 enough, the client must detach and come back. Check the live value with
-`tmux display -p '#{client_termfeatures}'`; `hyperlinks` has to be in it.
+`tmux display -p '#{client_termfeatures}'`; `hyperlinks` and `sync` have to
+be in it. The chezmoi reload hook names every client missing `sync`.
 
 ### `escape-time 10`
 
@@ -148,7 +156,7 @@ empty, which keeps the old behaviour for a bare `nu` (the no-tmux fallback in
 
 `#{E:@cwd}` — set at the top of `tmux.conf` — is the pane's real working
 directory, and the only thing a gesture meaning "here" may use: the split
-binds, the F3/F8 popups' `-d`, the status bar.
+binds, the F3/F8 pickers' `-c`, the status bar.
 
 **TRAP: `#{pane_current_path}` is not where the pane is.** It is the pane
 process's OS cwd, and nushell never changes it — `cd` moves `$env.PWD` and
@@ -349,6 +357,73 @@ and both are `$HOME`-relative, so they are inert where they do not exist. Do
 **not** drop the prefix on the grounds that `nu` resolves without it: the
 toggle would then fail one layer deeper, on `tinty`, where the cause is far
 harder to see than a missing shell.
+
+## F1 — the cockpit
+
+`F1` opens the cockpit, laid out as [which-key.nvim]: a popup the pickers'
+width, centred, its bottom edge on theirs, listing the keys in columns as
+`k ➜ icon label`. The key's letter is lit inside its label where it occurs
+(`c ➜ copy mode`), actions come before `+`groups, a `»` breadcrumb names the
+group you are in, and the help line is last. `~/.local/bin/cockpit` reads
+`cockpit.tsv` (key path, icon, label, tmux command; a row with no command is a
+group). A group's key redraws in place, `Backspace` goes up, `Escape` closes,
+an action's key closes the popup and runs its command. The chezmoi reload
+hook re-sources tmux.conf when either file changes.
+
+**One frame on open, none after.** A popup is a process, so tmux paints its
+box before the program's first frame; a native `display-menu` would avoid
+that, but a menu is one column with the key pushed to the far right, and the
+columns are the point. Every step after the open is one synchronized redraw
+inside the same process, so a group or `Backspace` never shows the panes.
+
+- The popup blocks until closed; `cockpit` then expands the row's command
+  against the pane F1 was pressed in (`display -p -c CLIENT -t PANE`) and runs
+  it there (`if -F -t PANE 1 …`), so a row writes `#{E:@cwd}` and
+  `#{pane_id}` plainly, and a row may open a picker popup (the cockpit has
+  closed by then).
+- bash 3.2 `read` has no fractional timeout, so any escape sequence closes:
+  `Escape`, an arrow, `F1` again.
+- The `u` group writes OSC 1337 `SetUserVar=wez=<base64 name>` with
+  `run-shell … > #{client_tty}`, straight to the client's own terminal (no
+  passthrough); wezterm.lua's `user-var-changed` maps the name to an action.
+- orly checks: `cockpit_wired` — tmux.conf parses and binds F1 to cockpit,
+  every row has four fields, an icon and a group, every `wez` name is mapped.
+  `cockpit_whichkey` — the drawn frames have columns, lit keys, actions before
+  groups, the breadcrumb and the help line, and group/`Backspace` move.
+  `no_flicker` — on a real client, F1, a group key and `Backspace` each keep
+  the whole border in every synchronized frame.
+
+[which-key.nvim]: https://github.com/folke/which-key.nvim
+
+## Pickers: shown once drawn
+
+F3, F7, F8, F9 and the cockpit's picker rows run tv-go through
+`~/.local/bin/modal CLIENT ORIGIN DIR 'CMD'`: a centred popup, 90% × 85%,
+that opens already drawn. tmux paints a popup's box empty the moment it opens
+and cannot hold it back ([tmux #2801]); measured on F8, the empty box stood
+from 12 ms to 53 ms, while fzf started. So `modal` starts the command first,
+in a session exactly the popup's size, polls `capture-pane` until it holds a
+whole frame (non-blank, unchanged across two 10 ms polls, 2 s bound), prints
+that snapshot into the popup and only then runs a nested `tmux attach` to the
+session, which draws its first frame over an identical one.
+
+- TRAP: the session lives on its **own server**, `tmux -L modal -f
+  /dev/null`. A nested client of the main server is redrawn — clear first —
+  on every option change there (each header tick), and the popup repaints
+  mid-redraw: its top row blinked on every tick. tv-go gets the main
+  server's `$TMUX` back, so it still acts on `TV_ALL_ORIGIN` by pane id.
+- TRAP: that server's clients get `smcup@:rmcup@:clear=\E[H` — no alternate
+  screen, and a clear that only homes the cursor. Either one blanked the
+  snapshot for one frame as the nested client attached.
+- The session has no status line, no prefix and an empty key table, so every
+  key reaches the picker; when tv-go exits the session, the nested client and
+  the popup (`-E`) all end.
+- The status bar must stay at the bottom — see "The status bar".
+- orly check `no_flicker` (`.orly/modal-frames.py`): at 168×54, with the pane
+  behind printing every 50 ms and a pane option changing every 250 ms, every
+  synchronized frame after F8 holds the popup's corners.
+
+[tmux #2801]: https://github.com/tmux/tmux/issues/2801
 
 ## Copy mode
 
@@ -601,8 +676,16 @@ The active label's colours live in a style *option*, not inline in the format,
 because a later `source-file` can replace a style option and cannot replace a
 format's embedded `#[…]`.
 
-The bar is **one row at the top** and holds only what is true of the whole
-session. Left to right: the clock; **`tmux-sys`** — CPU and memory as a
+The bar is **one row at the bottom** and holds only what is true of the whole
+session.
+
+TRAP: it cannot go back to the top on 3.7c. `screen_redraw_draw_pane` works
+out a line's tty row (`py = woy + wy`) and then asks whether an overlay covers
+it with the *window* row `wy`. With the bar on top `woy` is 1, so the check is
+one row off and a popup's or menu's **first row** is repainted by every pane
+redraw — the modal's top border blinked on each header tick, broken in 87 of
+~155 frames with F8 open at 168×54, and whole in every frame after opening with
+the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the clock; **`tmux-sys`** — CPU and memory as a
 five-cell bar plus percent, and the default interface's download/upload in
 Mbit/s since the previous tick, every field fixed width so the chip and digits
 never shift; the **key-table chip**, which appears the

@@ -6,6 +6,20 @@
 
 There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see.
 
+## `F1`
+
+**Open the cockpit: every surface action by mnemonic**
+
+*terminal*
+
+Press `F1` in any pane — a shell, the editor, an agent — and the cockpit opens: every key in columns, `k ➜ label`, the key's letter lit inside its label, a `+` marking a group. At the top level: `s` search, `g` git, `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config. A group key shows that group in place, so `F1 s f` picks a file, `F1 s g` greps, `F1 g l` walks the git log, `F1 p l` splits right, `F1 t t` flips dark/light, `F1 u +` makes the font bigger. `Backspace` returns to the top; `Escape` closes it.
+
+> **Why it is this way**
+>
+> Laid out as which-key.nvim so the whole surface reads at a glance, and it is plain tmux, so it works on a bare tmux over ssh; only the `u` group needs WezTerm. The keys are data, one row each in `~/.config/tmux/cockpit.tsv`, so adding one is adding a line. Search and git rows open the same pickers as `F8` with the channel step skipped. WezTerm has no command channel of its own, so its rows write an OSC 1337 user variable to the terminal and wezterm.lua runs the named action.
+
+See also: [`F8`](./files.md#f8) · [`F5 <digit>`](./windows.md#f5-digit) · [`F6`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
+
 ## `F5 <digit>`
 
 **Jump to a window by its number**

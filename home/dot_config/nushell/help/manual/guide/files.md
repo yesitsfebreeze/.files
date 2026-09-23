@@ -16,7 +16,7 @@ Press `F3` in any pane — a shell, an editor, a running agent — and a one-lin
 
 > **Why it is this way**
 >
-> It is `F8` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. The popup is drawn with `-B` because television draws its own frame and a tmux border one cell outside it tears on every redraw.
+> It is `F8` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. A bare tmux popup is painted as an empty box before television draws, a visible flash, so `modal` starts the picker in a hidden session first and opens the popup only once the picker has drawn.
 
 See also: [`F8`](./files.md#f8) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)
 
@@ -40,7 +40,7 @@ See also: [`F3`](./files.md#f3) · [`tv channel`](./files.md#tv-channel)
 
 *terminal*
 
-Press `F8` in any pane and a list of channels opens over it. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane.
+Press `F8` in any pane and a list of channels floats over it in a centred box, already drawn when it appears. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane.
 
 > **Why it is this way**
 >

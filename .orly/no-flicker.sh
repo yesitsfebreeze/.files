@@ -4,6 +4,10 @@
 # paints once. tv-go runs under a temp HOME whose theme.sh logs each preview
 # that is not cancelled, then hands off to the real one.
 # Prints `mid_scroll_paints=N settled_paints=N`.
+#
+#
+# First: a fresh client gets `sync`, and F1's menus land whole (modal-frames.py).
+python3 .orly/modal-frames.py || exit 1
 tmp=$(mktemp -d); run="flick$$"; log="$tmp/log"
 mkdir -p "$tmp/.config/tinted-theming/tinty"
 cat > "$tmp/.config/tinted-theming/tinty/theme.sh" <<SH

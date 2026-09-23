@@ -9,6 +9,7 @@ Every entry links to where the guide explains it.
 | | what it does | where | guide |
 |---|---|---|---|
 | `q / :q / /exit` | Leave the shell | shell | [Move around windows and panes](../guide/windows.md#q-q-exit) |
+| `F1` | Open the cockpit: every surface action by mnemonic | terminal | [Move around windows and panes](../guide/windows.md#f1) |
 | `F5 <digit>` | Jump to a window by its number | terminal | [Move around windows and panes](../guide/windows.md#f5-digit) |
 | `F5 <letter>` | Jump to a pane by its letter | terminal | [Move around windows and panes](../guide/windows.md#f5-letter) |
 | `F5 <arrow>` | Walk between panes with the arrows | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
