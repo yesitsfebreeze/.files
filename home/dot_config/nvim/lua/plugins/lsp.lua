@@ -22,6 +22,13 @@ return {
         capabilities = require("blink.cmp").get_lsp_capabilities(),
       })
 
+      -- Its own target directory, deliberately: with the default, the editor's
+      -- cargo check takes the same lock every terminal build in the tree is
+      -- waiting on, and one open buffer stalls every other session's build.
+      vim.lsp.config("rust_analyzer", {
+        settings = { ["rust-analyzer"] = { cargo = { targetDir = true } } },
+      })
+
       vim.lsp.config("lua_ls", {
         settings = {
           Lua = {

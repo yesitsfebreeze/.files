@@ -56,29 +56,51 @@
         step: 1
         mode: "terminal"
         also: ["F5 <letter>", "F5 <arrow>", "F5 q", "F5 F5"]
-        why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. Whether the switcher stays on is read from the window AFTER the jump rather than before it: a pushed table is one-shot, so a binding that does not re-arm is what ends the mode, and the digit is the only key that re-arms — into a second table holding the nine pane letters and Escape and nothing else. `q` is deliberately absent from that second table: after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. A key with no binding in the pushed table is looked up once more in root and dropped if it misses, so the keystroke that ends the wait is swallowed, not typed. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you."
+        why: "A digit is always a valid address, and that is the whole design. tmux window indices do not renumber, so killing window 4 leaves a hole — the digit creates the window rather than doing nothing, which is why nothing has to be kept resident to hold the address open. Whether the switcher stays on is read from the window AFTER the jump rather than before it: a pushed table is one-shot, so a binding that does not re-arm is what ends the mode, and the digit re-arms into a second table holding the nine pane letters and Escape and nothing else. `q` is deliberately absent from that second table: after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. A key with no binding in the pushed table is looked up once more in root and dropped if it misses, so the keystroke that ends the wait is swallowed, not typed. A lazily created window starts at `~` and NOT at the current directory — that disagrees with a split on purpose: a digit is a clean slate, a split is a division of the work in front of you."
     }
     {
         key: "F5 <letter>"
         title: "Jump to a pane by its letter"
-        use: "Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane carries its letter in a video-inverse chip at the left edge of the border above it, so the label you are reading is the key you press. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane."
+        use: "Press `F5` to enter the switcher, let go, then `a` to `i`: focus moves to that pane and the switcher is done — two keys, and the next thing you type goes to the pane. Every pane shows its uppercase jump letter and directory above it, for example `A ~/dev`, with one space on each side of the letter. Inactive titles use normal text colour throughout, with a dim background behind the directory. The active pane reverses the letter, its two spaces, and the directory bar. The straight borders stay bright and pane contents keep their full colour regardless of focus. Press the matching lowercase letter. The same nine letters finish a `F5 <digit>` jump when the window you land on has more than one pane."
         topic: "terminal"
         task: "windows"
         step: 2
         mode: "terminal"
         also: ["F5 <digit>", "F5 <arrow>", "F5 q", "the status bar"]
-        why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The chip rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The chip is shown whenever the window has more than one pane, not only while the switcher is armed — the letter is a property of the pane, not of the mode."
+        why: "The letters address the pane INDEX, and tmux renumbers panes when one is killed — so a letter does not keep its pane for life. The border letter is derived from the same index the key uses (`chr(64 + index)`, pane 1 reads `A`), so it is right the instant after a renumber rather than describing where a pane used to be. Uppercase is display only — you press the lowercase key. The label rides the pane border rather than a centred overlay because stock tmux cannot paint custom text over a pane: display-panes draws only the index, and popups are one per client and eat every key while up (a binary patch was tried for the centred overlay and retired). The label is always shown, including in a single-pane window and while the switcher is idle. The directory follows the pane’s OSC 7 report, with the process directory as fallback."
     }
     {
         key: "F5 <arrow>"
-        title: "Split the view in a direction"
-        use: "Press `F5`, let go, then an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the switcher is done — the cursor is in the new pane and typing goes there. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. A second split is a second `F5`."
+        title: "Walk between panes with the arrows"
+        use: "Press `F5`, let go, then an arrow: focus moves to the pane on that side. The switcher stays on, so more arrows keep walking — `F5 Right Right Down` is one trip. `Escape` ends it, as does any key the switcher does not know, which is swallowed rather than typed."
         topic: "terminal"
         task: "windows"
         step: 3
         mode: "terminal"
-        also: ["F5 <letter>", "F5 <digit>", "F5 q"]
-        why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The arrows, digits and letters share one table — one `F5` arms all three — so there is no second key to remember. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: that is the pane process's OS cwd, and nushell's `cd` never changes it, so until 2026-09-01 a split opened in the directory the pane was LAUNCHED in. `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
+        also: ["F5 Shift+<arrow>", "F5 Ctrl+<arrow>", "F5 <letter>"]
+        why: "A letter is an address and an arrow is a direction: the letter wins when you can read the pane you want, the arrow when you only know it is over there. The arrows re-arm the switcher because walking is repeated by nature, where a letter lands you exactly and is done. Walking off the edge wraps to the far side, which is tmux's own rule for a pane on that side."
+    }
+    {
+        key: "F5 Shift+<arrow>"
+        title: "Split the view in a direction"
+        use: "Press `F5`, let go, then Shift and an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the switcher is done — the cursor is in the new pane and typing goes there. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it. A second split is a second `F5`."
+        topic: "terminal"
+        task: "windows"
+        step: 3
+        mode: "terminal"
+        also: ["F5 <arrow>", "F5 Ctrl+<arrow>", "F5 q"]
+        why: "A split inherits the current directory because you are dividing the work in front of you; a lazily created window starts at `~` because a digit is a clean slate. The two gestures disagree on purpose. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: that is the pane process's OS cwd, and nushell's `cd` never changes it. `osc133` stays OFF for an unrelated and expensive reason: double-marking left phantom prompt lines."
+    }
+    {
+        key: "F5 Ctrl+<arrow>"
+        title: "Move the pane you are in"
+        use: "Press `F5`, let go, then Ctrl and an arrow: the pane you are in trades places with its neighbour on that side, and you stay in it. You are now carrying it: every further arrow, with or without Ctrl, swaps it one more step that way. `Enter` or `Escape` puts it down. Its letter changes with its place, because the letter is the position."
+        topic: "terminal"
+        task: "windows"
+        step: 3
+        mode: "terminal"
+        also: ["F5 <arrow>", "F5 Shift+<arrow>", "F5 <letter>"]
+        why: "It is a swap, not a re-layout: the two panes trade slots and every size stays put. Carrying is its own key table, `pane-move`, so the plain arrows there mean swap rather than walk. Focus follows the pane rather than the slot because the pane is what you were moving. macOS claims `Ctrl+<arrow>` for Spaces and Mission Control by default, so those shortcuts must be off in System Settings → Keyboard → Keyboard Shortcuts → Mission Control or the key never reaches the terminal."
     }
     {
         key: "F5 q"
@@ -88,7 +110,7 @@
         task: "windows"
         step: 4
         mode: "terminal"
-        also: ["F5 <arrow>", "F5 <letter>", "F5 <digit>"]
+        also: ["F5 Shift+<arrow>", "F5 <letter>", "F5 <digit>"]
         why: "It lives in the switcher's first table and NOT in the pane-letter table a digit arms, which is the whole guard. Pressing `F5` is deliberate, so a `q` straight after it is deliberate too; after a digit you are about to type into the window you just landed on, and a `q` there is the first letter of a word. There is no confirmation prompt because a confirmation is a second gesture on a key whose point is being one, and because tmux keeps nothing to restore a killed pane from — the choice of table is the guard, and it is the only one."
     }
     {

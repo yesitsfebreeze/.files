@@ -27,6 +27,7 @@ skip = [
 [models.routing]
 local_last = true
 local_providers = ["ollama"]
+prefer = ["ollama"]
 max_attempts = 6
 first_output_timeout_secs = 45
 request_timeout_secs = 180
@@ -292,7 +293,7 @@ maxTokens = 16384
 
 [models.agents.launch.dsh.profile.write.yaml.agent-default-model]
 provider = "kern"
-model = "{model}"
+model = "{canonical_model}"
 
 [[models.agents.launch.dsh.profile.write]]
 file = "cordis.patch.yml"

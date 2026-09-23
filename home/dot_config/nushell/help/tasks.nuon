@@ -40,7 +40,7 @@
     {
         id: "windows"
         title: "Move around windows and panes"
-        summary: "tmux owns all of it: nine windows by digit, panes by letter, splits by arrow."
+        summary: "tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift+arrow, moves by Ctrl+arrow."
         intro: "There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see."
     }
     {

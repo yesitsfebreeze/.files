@@ -42,7 +42,7 @@ PATH seeding, macOS only (R2, R3). default_prog above is spawned by WezTerm itse
 
 Four DIRECTORIES, fixed, not a list computed from the installed package set: it seeds directories, so adding a package to the provisioning set needs no change here. Not seeded on Linux -- this is a macOS-host-only configuration and nu is on PATH there already.
 
-Getting the binary spawned is all this does; env.nu owns PATH inside the shell, and it wins by construction (R5). env.nu `prepend`s ~/.cargo/bin and ~/.local/bin, `append`s the Homebrew and system dirs and `uniq`s, so the duplicates this prefix creates collapse and the shell's resolution order is env.nu's under either launch shape. Measured both ways on 0.114.1: the repaired PATH is .cargo/bin:.local/bin:/opt/homebrew/bin:... whether the launch PATH was this prefix or a terminal's inherited one.
+Getting the binary spawned is all this does; env.nu owns PATH inside the shell, and it wins by construction (R5). env.nu `prepend`s ~/.cargo/bin, ~/.opencode/bin and ~/.local/bin, `append`s the Homebrew and system dirs and `uniq`s, so the duplicates this prefix creates collapse and the shell's resolution order is env.nu's under either launch shape. Measured both ways on 0.114.1: the repaired PATH is .cargo/bin:.local/bin:/opt/homebrew/bin:... whether the launch PATH was this prefix or a terminal's inherited one.
 
 ```
 local TAB_BAR_RESERVE = 0

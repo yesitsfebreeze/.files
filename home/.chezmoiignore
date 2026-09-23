@@ -17,3 +17,6 @@ README.md
 # repo's .gitignore drops it.
 .DS_Store
 **/.DS_Store
+
+# Python bytecode next to a script is a cache, not configuration.
+**/__pycache__

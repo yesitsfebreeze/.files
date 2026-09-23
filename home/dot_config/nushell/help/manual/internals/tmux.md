@@ -87,7 +87,7 @@ are both 1 and the key matches the label.
 
 ## Where a new window starts
 
-A lazily created window starts at `~`, deliberately **not** the `F5 <arrow>`
+A lazily created window starts at `~`, deliberately **not** the `F5 Shift+<arrow>`
 split's rule, which inherits the active pane's cwd. The two gestures disagree
 on purpose: a split divides *this* work, a digit is a clean slate.
 
@@ -223,10 +223,16 @@ bindings that deliberately push it again.
 
 A binding that does **not** end with a `switch-client -T` therefore *ends* the
 mode. That is the whole of the gesture rule and it needed no extra machinery:
-a letter, an arrow and `q` re-arm nothing and are complete on their own, so
-`F5 b` is two keystrokes and you are typing again.
+a letter, a Shift+arrow split and `q` re-arm nothing and are complete on their
+own, so `F5 b` is two keystrokes and you are typing again.
 
-The digit is the one exception, and it decides **after** the jump rather than
+A plain arrow (walk to the neighbour) ends in `switch-client -T jump`, because
+walking is repeated: `F5 Right Right` is one trip. A Ctrl+arrow (swap with the
+neighbour) pushes a third table, `pane-move`, where every arrow swaps again and
+only `Enter` or `Escape` pops back to `root`. The swap takes `-d`, since without it focus stays on the slot and lands
+on the neighbour that just moved in.
+
+The digit re-arms conditionally, and it decides **after** the jump rather than
 before it:
 
 ```
@@ -252,7 +258,7 @@ duplication is cheaper than the hazard.
 Measured 2026-09-01 by attaching the session from a pane of a second tmux
 server and reading `#{client_key_table}` after each key: `F5`→`jump`,
 digit onto a one-pane window→`root`, digit onto a two-pane window→`jump-pane`,
-letter→`root`, arrow→`root`, `q`→`root` with the pane gone. `F5` then `z` put
+letter→`root`, arrow→`root` (then a split; walking re-arms since), `q`→`root` with the pane gone. `F5` then `z` put
 no byte on the pane's pty, which is the drop above, measured rather than read.
 
 ### The delimiter must not be a glob metacharacter
@@ -275,51 +281,39 @@ true for `nushell` when asked about `nu`.
 
 `if-shell -F` tests a *format*, so no `/bin/sh` is spawned per keypress.
 
-### The seams are empty
+### Pane borders
 
-`pane-border-lines` is **`spaces`**: every border cell is a space, so a seam
-reads as background and the only mark on it is the pane's letter chip.
-
-A dot at the junctions and nothing elsewhere — the shape people ask for when
-they want borderless panes that still show where three panes meet — is **not
-expressible**, and this is the measurement rather than an opinion. The glyphs
-are compiled-in tables in `tmux.h` (`CELL_BORDERS " xqlkmjwvtun~"`,
-`SIMPLE_BORDERS " |-+++++++++."`) selected by a six-value enum;
-`pane-border-lines` picks a *table* and no option anywhere names a border
-character. One table and one style cover **every** border cell, joins included,
-so blanking the runs blanks `├` and `┼` with them. Measured 2026-09-01 on
-**tmux 3.7c** against a three-pane layout: under `single` the T printed at
-column 50, under `spaces` that same cell came back a space. The five values in
-the manpage are the whole set — the `padded` and `none` strings in the binary
-belong to `popup-border-lines` and are rejected here.
-
-A ~40-line patch adding a `dots` value does work; it was built and run, drawing
-a single `●` on the five join cells and nothing on a two-pane seam. It was
-**declined** — this environment runs a stock tmux, and a patched binary was
-already retired once for the F5 overlay.
+`pane-border-lines single` uses tmux's default straight separators.
+`pane-border-status top` shows a label above every pane, including a window
+with only one pane. Stock tmux 3.7c rejects `rounded` for pane borders;
+rounded corners are available for popups only.
 
 ### Pane letters are only honest with the border
 
 tmux **renumbers panes** when one is killed, so a letter does not keep its pane
-for life. The status bar's `pane-border-format` prints the letter derived from
-the *same index the key uses*, so it is right the instant after a renumber
-rather than describing where the pane used to be. The key binding and the
-border are one design, not two features.
+for life. `pane-border-format` derives the uppercase letter from the same
+index the jump key uses: `#{a:N}` converts a character code and
+`#{e|+|:64,#{pane_index}}` makes pane 1 read `A`, pane 9 `I`.
+The bindings remain lowercase: `F5 a` selects pane A.
 
-`#{a:N}` is the character with numeric value N and `#{e|+|:96,N}` is integer
-addition, so pane 1 reads `a` and pane 9 reads `i`. No shell, no lookup table.
+The label starts at the left and includes the pane's directory, as in
+`A ~/dev`. It uses the same local-host OSC 7 check as the status bar, falling
+back to `pane_current_path` and shortening the home directory to `~`.
+Nushell does not update its process cwd, so OSC 7 is needed to follow `cd`.
+tmux reserves two border cells before the label. The uppercase letter has
+one space on each side. The letter and both spaces use reverse video only
+in the active pane; all three cells are non-reversed when inactive and use
+the normal theme text colour (`base05`) through `@pane-letter-style`.
+The directory and trailing fill use normal text (`base05`) on the dim
+background (`base02`) through `@pane-title-style`. These cells use reverse
+video only in the active pane, swapping those colours. Strikethrough is
+explicitly disabled, and all straight borders keep the bright border colour.
+Tinty supplies the letter and title styles and border colours, so a palette switch
+updates them together.
 
-The chip is **right-aligned**, in the pane's outermost right column, and the
-window digits sit at the right end of the status bar for the same reason: both
-halves of an `F5` address are then read from one corner of the screen instead
-of two. Look top-right, press the key.
-
-`#[align=right]` is a `format_draw` attribute, and the manpage documents it
-under the status line only — `pane-border-format` is not listed as taking it.
-It does work: measured 2026-09-01 on **tmux 3.7c**, both panes of a vertical
-split printed their chip flush against their own right edge. Re-measure after a
-tmux upgrade, because a regression here degrades silently — the chip drifts
-back to column 0 and nothing errors.
+Both `window-style` and `window-active-style` are `default`: pane contents
+retain the terminal and application colours regardless of focus. Only the
+title indicates an inactive pane; the content is never dimmed by tmux.
 
 ### `F6` is never forwarded
 
@@ -675,10 +669,8 @@ the `$HOME` reaches the format literally, nothing matches, and the row prints
 the full `/Users/...` path with no error to say why — measured 2026-09-01 while
 building row 1. It is why both arms of the SSH test are double-quoted.
 
-A one-pane window has nothing to address, so the border is hidden there rather
-than spending a row of the grid saying `a` about the only pane there is. The
-`window-layout-changed` hook fires on every split, kill and layout change —
-every event that can change the count.
+Every pane keeps its top border label visible. The config removes the former
+`window-layout-changed` hook so splitting or closing a pane cannot hide it.
 
 ## The digit wears Claude's state
 
@@ -821,7 +813,7 @@ pane programs only at each program's own request, and nushell never asks:
   request/feature combinations probed.
 - Modified keys reach a pane only in extended form **after that pane enables
   modifyOtherKeys itself** (`CSI >4;1m`). `Shift+Enter` then arrives as
-  `CSI 27;2;13~`, `Ctrl+X` stays the bare byte `018`, arrow-up stays `CSI A`.
+  `CSI 13;2u`, `Ctrl+X` stays the bare byte `018`, arrow-up stays `CSI A`.
 - The kitty protocol tmux does not track per pane at all: a pane pushing
   `CSI >1u` still got plain `\r` for `Shift+Enter`. There is no path by which
   this line could re-arm the kitty behaviour that was turned off.
@@ -829,6 +821,13 @@ pane programs only at each program's own request, and nushell never asks:
 With `extended-keys` off, tmux folds **both** `Shift+Enter` spellings into the
 bare `\r` of plain Enter, and Claude Code cannot tell a newline from a submit
 even though the outer terminal encoded them differently.
+
+`extended-keys-format csi-u` picks which of the two spellings tmux sends to a
+requesting pane: `CSI 13;2u` rather than the `CSI 27;2;13~` of xterm's
+modifyOtherKeys, which is the tmux default. pi refuses to run on the xterm
+spelling and asks for this by name; Claude Code reads either. The option
+governs the outbound wire only — tmux 3.7c decodes both spellings on the way
+in regardless, so nothing about what the emulator may send changes.
 
 `xterm*:extkeys` names the client terminal as extended-key capable. Measured:
 with `extended-keys on`, tmux emits `CSI >4;2m` on the client wire at attach

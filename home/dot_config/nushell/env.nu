@@ -7,6 +7,7 @@ $env.PATH = (
     $env.PATH
     | prepend ($nu.home-dir | path join ".local" "bin")
     | prepend ($nu.home-dir | path join ".cargo" "bin")
+    | prepend ($nu.home-dir | path join ".opencode" "bin")
     | append [
         "/opt/homebrew/bin"
         "/opt/homebrew/sbin"
@@ -74,3 +75,6 @@ if $nu.is-interactive and (which ollama-host | is-not-empty) {
         $env.OLLAMA_HOST = ($_ollama.stdout | str trim)
     }
 }
+
+# TypeSafe key for orly / fast-jev-compaction, read from the Keychain (never stored here)
+$env.TYPESAFE_API_KEY = (try { ^security find-generic-password -a typesafe/api-key -s kern -w | str trim } catch { "" })

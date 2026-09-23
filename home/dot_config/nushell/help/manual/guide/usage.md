@@ -10,7 +10,7 @@ Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm on
 - [See what is in a directory](./listing.md) — The decorated `ls`, its short forms, and real directory sizes.
 - [Find a file, a line, or a directory](./files.md) — The finder in the shell, telescope in the editor, and ripgrep underneath.
 - [Recall something you already ran](./history.md) — This directory's history by default; the whole history one modifier away.
-- [Move around windows and panes](./windows.md) — tmux owns all of it: nine windows by digit, panes by letter, splits by arrow.
+- [Move around windows and panes](./windows.md) — tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift+arrow, moves by Ctrl+arrow.
 - [Copy and paste](./copy.md) — Keyboard selection in the scrollback, and the clipboard that follows you over ssh.
 - [Edit text](./editing.md) — Opening the editor, moving around it, and selecting with shift like everywhere else.
 - [Work with code](./code.md) — Completion, LSP, formatting, and getting your buffers back.

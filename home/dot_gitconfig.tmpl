@@ -23,6 +23,7 @@
     pager = delta
     # `input` normalises CRLF on commit and leaves the working tree alone.
     autocrlf = input
+    sshCommand = ssh -i ~/.ssh/id_gh -o IdentitiesOnly=yes
 
 [interactive]
     diffFilter = delta --color-only
