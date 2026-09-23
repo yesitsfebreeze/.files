@@ -11,17 +11,10 @@
 # The pane is TV_ALL_ORIGIN, named by the binding: tv-go runs in its own
 # window (`modal`), not the pane it acts on. manual → internals/tmux, "F8 / F7".
 #
-# fzf, not tv, for the two steps tv 0.15.9 cannot do: accept the channel the
-# moment typing leaves one (`one:accept`; tv's --select-1 only checks at
-# startup), and re-run a look preview on EVERY focus, revisits included (tv
-# caches each row's preview — upstream #969 — so going back never repainted).
-#
-# Look previews paint only the row you stop on — a retint per row flooded the
-# tty with palette writes and the frame flickered. `sleep 0.15` lets a scroll
-# move on (fzf kills a preview whose row lost focus), then the preview asks
-# fzf over --listen which row has focus and paints only if it is still this
-# one: under load the kill can land after the sleep, and a row already
-# scrolled past used to paint.
+# fzf, not tv 0.15.9, for two steps: accept the channel once one is left
+# (`one:accept`), and re-run a look preview on every focus (tv caches it, #969).
+# A look preview paints only the row you stop on — per-row retints flickered:
+# it sleeps 0.15 s, then asks fzf over --listen whether its row still has focus.
 #
 # TRAP: no `2>/dev/null` on a tv call — with stdout captured, tv draws the
 # whole UI on stderr, and silencing it blanks the picker.
@@ -29,9 +22,7 @@ set -u
 ORIGIN=${TV_ALL_ORIGIN:-}
 mode=${1:-act} ch=${2:-} q=""
 [ "$mode" = find ] && { mode=act ch="" q=$(shift; printf '%s' "$*"); }
-# ANSI slots only, never hex: theme.sh retints slots 0-15 on every apply, so
-# fzf follows the scheme — and the live preview — for free. Rounded frame to
-# match tv's.
+# ANSI slots only, never hex, so fzf follows every retint for free.
 export FZF_DEFAULT_OPTS="--reverse --border rounded --info inline-right \
  --color 16,fg:7,bg:-1,hl:4,fg+:15,bg+:8,hl+:4,border:8,label:7 \
  --color prompt:5,pointer:1,marker:2,info:8,header:8,spinner:6,preview-border:8"
@@ -68,9 +59,7 @@ esac
 # Things you look AT open; things that CHANGE something land on a prompt unrun.
 # Single quotes inside a single-quoted shell word.
 _q() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
-# Rows become absolute: a relative one would be resolved twice, since the new
-# pane already starts in it (`cd scripts/` from inside scripts/ fails, and nu
-# --execute exits on it).
+# Rows become absolute: the new pane starts in $PWD, so relative resolves twice.
 # shellcheck disable=SC2088  # a literal "~/" from a row
 case $row in "~/"*) row="$HOME/${row#\~/}" ;; esac
 

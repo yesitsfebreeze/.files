@@ -251,18 +251,11 @@ def theme [sub?: string] {
 }
 
 # ── KEYBINDINGS ──
-# LAST, and load-bearing: reedline resolves a duplicate (modifier, keycode)
-# to the LATER entry, so records here beat the Ctrl-T/Ctrl-R the generated
-# television init binds. Append, never interleave.
-#
-# Arrows try menuup/menudown first so completion menus keep them.
-# `name: quicklist` is not free choice — a shipped manual entry names it.
-#
-# TRAP: `tv_completion`'s `event: null` unbinds Ctrl-T from
-# `tv_smart_autocomplete`, which tv's generated init binds it to — dropping
-# this record would hand the key back to tv rather than free it. The finder
-# has no other shell keybinding; F3, in tmux.conf, is the one way in from
-# any pane. Ctrl-R and Alt-R keep their own pickers.
+# LAST: reedline keeps the LATER of duplicate (modifier, keycode) records, so
+# these beat tv's generated Ctrl-T/Ctrl-R. Append, never interleave. Arrows try
+# menuup/menudown first. `name: quicklist` is named by a manual entry.
+# TRAP: `tv_completion`'s `event: null` is what frees Ctrl-T from tv's
+# `tv_smart_autocomplete` — dropping the record hands the key back to tv.
 const KB_MODES = [vi_normal vi_insert emacs]
 
 $env.config = (

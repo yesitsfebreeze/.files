@@ -1,37 +1,16 @@
 #!/bin/sh
 # tmux-main — the one way into this environment's tmux session.
 #
-# prds/07-multiplexer/01-session-and-windows owns this. It exists so the
-# spelling of the attach lives in exactly one place: WezTerm's default_prog
-# (07-multiplexer/08-wezterm-reduction), an ssh login, and anything else that
-# wants the session all say `tmux-main` rather than repeating the flags and
-# drifting apart.
-#
-# `new-session -A -s main` is idempotent by construction: it attaches to
-# `main` if it exists and creates it if it does not. That is what makes the
-# session outlive the terminal — quitting the emulator leaves the server
-# running, and reopening it is the same gesture as opening it the first time.
-#
-# `-c` is Q14, and it is NOT decoration. Measured on tmux 3.7c: a `new-window`
-# with no `-c` inherits the SESSION's working directory, not the active pane's.
-# `-c` is read only when the session is CREATED; on an attach it is ignored,
-# which is correct — the session keeps the directory it was born with.
-#
-# TRAP: the nu-launch ladder lives in exactly one place, tmux.conf's
-# default-command — this script and tv-go must not re-spell it.
-#
-# The `F5 <digit>` clean slate is unaffected because those binds pass `-c ~`
-# explicitly — checked: no `new-window` in tmux.conf relies on the session
-# directory. Do not add one that does.
-#
-# POSIX sh, not nushell: this runs before nushell exists in the process tree,
-# and on a remote it may run where nushell is not installed at all. No
-# no-tmux fallback either: if tmux itself is missing the `exec` below fails
-# and the shell says so — env.nu's own no-TMUX branch is the bare-nu path.
+# One spelling of the attach for WezTerm, ssh and everything else.
+# `new-session -A` attaches or creates, so the session outlives the terminal.
+# `-c` only applies at creation: a `new-window` without `-c` inherits the
+# SESSION's directory, so every new-window in this repo passes its own `-c`.
+# TRAP: the nu-launch ladder lives only in tmux.conf's default-command.
+# POSIX sh: runs before nushell exists, maybe where it is not installed.
+# manual → internals/tmux, "Where the start dir is read".
 set -u
 
-# Same fallback ladder env.nu had: the recorded directory if it still exists,
-# then ~/dev, then $HOME. `mkcd` is what writes the file.
+# The recorded directory if it still exists, then ~/dev, then $HOME.
 mkdir -p "$HOME/dev" 2>/dev/null || true
 start="$HOME"
 if [ -d "$HOME/dev" ]; then start="$HOME/dev"; fi

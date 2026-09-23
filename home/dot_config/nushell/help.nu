@@ -63,7 +63,7 @@ def _help_overview [] {
     # still exist, so a rename in a surface file silently drops one from the
     # list rather than erroring — the `where` below is what keeps it silent.
     let first = (
-        ["F3" "F5 <digit>" "Ctrl-R" "<leader>ff and <leader><space>"]
+        ["F3" "F5 <letter>" "Ctrl-R" "<leader>ff and <leader><space>"]
         | each {|id| $corpus | where id == $id | each {|h| $"  ($id) — ($h.title)" } }
         | flatten | str join "\n"
     )

@@ -4,7 +4,7 @@
 
 > What this environment is, and the six keys that get you moving.
 
-Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a digit to change window, `F3` to find anything, and `help` to get back here.
+Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a tile letter to change window, `F3` to find anything, and `help` to get back here.
 
 - [Move between directories, and make new ones](./directories.md) — Jumping by fragment, going back, and the `cd` that creates what it is given.
 - [See what is in a directory](./listing.md) — The decorated `ls`, its short forms, and real directory sizes.

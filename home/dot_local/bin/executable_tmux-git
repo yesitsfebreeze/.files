@@ -1,50 +1,26 @@
 #!/bin/sh
 # tmux-git — branch, dirty flag, ahead/behind and last-commit age for a pane header.
-#
-# WHY THIS EXISTS AT ALL. starship prints the same facts in the prompt, one
-# line below, so for a long while the bar deliberately did not repeat them.
-# That reasoning was wrong and the counter-case is the common one: the prompt
-# is only on screen when a pane is AT a prompt. Open nvim, tail a log, run a
-# Claude session, and the branch you are on vanishes from the screen entirely.
-# The bar is the surface that is always there, so this is the surface that has
-# to carry it.
-#
-# Called from `pane-border-format` as `#(tmux-git "#{E:@cwd}")`. tmux runs a
-# `#()` in the BACKGROUND and re-runs it every `status-interval`, so a slow
-# answer arrives late rather than freezing a redraw — but it does mean this
-# runs every few seconds per attached client, which is why both git calls
-# below are the cheap forms.
-#
-# Prints nothing at all outside a work tree, with no git, or on a path that has
-# gone away. Nothing is the right answer for all three: the segment simply is
-# not there, rather than the bar carrying an error it cannot explain.
+# In the pane header, not left to starship: the prompt is gone the moment a
+# pane runs nvim or Claude. `#()` re-runs it every status-interval, so both git
+# calls are the cheap forms. Prints nothing outside a work tree.
 dir=${1:-$PWD}
 
 command -v git > /dev/null 2>&1 || exit 0
 cd "$dir" 2> /dev/null || exit 0
 git rev-parse --is-inside-work-tree > /dev/null 2>&1 || exit 0
 
-# A detached HEAD has no symbolic ref, and that is a state worth seeing rather
-# than blanking — fall back to the short sha.
+# Detached HEAD shows the short sha.
 branch=$(git symbolic-ref --quiet --short HEAD 2> /dev/null) ||
     branch=$(git rev-parse --short HEAD 2> /dev/null) ||
     exit 0
 
-# `-uno` skips untracked files: it is the difference between a walk of tracked
-# entries and a walk of the whole tree, and this runs on a timer. The cost is
-# that a brand-new file alone does not light the marker.
-#
-# `--no-optional-locks` is NOT decoration. Without it a plain `git status`
-# wants to refresh and rewrite the index, so a status bar polling every few
-# seconds contends for `.git/index.lock` with the git you are actually running
-# in the pane — the failure looks like random "unable to write index" errors in
-# your own commands, and nothing points at the bar.
+# `-uno`: tracked files only, this runs on a timer. TRAP: `--no-optional-locks`
+# or the poll fights your own git for `.git/index.lock`.
 dirty=''
 [ -n "$(git --no-optional-locks status --porcelain -uno 2> /dev/null | head -n 1)" ] &&
     dirty='*'
 
-# Both reads are O(1)-ish: a rev-list between two known refs and one log line.
-# No upstream prints no arrows rather than an error.
+# No upstream, no arrows.
 sync=''
 # shellcheck disable=SC2046  # the split into two counts is the point
 set -- $(git rev-list --count --left-right '@{u}...HEAD' 2> /dev/null)

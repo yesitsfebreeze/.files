@@ -11,7 +11,7 @@
         id: "usage"
         title: "Start here"
         summary: "What this environment is, and the six keys that get you moving."
-        intro: "Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a digit to change window, `F3` to find anything, and `help` to get back here."
+        intro: "Nushell is the shell, tmux owns the windows, Neovim is the editor and WezTerm only draws the picture. Everything below is reachable from a fresh terminal with no setup. If you learn nothing else: type a directory name on its own to jump to it, `F5` and a tile letter to change window, `F3` to find anything, and `help` to get back here."
     }
     {
         id: "directories"
