@@ -6,6 +6,7 @@ sd		dirs	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:
 sz		recent dirs	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act recent-dirs'"
 sh		history	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go type nu-history'"
 sc		any channel	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act'"
+ss		sessions	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act panes'"
 g	󰊢	git	
 gl		log	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act git-log'"
 gd		diff	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act git-diff'"
@@ -17,6 +18,11 @@ wn		new	new-window -c '#{E:@cwd}'
 wr		rename	command-prompt -I '#W' { rename-window '%%' }
 wt		tree	choose-tree -Zw
 wx		kill	kill-window
+ww		new here	run-shell -b '~/.local/bin/tmux-slot new #{pane_id} "#{E:@cwd}"'
+wb		back	run-shell -b '~/.local/bin/tmux-slot back #{pane_id}'
+wf		forward	run-shell -b '~/.local/bin/tmux-slot forward #{pane_id}'
+wh	󰈉	hide	run-shell -b '~/.local/bin/tmux-slot hide #{pane_id} "#{client_name}"'
+wq		close pane	kill-pane
 p		pane	
 ph		split left	split-window -hb -c '#{E:@cwd}'
 pj		split down	split-window -v -c '#{E:@cwd}'
@@ -31,6 +37,7 @@ ts		scheme	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{
 tf		font	run-shell -b "~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '~/.local/bin/tv-go act font'"
 u		wezterm	
 un		new window	run-shell "printf '\\033]1337;SetUserVar=wez=%s\\007' $(printf window | base64) > #{client_tty}"
+uq		close window	run-shell "printf '\\033]1337;SetUserVar=wez=%s\\007' $(printf close | base64) > #{client_tty}"
 u+		font bigger	run-shell "printf '\\033]1337;SetUserVar=wez=%s\\007' $(printf bigger | base64) > #{client_tty}"
 u-		font smaller	run-shell "printf '\\033]1337;SetUserVar=wez=%s\\007' $(printf smaller | base64) > #{client_tty}"
 u0		font reset	run-shell "printf '\\033]1337;SetUserVar=wez=%s\\007' $(printf reset | base64) > #{client_tty}"

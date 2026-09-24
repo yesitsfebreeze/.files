@@ -5,3 +5,12 @@
 # television, …) bake their palette and never follow the terminal (R6).
 [ui]
 theme = "default"
+# Telescope's shape, in the space the F5 cockpit opens in: preview on top,
+# results under it, the input line at the bottom where the cockpit's keys sat.
+orientation = "portrait"
+
+[ui.input_bar]
+position = "bottom"
+
+[ui.status_bar]
+hidden = true

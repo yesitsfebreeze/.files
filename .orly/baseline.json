@@ -143,6 +143,15 @@
       }
     },
     {
+      "id": "copy_mode_rows",
+      "instructions": "In copy mode, Space selects and Enter opens the word on the row under the copy-mode cursor, also when the view is scrolled back or a wrapped line sits above the cursor.",
+      "require": {
+        "path": "checks.copy_mode_rows.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
       "id": "fzf_confined",
       "instructions": "fzf is invoked only from tv-go; everywhere else television or telescope is the picker.",
       "require": {
@@ -188,6 +197,15 @@
       }
     },
     {
+      "id": "manual_snippets",
+      "instructions": "Every one-line code snippet in the nushell-modules and capsule internals pages still occurs in a tracked source file.",
+      "require": {
+        "path": "checks.manual_snippets.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
       "id": "memos_gate",
       "instructions": "The memos gate (`just memos-check`) passes.",
       "require": {
@@ -214,6 +232,15 @@
       "instructions": "Every tracked nushell file parses without an error diagnostic (nu --ide-check).",
       "require": {
         "path": "checks.nu_parses.exit",
+        "op": "equals",
+        "value": 0
+      }
+    },
+    {
+      "id": "recents_resolve",
+      "instructions": "A Ctrl-Q recent picked as a relative path (fd, rg) opens the file under the directory it was picked in, not under the shell's current directory.",
+      "require": {
+        "path": "checks.recents_resolve.exit",
         "op": "equals",
         "value": 0
       }
@@ -322,6 +349,15 @@
     },
     "leader_wired": {
       "command": "bash .orly/invariants.sh cockpit_wired"
+    },
+    "recents_resolve": {
+      "command": "bash .orly/recents.sh"
+    },
+    "copy_mode_rows": {
+      "command": "bash .orly/copy-mode.sh"
+    },
+    "manual_snippets": {
+      "command": "python3 .orly/manual-snippets.py home/dot_config/nushell/help/manual/internals/nushell-modules.md home/dot_config/nushell/help/manual/internals/capsule.md"
     }
   }
 }

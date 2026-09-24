@@ -8,11 +8,13 @@
 #   tv-go act theme   (F9) skip the channel step
 #   tv-go find QUERY  (F3) F8 with QUERY already typed into the row list
 #
-# The pane is TV_ALL_ORIGIN, named by the binding: tv-go runs in its own
-# window (`modal`), not the pane it acts on. manual → internals/tmux, "F8 / F7".
+# The pane is TV_ALL_ORIGIN and the client TV_ALL_CLIENT, named by the
+# binding: tv-go runs in its own window (`modal`), not the pane it acts on.
+# manual → internals/tmux, "F8 / F7".
 #
-# fzf, not tv 0.15.9, for two steps: accept the channel once one is left
-# (`one:accept`), and re-run a look preview on every focus (tv caches it, #969).
+# fzf, not tv 0.15.9, for three steps: accept the channel once one is left
+# (`one:accept`), re-run a look preview on every focus (tv caches it, #969),
+# and re-list F5 s s's panes on every keystroke (tv filters only what it shows).
 # A look preview paints only the row you stop on — per-row retints flickered:
 # it sleeps 0.15 s, then asks fzf over --listen whether its row still has focus.
 #
@@ -37,6 +39,25 @@ still='sleep 0.15; case $(curl -s --max-time 1 "localhost:$FZF_PORT?limit=0") in
 look() { fzf --listen --with-shell 'sh -c' --no-sort --prompt "$1> " --query "$q" \
              --preview "$still; $2 --preview {}" --preview-window right,65%; }
 case $ch in
+# F5 s s: fzf, because tv matches only the text it shows and cannot re-run
+# its source per keystroke; each keystroke re-lists the panes whose name or
+# content holds the query (rg over one capture per pane, taken at open).
+# Enter swaps the pane into this one (tmux-slot, so F5 w b undoes it);
+# Ctrl-D closes the focused pane, whatever runs in it, never the origin;
+# Ctrl-X closes the listed panes that sit at a bare shell prompt; Tab
+# toggles the backlog, panes untouched for 1 h+.
+panes)
+    snap=$(mktemp -d); tmux-panes snap "$snap"
+    row=$(tmux-panes list "$snap" | fzf --with-shell 'sh -c' --ansi --disabled --prompt 'sessions> ' \
+        --delimiter '\t' --with-nth 2 --bind "change:reload:tmux-panes list '$snap' {q}" \
+        --bind "ctrl-d:execute-silent([ {1} = '$ORIGIN' ] || tmux kill-pane -t {1})+reload(tmux-panes list '$snap' {q})" \
+        --bind "ctrl-x:execute-silent(tmux-panes close '$snap' {q})+reload(tmux-panes list '$snap' {q})" \
+        --bind "tab:transform:case \$FZF_PROMPT in backlog*) p=sessions ;; *) p=backlog ;; esac; echo \"change-prompt(\$p> )+reload(FZF_PROMPT='\$p> ' tmux-panes list '$snap' {q})\"" \
+        --header 'enter swap · tab backlog · ^d close · ^x close idle' \
+        --preview 'tmux capture-pane -p -e -t {1}' --preview-window right,60%,follow)
+    rm -rf "$snap"
+    [ -z "$row" ] || tmux-slot swap "$ORIGIN" "$(printf '%s' "$row" | cut -f1)"
+    exit 0 ;;
 theme) row=$("$LOOKS" --list | look theme "$LOOKS") ;;
 font)  row=$("$FONT" --list | look font "$FONT") ;;
 # Enter returns the row: several channels bind it to an action of their own

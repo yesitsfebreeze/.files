@@ -27,7 +27,7 @@ w=$((cw * 90 / 100)) h=$((ch * 85 / 100)) s="modal$$"
 # of blanking the popup for one frame first.
 m="tmux -L modal -f /dev/null"
 $m new-session -d -s "$s" -x "$w" -y "$h" -c "$dir" \
-    "export TMUX='$TMUX' TV_ALL_ORIGIN='$origin'; $cmd" \; \
+    "export TMUX='$TMUX' TV_ALL_ORIGIN='$origin' TV_ALL_CLIENT='$client'; $cmd" \; \
     set -t "$s" status off \; set -t "$s" key-table none \; set -t "$s" prefix None \; \
     set -s terminal-overrides '*:smcup@:rmcup@:clear=\E[H' || exit 1
 last=""

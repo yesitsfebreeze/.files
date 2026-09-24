@@ -1,0 +1,69 @@
+#!/bin/sh
+# tmux-slot — a pane slot's history, like a buffer jumplist: every process
+# swapped into a slot is recorded, so F5 w b / F5 w f step back and forward.
+#
+#   tmux-slot swap SLOT PANE    PANE takes SLOT's place       (F5 s s Enter)
+#   tmux-slot new SLOT DIR      a fresh shell takes it, the old one goes to
+#                               the _park session             (F5 w w)
+#   tmux-slot back SLOT         the previous process back     (F5 w b)
+#   tmux-slot forward SLOT      and forward again             (F5 w f)
+#   tmux-slot hide SLOT CLIENT  the pane leaves the layout for _park, named
+#                               first in a popup if unnamed   (F5 w h)
+#
+# SLOT is the pane now in the slot. The history belongs to the place, not the
+# process, so it is a window option per pane position, `@slot<index>` =
+# "POS ID ID …" (oldest first, POS 1-based): swap-pane keeps positions. A
+# process that no longer exists is stepped over. manual → internals/tmux,
+# "Slot history".
+set -u
+cmd=$1 slot=$2 arg=${3:-}
+# shellcheck disable=SC2046  # two words by construction
+set -- $(tmux display -p -t "$slot" '#{window_id} @slot#{pane_index}')
+win=$1 opt=$2
+# shellcheck disable=SC2046  # the history is a word list
+set -- $(tmux show -wqv -t "$win" "$opt")
+pos=${1:-0}; [ $# -gt 0 ] && shift
+[ "$pos" -gt 0 ] || { set -- "$slot"; pos=1; }
+
+nth() { shift "$1"; printf '%s' "$1"; }
+save() { tmux set -w -t "$win" "$opt" "$pos $*"; }
+
+case $cmd in
+new)
+    pane=$(tmux new-window -d -P -F '#{pane_id}' -t _park: -c "$arg" 2>/dev/null ||
+        tmux new-session -d -P -F '#{pane_id}' -s _park -c "$arg") || exit 1
+    exec "$0" swap "$slot" "$pane" ;;
+swap)
+    pane=$arg keep="" i=0
+    for id; do i=$((i + 1)); [ "$i" -le "$pos" ] && keep="$keep $id"; done
+    # shellcheck disable=SC2086
+    set -- $keep "$pane"; pos=$#
+    tmux swap-pane -s "$pane" -t "$slot" && save "$@" ;;
+back | forward)
+    step=-1; [ "$cmd" = forward ] && step=1
+    k=$((pos + step)) live=" $(tmux list-panes -a -F '#{pane_id}' | tr '\n' ' ')"
+    while [ "$k" -ge 1 ] && [ "$k" -le $# ]; do
+        id=$(nth "$k" "$@")
+        # TRAP: not `display -t ID`: it exits 0 for a pane that is gone.
+        if [ "$id" != "$slot" ] && case $live in *" $id "*) true ;; *) false ;; esac; then
+            tmux swap-pane -s "$id" -t "$slot" && pos=$k && save "$@"
+            exit 0
+        fi
+        k=$((k + step))
+    done
+    tmux display "slot: nothing $cmd" ;;
+hide)
+    # The name is `@name`, not the title: every program may rewrite a title.
+    if [ -z "$(tmux display -p -t "$slot" '#{@name}')" ]; then
+        # Argv form, so sh runs it, not default-shell. Escape is intr: it cancels.
+        exec tmux display-popup -c "$arg" -E -w 44 -h 3 -T ' Name it before hiding ' \
+            sh -c 'stty intr "^["; printf "› "; read -r n && [ -n "$n" ] &&
+                tmux set -p -t "$1" @name "$n" && exec "$2" hide "$1"' sh "$slot" "$0"
+    fi
+    # The session's only pane: a fresh shell stays behind, as F5 w w.
+    [ "$(tmux display -p -t "$slot" '#{session_windows} #{window_panes}')" = "1 1" ] &&
+        exec "$0" new "$slot" "$(tmux display -p -t "$slot" '#{E:@cwd}')"
+    spare=$(tmux has -t =_park 2>/dev/null || tmux new-session -d -P -F '#{window_id}' -s _park)
+    tmux break-pane -d -s "$slot" -t _park:
+    [ -z "$spare" ] || tmux kill-window -t "$spare" ;;
+esac

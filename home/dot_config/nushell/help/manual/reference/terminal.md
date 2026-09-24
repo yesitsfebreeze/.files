@@ -10,21 +10,20 @@ Every entry links to where the guide explains it.
 |---|---|---|---|
 | `q / :q / /exit` | Leave the shell | shell | [Move around windows and panes](../guide/windows.md#q-q-exit) |
 | `F1` | Open the cockpit: every surface action by mnemonic | terminal | [Move around windows and panes](../guide/windows.md#f1) |
-| `F5` | Open the grid of windows | terminal | [Move around windows and panes](../guide/windows.md#f5) |
-| `F5 <letter>` | Jump to a window by its tile | terminal | [Move around windows and panes](../guide/windows.md#f5-letter) |
-| `F5 <digit>` | Jump to a pane by its number | terminal | [Move around windows and panes](../guide/windows.md#f5-digit) |
-| `F5 <arrow>` | Walk between panes with the arrows | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
-| `F5 Shift+<arrow>` | Split the view in a direction | terminal | [Move around windows and panes](../guide/windows.md#f5-shift-arrow) |
-| `F5 Ctrl+<arrow>` | Move the pane you are in | terminal | [Move around windows and panes](../guide/windows.md#f5-ctrl-arrow) |
-| `F5 q` | Close the pane you are working in | terminal | [Move around windows and panes](../guide/windows.md#f5-q) |
-| `F5 F5` | Open the cockpit from the grid | terminal | [Move around windows and panes](../guide/windows.md#f5-f5) |
+| `F5` | Open the cockpit; an arrow in it moves between panes | terminal | [Move around windows and panes](../guide/windows.md#f5) |
+| `F5 s s` | Search sessions: find a pane by name or content, swap it in | terminal | [Move around windows and panes](../guide/windows.md#f5-s-s) |
+| `F5 w w` | Replace this pane with a fresh shell | terminal | [Move around windows and panes](../guide/windows.md#f5-w-w) |
+| `F5 w b / F5 w f` | Step back and forward through what this pane showed | terminal | [Move around windows and panes](../guide/windows.md#f5-w-b-f5-w-f) |
+| `F5 w h` | Hide this pane | terminal | [Move around windows and panes](../guide/windows.md#f5-w-h) |
+| `F5 w q` | Close this pane | terminal | [Move around windows and panes](../guide/windows.md#f5-w-q) |
+| `F5 <arrow>` | Move mode: walk, split and close panes until Enter | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
 | `F4` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
 | `F4 s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
-| `copymode` | Enter copy mode without touching a chord | shell | [Copy and paste](../guide/copy.md#enter-copy-mode) |
 | `drag` | Select with the mouse and have it on the clipboard | terminal | [Copy and paste](../guide/copy.md#drag) |
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |
 | `Ctrl+C` | Copy the selection, or interrupt when there is none | terminal | [Copy and paste](../guide/copy.md#ctrl-c) |
 | `Ctrl+Alt+Super+drag` | Move the window without a titlebar | terminal | [Move around windows and panes](../guide/windows.md#ctrl-alt-super-drag) |
+| `Alt+Enter` | Leave or re-enter fullscreen | terminal | [Move around windows and panes](../guide/windows.md#alt-enter) |
 | `Shift+click` | Open the link under the cursor | terminal | [Move around windows and panes](../guide/windows.md#shift-click) |

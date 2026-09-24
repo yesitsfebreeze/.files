@@ -13,10 +13,13 @@ command = [
 command = "bat -n --color=always '{}'"
 env = { BAT_THEME = "ansi" }
 
+# ctrl-x lists every action by name; the common ones have a key too.
 [keybindings]
 shortcut = "f1"
 f12 = "actions:edit"
 ctrl-up = "actions:goto_parent_dir"
+ctrl-b = "actions:copy_content"
+ctrl-g = "actions:move"
 
 [actions.edit]
 description = "Opens the selected entries with the default editor (falls back to vim)"
@@ -28,4 +31,27 @@ mode = "execute"
 [actions.goto_parent_dir]
 description = "Re-opens tv in the parent directory"
 command = "tv files .."
+mode = "execute"
+
+# Actions exit tv and write nothing to stdout: tv-go reads stdout as the pick.
+[actions.copy_content]
+description = "Copy the file's contents to the clipboard"
+command = "pbcopy < '{}'"
+mode = "execute"
+
+[actions.copy_file]
+description = "Copy the file itself to the clipboard (paste it in Finder)"
+command = "osascript -e \"set the clipboard to POSIX file \\\"$(realpath '{}')\\\"\" > /dev/null"
+shell = "bash"
+mode = "execute"
+
+[actions.move]
+description = "Move the file: pick a directory, then name it (Enter keeps the name)"
+command = """
+f='{}'; b=${f##*/}
+d=$(tv dirs --no-remote --input-header "move $b to") && [ -n "$d" ] || exit 0
+read -r -e -p "name [$b]: " n
+mv -i -- "$f" "${d%/}/${n:-$b}"
+"""
+shell = "bash"
 mode = "execute"

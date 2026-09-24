@@ -4,7 +4,10 @@
 # theirs, holding the keys in columns: `k ➜ label`, the key's letter lit
 # inside its label where it occurs, actions before `+`groups, a `»`
 # breadcrumb on top and the help line last. A group's key redraws in place,
-# Backspace goes up, Escape closes, an action's key closes and runs it.
+# Backspace goes up, Escape closes, an action's key closes and runs it, and
+# an arrow (or Shift+arrow, which splits) closes into move mode (tmux's
+# `jump` table) until Enter, and a digit 1-9 at the top level goes to that
+# window.
 #
 #   cockpit CLIENT PANE WIDTH HEIGHT     (F1)
 #   cockpit --pick TSV WIDTH OUT         (inside the popup; writes the path)
@@ -50,17 +53,33 @@ frame() {
             }
             printf "%s\r\n", line
         }
-        printf "\r\n \033[90mesc close%s\033[0m\033[?2026l", (p == "" ? "" : " · bs back")
+        printf "\r\n \033[90m1-9 window · arrows move · esc close%s\033[0m\033[?2026l", (p == "" ? "" : " · bs back")
     }' "$tsv"
 }
 
 if [ "${1-}" = --pick ]; then
     tsv=$2 p=""
+    # Echo off for the whole popup: `read -s` restores it between keys, and an
+    # an arrow's escape tail would print over the menu.
+    tty=$(stty -g); trap 'stty "$tty"' EXIT; stty -echo -icanon
     while :; do
         frame "$p" "$3"
-        IFS= read -rsn1 c || exit 0
+        IFS= read -rn1 c || exit 0
+        # The rest of an escape sequence arrives in the same write; a lone
+        # Escape times out after 0.1 s (bash 3.2's `read -t` is whole seconds).
+        [ "$c" = $'\e' ] && { stty min 0 time 1; c=$'\e'$(dd bs=8 count=1 2>/dev/null); stty min 1 time 0; }
         case $c in
-        $'\e') exit 0 ;;
+        [1-9]) [ -z "$p" ] && { printf 'w%s' "$c" > "$4"; exit 0; } ;;
+        $'\e[A' | $'\eOA') printf U > "$4"; exit 0 ;;
+        $'\e[B' | $'\eOB') printf D > "$4"; exit 0 ;;
+        $'\e[C' | $'\eOC') printf R > "$4"; exit 0 ;;
+        $'\e[D' | $'\eOD') printf L > "$4"; exit 0 ;;
+        # Shift+arrow splits at once; any other escape would close unrun.
+        $'\e[1;2A') printf vb > "$4"; exit 0 ;;
+        $'\e[1;2B') printf v > "$4"; exit 0 ;;
+        $'\e[1;2C') printf h > "$4"; exit 0 ;;
+        $'\e[1;2D') printf hb > "$4"; exit 0 ;;
+        $'\e'*) exit 0 ;;
         $'\x7f' | $'\b') p=${p%?} ;;
         *)  row=$(awk -F'\t' -v k="$p$c" '$1 == k { print ($4 == "" ? "g" : "a") }' "$tsv")
             [ "$row" = g ] && p=$p$c
@@ -82,5 +101,21 @@ tmux display-popup -c "$client" -E -b rounded -S fg=colour8 -w "$w" -h "$h" -x C
     "bash '$0' --pick '$tsv' $((w - 2)) '$out'"
 key=$(cat "$out"); rm -f "$out"
 [ -n "$key" ] || exit 0
+# An arrow moves that way, Shift+arrow splits that way, and either arms move
+# mode (the `jump` table) until Enter.
+# A digit goes to that window of the session, made at ~ when it is missing.
+case $key in
+U | D | L | R)
+    tmux select-pane -t "$pane" "-$key"
+    exec tmux switch-client -c "$client" -T jump ;;
+v | vb | h | hb)
+    tmux split-window -t "$pane" "-$key" -c '#{E:@cwd}'
+    exec tmux switch-client -c "$client" -T jump ;;
+w[1-9])
+    s=$(tmux display -p -t "$pane" '#{session_name}')
+    # `=`: exact index, else `2` prefix-matches a window named `2.1.280`.
+    tmux select-window -t "$s:=${key#w}" 2>/dev/null || tmux new-window -t "$s:${key#w}" -c ~
+    exit 0 ;;
+esac
 cmd=$(awk -F'\t' -v k="$key" '$1 == k { print $4 }' "$tsv")
 tmux if -F -t "$pane" 1 "$(tmux display -p -c "$client" -t "$pane" "$cmd")"

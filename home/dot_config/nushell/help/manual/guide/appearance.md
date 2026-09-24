@@ -33,7 +33,7 @@ Two routes to the same thing:
 >
 > Bound in the multiplexer rather than the shell, because a full-screen TUI would swallow a shell-level binding; run in the background, because the theme tool's hook chain would otherwise block the server for its duration. The scheme reaches the terminal as escape sequences written straight to it, not through a file only one emulator could read — which is why the key is worth pressing on a machine you ssh'd into. It is the one key that is never forwarded to a nested session: the palette belongs to the outermost terminal.
 
-See also: [`theme`](./appearance.md#theme) · [`F5 F5`](./windows.md#f5-f5)
+See also: [`theme`](./appearance.md#theme) · [`F5`](./windows.md#f5)
 
 ## `F9`
 

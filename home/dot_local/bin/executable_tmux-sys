@@ -1,5 +1,6 @@
 #!/bin/sh
-# tmux-sys — CPU and memory gauges plus network Mbit/s down/up for the status bar.
+# tmux-sys — CPU, memory and GPU gauges, GPU memory, and network Mbit/s
+# down/up for the status bar.
 #
 # Called from `status-left` as `#(tmux-sys)`. tmux runs it in the BACKGROUND
 # every `status-interval`, so the ~80 ms per exec this host bills is never a
@@ -9,6 +10,13 @@
 # instantaneous sample. ponytail: `top -l 2` is exact but costs a second a tick.
 # Memory is active + wired + compressed pages over physical RAM, roughly
 # Activity Monitor's "Memory Used".
+# GPU is the accelerator's "Device Utilization %" and VRAM its "In use system
+# memory" from `ioreg` (~15 ms, no sudo). Apple Silicon has no dedicated VRAM:
+# this is the unified memory the GPU holds right now, against Metal's
+# `recommendedMaxWorkingSetSize` — the most the GPU may keep resident, which
+# follows `iogpu.wired_limit_mb` (0 means the macOS default). Asking Metal
+# costs ~4 s of `swift`, so the answer is cached in $TMPDIR keyed by that
+# limit and asked again only when the limit changes.
 # Network is the delta of the default route's interface byte counters since the
 # previous tick, kept in $TMPDIR; the first tick after a boot or an interface
 # change prints 0.
@@ -17,16 +25,26 @@ state="${TMPDIR:-/tmp}/tmux-sys.net"
 iface=$(route -n get default 2> /dev/null | awk '/interface:/ { print $2 }')
 now=$(date +%s)
 
+gpucache="${TMPDIR:-/tmp}/tmux-sys.gpumax"
+limit=$(sysctl -n iogpu.wired_limit_mb 2> /dev/null)
+read -r climit gpumax 2> /dev/null < "$gpucache"
+if [ "$climit" != "$limit" ] || [ -z "$gpumax" ]; then
+    gpumax=$(echo 'import Metal; print(MTLCreateSystemDefaultDevice()!.recommendedMaxWorkingSetSize)' | swift - 2> /dev/null)
+    [ -n "$gpumax" ] && echo "$limit $gpumax" > "$gpucache"
+fi
+
 {
     sysctl -n hw.ncpu hw.memsize
     ps -A -o %cpu=
     echo --vm
     vm_stat
+    echo --gpu
+    ioreg -r -d 1 -c IOAccelerator | grep -o '"\(Device Utilization %\|In use system memory\)"=[0-9]*'
     echo --net
     [ -n "$iface" ] && netstat -ibn -I "$iface" | awk 'NR == 2 { print $7, $10 }'
     echo --prev
     cat "$state" 2> /dev/null
-} | awk -v now="$now" -v iface="$iface" -v state="$state" '
+} | awk -v now="$now" -v gpumax="${gpumax:-0}" -v iface="$iface" -v state="$state" '
     function bar(p,   s, i, n) {
         n = int(p / 20 + 0.5); s = ""
         for (i = 0; i < 5; i++) s = s (i < n ? "█" : "░")
@@ -38,16 +56,19 @@ now=$(date +%s)
     sec == "" { cpu += $1; next }
     sec == "--vm" && /page size of/ { page = $8 }
     sec == "--vm" && /^Pages (active|wired down|occupied by compressor):/ { gsub(/\./, "", $NF); used += $NF }
+    sec == "--gpu" && /Device/ { sub(/.*=/, ""); gpu = $0 }
+    sec == "--gpu" && /memory/ { sub(/.*=/, ""); vram = $0 }
     sec == "--net" { rx = $1; tx = $2 }
     sec == "--prev" { pt = $1; pif = $2; prx = $3; ptx = $4 }
     END {
         c = cpu / ncpu; if (c > 100) c = 100
         m = used * page * 100 / mem
+        v = gpumax > 0 ? vram * 100 / gpumax : 0; if (v > 100) v = 100
         down = up = 0
         if (pif == iface && now > pt && rx >= prx) {
             down = (rx - prx) * 8 / 1e6 / (now - pt)
             up = (tx - ptx) * 8 / 1e6 / (now - pt)
         }
         if (iface != "") print now, iface, rx, tx > state
-        printf "cpu %s %3d%%  mem %s %3d%%  ↓%5.1f ↑%5.1f Mb/s\n", bar(c), c, bar(m), m, down, up
+        printf "cpu %s %3d%%  mem %s %3d%%  gpu %s %3d%%  vram %s %4.1f/%.0fG  ↓%5.1f ↑%5.1f Mb/s\n", bar(c), c, bar(m), m, bar(gpu), gpu, bar(v), vram / 2^30, gpumax / 2^30, down, up
     }'

@@ -1,8 +1,8 @@
 #!/bin/sh
-# tmux-claude-state <state> — a Claude Code hook reports its pane's state and
-# the window digit wears it. No argument clears. Wired into
-# ~/.claude/settings.json by run_after_install-claude-hooks.sh; the colours are
-# `@claude-tint` in tmux.conf. manual → internals/tmux, "The digit wears Claude's state".
+# tmux-claude-state <state> — a Claude Code hook records its pane's state as
+# @claude. No argument clears. Wired into ~/.claude/settings.json by
+# run_after_install-claude-hooks.sh. Nothing draws it since the status bar
+# lost its window digits.
 #
 # WHY A PANE OPTION AND NOT A WINDOW ONE. The tab is per window but the report
 # is per pane, and one window holds a Claude beside a shell often enough. A pane

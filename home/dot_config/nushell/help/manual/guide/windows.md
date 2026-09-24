@@ -12,7 +12,7 @@ There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm bin
 
 *terminal*
 
-Press `F1` in any pane — a shell, the editor, an agent — and the cockpit opens: every key in columns, `k ➜ label`, the key's letter lit inside its label, a `+` marking a group. At the top level: `s` search, `g` git, `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config. A group key shows that group in place, so `F1 s f` picks a file, `F1 s g` greps, `F1 g l` walks the git log, `F1 p l` splits right, `F1 t t` flips dark/light, `F1 u +` makes the font bigger. `Backspace` returns to the top; `Escape` closes it.
+Press `F1` in any pane — a shell, the editor, an agent — and the cockpit opens: every key in columns, `k ➜ label`, the key's letter lit inside its label, a `+` marking a group. At the top level: `s` search (`s s` sessions: any pane by name or content), `g` git, `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config. A group key shows that group in place, so `F1 s f` picks a file, `F1 s g` greps, `F1 g l` walks the git log, `F1 p l` splits right, `F1 t t` flips dark/light, `F1 u +` makes the font bigger, `F1 u q` closes this WezTerm window (as `Ctrl+Shift+Q` does; the tmux session lives on). `Backspace` returns to the top; `Escape` closes it.
 
 > **Why it is this way**
 >
@@ -22,113 +22,113 @@ See also: [`F8`](./files.md#f8) · [`F5`](./windows.md#f5) · [`F6`](./appearanc
 
 ## `F5`
 
-**Open the grid of windows**
+**Open the cockpit; an arrow in it moves between panes**
 
 *terminal*
 
-Press `F5` and a popup opens over everything: windows 1 to 9 as a three-by-three grid of tiles, each a live snapshot of that window, labelled with the left-hand key that reaches it — `l w d` on the top row, `r s t` in the middle, `x c v` at the bottom. Empty slots read `idle`. The top line lists the current window's panes by number, the one you are in highlighted. `Escape` closes it and nothing has changed.
+Press `F5` and the cockpit opens — the which-key menu `F1` also opens. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits that way at once, also into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in.
 
 > **Why it is this way**
 >
-> It is burrito's picker, drawn by a script over tmux: burrito was deleted as a multiplexer, but its grid was the right way to see nine windows at once. tmux still owns every window, split and move — the grid only draws and reads keys, so a bare tmux over ssh loses the picture, not the windows. The keys sit under the left hand in the grid's own shape, so the tile you look at and the key you press are in the same place.
+> The menu is the thing to reach for first, and moving is the next most common thing, so an arrow is the way out of it into moving. The cockpit reads the arrow itself, moves, and arms tmux's `jump` table on the client as it closes, so move mode's keys are plain key tables that act the instant they are pressed.
 
-See also: [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <digit>`](./windows.md#f5-digit) · [`F5 F5`](./windows.md#f5-f5)
+See also: [`F1`](./windows.md#f1) · [`F5 s s`](./windows.md#f5-s-s) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
-## `F5 <letter>`
+## `F5 s s`
 
-**Jump to a window by its tile**
+**Search sessions: find a pane by name or content, swap it in**
 
 *terminal*
 
-Press `F5`, then the tile's key: you are on that window. If the slot is empty the window is created there and you land at `~`. Land on a window with one pane and the grid closes; with several, it stays open so a digit can pick the pane — `F5 l 2` is the second pane of window 1. Press the key of the window you are already on and the pane you are in zooms to fill it, or unzooms.
+Press `F5 s s` and every pane is listed, one row each: its name (title or program), what runs where (program, directory, session) and when you last used it, the most recent first and the pane you are in last. The preview is the pane's screen. Type anything and the list narrows to the panes whose name or last 5000 lines contain it, in any case. `Enter` swaps the chosen pane into the one you are in; the pane that was there takes its place. `Ctrl-D` closes the highlighted pane, whatever runs in it, except the one you came from. `Ctrl-X` closes every listed pane that sits at a bare shell prompt, except the one you came from — type first to narrow what it closes. `Tab` switches to the backlog: only the panes you have not touched for an hour or more (or never), and `Tab` again switches back; `Ctrl-X` in the backlog closes only its idle shells. `Escape` closes the picker.
 
 > **Why it is this way**
 >
-> A tile is always a valid address: tmux window indices do not renumber, so the key creates the window rather than doing nothing, and nothing has to stay resident to hold a slot open. A new window starts at `~` and NOT at the current directory, unlike a split, on purpose: a window is a clean slate, a split divides the work in front of you. Pressing where you already are has nothing to jump to, so it zooms instead of being wasted.
+> A pane is a process to reach like an editor buffer, so there is no address to remember: you find it by what it says. The picker is fzf rather than television because television filters only the text it shows and cannot re-run its source per keystroke; every keystroke re-runs `rg` over one capture per pane taken when the picker opened. Last used is the time of the input that focused the pane, stamped by a `pane-focus-in` hook into the pane's `@used` option, which travels with the pane through a swap. `Enter` is `swap-pane`, so nothing is killed, and a hidden session such as `_park` works as a shelf.
 
-See also: [`F5`](./windows.md#f5) · [`F5 <digit>`](./windows.md#f5-digit) · [`F5 q`](./windows.md#f5-q)
+See also: [`F5`](./windows.md#f5) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
-## `F5 <digit>`
+## `F5 w w`
 
-**Jump to a pane by its number**
+**Replace this pane with a fresh shell**
 
 *terminal*
 
-Press `F5`, then a digit: focus moves to that pane of the current window and the grid closes. Every pane shows its number and directory on its top border, for example `2  ~/dev`, so the digit to press is on screen. Press the number of the pane you are already in and it zooms to fill the window, or unzooms.
+Press `F5 w w` and a new shell takes this pane's place, in the same directory. What was running here is not closed: it moves to the `_park` session, and `F5 s s` brings it back.
 
 > **Why it is this way**
 >
-> The digit addresses the pane INDEX, and tmux renumbers panes when one is killed, so a number does not keep its pane for life. The border shows the same index the key uses, so it is right the instant after a renumber. Letters went to windows and digits to panes because the left-hand grid is what you reach for most, and a window has at most nine tiles while a pane count is read off its border.
+> Panes are found, not arranged, so a new process belongs in the slot you are looking at rather than in a new window. It is a new window in `_park` (the session is made if missing) swapped into this pane with `swap-pane`, and recorded in the pane's history, so `F5 w b` brings the old process back.
 
-See also: [`F5`](./windows.md#f5) · [`F5 <letter>`](./windows.md#f5-letter) · [`F5 <arrow>`](./windows.md#f5-arrow)
+See also: [`F5 s s`](./windows.md#f5-s-s) · [`F5 w b / F5 w f`](./windows.md#f5-w-b-f5-w-f) · [`F5 w q`](./windows.md#f5-w-q)
+
+## `F5 w b / F5 w f`
+
+**Step back and forward through what this pane showed**
+
+*terminal*
+
+Every process swapped into a pane — by `F5 s s` or `F5 w w` — is remembered for that pane. `F5 w b` brings back the one before, `F5 w f` goes forward again, like back and forward in a browser: swapping something new in after going back drops the forward steps. A process that has since been closed is skipped.
+
+> **Why it is this way**
+>
+> The history belongs to the place, not the process: the process moves out on every swap, so it is a window option per pane position (`@slot<index>`), and `swap-pane` keeps positions. Going back is itself a swap, so the process you leave goes where the one you bring back was.
+
+See also: [`F5 s s`](./windows.md#f5-s-s) · [`F5 w w`](./windows.md#f5-w-w)
+
+## `F5 w h`
+
+**Hide this pane**
+
+*terminal*
+
+Press `F5 w h` and the pane leaves the layout; what runs in it keeps running in the `_park` session. A pane with no name asks first — a popup, `Name it before hiding`: type a name and `Enter`, or `Escape` to keep the pane. The name is the first thing its row shows in `F5 s s`, so type it there and `Enter` brings the pane back into whichever pane you are in.
+
+> **Why it is this way**
+>
+> Hidden is not closed, and a hidden pane is found again by its name, so the name comes before it goes. The name is the pane option `@name`, not the pane title, because every program in the pane may rewrite its title. It is `break-pane` into `_park` (made if missing); the session's only pane cannot leave, so there a fresh shell stays behind, as `F5 w w`.
+
+See also: [`F5 s s`](./windows.md#f5-s-s) · [`F5 w w`](./windows.md#f5-w-w)
+
+## `F5 w q`
+
+**Close this pane**
+
+*terminal*
+
+Press `F5 w q` and the pane you are in closes, with no confirmation.
+
+> **Why it is this way**
+>
+> `kill-pane`, next to `w w` so making and closing a pane are one group.
+
+See also: [`F5 w w`](./windows.md#f5-w-w) · [`F5 s s`](./windows.md#f5-s-s)
 
 ## `F5 <arrow>`
 
-**Walk between panes with the arrows**
+**Move mode: walk, split and close panes until Enter**
 
 *terminal*
 
-Press `F5`, then an arrow: focus moves to the pane on that side and the grid stays open, so more arrows keep walking — `F5 Right Right Down` is one trip. `Escape` closes it.
+Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift and an arrow splits that way straight away. Arrows keep moving, Shift and an arrow splits that way (the new pane in the old one's directory), `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed.
 
 > **Why it is this way**
 >
-> A digit is an address and an arrow is a direction: the digit wins when you can read the pane you want, the arrow when you only know it is over there. Walking keeps the grid open because it is repeated by nature. Walking off the edge wraps, which is tmux's own rule.
+> Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. A split inherits the directory through the shell's OSC 7 report (`@cwd`).
 
-See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 Ctrl+<arrow>`](./windows.md#f5-ctrl-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
-
-## `F5 Shift+<arrow>`
-
-**Split the view in a direction**
-
-*terminal*
-
-Press `F5`, then Shift and an arrow: the pane splits that way, the new pane opens in the directory the old one was in, and the grid closes with the cursor in the new pane. `Left` and `Up` put the new pane before the current one, `Right` and `Down` after it.
-
-> **Why it is this way**
->
-> A split inherits the current directory because you are dividing the work in front of you; a new window starts at `~` because it is a clean slate. The directory comes from the shell's OSC 7 report, read as `#{pane_path}` through the `@cwd` option — which is why `config.nu` keeps `osc7: true`. Not `#{pane_current_path}`: nushell's `cd` never changes the process cwd. `osc133` stays OFF: double-marking left phantom prompt lines.
-
-See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Ctrl+<arrow>`](./windows.md#f5-ctrl-arrow) · [`F5 q`](./windows.md#f5-q)
-
-## `F5 Ctrl+<arrow>`
-
-**Move the pane you are in**
-
-*terminal*
-
-Press `F5`, then Ctrl and an arrow: the pane you are in trades places with its neighbour on that side, the grid closes, and you are carrying the pane — every further arrow, with or without Ctrl, swaps it one more step that way. `Enter` or `Escape` puts it down. Its number changes with its place, because the number is the position.
-
-> **Why it is this way**
->
-> It is a swap, not a re-layout: the two panes trade slots and every size stays put. Carrying is tmux's own key table, `pane-move`, so the plain arrows there mean swap rather than walk, and the status bar shows `pane-move` while it is on. macOS claims `Ctrl+<arrow>` for Spaces by default, so those shortcuts must be off in System Settings → Keyboard → Keyboard Shortcuts → Mission Control or the key never reaches the terminal.
-
-See also: [`F5 <arrow>`](./windows.md#f5-arrow) · [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
-
-## `F5 q`
-
-**Close the pane you are working in**
-
-*terminal*
-
-Press `F5`, then `q`: the pane you were in is gone and its neighbours take the space back. Nothing asks first and there is no undo. Close the only pane of the only window and the session goes with it.
-
-> **Why it is this way**
->
-> `q` is not a tile key in the left-hand grid, so it cannot be hit while aiming at a window. There is no confirmation because the key's point is being one gesture, and tmux keeps nothing to restore a killed pane from.
-
-See also: [`F5 Shift+<arrow>`](./windows.md#f5-shift-arrow) · [`F5 <digit>`](./windows.md#f5-digit)
+See also: [`F5`](./windows.md#f5) · [`F5 s s`](./windows.md#f5-s-s)
 
 ## Read the bar across the top
 
 *terminal*
 
-Nothing to press. The window numbers run along the left of the bar: the one you are in has a filled background, and a number shows lit rather than dimmed when something is running in any of that window's panes — one glance says where the work is. On the right is the current pane's directory and the clock. Over ssh the machine's name appears on the far left; on this machine that space is blank, because you already know.
+Nothing to press. The left of the bar is the clock and the machine's load; the right end lists the session's windows by number, the current one in the accent, then a reverse-video chip counting every process (pane) in every session. Over ssh the machine's name appears in each pane's header.
 
 > **Why it is this way**
 >
 > Background says which window has focus, foreground says which windows are busy — two signals that never have to be decoded out of one channel. A window counts as busy when any of its panes is running something that is not a shell, read from the pane's foreground process rather than from prompt marking, which is deliberately off. There is no key legend on the bar: the digits are the legend, and a legend in words was tried and removed as noise. The colours are ANSI slots, never fixed values, so a theme switch retints the bar with everything else.
 
-See also: [`F5 <digit>`](./windows.md#f5-digit) · [`F5 <letter>`](./windows.md#f5-letter)
+See also: [`F5`](./windows.md#f5)
 
 ## Close the terminal without losing your work
 
@@ -140,7 +140,7 @@ Quit the terminal — or lose the ssh connection — and nothing stops: reopenin
 >
 > The session outliving the terminal is free — the server is a separate process and the attach is idempotent, so opening the terminal again is the same gesture as opening it the first time. Surviving a REBOOT is not free and is two plugins: one saves and restores the layout, the other runs the timer. What comes back is the shape of the work — where each pane was, what it was running — and not a copy of its scrollback, which would put the output of every command on disk and grow without bound. Editors come back through the editor's own session file rather than by dropping an untracked file in every project directory.
 
-See also: [`the status bar`](./windows.md#the-status-bar) · [`F5 <digit>`](./windows.md#f5-digit)
+See also: [`the status bar`](./windows.md#the-status-bar) · [`F5`](./windows.md#f5)
 
 ## `q / :q / /exit`
 
@@ -149,20 +149,6 @@ See also: [`the status bar`](./windows.md#the-status-bar) · [`F5 <digit>`](./wi
 *shell*
 
 Any of the three exits. They exist because muscle memory arrives from vim, from a REPL, and from a chat box, and none of them should print an error.
-
-## `F5 F5`
-
-**Open the cockpit from the grid**
-
-*terminal*
-
-Press `F5` twice and the grid gives way to the cockpit — the same which-key menu `F1` opens. One key for where you are going, the same key again for everything else.
-
-> **Why it is this way**
->
-> The second press is read by the grid itself, so it is never sent to the program in the pane. That means a tmux you have ssh'd into cannot be reached with `F5` from outside: the outermost session always takes it. `F6` is not forwardable either, on purpose: the palette belongs to the outermost terminal.
-
-See also: [`F5`](./windows.md#f5) · [`F1`](./windows.md#f1) · [`F6`](./appearance.md#switch-scheme)
 
 ## `Ctrl+Alt+Super+drag`
 
@@ -189,5 +175,19 @@ Hold `Shift` and left-click a URL or a hyperlinked file path — in a plain shel
 > **Why it is this way**
 >
 > Three measured facts: `mouse_reporting` on the duplicate binding is what keeps it working while an application captures the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), a feature only a client attached after it was set receives; and the click's Down stroke is Nopped, because with only Up bound tmux takes the press and turns the click into a copy-mode selection.
+
+See also: [`Ctrl+Alt+Super+drag`](./windows.md#ctrl-alt-super-drag)
+
+## `Alt+Enter`
+
+**Leave or re-enter fullscreen**
+
+*terminal*
+
+Press `Alt+Enter` (Option+Enter) and the WezTerm window leaves fullscreen and stays a normal window through resizes and display changes. Press it again and it fills the screen again.
+
+> **Why it is this way**
+>
+> Every window is kept fullscreen by a resize handler that re-fills any window not filling its screen, so a plain toggle would be undone at once. The key marks the window it takes out of fullscreen, and the handler leaves a marked window alone. WezTerm's own default for this key is switched off with the rest of its defaults, which is why it is bound here.
 
 See also: [`Ctrl+Alt+Super+drag`](./windows.md#ctrl-alt-super-drag)

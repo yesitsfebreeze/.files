@@ -6,14 +6,13 @@
 
 Copying works without the mouse: freeze the screen, move the cursor, and press `c` to widen the selection from a cell to a word to a whole line. Where the text lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at.
 
-## `F4` · `copymode`
+## `F4`
 
 **Freeze the screen and select text with the keyboard**
 
-Two routes to the same thing:
+*terminal*
 
-- `F4` *(terminal)* — Press `F4` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` opens a selection by hand for what those miss, `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection.
-- `copymode` *(shell)* — Type `copymode` at a host prompt and the pane it runs in freezes into copy mode, exactly as `F4` leaves it — the same motions, the same selection keys. Outside tmux it says so rather than doing nothing.
+Press `F4` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` opens a selection by hand for what those miss, `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection.
 
 > **Why it is this way**
 >

@@ -72,6 +72,12 @@
       "read_when": "touching tmux's @cwd, nushell's osc7 setting, or chasing a split landing in the wrong directory",
       "links": {}
     },
+    "panes-are-found-not-addressed": {
+      "path": "knowledge/panes-are-found-not-addressed.md",
+      "description": "tmux panes are reached by fuzzy-finding their name and content (cockpit `s s`, search sessions), not by a window address \u2014 recency order, swap-pane to pull, a detached session as a shelf",
+      "read_when": "touching the cockpit's search sessions row, pane navigation, window indices, or the tmux-panes channel",
+      "links": {}
+    },
     "the-editor-claude-is-a-tmux-pane": {
       "path": "knowledge/the-editor-claude-is-a-tmux-pane.md",
       "description": "nvim's Claude pane is a real tmux pane through claude-tmux, spawned via cll so the model is picked at spawn and the login survives",
@@ -106,12 +112,6 @@
       "path": "knowledge/tmux-copy-pipe-is-one-binding-two-arms.md",
       "description": "the tmux copy sink is an option every copy path must name \u2014 a sink chosen and never used is the bug that shipped for weeks",
       "read_when": "touching tmux copy bindings, set-clipboard, or chasing a selection that does not paste",
-      "links": {}
-    },
-    "tmux-window-indices-are-the-address-scheme": {
-      "path": "knowledge/tmux-window-indices-are-the-address-scheme.md",
-      "description": "tmux window indices are the address scheme \u2014 renumber-windows off keeps a digit meaning the same window, and the F5 grid that rides on it",
-      "read_when": "touching tmux addressing, the F5 grid, or a digit binding",
       "links": {}
     },
     "tv-needs-a-tty-and-the-unhijack-rides-every-call": {

@@ -9,20 +9,15 @@ config.default_prog = { home .. "/.local/bin/tmux-main" }
 
 config.set_environment_variables = {
 	XDG_CONFIG_HOME = home .. "/.config",
-	PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:"
-		.. home
-		.. "/.local/bin:"
-		.. home
-		.. "/.cargo/bin:"
-		.. (os.getenv("PATH") or ""),
+	PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:" .. home .. "/.local/bin:" .. home .. "/.cargo/bin:" .. (os.getenv(
+		"PATH"
+	) or ""),
 }
 
 config.color_scheme = "Gruvbox Material (Gogh)"
 config.enable_tab_bar = false
 
--- The F8 `font` channel (font.sh) records its pick here, and the reload
--- watch applies it to every window. Its live preview arrives as a user var
--- and becomes a per-window override; an empty value drops the override.
+-- The F8 font pick and its live preview. manual → internals/wezterm, "Font".
 local font_file = home .. "/.local/state/wezterm/font.txt"
 wezterm.add_to_config_reload_watch_list(font_file)
 local picked = io.open(font_file)
@@ -36,6 +31,7 @@ local cockpit = {
 	bigger = act.IncreaseFontSize,
 	smaller = act.DecreaseFontSize,
 	reset = act.ResetFontSize,
+	close = act.CloseCurrentTab({ confirm = false }),
 }
 wezterm.on("user-var-changed", function(window, pane, name, value)
 	if name == "wez" and cockpit[value] then
@@ -61,22 +57,23 @@ config.font_size = 14.0
 config.line_height = 1.0
 config.font_dirs = { home .. "/Library/Fonts" }
 
--- Every window is fullscreen, always, and non-native: macOS's native mode
--- gives each window its own Space, so switching windows or monitors animates
--- a Space change and re-lays the grid mid-slide. Non-native just fills the
--- screen the window is on — but a display change (resolution, arrangement)
--- can shove that frame half off-screen while the state still says
--- fullscreen, hiding tmux's bottom bar. So every resize re-checks: a window
--- that is not fullscreen, or whose size matches no screen, is re-filled.
--- The 2 s throttle stops a screen that never matches from toggling forever.
+-- Always non-native fullscreen: a display change can shove the frame half
+-- off-screen while it still reports fullscreen, hiding tmux's bottom bar, so
+-- every resize re-fills a window whose width matches no screen (throttled 2 s),
+-- unless Alt+Enter took that window out of fullscreen.
+-- Width only: fullscreen stops below the MacBook notch, so height never matches.
+-- manual → internals/wezterm.
 config.native_macos_fullscreen_mode = false
 local function fill(window)
+	if (wezterm.GLOBAL.windowed or {})[tostring(window:window_id())] then
+		return
+	end
 	local d = window:get_dimensions()
 	if not d.is_full_screen then
 		return window:toggle_fullscreen()
 	end
 	for _, s in pairs(wezterm.gui.screens().by_name) do
-		if s.width == d.pixel_width and s.height == d.pixel_height then
+		if s.width == d.pixel_width then
 			return
 		end
 	end
@@ -94,7 +91,7 @@ wezterm.on("window-resized", fill)
 
 config.window_decorations = "RESIZE"
 config.default_cursor_style = "BlinkingBlock"
-config.window_background_opacity = 0.95
+config.window_background_opacity = 0.9
 config.macos_window_background_blur = 30
 config.audible_bell = "Disabled"
 -- Zero padding anchors the grid top-left; the sub-cell remainder sits at the
@@ -118,6 +115,17 @@ config.keys = {
 	-- client, so closing the tab closes the window; the session detaches.
 	{ key = "q", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
 	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
+	-- Leaving fullscreen opts this window out of `fill`; entering opts back in.
+	{
+		key = "Enter",
+		mods = "ALT",
+		action = wezterm.action_callback(function(window)
+			local windowed, id = wezterm.GLOBAL.windowed or {}, tostring(window:window_id())
+			windowed[id] = window:get_dimensions().is_full_screen or nil
+			wezterm.GLOBAL.windowed = windowed
+			window:toggle_fullscreen()
+		end),
+	},
 
 	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
 	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
@@ -125,24 +133,8 @@ config.keys = {
 	{ key = "c", mods = "CTRL", action = act.SendKey({ key = "c", mods = "CTRL" }) },
 }
 
--- SHIFT + click opens the link under the cursor, in tmux/nvim (mouse reporting
--- on) and in the plain shell alike — one binding per reporting state.
--- Three measured facts pin this shape:
--- 1. mouse_reporting defaulting to false means a plain binding NEVER matches
---    while an app tracks the mouse; only the duplicated mouse_reporting=true
---    binding fires there (mouse.html, "will only be considered if the current
---    pane's mouse reporting state matches").
--- 2. SHIFT is WezTerm's default `bypass_mouse_reporting_modifiers`: the bypass
---    strips the modifier before matching (wezterm#4536), so with the default
---    in place a SHIFT binding can never fire under mouse reporting. The bypass
---    therefore moves to ALT — the cost is ALT+click bypassing to a block
---    selection under mouse reporting, a dead modifier here anyway.
--- 3. Binding only the Up event still sends the DOWN stroke to the running
---    program (mouse.html, "Gotcha on binding an 'Up' event only"). tmux takes
---    the press, a jittered click becomes a drag, and its copy-mode selection
---    eats the click — the "stuck in selection" failure. The two Nop Down
---    bindings stop that: both halves of SHIFT+click are consumed by WezTerm
---    in both reporting states.
+-- SHIFT+click opens a link in both mouse-reporting states; the bypass moves
+-- to ALT and the Down stroke is Nopped. manual → internals/wezterm.
 config.bypass_mouse_reporting_modifiers = "ALT"
 
 config.mouse_bindings = {
@@ -162,8 +154,6 @@ config.mouse_bindings = {
 		mouse_reporting = true,
 		action = act.OpenLinkAtMouseCursor,
 	},
-	-- With no Down binding the press reaches tmux (see fact 3 above) and the
-	-- click turns into a selection. Nop consumes it instead, in both states.
 	{
 		event = { Down = { streak = 1, button = "Left" } },
 		mods = "SHIFT",

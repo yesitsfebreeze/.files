@@ -48,6 +48,20 @@ Press `F8` in any pane and a list of channels floats over it in a centred box, a
 
 See also: [`F7`](./files.md#f7) · [`F3`](./files.md#f3) · [`F9`](./appearance.md#f9)
 
+## `Ctrl-x in the files picker`
+
+**Copy, move or open the picked file**
+
+*terminal*
+
+In the files channel, `Ctrl-x` lists every action by name. `Ctrl-b` copies the file's contents to the clipboard. `copy_file` copies the file itself, so it pastes into Finder or Mail. `Ctrl-g` moves it: a second picker asks for the directory (`Enter` picks it), then a prompt asks for the name, and `Enter` on an empty name keeps the old one. `F12` still opens the file in the editor.
+
+> **Why it is this way**
+>
+> They are television's own channel actions (`[actions.*]` in `files.toml`), so they work wherever the files channel opens. Every picker has the same shape: the preview on top, the results under it, the input line at the bottom, like telescope's vertical layout (`orientation = portrait` in television's `config.toml`). An action ends the picker and prints nothing, so `F8` has no row left to act on afterwards. The move asks `mv -i` before overwriting anything.
+
+See also: [`F8`](./files.md#f8) · [`F3`](./files.md#f3)
+
 ## `grep`
 
 **Search file contents with ripgrep**

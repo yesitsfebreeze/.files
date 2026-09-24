@@ -27,9 +27,10 @@ Nothing is ported because it exists; it is ported because a rating in
 - One container tool (Capsule), one image definition.
 - Two finders, deliberately: television in the shell, telescope in the
   editor. fzf is the one accepted third picker, reached only through
-  `zoxide query --interactive` and tv-go's channel step and theme/font
-  pickers — the two things television cannot do (accept the last match,
-  re-run a preview on every focus).
+  `zoxide query --interactive` and tv-go's channel step, theme/font pickers
+  and session search — the three things television cannot do (accept the
+  last match, re-run a preview on every focus, re-run the source on every
+  keystroke).
 - tmux owns multiplexing (windows, panes, splits, copy, status,
   persistence); WezTerm keeps only local chrome (font, grid, opacity,
   launchd PATH, capsule send-keys).

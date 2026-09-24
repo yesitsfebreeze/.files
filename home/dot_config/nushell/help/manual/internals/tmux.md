@@ -124,9 +124,9 @@ directory from *who ran it*:
 | **a key binding** | **the session's working directory** |
 
 The last is the only one anybody presses, so a binding that wants `~` has to
-say so. Every digit bind carries `-c ~` explicitly for that reason; **do not
+say so. Every window-letter bind carries `-c ~` explicitly for that reason; **do not
 add a `new-window` that leans on the session directory instead.** It used to
-be able to: the session was created at `$HOME` and the digit binds inherited
+be able to: the session was created at `$HOME` and the window binds inherited
 it. Since 2026-09-01 the session is created at the recorded start dir (below),
 so the inherited answer is no longer `~`.
 
@@ -218,52 +218,95 @@ sitting in must resolve the path itself first.
 makes `#{pane_current_command}` read `nu` — the value the status bar tints
 occupied windows from.
 
-## F5 — the grid
+## Search sessions — `F5 s s`
 
-`F5` runs `~/.local/bin/grid`: burrito's picker drawn over tmux. It opens a
-popup 90% × 85% of the client holding windows 1-9 as a 3×3 grid of tiles, each
-a `capture-pane` snapshot of that window, labelled with the left-hand key that
-reaches it:
+A pane is a process you reach like an editor buffer: there is no address,
+you find it by name or by what it printed. The cockpit's `s s` runs `tv-go
+act panes` through `modal`, and `tv-go` runs fzf, not television: tv filters
+only the text it displays and cannot re-run its source per keystroke, and
+here the list shows names while the query must also reach content.
 
-```
-l w d      1 2 3
-r s t  =   4 5 6
-x c v      7 8 9
-```
+As the picker opens, `tmux-panes snap` writes each pane's name line and last
+5000 lines (`capture-pane -S -5000`) to a temp directory. Every keystroke
+(`fzf --disabled`, `change:reload`) runs `tmux-panes list DIR QUERY`: `rg -l
+-F -i` over that directory, then one row per matching pane — name (title, or
+program while the title is still the host name), program · directory ·
+session, and how long ago it was used. The preview is `capture-pane -e`, the
+pane's screen.
 
-Burrito itself was deleted as a multiplexer (tmux owns windows and panes); only
-its interface came back. The script draws and reads keys and nothing else —
-every select, split, swap and kill is a tmux command against the pane `F5` was
-pressed in, so a bare tmux over ssh loses the picture, not the windows.
+Order is recency. `pane-focus-in` stamps `#{client_activity}` into the pane's
+`@used`: tmux formats have no clock, and the focusing input is the latest
+client activity. A pane option travels with the pane through `swap-pane`.
+The pane the picker came from is listed last; panes not focused since the
+hook arrived read "never" and sort last.
 
-A tile key selects that window, or creates it at `~` (not the current
-directory: a new window is a clean slate, a split divides the work in front of
-you). Onto a window with one pane the popup closes; with several it stays open
-for a digit. A digit selects that pane of the current window. The key of the
-window or pane you are already on toggles `resize-pane -Z` instead. Arrows walk
-panes and redraw; Shift+arrow splits (inheriting `@cwd`) and closes; `q` kills
-the pane; Ctrl+arrow swaps and hands over to tmux's `pane-move` table; a second
-`F5` closes the grid and opens the cockpit; a lone `Escape` closes.
+`Enter` is `swap-pane -s PICKED -t ORIGIN`: the picked process takes the
+origin's slot and focus, and what was there takes the picked one's old place,
+so nothing is killed. A detached session (`_park`) is a shelf.
 
-**Escape vs. an arrow.** Both start with `ESC`. The script reads one byte, and
-on `ESC` reads the rest with `stty min 0 time 1` — the tail of a sequence
-arrives in the same write, a lone Escape times out after 0.1 s. bash 3.2's
-`read -t` takes whole seconds only, which is why it is `stty` and `dd`.
+`Ctrl-D` is `kill-pane` on the focused row, whatever runs in it, skipped
+when that row is the origin (`Enter` would have nothing to swap into). The
+list reloads.
 
-**Window names come from one `list-windows`.** `display -t SESSION:4` on a
-missing window 4 does not fail: it falls back to another window and prints its
-name, so an empty slot would read as occupied. Measured.
+`Ctrl-X` runs `tmux-panes close` over the listed rows: every pane whose
+`pane_current_command` is a bare shell (nu, zsh, bash, sh) is killed, never
+the origin, so a running program is never closed by it. The list reloads.
 
-**Carrying** stays a key table because it outlives the popup: in `pane-move`
-every arrow, with or without Ctrl, swaps again and only `Enter` or `Escape`
-pops back to `root`. The swap takes `-d`, since without it focus stays on the
-slot and lands on the neighbour that just moved in. A key with no binding in a
-pushed table is looked up a second time in `root` and dropped if that misses,
-so a stray key ends carrying and types nothing.
+`Tab` toggles the **backlog**: panes whose `@used` is an hour or more old, or
+unset. fzf keeps no state of its own a reload could read, so the prompt is
+the state — `tab` is a `transform` that flips it between `sessions> ` and
+`backlog> ` and reloads, and `tmux-panes list` reads the exported
+`FZF_PROMPT`. Every other reload (typing, `Ctrl-D`, `Ctrl-X`) inherits it, so the
+backlog stays filtered while you type and `Ctrl-X` closes only its shells.
 
-`F5 F5` no longer forwards `F5` to a nested tmux: the second press is read by
-the grid. A root binding is always taken by the outermost server, so an inner
-tmux's `F5` is unreachable from outside.
+`F5 w w` makes that shelf explicit: a new window in `_park` (`new-session`
+when it is missing), swapped into the current pane.
+
+`F5 w h` hides a pane: `break-pane -d` into `_park`, so the layout closes up.
+Its name is `@name`, asked for in a popup when unset, and `tmux-panes` shows
+it before the title — a title is the program's to rewrite. The session's only
+pane is swapped for a fresh shell instead, since a session cannot be emptied.
+
+### Slot history
+
+Every swap into a pane goes through `tmux-slot`, which records it, so
+`F5 w b` / `F5 w f` step back and forward like a buffer jumplist. The
+history belongs to the place: the process moves out on every swap, so it is
+a window option per pane position, `@slot<pane_index>` = `POS ID ID …`,
+oldest first — `swap-pane` keeps positions. A new swap after going back
+truncates the forward part. Stepping skips ids no longer in `list-panes -a`.
+TRAP: `display -p -t %GONE` exits 0, so it cannot test whether a pane still
+exists. Splitting or closing panes renumbers `pane_index`, and a slot's
+history then follows the number, not the place.
+
+## Move mode — an arrow in the cockpit
+
+The cockpit reads an arrow's escape sequence (`\e[A` or `\eOA`, and the
+rest), writes `U D L R`, and closes; the launcher runs `select-pane -t PANE
+-U|-D|-L|-R` and `switch-client -c CLIENT -T jump`. Shift+arrow (`\e[1;2A`…)
+writes the split flags instead (`vb v h hb`) and the launcher runs
+`split-window -t PANE -FLAGS -c '#{E:@cwd}'` before arming `jump`. Any other
+escape sequence closes the cockpit unrun, so a key the cockpit does not name
+is swallowed — every arrow it should act on must be listed. Every binding in `jump` —
+arrows, Shift+arrow splits, `q` — ends in `switch-client -T jump`, so the mode
+lasts; `Enter` and `Escape` go back to `root`.
+
+A digit at the cockpit's top level writes `wN`; the launcher runs
+`select-window -t SESSION:=N`, or `new-window -t SESSION:N -c ~` when it
+fails. `=` is exact: a bare `:N` with no window N prefix-matches a window
+*named* `N…` (Claude auto-names its window `2.1.280`), so `2` silently landed
+there instead of opening window 2. The session is the origin pane's, named outright: a `run-shell -b`
+job has no current client to resolve `:N` against. `base-index 1` makes the
+digit the window number the status bar shows.
+
+### A pushed table falls back to `root`, then drops
+
+A key with no binding in the pushed table is looked up **a second time** in
+`root`. If root does not bind it either it is **dropped** — it never reaches
+the program in the pane. So a mistyped key ends move mode and types
+nothing, and no timeout is needed: the table is popped by the next keystroke.
+A binding that does not end in `switch-client -T` therefore *ends* the mode,
+which is why every move-mode binding re-arms `jump`.
 
 ### Pane borders
 
@@ -274,9 +317,8 @@ rounded corners are available for popups only.
 
 ### Pane numbers are only honest with the border
 
-tmux **renumbers panes** when one is killed, so a number does not keep its
-pane for life. `pane-border-format` prints `#{pane_index}`, the same index the
-grid's digit selects, so the label is right the instant after a renumber.
+tmux **renumbers panes** when one is killed; `pane-border-format` prints
+`#{pane_index}`, so the header is right the instant after a renumber.
 
 The label is plain text on the border line, like a popup's title:
 `2  ~/dev main* ↑2  3 hours ago`. It uses the same local-host OSC 7 check as
@@ -422,13 +464,12 @@ silently does nothing on others, which is the exact failure I1 exists to catch:
 correct on paper, silent in practice, invisible to anyone not sitting at the
 one terminal it was tried on.
 
-`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (the grid) and
+`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (jump) and
 `F6` (theme) in the row this config reserves for keys no program in a pane
 wants. A root binding is always taken by the outermost server, so a nested
 tmux never sees it.
 
-`C-b [` remains the entry that works on every terminal ever, and `copymode` is
-the same mode from a shell prompt.
+`C-b [` remains the entry that works on every terminal ever.
 
 **The fact worth keeping from the old section**, because it is why binding a
 chord was tempting: binding `C-S-x` costs plain `C-x` nothing. Measured, with
@@ -624,15 +665,10 @@ a table whose motions are emacs bindings.
 
 Colours are **ANSI slots, not hex**. `colour0` is base00 and `colour7` is base05
 after tinted-shell's OSC 4, so they follow a `tinty apply` for free on any
-terminal that honours it. The one value with no ANSI slot is base02 (the active
-label's background); `colour8`/base03 stands in until `colors.conf` sets the
-exact style.
+terminal that honours it. The window number is foreground only — the accent,
+no background, no Claude tint — and `colors.conf` sets the exact accent.
 
-The digit's **background** says which window has focus and its **foreground**
-says what Claude is doing in it — "The digit wears Claude's state", below — so
-the two signals never compete for one channel.
-
-The active label's colours live in a style *option*, not inline in the format,
+Its colour lives in a style *option*, not inline in the format,
 because a later `source-file` can replace a style option and cannot replace a
 format's embedded `#[…]`.
 
@@ -645,12 +681,19 @@ it with the *window* row `wy`. With the bar on top `woy` is 1, so the check is
 one row off and a popup's or menu's **first row** is repainted by every pane
 redraw — the modal's top border blinked on each header tick, broken in 87 of
 ~155 frames with F8 open at 168×54, and whole in every frame after opening with
-the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the clock; **`tmux-sys`** — CPU and memory as a
-five-cell bar plus percent, and the default interface's download/upload in
+the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the clock; **`tmux-sys`** — CPU, memory and GPU as a
+five-cell bar plus percent; VRAM as a bar plus used/max GB — the unified
+memory the GPU holds (`ioreg`'s "In use system memory"; Apple Silicon has no
+separate VRAM) over Metal's `recommendedMaxWorkingSetSize`, cached in
+`$TMPDIR/tmux-sys.gpumax` until `iogpu.wired_limit_mb` changes; and the default interface's download/upload in
 Mbit/s since the previous tick, every field fixed width so the chip and digits
 never shift; the **key-table chip**, which appears the
-instant a table is pushed and names it (`pane-move` while a pane is carried);
-and at the right the window digits.
+instant a table is pushed and names it (copy-mode, or the prefix);
+and at the right every window's number, the current one in the accent, then
+the server's process count — `list-panes -a`, one `#()` per status tick — as
+a reverse-video chip, drawn once by the last window's format
+(`window_end_flag`) because `status-right` must stay empty for
+`status-justify right` to reach the edge.
 
 Everything about a pane lives in **that pane's header** — plain text on its
 top border: the pane number, the host (over ssh), the cwd, the **git segment**
@@ -676,7 +719,7 @@ tables this config actually uses, there being no prefix key here to highlight �
 until it existed, nothing on screen said a table was armed. **Trap for
 anyone re-measuring it:** a real keypress redraws the status, so the chip
 appears and clears instantly, but driving the same change from the CLI with
-`switch-client -T pane-move` does *not* mark the status dirty and the chip does not
+`switch-client -T copy-mode` does *not* mark the status dirty and the chip does not
 appear until the next tick. That reads exactly like a broken format and is not
 one.
 
@@ -725,59 +768,11 @@ building the cwd segment. It is why both arms of the SSH test are double-quoted.
 Every pane keeps its top border label visible. The config removes the former
 `window-layout-changed` hook so splitting or closing a pane cannot hide it.
 
-## The digit wears Claude's state
+## Claude's state is no longer drawn
 
-The window digit's foreground is what Claude is doing in that window: **colour4
-working**, **colour2 finished**, **colour3 waiting for you**, unlit when no
-Claude there has reported. `waiting` beats `working` in a window running two,
-because it is the one state that is asking for a human.
-
-The report comes from Claude Code itself, through hooks. `UserPromptSubmit` and
-`Stop` bracket a turn. `Notification` is the only event that fires while nothing
-is running, and since `cc` passes `--dangerously-skip-permissions` there is no
-permission prompt left to raise it, so here it means the **idle nudge** — a
-finished turn nobody has come back to. `SessionStart` and `SessionEnd` both
-clear, because the pane outlives the Claude in it and a green digit over a bare
-shell is worse than no colour at all.
-
-Nothing sniffs the panes, and the alternative is worth naming: a Claude pane
-cannot be recognised by its command, because Claude Code runs as its own version
-string and `#{pane_current_command}` on one reads `2.1.258` — measured
-2026-09-02 — so a matcher would print a version number where a name belongs and
-break at the next release.
-
-The state is a **pane** option, `@claude`, set by `~/.local/bin/tmux-claude-state`
-from `$TMUX_PANE`, which a hook inherits from the Claude that spawned it. Pane
-and not window: one window holds a Claude beside a shell often enough, and a
-pane option **dies with its pane**, so a Claude that is killed rather than
-exited leaves nothing behind — a window option would outlive it and strand the
-digit in a colour with no process left to clear it. Measured 2026-09-02: killing
-a `waiting` pane dropped its window straight back to the `working` of the pane
-beside it, with nothing to clean up.
-
-The digit gathers them at draw time with `#{P:…}`, so nothing is stored per
-window and no count can go stale. **Trap:** `#{P:…}` and `#{W:…}` each take two
-comma-separated arguments (`#{P:other,current}`), so a top-level comma inside one
-splits it rather than printing; every comma in `@claude-tint` is nested inside a
-`#{?…}` and safe. **Trap:** `#{E:…}` is what expands a user option holding a
-format, and a `#[fg=…]` arriving from one *is* honoured by the bar — measured
-2026-09-02 on 3.7c by drawing the bar in a nested server and reading the escapes
-back out of the pane it drew into.
-
-Every hook ends in `refresh-client -S`. Without it the colour waits for
-`status-interval`, and a turn that finishes in under five seconds goes green
-after it has already finished — which reads as a broken hook rather than a slow
-one.
-
-The hooks live in `~/.claude/settings.json`, which chezmoi does not manage:
-`run_after_install-claude-hooks.sh` merges the block in and replaces only the
-entries naming `tmux-claude-state`, the same way `register-mcp` shells out
-rather than writing `~/.claude.json` itself. **Trap:** every profile, not just
-the root file. `cc` runs Claude under `CLAUDE_CONFIG_DIR=~/.claude/<profile>`,
-and `_claude_share` *copies* settings.json into a profile at creation rather
-than symlinking it — so a block written only to the root reaches no session that
-`cc` ever starts, which is exactly how the first cut of this shipped and did
-nothing.
+The bar used to tint the window digit by what Claude was doing in it. The
+digits and the tint are gone; `tmux-claude-state` still records `@claude` per
+pane from Claude Code's hooks, and nothing reads it.
 
 ## Palette delivery
 

@@ -1,0 +1,52 @@
+#!/bin/sh
+# tmux-panes — F5 s s's rows: one per pane, name (`@name`, else the title
+# or program), what runs where, last used.
+#
+#   tmux-panes snap DIR           capture every pane once, as the picker opens
+#   tmux-panes list DIR [QUERY]   the panes whose name or last 5000 lines hold
+#                                 QUERY (any case), on every keystroke
+#   tmux-panes close DIR [QUERY]  kill the listed panes sitting at a bare
+#                                 shell prompt, never the one it came from
+#
+# The backlog (Tab in the picker, which shows it as the `backlog> ` prompt
+# and fzf exports as FZF_PROMPT): only panes untouched for an hour or more.
+#
+# Most recently used first (`@used`, the time tmux.conf's pane-focus-in hook
+# stamps), the pane the picker came from (TV_ALL_ORIGIN) last. A row is the
+# pane id, a tab, then the shown text. manual → internals/tmux,
+# "Search sessions".
+set -u
+fmt='#{?@used,#{@used},0}	#{pane_id}	#{?@name,#{@name},#{?#{==:#{pane_title},#{host}},#{pane_current_command},#{pane_title}}}	#{pane_current_command} · #{b:pane_current_path} · #{session_name}'
+case $1 in
+snap)
+    tmux list-panes -a -F "$fmt" | while IFS='	' read -r _ id name info; do
+        { printf '%s %s\n' "$name" "$info"; tmux capture-pane -p -t "$id" -S -5000; } > "$2/$id"
+    done ;;
+list)
+    # A path for rg: with none it reads stdin when stdin is not a tty.
+    hits=""
+    [ -z "${3:-}" ] || hits=$(cd "$2" && rg -l -F -i -- "$3" . | sed 's|^\./||' | tr '\n' ' ')
+    # ponytail: fixed 1 h backlog cut; make it an option if it needs tuning.
+    since=0; case ${FZF_PROMPT:-} in backlog*) since=3600 ;; esac
+    tmux list-panes -a -F "$fmt" | sort -rn | awk -F'\t' -v o="${TV_ALL_ORIGIN:-}" \
+        -v q="${3:-}" -v hits="$hits" -v now="$(date +%s)" -v since="$since" '
+        BEGIN { n = split(hits, h, " "); for (i = 1; i <= n; i++) hit[h[i]] = 1 }
+        function ago(t,   d) {
+            if (t == 0) return "never"
+            d = now - t
+            return d < 60 ? d "s ago" : d < 3600 ? int(d / 60) "m ago" : d < 86400 ? int(d / 3600) "h ago" : int(d / 86400) "d ago"
+        }
+        q != "" && !($2 in hit) { next }
+        since && now - $1 < since { next }
+        { row = $2 "\t" $3 "  \033[90m" $4 " · " ago($1) "\033[0m" }
+        $2 == o { last = row; next }
+        { print row }
+        END { if (last != "") print last }' ;;
+close)
+    "$0" list "$2" "${3:-}" | cut -f1 | while read -r id; do
+        [ "$id" != "${TV_ALL_ORIGIN:-}" ] || continue
+        case $(tmux display -p -t "$id" '#{pane_current_command}') in
+        nu | zsh | bash | sh) tmux kill-pane -t "$id" ;;
+        esac
+    done ;;
+esac

@@ -18,5 +18,6 @@ Every entry links to where the guide explains it.
 | `<leader>fh` | Search Neovim's own help | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-fh) |
 | `<Tab> <S-Tab> <CR> (telescope)` | Send several picks to the quickfix list | nvim normal | [Find a file, a line, or a directory](../guide/files.md#tab-s-tab-cr-telescope) |
 | `F8` | Pick a channel, then a row, and act on it | terminal | [Find a file, a line, or a directory](../guide/files.md#f8) |
+| `Ctrl-x in the files picker` | Copy, move or open the picked file | terminal | [Find a file, a line, or a directory](../guide/files.md#ctrl-x-in-the-files-picker) |
 | `F7` | Pick a channel, then a row, and type it into this pane | terminal | [Find a file, a line, or a directory](../guide/files.md#f7) |
 | `F3` | Search: say what, then pick the channel | terminal | [Find a file, a line, or a directory](../guide/files.md#f3) |

@@ -69,6 +69,9 @@ cockpit_wired)
     tmux -L orly-cockpit source-file home/dot_config/tmux/tmux.conf; rc=$?
     tmux -L orly-cockpit list-keys | rg -q '^bind-key +-T root +F1 +run-shell .*cockpit' || { echo "cockpit: F1 does not run cockpit"; rc=1; }
     tmux -L orly-cockpit kill-server
+    # A digit must select by exact index (`:=N`): plain `:N` prefix-matches a
+    # window *named* `2.1.280` (Claude's version) when index N is missing.
+    rg -q 'select-window -t "\$s:=\$\{key#w\}"' home/dot_local/bin/executable_cockpit || { echo "cockpit: digit target is not exact (:=N)"; rc=1; }
     awk -F'\t' 'NF != 4 { print FILENAME ":" NR ": want 4 fields"; bad = 1 }
         $2 == "" { print FILENAME ":" NR ": no icon"; bad = 1 }
         $4 == "" { g[$1] = 1 }
