@@ -26,9 +26,10 @@ open_and_leave() {
 HYPERLINK=$(tmux display-message -p -t "$PANE" '#{copy_cursor_hyperlink}')
 [ -n "$HYPERLINK" ] && open_and_leave "$HYPERLINK"
 
-CX=$(tmux display-message -p -t "$PANE" '#{copy_cursor_x}')
-CY=$(tmux display-message -p -t "$PANE" '#{copy_cursor_y}')
-L=$(tmux capture-pane -p -J -t "$PANE" -S -0 | sed -n "$((CY + 1))p")
+# The row as copy mode shows it: a capture would read the live screen, not
+# the scrolled-back view, and -J would shift every row below a wrap.
+V=$(tmux display-message -p -t "$PANE" '#{copy_cursor_x}|#{copy_cursor_line}')
+CX=${V%%|*} L=${V#*|}
 LEN=$(printf '%s' "$L" | wc -c | tr -d ' ')
 char_at() { printf '%s' "$1" | cut -c $(( $2 + 1 )); }
 

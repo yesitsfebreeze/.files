@@ -74,6 +74,9 @@
     },
     "recents_resolve": {
       "command": "bash .orly/recents.sh"
+    },
+    "copy_mode_rows": {
+      "command": "bash .orly/copy-mode.sh"
     }
   }
 }

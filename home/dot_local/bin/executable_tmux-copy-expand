@@ -14,11 +14,12 @@
 
 PANE=${1:?tmux-copy-expand: no pane}
 
-IFS='|' read -r CX CY LAST_AT LAST_SPAN < <(tmux display -p -t "$PANE" \
-    '#{copy_cursor_x}|#{copy_cursor_y}|#{@expand-at}|#{@expand-span}')
-# One element per screen row; -J joins wrapped lines into their logical row.
+IFS='|' read -r CX CY TOP H LAST_AT LAST_SPAN < <(tmux display -p -t "$PANE" \
+    '#{copy_cursor_x}|#{copy_cursor_y}|#{scroll_position}|#{pane_height}|#{@expand-at}|#{@expand-span}')
+# One element per row of the copy-mode view, which is what CY counts: scrolled
+# back by scroll_position, and no -J, since a joined wrap shifts every row below.
 # A read loop, not mapfile: /bin/bash is 3.2 here.
-ROWS=(); while IFS= read -r l; do ROWS+=("$l"); done < <(tmux capture-pane -p -J -t "$PANE" -S -0)
+ROWS=(); while IFS= read -r l; do ROWS+=("$l"); done < <(tmux capture-pane -p -t "$PANE" -S $((-TOP)) -E $((H - 1 - TOP)))
 
 fail() { tmux send-keys -t "$PANE" -X clear-selection; exit 0; }
 blank() { [[ -z "${1//[[:space:]]/}" ]]; }
