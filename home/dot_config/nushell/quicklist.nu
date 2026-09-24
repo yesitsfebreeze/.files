@@ -39,11 +39,13 @@ export def --env quicklist [] {
     let raw = (try {
         tv quicklist --input-header "recents    [enter] open   [ctrl-r] replay in its dir   [esc] back" --keybindings 'enter="confirm_selection"' --expect ctrl-r
     } catch { "" })
-    let parsed = (_finder_parse $raw)
-    let row = ($parsed.entries | where { |l| ($l | str trim) != "" } | get -o 0 | default "")
+    # --expect prints a key line only for ctrl-r; Enter prints the row alone.
+    let lines = ($raw | lines | where { |l| ($l | str trim) != "" })
+    let replay = (($lines | get -o 0) == "ctrl-r")
+    let row = ($lines | skip (if $replay { 1 } else { 0 }) | get -o 0 | default "")
     if ($row | is-empty) { return }
     let entry = (_recents_entry $row)
-    if $parsed.key == "ctrl-r" {
+    if $replay {
         _recents_replay $entry
     } else {
         _recents_open $entry

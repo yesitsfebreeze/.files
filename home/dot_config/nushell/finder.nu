@@ -40,25 +40,6 @@ def _finder_type [channel: string] {
     }
 }
 
-# ── tv --expect output decoder ──────────────────────────────────────────────
-
-def _finder_parse [raw: string] {
-    mut lines = ($raw | lines)
-    if (($lines | length) > 0) and (($lines | last | str trim) | is-empty) {
-        $lines = ($lines | drop 1)
-    }
-    if ($lines | is-empty) { return { key: "abort", entries: [] } }
-    let head = ($lines | first | str trim)
-    let known = ["ctrl-p" "ctrl-b" "ctrl-n" "ctrl-r" "ctrl-o" "enter" "esc"]
-    if $head in $known {
-        { key: $head, entries: ($lines | skip 1) }
-    } else if ($head | is-empty) {
-        { key: "enter", entries: ($lines | skip 1) }
-    } else {
-        { key: "enter", entries: $lines }
-    }
-}
-
 # ── typed decoder ───────────────────────────────────────────────────────────
 
 def _finder_decode [stage] {

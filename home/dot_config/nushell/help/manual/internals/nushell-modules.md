@@ -151,8 +151,8 @@ WHY THIS NODE SHIPS TWO MODULES AND NOT ONE. Nushell binds a def body's
 command calls at PARSE time, and this node has a genuine cycle:
   * zoxide.nu (MODULES, above finder.nu) and finder.nu BOTH call
     `_recents_add`, so the log must parse BEFORE both;
-  * quicklist.nu's runner calls `_finder_decode`, `_finder_open`,
-    `_finder_parse` and `finder`, so it must parse AFTER finder.nu.
+  * quicklist.nu's runner calls `_finder_decode`, `_finder_open` and
+    `finder`, so it must parse AFTER finder.nu.
 One file cannot sit on both sides of finder.nu, so the log is its own
 module and is sourced between claude.nu and zoxide.nu. An unresolved
 `_recents_add` would bind as an EXTERNAL and fail at runtime on every
@@ -333,9 +333,9 @@ The clamp floors at 0 and ceils at n−1, so Down before any Up injects the NEWE
 export def --env finder [
 ```
 
-finder.nu — the typed channel runner over `tv` (television): `finder`, the typed decoder, the open-by-type dispatcher and the --expect parser. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
+finder.nu — the typed channel runner over `tv` (television): `finder`, the typed decoder, and the open-by-type dispatcher. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
 
-tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, stdout line 1 is the pressed key; a plain enter emits an empty first line.
+tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, an expected key prints its name on line 1 before the row; a plain enter prints the row alone, with no key line (television 0.15.9, measured 2026-09-24). `.orly/recents.sh` drives quicklist through both.
 
 THE UN-HIJACK RIDES EVERY INVOCATION. FOUR channels bind enter to an action instead of confirming (backlog M-9 counts three — `git-branch` is a fourth it undercounted, reported for the backlog): `text` and `recent-files` bind `actions:edit`, `zoxide` binds `actions:cd` (a nested `$SHELL` in the picked directory instead of moving the caller's shell), and `git-branch` binds `actions:checkout`. Passing `enter="confirm_selection"` unconditionally covers all four and whatever a new cable file does; tab multi-selects. Note `text` is our own local override, not the stock channel — it carries a local `output` template and a two-entry source list, so a reader sent upstream for it finds nothing. ── public entrypoint ──────────────────────────────────────────────────────── finder: run a tv channel and return the selection as structured nu data. --start : skip the channels picker and run this channel directly (e.g. `finder --start recent-dirs` drops straight into the recent-dirs channel).
 
@@ -373,18 +373,6 @@ def _finder_type [channel: string] {
 ── type lookup ───────────────────────────────────────────────────────────── _finder_type: the typed value a channel produces (R2). Known channels return typed values _finder_decode can parse into structured data; anything unknown passes raw strings. `recent-dirs` and `recent-files` are typed by the names their cable files actually carry (the L-3 fix: the live decoder typed a name no cable file has ever had, so recent-dir picks fell through to Any and came back as raw, unexpanded strings).
 
 ```
-def _finder_parse [raw: string] {
-```
-
-── tv --expect output decoder ────────────────────────────────────────────── _finder_parse: decode tv's `--expect` stdout into { key, entries }. Contract (limitation (c)): with --expect, line 1 is the pressed key; a plain enter emits an empty first line. Kept from live verbatim — 04-shell/07's quicklist runner reuses it.
-
-```
-let known = ["ctrl-p" "ctrl-b" "ctrl-n" "ctrl-r" "ctrl-o" "enter" "esc"]
-```
-
-`ctrl-o` was 06-help/03-browser's key — the `manual` channel's "open the entry's PRD". **That channel was deleted on 2026-09-02 and nothing binds `ctrl-o` any more**, so this list entry is dead: no runner passes `--expect ctrl-o`, and a key nobody expects is never the head of a row block. It is left in `known` rather than removed because the reason it had to be here is the live constraint and outlives the key — with an unknown head, the else-branch below returns the pressed key AS THE FIRST ENTRY, so any `--expect`ed key missing from this list silently yields a detail render for a nonexistent entry instead of opening anything. Add a key here in the same change that binds it.
-
-```
 def _finder_decode [stage] {
 ```
 
@@ -412,7 +400,7 @@ def _recents_entry [line: string] {
 
 quicklist.nu — the quicklist RUNNER (04-shell/07-quicklist R3/R4): the `quicklist` command behind Ctrl-Q, plus the two dispatch helpers it uses. The log itself lives in recents.nu.
 
-SOURCED AFTER finder.nu AT MODULES, and that is forced rather than tidy: nushell binds a def body's calls at PARSE time, and the bodies below call `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`. recents.nu is on the OTHER side of finder.nu for the mirror-image reason — zoxide.nu and finder.nu both call `_recents_add` — which is why this node ships two modules and not one. config.nu's MODULES paragraph carries the same note.
+SOURCED AFTER finder.nu AT MODULES, and that is forced rather than tidy: nushell binds a def body's calls at PARSE time, and the bodies below call `_finder_decode`, `_finder_open` and `finder`. recents.nu is on the OTHER side of finder.nu for the mirror-image reason — zoxide.nu and finder.nu both call `_recents_add` — which is why this node ships two modules and not one. config.nu's MODULES paragraph carries the same note.
 
 THE GUARD IS `$nu.is-interactive`, NOT THE ONE THE LIVE CONFIG USES, and the live spelling is kept OUT OF THIS FILE ENTIRELY — including out of this comment — so that a grep hit is proof of a regression and never of a sentence explaining one. That is zoxide.nu's convention, for the same reason. Measured on the pinned 0.114.1 (config.nu's PALETTE anchor carries the measurement): the live spelling, used as a parenthesised `if` condition, captures stdout and is false unconditionally — on a terminal or off one — so it never drew the line it meant to.
 
@@ -443,12 +431,6 @@ quicklist (R3, R4): the runner. Guard, empty-state, ONE tv call, dispatch.
 The un-hijack rides this invocation like every other (finder.nu's header): our own cable file binds no `enter`, but the flag costs nothing and survives someone adding one.
 
 R4's empty state is a PRINT AND RETURN, never an empty picker — the shipped manual entry (help/shell.nuon, Ctrl-Q) already promises "an empty log prints a hint rather than an empty picker", and this is what makes that entry true. tv is not spawned at all on that path.
-
-```
-let parsed = (_finder_parse $raw)
-```
-
-_finder_parse, reused verbatim — which is what finder.nu's comment at that def reserves it for. With --expect, stdout line 1 is the pressed key and a plain enter emits an EMPTY first line.
 
 ## `theme` (config.nu) and `theme.sh`
 
