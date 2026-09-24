@@ -75,7 +75,7 @@ Two consequences:
 
 `quicklist` ships **two** modules, not one. `zoxide.nu` and `finder.nu` both
 call `_recents_add`, so the log must parse **above** both; the quicklist runner
-calls `_finder_decode`, `_finder_open`, `_finder_parse` and `finder`, so it must
+calls `_finder_decode`, `_finder_open` and `finder`, so it must
 parse **below** `finder.nu`. One file cannot sit on both sides. So `recents.nu`
 goes above `zoxide.nu` and `quicklist.nu` directly below `finder.nu`.
 
