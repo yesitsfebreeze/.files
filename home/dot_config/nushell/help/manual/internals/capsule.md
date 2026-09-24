@@ -62,16 +62,10 @@ def _capsule_dockerfile [] { $env.HOME | path join ".config" "capsule" "Dockerfi
 The one Dockerfile — the chezmoi target of C.1 (01-capsule/02-dev-image).
 
 ```
-def _capsule_recents [] { $env.HOME | path join ".cache" "capsule" "recents.nuon" }
-```
-
-Recents store, per C.4 R1: state, not config — outside ~/.config, so `chezmoi apply` never touches it.
-
-```
 def _capsule_creds_dir [] { $env.HOME | path join ".cache" "capsule" "creds" }
 ```
 
-The exported credential material (C.3). Runtime state, so it sits beside recents.nuon and deliberately OUTSIDE the docker build context — see the credentials note in this file's header for why that is a hard rule.
+The exported credential material (C.3). Runtime state, so it sits in ~/.cache and deliberately OUTSIDE the docker build context — see the credentials note in this file's header for why that is a hard rule.
 
 ```
 def _capsule_setup_script [] { $env.HOME | path join ".config" "capsule" "setup-credentials.sh" }
@@ -118,12 +112,6 @@ def _capsule_owned [] {
 ```
 
 _capsule_owned (R6): the ONE set both `list` and `clean` operate on. Label AND prefix — strictly narrower than the prefix R6 requires, so a hand-made container that happens to be named capsule-x is still never touched.
-
-```
-def _capsule_record [dir: string] {
-```
-
-_capsule_record (R7, format per C.4 R1): most recent first, deduplicated, capped at 20. Non-fatal by design — a read-only cache dir must not block the attach, so any failure is one stderr line and the flow continues.
 
 ```
 def _capsule_creds_write [name: string, content: any] {
@@ -198,30 +186,6 @@ A SOURCE THAT DOES NOT EXIST IS SKIPPED, NOT PASSED: docker materialises a missi
 Two staleness notes. `~/.gitconfig` and the setup script are FILE binds, so a host edit that replaces the file (`git config` writes by rename) is invisible to containers that already exist — `capsule --rebuild` is the fix, and that is acceptable for identity and aliases. And a capsule created BEFORE C.3 landed has no credential mounts at all, because docker cannot add mounts to an existing container: `capsule --rebuild` is again the fix.
 
 ```
-def _capsule_recents_read [] {
-```
-
-── the recents picker (01-capsule/04, task C.4) ────────────────────────────
-
-THE PICKER IS A TELEVISION AD-HOC CHANNEL, NOT A HAND-ROLLED TUI. 04-shell's invariant I3 gives every picker screen to tv and names exactly one exception (fzf behind `zi`), so a second hand-rolled picker would be a new decision. Ad-hoc (`^tv --source-command …`, no channel argument) rather than a cable file, because a cable file would put a capsule surface inside ~/.config/television, which 04-shell/04 owns.
-
-EVERY TV CALL GOES THROUGH `^tv`, for the same reason every docker call goes through `^docker`: a PATH shim can then observe it, so the real picker path can be driven against a recording shim without a terminal. _capsule_recents_read (R4): the store, pruned on read. A directory that no longer exists is dropped AND the pruned list is written back, so a dead entry leaves the picker for good instead of being filtered on every open. The write-back is non-fatal, like _capsule_record's: a store that cannot be rewritten must still be pickable.
-
-```
-def _capsule_shquote [p: string] {
-```
-
-_capsule_shquote: POSIX single-quote one path for the source command tv runs through sh — everything inside '' is literal, and an embedded quote is closed, escaped and reopened. A LOCAL helper and not finder.nu's: this file parses standalone under `nu -n`, so no def here may belong to another module.
-
-```
-def _capsule_recents_pick [dirs: list] {
-```
-
-_capsule_recents_pick (R2, R3): the picker screen. Returns the chosen directory, or "" when the pick was aborted.
-
-The flag set, every flag load-bearing, measured against television 0.15.9 on 2026-08-23: --input-header "Recent"  is R3's mode feedback, and the picker surface is its host because the WezTerm status bar is clock-only and set_left_status is never called (finding C-5). tv defaults this title to the channel name, which for an ad-hoc channel says nothing. --no-sort  keeps the source order, and the source order IS the recency order (R1: most recent first). Without it tv reorders by match quality and the newest entry is no longer on top. --keybindings 'enter="confirm_selection"'  confirms the pick whatever ~/.config/television/config.toml binds — that file belongs to 04-shell/04, and an ad-hoc channel has no prototype of its own to carry the binding. The grammar is key="action" and tv validates it eagerly: the inverse config-file form `confirm_selection = "enter"` exits 1 with `Error parsing CLI arguments`, so a typo is loud rather than silent. --no-preview  a list of directories has nothing to preview.
-
-```
 def capsule [dir?: path, --rebuild] {
 ```
 
@@ -232,12 +196,6 @@ let target = ($dir | default $env.PWD | path expand)
 ```
 
 1 — the target. Everything downstream uses $target only (R5).
-
-```
-if (which docker | is-empty) {
-```
-
-2 — preconditions, named.
 
 ```
 let name = (_capsule_name $target)
@@ -292,12 +250,6 @@ if not $exists and ((_capsule_setup_script) | path exists) {
 A non-zero exit is one stderr line and the flow CONTINUES to the attach, so a broken setup leaves a usable container to debug in rather than no container at all.
 
 ```
-_capsule_record $target
-```
-
-11 — record AFTER the container is confirmed up, BEFORE the attach, because exec blocks until the shell exits (R7).
-
-```
 ^docker exec -it $name zsh
 ```
 
@@ -328,14 +280,6 @@ set, and the `--rebuild` recreate never reads that set at all.
 The two guards are not the same test. _capsule_owned is label-key AND name prefix; step 6 tests the label's VALUE. They agree on every container this tool can create, because the create line always writes a non-empty capsule.dir. They diverge on one input nothing here can produce: a container someone else named capsule-* and labelled with an EMPTY capsule.dir. Step 6 refuses that one; clean removes it.
 
 The roster above is maintained by hand and nothing checks it. Adding a fourth removal site means adding it here in the same change, or the next reader trusts a list of three.
-
-```
-def "capsule recent" [] {
-```
-
-capsule recent (R2): pick a recently mounted directory and mount it. The pick funnels straight back into `capsule`, so there is exactly one mount path (the epic's one-entry-path acceptance) and this def knows nothing about images, names or containers.
-
-THE TTY GUARD IS $nu.is-interactive, and it fails FIRST. tv has no headless mode: run without a terminal it aborts with "television had a problem and crashed" and writes a crash report (measured 0.15.9, 2026-08-23), so the clean error has to come before the call. Ctrl+Shift+O reaches this def through `nu --execute`, where $nu.is-interactive is TRUE — measured on nushell 0.114.1, 2026-08-23; it is false under `-c`, so anything checking this without a terminal has to drive the helpers rather than this def.
 
 ## `executable_setup-credentials.sh`
 

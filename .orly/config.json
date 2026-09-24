@@ -77,6 +77,9 @@
     },
     "copy_mode_rows": {
       "command": "bash .orly/copy-mode.sh"
+    },
+    "manual_snippets": {
+      "command": "python3 .orly/manual-snippets.py home/dot_config/nushell/help/manual/internals/nushell-modules.md home/dot_config/nushell/help/manual/internals/capsule.md"
     }
   }
 }

@@ -6,21 +6,11 @@ Notes harvested from the module sources. Each block is anchored to the line it w
 
 ## `env.nu`
 
-```
-$env.ENV_CONVERSIONS = {
-```
-
 env.nu — nushell's env-config. Nushell evaluates this file BEFORE config.nu, and WezTerm launches nu with an explicit `--env-config` pointing here, so this is the first of the two managed files to run in every shell.
 
 It does three things and nothing else: repair PATH for a login shell macOS never ran `path_helper` for (R1), set the handful of variables the rest of the epic reads (R2), and open an interactive shell where the user last navigated while leaving `nu -c` in its caller's directory (R7).
 
-It sources nothing. The generated shell integrations (starship, zoxide, television) are produced at chezmoi-apply time by `run_after_generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md. ── PATH <-> list conversions ─────────────────────────────────────────────── Required in principle because this file overrides nushell's stock env.nu, which is where the string<->list conversion normally comes from.
-
-MEASURED 2026-08-21 on the pinned nushell 0.114.1, with an empty env-config and no ENV_CONVERSIONS anywhere: `$env.PATH | describe` is ALREADY `list<string>` and it ALREADY round-trips to a colon-joined string for child processes. So on this version the PATH repair below does not depend on this block. It is kept because the requirement makes it a box and because it is cheap insurance if a future nushell drops that built-in special case — but do not repeat the older claim that without it `$env.PATH` is a plain string. It is not, here.
-
-The closures are a PLAIN round trip. The live block ran each side through nushell's path-expansion command; that is deliberately dropped, and the command's name is kept out of this file so a grep for it is proof it is gone. Measured, both directions: expansion had no observable effect on a `~/...` entry (it is already expanded on the way in), and its ONE real effect was to make a RELATIVE PATH entry absolute against the CURRENT WORKING DIRECTORY — which would make the exported PATH change as you `cd`. That is a surprise, not a feature.
-
-The "Path" key is the Windows spelling and is INERT on this host — the scope decisions declare macOS only. It costs one record entry, so it is kept to match the requirement's wording; it is not evidence of Windows support.
+It sources nothing. The generated shell integrations (starship, zoxide, television) are produced at chezmoi-apply time by `run_after_generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md.
 
 ```
 $env.PATH = (
@@ -211,29 +201,19 @@ _recents_lines: the quicklist cable's source rows — one TAB-joined `kind<TAB>v
 
 ## `zoxide.nu`
 
-```
-def _z_no_zoxide [] {
-```
+zoxide.nu — zoxide navigation (04-shell/03): the z/zi wrappers, `zz`, and the bare-word fallback. Sourced by config.nu at the MODULES anchor.
 
-zoxide.nu — zoxide navigation (04-shell/03): the z/zi wrappers, the composed verbs zz/zl/zc, and the bare-word fallback. Sourced by config.nu at the MODULES anchor.
-
-PARSE ORDER IS LOAD-BEARING, TWICE OVER. Nushell binds a def body's command calls at parse time, so this file must be parsed AFTER the generated zoxide init at the GENERATED anchor (`__zoxide_z` in the def bodies below) and AFTER claude.nu at MODULES (`cc` in `zc`'s body). An unresolved `cc` silently binds to /usr/bin/cc, the C compiler: a reversed MODULES order produces no error at parse and a compiler invocation at runtime. Reverse the two anchors and type `zc` if you want to watch it happen.
+PARSE ORDER IS LOAD-BEARING. Nushell binds a def body's command calls at parse time, so this file must be parsed AFTER the generated zoxide init at the GENERATED anchor (`__zoxide_z` in the def bodies below): an unresolved name binds as an EXTERNAL and fails only at runtime.
 
 THE RECENTS SEAM, NOW CLOSED (04-shell/07-quicklist): the real logger lives in recents.nu, sourced above this file at MODULES, and the four `_recents_add` call sites below re-bind to it at parse. The no-op shim this file used to carry is GONE — it existed only because an unresolved name binds as an EXTERNAL and would fail at runtime on every jump, which is a hazard only while the logger does not exist. Sourcing recents.nu above this file is the same mechanism the live config used (finder.nu sourced before the wrappers); recents.nu is its own module, and not quicklist.nu, because quicklist.nu's runner calls into finder.nu and so must be sourced BELOW it, on the other side of this file.
 
-THE M-8 HAZARD, CORRECTLY ATTRIBUTED: a no-match `zoxide query` returns the EMPTY string, `__zoxide_z` hands that to the `cd` alias, and `mkcd` reads an empty argument as "no argument" and targets $env.HOME. The hazard is mkcd's empty-argument reading, not `__zoxide_z` itself. Every non-literal jump below is pre-flighted through `complete` and validated as an existing dir BEFORE anything reaches `cd`, so a miss never moves PWD — and a cancelled `zi`, whose empty selection walks the same road, is guarded the same way. _z_no_zoxide — the one message the USER-INVOKED entry points share (R3). Defined ABOVE its call sites, and that is load-bearing for the same reason the header gives for `cc` and `__zoxide_z`: nushell binds a def body's calls at PARSE time, so a helper defined below them would bind as an EXTERNAL and fail at runtime on the one path that is supposed to be the clean answer.
+THE M-8 HAZARD, CORRECTLY ATTRIBUTED: a no-match `zoxide query` returns the EMPTY string, `__zoxide_z` hands that to the `cd` alias, and `mkcd` reads an empty argument as "no argument" and targets $env.HOME. The hazard is mkcd's empty-argument reading, not `__zoxide_z` itself. Every non-literal jump below is pre-flighted through `complete` and validated as an existing dir BEFORE anything reaches `cd`, so a miss never moves PWD — and a cancelled `zi`, whose empty selection walks the same road, is guarded the same way.
 
 ```
 def --env _z_jump [rest: list<string>] {
 ```
 
 _z_jump — the guarded jump. Returns true when the jump ran, false on a miss — and on a miss PWD is untouched (R6, M-8). The three literal arms of the generated `__zoxide_z` ([], ['-'], a single arg expanding to an existing dir) delegate directly; everything else is pre-flighted as a query so the empty no-match result never reaches `cd` → mkcd. On a genuine match the jump is still DELEGATED to `__zoxide_z` — R1's "wraps `__zoxide_z`" and R4's funnel (the `cd` inside it is the alias → mkcd) stay literally true — so the matched query runs twice: milliseconds, paid only on success.
-
-```
-if (which zoxide | is-empty) { _z_no_zoxide; return false }
-```
-
-ABOVE THE LITERAL ARMS, not at the query below: an ABSENT zoxide means an EMPTY generated init (the generator truncates on a missing tool), so `__zoxide_z` is not defined either and binds as an EXTERNAL — measured 2026-08-23, `z <existing dir>` answered `Command __zoxide_z not found`.
 
 ```
 print -e ($q.stderr | str trim)
@@ -254,28 +234,10 @@ def --env --wrapped _zi_nav [...rest: string] {
 zi (R2): the interactive picker. It shells out to `zoxide query --interactive`, which spawns fzf — the one accepted exception to epic I3's "tv owns every picker screen" (decided 2026-08-21, user; see 00-delivery/decisions/fzf). Queried DIRECTLY rather than via `__zoxide_zi`: R2 names the command, `__zoxide_zi` adds nothing but the unguarded `cd` — the zi-shaped M-8 hole: live, a cancelled picker hands "" to `cd` → mkcd → HOME. No --exclude is added: the live `__zoxide_zi` carries none (measured; recorded in decisions/fzf's closing note).
 
 ```
-alias cdi = zi
-```
-
-cdi — the same picker under the name muscle memory reaches for. 04-shell/02's spec explicitly left this alias to this node.
-
-```
 alias zz = cd -
 ```
 
 zz — step back to the previous directory (R3). Pairs with the bare-word fallback below: a bare unknown token jumps forward, `zz` steps back. `cd` is the funnel alias, so `-` reaches mkcd like any move.
-
-```
-def --env --wrapped zl [...rest: string] {
-```
-
-zl (R3): jump, then `la`. Dirs only — no file-opening branch, unlike `z`. On success the terminal shows the listing TWICE — zl's own plus the PWD hook's auto-list — which is exactly what the shipped manual entry says. No listing on a failed jump.
-
-```
-def --env --wrapped zc [...rest: string] {
-```
-
-zc (R3): jump, then Claude (`cc`). No launch on a failed jump — launching Claude in the un-jumped-to dir is the M-8 failure wearing a different hat.
 
 ```
 def --env _z_fallback [] {
@@ -306,12 +268,6 @@ if ($first | str starts-with '-') or ($first | str starts-with '/') or ($first |
 ```
 
 bail only on real path operators — a leading '/' or '~', any embedded '/' (so `./x`, `../x`, `~/x`, `a/b` are paths), a flag, or bare `.`/`..`. A dotdir NAME like `.files` is NOT a path operator, so it stays a valid zoxide nav target.
-
-```
-if (which zoxide | is-empty) { return }
-```
-
-candidate navigation: ask zoxide directly, jump only on a genuine dir match. SILENTLY, unlike the three user-invoked sites above (R2): nothing asked for zoxide here — this closure fires on EVERY unresolvable bare word — so a missing binary must leave the shell's OWN unknown-command error as the only thing printed. Measured 2026-08-23 with zoxide absent: two typos in one session produced FOUR error boxes unguarded, the first of each pair quoting this file and even offering the generated init's jump function as a did-you-mean, and the string `zoxide` appeared 8 times in the transcript; with the guard it is two boxes, both the shell's own, and the string `zoxide` appears NOT ONCE. (The name of the generated init's jump function is kept out of this body on purpose — its empty no-match hand-off is the M-8 route to HOME — so a grep of the source finds it only if that route has been reopened.)
 
 ```
 _dirstack_push $env.PWD
@@ -377,7 +333,7 @@ The clamp floors at 0 and ceils at n−1, so Down before any Up injects the NEWE
 export def --env finder [
 ```
 
-finder.nu — the typed channel runner over `tv` (television): `finder`, the channel picker, the typed decoder, the open-by-type dispatcher, the --expect parser, the shell quoter and the cht → cht-query pipe. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
+finder.nu — the typed channel runner over `tv` (television): `finder`, the typed decoder, the open-by-type dispatcher and the --expect parser. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
 
 tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, stdout line 1 is the pressed key; a plain enter emits an empty first line.
 
@@ -388,24 +344,6 @@ error make { msg: "finder: interactive-only — tv requires a TTY" }
 ```
 
 tv would panic without a TTY (limitation (a)); fail first, cleanly.
-
-```
-let unhijack = 'enter="confirm_selection";tab="toggle_selection"'
-```
-
-The un-hijack (R1) — on EVERY invocation, see the header.
-
-```
-if $channel == "cht" {
-```
-
-The cht → cht-query pipe (R5): ctrl-p carries the picked language into the query channel, whose source becomes that language's live topic list, each topic prefixed `<lang>/` so the confirmed line is a complete sheet id (`python/lambda`). A BUILD, not a port: the deployed finder.nu never implemented it. Plain enter on `cht` falls through as a raw pick.
-
-```
-for line in $entries { _recents_add "Any" $line "cht" }
-```
-
-04-shell/07 R2: a raw `cht` pick is a finder pick, so it logs too — below this branch's own emptiness guard, for the same reason the main branch logs below its decode check. `cht` is an untyped channel, so the kind is `Any` and quicklist's Any arm decides what `enter` may do with it.
 
 ```
 if ($decoded | is-empty) {
@@ -429,40 +367,10 @@ line are load-bearing:
     selected row, because tab multi-selects.
 
 ```
-def _finder_cht_query [lang: string, unhijack: string] {
-```
-
-── the cht-query step ────────────────────────────────────────────────────── _finder_cht_query: run the cht-query channel with its source overridden to the picked language's live topic list. nu has no `||`, so the fetch is a bash one-liner; sed prefixes every topic with `<lang>/`.
-
-```
-for line in $entries { _recents_add "ChtSheet" $line "cht-query" }
-```
-
-04-shell/07 R2, below this branch's empty-decode check for the same reason: a sheet pick is a finder pick.
-
-```
 def _finder_type [channel: string] {
 ```
 
 ── type lookup ───────────────────────────────────────────────────────────── _finder_type: the typed value a channel produces (R2). Known channels return typed values _finder_decode can parse into structured data; anything unknown passes raw strings. `recent-dirs` and `recent-files` are typed by the names their cable files actually carry (the L-3 fix: the live decoder typed a name no cable file has ever had, so recent-dir picks fell through to Any and came back as raw, unexpanded strings).
-
-```
-def _finder_pick_channel [] {
-```
-
-── channel picker ────────────────────────────────────────────────────────── _finder_pick_channel: choose a channel by fuzzy-searching tv's channel list. The candidate list is computed here and handed to the `channels` channel via --source-command (R5: the remote's own channel, overridden per call). esc → "" (the caller reads that as abort). NO non-tty fallback to "first channel" — the live one has that and it is wrong; callers guard on `$nu.is-interactive` before calling.
-
-```
-def _finder_shquote [p: string] {
-```
-
-── shell quoting ─────────────────────────────────────────────────────────── _finder_shquote: POSIX single-quote one path (everything inside '' is literal). NOTE: this is POSIX-shell quoting (sh/bash/zsh).
-
-```
-def _finder_shquote_list [ps: list] {
-```
-
-_finder_shquote_list: quote+join a list of paths for safe splicing.
 
 ```
 def _finder_parse [raw: string] {
@@ -510,13 +418,15 @@ THE GUARD IS `$nu.is-interactive`, NOT THE ONE THE LIVE CONFIG USES, and the liv
 
 `ctrl-r` HERE MEANS REPLAY AND COLLIDES WITH NOTHING. This is its own `tv` invocation, and the reedline Ctrl-R history binding is a different surface: reedline is not reading the keyboard while tv owns the terminal.
 
-WHAT THE `Any` ARM IS FOR, since R3 leaves it undefined. The untyped channels — zoxide, git-branch, alias, env, nu-history, cht — log kind `Any`, which `_finder_decode` passes through as a bare string and `_finder_open`'s else-branch would `cd` if it were a directory and open in $EDITOR otherwise. For a branch name or an env var that means the editor on a file that does not exist. So an `Any` entry opens only when its value resolves to an existing path, and otherwise prints one line naming ctrl-r as the way to act on it. The alternative — not logging the untyped channels at all — was declined: it would empty "cross-channel recents" of most of its channels. _recents_entry: one TAB row from the cable's `output = "{}"` back into the record the dispatch helpers read. Every field is defaulted, `--empty` included, because a truncated row must degrade rather than raise: an unknown kind is `Any` (the least-privileged arm above) and an unknown cwd is the current directory (replay in place beats replay nowhere).
+WHAT THE `Any` ARM IS FOR, since R3 leaves it undefined. The untyped channels — zoxide, git-branch, alias, env, nu-history — log kind `Any`, which `_finder_decode` passes through as a bare string and `_finder_open`'s else-branch would `cd` if it were a directory and open in $EDITOR otherwise. For a branch name or an env var that means the editor on a file that does not exist. So an `Any` entry opens only when its value resolves to an existing path, and otherwise prints one line naming ctrl-r as the way to act on it. The alternative — not logging the untyped channels at all — was declined: it would empty "cross-channel recents" of most of its channels. _recents_entry: one TAB row from the cable's `output = "{}"` back into the record the dispatch helpers read. Every field is defaulted, `--empty` included, because a truncated row must degrade rather than raise: an unknown kind is `Any` (the least-privileged arm above) and an unknown cwd is the current directory (replay in place beats replay nowhere).
 
 ```
 def --env _recents_open [entry] {
 ```
 
 _recents_open (R3, `enter`): OPEN BY TYPE, reusing finder's decoder and its opener on a SINGLE stored value. That reuse is what finder.nu's own comment reserves — the empty-decode check lives in `finder` and not in `_finder_decode` precisely so "04-shell/07 reuses the decoder on single stored values", where a dead path is that one entry's problem and not a failure. The stored pair is the RAW pick line plus the channel's `produces` name, so this re-decode reproduces exactly what `finder` returned when the pick was made. --env so a `cd` from a directory entry reaches the shell.
+
+The decode runs in the entry's recorded cwd: `fd` and `rg` print paths relative to where tv ran, so a pick expanded against the current directory would open the wrong file, or drop it silently. `.orly/recents.sh` checks both.
 
 ```
 def --env _recents_replay [entry] {
@@ -540,25 +450,13 @@ let parsed = (_finder_parse $raw)
 
 _finder_parse, reused verbatim — which is what finder.nu's comment at that def reserves it for. With --expect, stdout line 1 is the pressed key and a plain enter emits an EMPTY first line.
 
-## `copymode.nu`
-
-```
-def copymode [] {
-```
-
-copymode.nu — enter copy mode from the shell. Sourced by config.nu at the MODULES anchor.
-
-REWRITTEN 2026-08-30 (07-multiplexer/09-manual-entries). It used to print an OSC 1337 SetUserVar that wezterm.lua's `user-var-changed` handler parsed off the pty — "the only route from a shell command into a GUI-only mode", which was true of WezTerm and is the kind of sentence that stops being true when the mode moves. Copy mode is tmux's now, and tmux's CLI *does* have an action for it, so the whole escape-sequence trick is gone: one command, addressed at the pane it was typed in.
-
-`$env.TMUX` is the guard, not `which tmux`: what matters is whether THIS shell is inside a session, not whether the binary exists. Outside one there is no pane to freeze and nothing sensible to do but say so.
-
 ## `theme` (config.nu) and `theme.sh`
 
 ```
-def --wrapped theme [...rest] {
+def theme [sub?: string] {
 ```
 
-theme: three lines over `~/.config/tinted-theming/tinty/theme.sh`, which is the whole theme system. `theme` runs `tv theme`; Enter prints the id and the shell hands it to `theme.sh --apply`, Esc prints nothing and plain `theme.sh` repaints the current scheme over whatever the preview left. `theme toggle` is `theme.sh --toggle`, the same action as F6.
+theme: a thin caller of `~/.config/tinted-theming/tinty/theme.sh`, which is the whole theme system. `theme` opens the F9 picker (`tv-go act theme`); `theme toggle` is `theme.sh --toggle`, the same action as F6.
 
 theme.sh modes: plain (paint the current scheme — tinty's hook, tmux's client-session-changed hook, Esc), `--apply ID` (paint, record the pick as its variant's slot in `$XDG_STATE_HOME/tinted-theming/{dark,light}.txt`, then let `tinty apply` record it as current), `--toggle` (`--apply` the other variant's slot, gruvbox dark/light hard when empty), `--preview ID` (paint into a scratch conf, record nothing, print the swatch — the tv preview, so moving the cursor retints the whole terminal), `--list` (current, then every scheme of the same variant, one `rg` over the catalog — the tv source).
 
