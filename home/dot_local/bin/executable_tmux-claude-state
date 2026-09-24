@@ -24,4 +24,11 @@ if [ -n "${1:-}" ]; then set="set -p -t $TMUX_PANE @claude $1"; else set="set -p
 # ends in under five seconds goes green after it has already finished — which
 # reads as a broken hook rather than a slow one.
 tmux if -F -t "$TMUX_PANE" "#{==:#{@claude},${1:-}}" '' "$set ; refresh-client -S" 2> /dev/null
+
+# The session's transcript as @claude_transcript, so a reader can find the
+# pane's last answer (the omarchy voice loop speaks it). Hook input is JSON on
+# stdin; no jq or no path simply records nothing.
+tr=$(jq -r '.transcript_path // empty' 2> /dev/null) || tr=
+case "$tr" in *"'"*|"") exit 0 ;; esac
+tmux if -F -t "$TMUX_PANE" "#{==:#{@claude_transcript},$tr}" '' "set -p -t $TMUX_PANE @claude_transcript '$tr'" 2> /dev/null
 exit 0
