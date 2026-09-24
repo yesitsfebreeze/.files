@@ -17,7 +17,11 @@ def --env _recents_open [entry] {
         print $"quicklist: a ($entry.channel) entry is not openable by type — press ctrl-r to replay it in ($entry.cwd)"
         return
     }
-    _finder_open (_finder_decode { produces: $entry.kind, results: [$entry.value] })
+    # fd and rg print paths relative to where tv ran: expand them there.
+    _finder_open (do {
+        if ($entry.cwd | path type) == "dir" { cd $entry.cwd }
+        _finder_decode { produces: $entry.kind, results: [$entry.value] }
+    })
 }
 
 def --env _recents_replay [entry] {

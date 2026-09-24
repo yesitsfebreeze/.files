@@ -71,6 +71,9 @@
     },
     "leader_wired": {
       "command": "bash .orly/invariants.sh cockpit_wired"
+    },
+    "recents_resolve": {
+      "command": "bash .orly/recents.sh"
     }
   }
 }
