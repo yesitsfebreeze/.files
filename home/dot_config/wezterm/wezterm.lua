@@ -1,9 +1,11 @@
--- macOS host only (repo scope decision) — no is_mac branch, no Linux fonts.
+-- macOS and Omarchy (Linux). `mac` gates the few macOS-only settings.
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 local act = wezterm.action
 
 local home = os.getenv("HOME") or ""
+local mac = wezterm.target_triple:find("darwin") ~= nil
+local default_font = mac and "CaskaydiaCove Nerd Font" or "DepartureMono Nerd Font"
 
 config.default_prog = { home .. "/.local/bin/tmux-main" }
 
@@ -15,6 +17,15 @@ config.set_environment_variables = {
 }
 
 config.color_scheme = "Gruvbox Material (Gogh)"
+-- Omarchy: the current Omarchy theme, rendered as base16 by the omarchy repo's
+-- tinty-scheme.yaml.tpl on every `omarchy theme set`; watched so a theme
+-- change repaints open windows.
+local omarchy_scheme = home .. "/.local/state/omarchy/current/theme/tinty-scheme.yaml"
+if not mac and io.open(omarchy_scheme) then
+	config.color_scheme = nil
+	config.colors = wezterm.color.load_base16_scheme(omarchy_scheme)
+	wezterm.add_to_config_reload_watch_list(omarchy_scheme)
+end
 config.enable_tab_bar = false
 
 -- The F8 font pick and its live preview. manual → internals/wezterm, "Font".
@@ -41,12 +52,12 @@ wezterm.on("user-var-changed", function(window, pane, name, value)
 		return
 	end
 	local o = window:get_config_overrides() or {}
-	o.font = value ~= "" and wezterm.font_with_fallback({ value, "CaskaydiaCove Nerd Font", "Menlo" }) or nil
+	o.font = value ~= "" and wezterm.font_with_fallback({ value, default_font, "Menlo" }) or nil
 	window:set_config_overrides(o)
 end)
 
 config.font = wezterm.font_with_fallback({
-	family ~= "" and family or "CaskaydiaCove Nerd Font",
+	family ~= "" and family or default_font,
 	"CaskaydiaCove Nerd Font",
 	"CaskaydiaCove NF",
 	"JetBrainsMono Nerd Font",
@@ -62,10 +73,11 @@ config.font_dirs = { home .. "/Library/Fonts" }
 -- every resize re-fills a window whose width matches no screen (throttled 2 s),
 -- unless Alt+Enter took that window out of fullscreen.
 -- Width only: fullscreen stops below the MacBook notch, so height never matches.
+-- macOS only: on Hyprland the compositor tiles the window.
 -- manual → internals/wezterm.
 config.native_macos_fullscreen_mode = false
 local function fill(window)
-	if (wezterm.GLOBAL.windowed or {})[tostring(window:window_id())] then
+	if not mac or (wezterm.GLOBAL.windowed or {})[tostring(window:window_id())] then
 		return
 	end
 	local d = window:get_dimensions()
@@ -91,16 +103,20 @@ wezterm.on("window-resized", fill)
 
 config.window_decorations = "RESIZE"
 config.default_cursor_style = "BlinkingBlock"
-config.window_background_opacity = 0.9
+-- On Hyprland the compositor applies Omarchy's window opacity and blur.
+config.window_background_opacity = mac and 0.9 or 1.0
 config.macos_window_background_blur = 30
 config.audible_bell = "Disabled"
 -- Zero padding anchors the grid top-left; the sub-cell remainder sits at the
 -- right and bottom edges, so the grid never shifts on fullscreen or resize.
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.adjust_window_size_when_changing_font_size = false
-config.front_end = "OpenGL"
+-- Linux: WebGpu over Vulkan, and no eased cursor-blink animation — on the
+-- Omarchy laptop's Intel iGPU, OpenGL plus 60 fps blink redraws lagged.
+config.front_end = mac and "OpenGL" or "WebGpu"
+config.webgpu_power_preference = "LowPower"
 config.max_fps = 60
-config.animation_fps = 60
+config.animation_fps = mac and 60 or 1
 config.enable_kitty_keyboard = false
 config.disable_default_key_bindings = true
 
@@ -115,8 +131,19 @@ config.keys = {
 	-- client, so closing the tab closes the window; the session detaches.
 	{ key = "q", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
 	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
-	-- Leaving fullscreen opts this window out of `fill`; entering opts back in.
-	{
+	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
+	-- handles select-then-copy now, so this just passes the key through.
+	{ key = "c", mods = "CTRL", action = act.SendKey({ key = "c", mods = "CTRL" }) },
+	-- Omarchy's universal Super+C / Super+V arrive as Ctrl+Insert / Shift+Insert.
+	{ key = "Insert", mods = "CTRL", action = act.CopyTo("Clipboard") },
+	{ key = "Insert", mods = "SHIFT", action = act.PasteFrom("Clipboard") },
+}
+-- Alt+Enter: leaving fullscreen opts this window out of `fill`; entering opts
+-- back in. macOS only: on Hyprland, WezTerm's own fullscreen toggle crashed the
+-- window; the compositor's fullscreen binding owns it there.
+if mac then
+	table.insert(config.keys, {
 		key = "Enter",
 		mods = "ALT",
 		action = wezterm.action_callback(function(window)
@@ -125,13 +152,8 @@ config.keys = {
 			wezterm.GLOBAL.windowed = windowed
 			window:toggle_fullscreen()
 		end),
-	},
-
-	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
-	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
-	-- handles select-then-copy now, so this just passes the key through.
-	{ key = "c", mods = "CTRL", action = act.SendKey({ key = "c", mods = "CTRL" }) },
-}
+	})
+end
 
 -- SHIFT+click opens a link in both mouse-reporting states; the bypass moves
 -- to ALT and the Down stroke is Nopped. manual → internals/wezterm.

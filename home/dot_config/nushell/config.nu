@@ -77,7 +77,7 @@ def cf [file: path] {
     if not ($f | path exists) {
         error make { msg: $"cf: no such file: ($file)" }
     }
-    open --raw $f | pbcopy
+    if $nu.os-info.name == "macos" { open --raw $f | pbcopy } else { open --raw $f | wl-copy }
     print $"copied ($f) to clipboard"
 }
 

@@ -1,10 +1,11 @@
 # Target-path ignore rules for the managed tree. Matches TARGET paths, not
 # source names, and accepts `#` comments.
 #
-# No OS conditionals here, deliberately. The host is macOS only (see AGENTS.md,
-# "Scope decisions already made"). The live source's .chezmoiignore gated its
-# Homebrew bootstrap out on non-macOS for a dual-platform setup that is
-# DO NOT PORT; do not re-add that ladder.
+# Hosts are macOS and Omarchy (Arch Linux); see AGENTS.md, "Scope decisions".
+# The only OS conditional is the macOS-only ~/Library tree below.
+{{ if ne .chezmoi.os "darwin" }}
+Library
+{{ end }}
 
 # Documentation of the source tree is not configuration. The manual's own
 # README (home/dot_config/nushell/help/README.md) tells an editor how to write

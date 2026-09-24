@@ -12,13 +12,13 @@
 # ends in a period that is not part of the link.
 #
 # Called from tmux.conf's copy-mode-vi Enter binding with the pane id as $1.
-# `open` is macOS's own URL-to-default-browser handoff — no separate tool.
+# `xdg-open` (Linux) or macOS's `open` hands the URL to the default browser.
 # manual → internals/tmux, "Enter opens a link before it copies".
 
 PANE=${1:?tmux-copy-open-link: no pane}
 
 open_and_leave() {
-    open "$1" >/dev/null 2>&1 &
+    if command -v xdg-open >/dev/null 2>&1; then xdg-open "$1"; else open "$1"; fi >/dev/null 2>&1 &
     tmux send-keys -t "$PANE" -X cancel
     exit 0
 }

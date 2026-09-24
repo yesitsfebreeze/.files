@@ -22,7 +22,8 @@ Nothing is ported because it exists; it is ported because a rating in
 
 ## Scope decisions
 
-- macOS host only; Linux matters only inside containers.
+- Hosts: macOS and Omarchy (Arch Linux). Omarchy packages and the login
+  shell live in github.com/yesitsfebreeze/omarchy; this repo owns the configs.
 - Nushell is the host shell; zsh survives only inside capsule dev containers.
 - One container tool (Capsule), one image definition.
 - Two finders, deliberately: television in the shell, telescope in the

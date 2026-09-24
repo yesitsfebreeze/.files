@@ -5,7 +5,7 @@
 # the file must exist even when the tool does not. See internals/provisioning.
 set -uo pipefail
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 hash -r
 

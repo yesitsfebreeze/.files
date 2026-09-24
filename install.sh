@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# install.sh — turn a fresh clone of this repo into a working machine. macOS.
+# install.sh — turn a fresh clone of this repo into a working machine.
+# macOS installs packages from the Brewfile; on Omarchy the packages come from
+# github.com/yesitsfebreeze/omarchy (packages/pacman.txt) before this runs.
 #
 # Order is the contract: every tool is on PATH before the apply, because the
 # apply's run_after scripts generate shell init by running those tools. No
@@ -13,8 +15,11 @@ have() { command -v "$1" >/dev/null 2>&1; }
 cd "$(dirname "$0")" || exit 1
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
-# --- 1. Homebrew and the Brewfile ------------------------------------------
-if ! have brew; then
+# --- 1. Homebrew and the Brewfile (macOS) / tinty (Linux) ------------------
+if [ "$(uname -s)" = Linux ]; then
+    # tinty has no Arch package; cargo builds the release into ~/.cargo/bin.
+    have tinty || cargo install --locked tinty || warn "tinty: cargo install failed"
+elif ! have brew; then
     log "installing Homebrew"
     NONINTERACTIVE=1 /bin/bash -c \
         "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
@@ -24,7 +29,9 @@ fi
 for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
     [ -x "$b" ] && { eval "$("$b" shellenv)"; hash -r; break; }
 done
-if have brew; then
+if [ "$(uname -s)" = Linux ]; then
+    :
+elif have brew; then
     # TRAP: Homebrew 6 refuses to load a formula from an untrusted third-party
     # tap and `brew bundle` will not trust one for you — without this line the
     # Brewfile's tinty is skipped with an error, and tinty owns the palette.
@@ -43,7 +50,7 @@ if ! have tmux-mcp; then
         | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
     d="$(mktemp -d)"
     if [ -n "$t" ] && curl -fsSL --max-time 300 -o "$d/a.tgz" \
-        "https://github.com/MadAppGang/tmux-mcp/releases/download/$t/tmux-mcp_darwin_$a.tar.gz" \
+        "https://github.com/MadAppGang/tmux-mcp/releases/download/$t/tmux-mcp_$(uname -s | tr A-Z a-z)_$a.tar.gz" \
         && tar -xf "$d/a.tgz" -C "$d"; then
         mkdir -p "$HOME/.local/bin"
         install -m 755 "$d/tmux-mcp" "$HOME/.local/bin/tmux-mcp" && log "installed tmux-mcp $t"
