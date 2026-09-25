@@ -689,7 +689,7 @@ separate VRAM) over Metal's `recommendedMaxWorkingSetSize`, cached in
 Mbit/s since the previous tick, every field fixed width so the chip and digits
 never shift; the **key-table chip**, which appears the
 instant a table is pushed and names it (copy-mode, or the prefix);
-and at the right every window's number, the current one in the accent, then
+and at the right every window's number, the current one in the accent, its digits bold and underlined, then
 the server's process count — `list-panes -a`, one `#()` per status tick — as
 a reverse-video chip, drawn once by the last window's format
 (`window_end_flag`) because `status-right` must stay empty for
