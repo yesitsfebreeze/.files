@@ -34,7 +34,7 @@ $env.KERN_YOLO = "1"
 
 $env.SHELL = $nu.current-exe
 
-# This repo's clone: `rr` pulls and deploys from here (deploy.sh).
+# This repo's clone: `rr` pulls and deploys from here (dotfiles.sh).
 $env.DOTFILES = ($nu.home-dir | path join "dev" "dotfiles")
 
 # ── Start dir (R7) ──────────────────────────────────────────────────────────

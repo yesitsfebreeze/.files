@@ -5,33 +5,48 @@ Last updated: 2026-09-29
 ## The shape
 
 home/ keeps REAL filenames — what you see in the tree is what lands in
-$HOME. There is no manager (chezmoi is retired, commit 0fc7dee): deploy.sh
+$HOME. There is no manager (chezmoi is retired, commit 0fc7dee): dotfiles.sh
 is the whole deploy, and it is a REPLACING mechanism, not a templating one.
 Nothing is computed at deploy time; dynamic values are runtime concerns.
 
-## deploy.sh (repo root)
+## dotfiles.sh (repo root)
 
-    sh deploy.sh            # or `just deploy`, or `rr` in the shell
+    sh dotfiles.sh                # deploy (what `rr` and `just deploy` run)
+    sh dotfiles.sh --status       # dry-run: NEW / DIFFERS / RETIRE
+    sh dotfiles.sh --adopt <path> # copy a live file back into home/
 
-Four steps, in order, each explicit in the script:
+Five steps, in order, each explicit in the script:
 
 1. PATH first: brew shellenv + ~/.local/bin + ~/.cargo/bin — the hooks run
    tools, so a tool the PATH step installs must be findable when they run.
-2. The copy: every file under home/ overwrites its target in $HOME
+2. The preflight exec-bit guard: every .sh and every .local/bin file must
+   be +x in the tree or the deploy warns — the rename once shipped three
+   dead scripts, and this makes a repeat impossible to miss.
+3. The copy: every file under home/ overwrites its target in $HOME
    (cp -p; modes ride along; git tracks the exec bit, no name prefixes).
    .DS_Store, .git and __pycache__ are excluded by the find.
-3. Retirements: every path in removed.txt is deleted from $HOME. Retiring
+4. Retirements: every path in removed.txt is deleted from $HOME. Retiring
    a file is TWO EDITS and always was: delete the source file, append the
    target path to removed.txt. The sweep is idempotent (rm -f).
-4. Hooks: hooks/*.sh run in a fixed order, each with `|| warn` — one
-   failure warns and the rest still run. The order in deploy.sh:
+5. Hooks: hooks/*.sh run in a fixed order, each with `|| warn` — one
+   failure warns and the rest still run. The order in dotfiles.sh:
    generate-shell-init, install-claude-hooks, register-mcp,
    seed-mason-registry, sync-claude-plugins, reload-tmux (last, because a
    running tmux keeps the config it started with — see reload-tmux.sh).
 
+## --status and --adopt
+
+`--status` is the dry-run chezmoi had (`diff`) plus the drift report it
+never had: NEW (no target yet), DIFFERS (source and target disagree —
+WHICH SIDE moved is `git status` in the repo; there is no state database
+by design), RETIRE (removed.txt paths still present). It changes nothing
+and runs no hooks. `--adopt <path>` is the reverse direction — the
+`chezmoi add` equivalent: a live file under $HOME is copied into home/ at
+its own path, refusing anything outside $HOME or containing `..`.
+
 ## rr (the daily loop)
 
-`rr` in nushell = git pull in $env.DOTFILES + sh deploy.sh. $env.DOTFILES
+`rr` in nushell = git pull in $env.DOTFILES + sh dotfiles.sh. $env.DOTFILES
 is set in env.nu (~/.config/nushell/env.nu) to ~/dev/dotfiles. Editing any
 file in home/ is live the moment you deploy; there is nothing to "apply"
 afterwards.
@@ -40,7 +55,7 @@ afterwards.
 
 Order is the contract: Homebrew bootstrap + brew bundle (Brewfile) ->
 Remote Login (sshd over the tailnet) -> tmux-mcp binary -> tmux plugins
-(resurrect, continuum, cloned to ~/.local/share/tmux/plugins) -> deploy.sh
+(resurrect, continuum, cloned to ~/.local/share/tmux/plugins) -> dotfiles.sh
 LAST, because the hooks generate shell init by running the tools the PATH
 step just installed. A failed package warns; the run continues.
 

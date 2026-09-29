@@ -15,7 +15,7 @@ along with a keybinding change.
   No new machinery where a deletion or a 60-line script does.
 - No dependencies, abstractions, configuration or frameworks beyond what
   the Brewfile already carries.
-- Prefer explicit over clever: deploy.sh prints every file it copies;
+- Prefer explicit over clever: dotfiles.sh prints every file it copies;
   errors warn and continue (a missing tool is never a dead deploy);
   hooks are plain sh in a fixed order.
 - The deployed tree is never the working tree: edit home/ in the repo,

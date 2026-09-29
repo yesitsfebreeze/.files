@@ -75,7 +75,7 @@ fi
 
 # --- 3. tmux plugins --------------------------------------------------------
 # The path must equal the one tmux.conf's two `run-shell` lines name. No tpm:
-# deploy.sh and this script already install and update them.
+# dotfiles.sh and this script already install and update them.
 P="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins"
 for r in tmux-resurrect tmux-continuum; do
     if [ -d "$P/$r/.git" ]; then
@@ -89,6 +89,6 @@ done
 
 # --- 4. Apply the configs, last --------------------------------------------
 log "deploy"
-sh ./deploy.sh || warn "deploy failed"
+sh ./dotfiles.sh || warn "deploy failed"
 
 exit 0   # a failed package already warned on its own line

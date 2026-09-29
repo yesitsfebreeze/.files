@@ -1,11 +1,11 @@
 # Provisioning
 
-> `brew bundle` then `deploy.sh`. Everything else is a trap that was paid
+> `brew bundle` then `dotfiles.sh`. Everything else is a trap that was paid
 > for once.
 
 `install.sh` is the whole of it, and it does four things in one order that is
 load-bearing: bootstrap Homebrew, `brew bundle install --file Brewfile`, fetch
-the two things no package manager carries, then `deploy.sh` **last** —
+the two things no package manager carries, then `dotfiles.sh` **last** —
 because the deploy hooks generate shell init by *running* the
 tools, and a tool installed after the deploy is a tool the generated init does
 not know about.
@@ -82,7 +82,7 @@ writes them once per apply. Three things in that script look odd and are not:
    output differed by 32 bytes.
 
 3. **It ends in an explicit `exit 0` and carries no `set -e`.** A hook that
-   exits non-zero must not kill the deploy: deploy.sh runs each hook with
+   exits non-zero must not kill the deploy: dotfiles.sh runs each hook with
    `|| warn` and continues, and every hook also ends `exit 0` itself — a
    missing tool must be a warning, never a dead deploy.
 

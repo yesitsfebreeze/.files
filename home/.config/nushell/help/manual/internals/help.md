@@ -130,7 +130,7 @@ a read instead of a decode.
 
 There is ONE message, not five. The five near-identical variants it replaced
 each named a different missing file and all ended in the same instruction:
-the file is data a reader cannot act on, and `rr` (pull + deploy.sh) is the
+the file is data a reader cannot act on, and `rr` (pull + dotfiles.sh) is the
 whole of
 the action.
 

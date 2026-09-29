@@ -5,7 +5,7 @@ Last updated: 2026-09-29
 ## The order contract
 
 install.sh on a fresh clone: Homebrew -> brew bundle (Brewfile) ->
-Remote Login -> tmux-mcp -> tmux plugins -> deploy.sh LAST. The hooks
+Remote Login -> tmux-mcp -> tmux plugins -> dotfiles.sh LAST. The hooks
 generate shell init by RUNNING the tools; a tool installed after the
 deploy is a tool the generated init does not know about. Homebrew 6
 refuses untrusted taps — `brew trust --tap tinted-theming/tinted` is in

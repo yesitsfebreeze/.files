@@ -3,7 +3,7 @@ Working contract for agents in this repo. Read this before touching anything.
 ## What this repo is
 
 A minimal macOS daily-driver: nushell + tmux + WezTerm + nvim +
-television, deployed by deploy.sh (a replacing copy, no manager, no
+television, deployed by dotfiles.sh (a replacing copy, no manager, no
 templates). Read LLMs.txt first — it links the subsystem explanations in
 docs/llms/*.txt, and those files are kept true in the same change as the
 behavior they describe.
@@ -12,8 +12,8 @@ behavior they describe.
 
 | Path | What it is |
 |---|---|
-| `home/` | The deploy source, REAL filenames — deploy.sh copies it over `$HOME` |
-| `hooks/` | The deploy hooks, run in deploy.sh's fixed order |
+| `home/` | The deploy source, REAL filenames — dotfiles.sh copies it over `$HOME` |
+| `hooks/` | The deploy hooks, run in dotfiles.sh's fixed order |
 | `removed.txt` | The retirement ledger — append a target path when a source file goes |
 | `LLMs.txt` + `docs/llms/` | The agent map and the subsystem explanations; `?` searches them with the manual |
 | `home/.config/nushell/help/` | The user-facing manual, read with `?` or `help`. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |

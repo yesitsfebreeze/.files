@@ -22,5 +22,5 @@ docker with the invariants; deep detail: manual internals/capsule.md
   capsule label; a same-named container without the label is an error,
   not a takeover.
 - ~/.config/capsule/Dockerfile is the image definition; the kern host
-  config for the machine is deployed by deploy.sh
+  config for the machine is deployed by dotfiles.sh
   (~/Library/Application Support/kern/kern.toml).

@@ -6,7 +6,7 @@ The dated decision record. Each entry: the decision, the reason it beat
 the alternative. Older context: git history (memos/ until 2026-09-29,
 then this file).
 
-## The deploy is deploy.sh (2026-09-29)
+## The deploy is dotfiles.sh (2026-09-29)
 
 Real filenames + a replacing script, not chezmoi. Chezmoi was doing
 name-mangling, one real template, and copy ceremony for a tree whose

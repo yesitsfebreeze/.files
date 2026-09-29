@@ -41,7 +41,7 @@ See also: [`help`](./maintaining.md#help)
 
 *shell*
 
-`rr` fetches the dotfiles repo and deploys it over `~`: deploy.sh copies home/ file by file, then runs the hooks. Deploying twice changes nothing the second time.
+`rr` fetches the dotfiles repo and deploys it over `~`: dotfiles.sh copies home/ file by file, then runs the hooks. Deploying twice changes nothing the second time.
 
 ## `pass <tab>`
 

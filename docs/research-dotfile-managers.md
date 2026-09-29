@@ -1,6 +1,6 @@
 # Deep research: is there something better than chezmoi for this structure?
 
-Question: does any existing dotfile tool beat `deploy.sh` — a plain sh
+Question: does any existing dotfile tool beat `dotfiles.sh` — a plain sh
 script that copies real-named files over `$HOME`, runs hooks in a fixed
 order, and sweeps `removed.txt` for retirements — on a single macOS
 machine?
@@ -69,13 +69,13 @@ old. The niche is being reinvented repeatedly and nothing has landed.
 ## What is actually worth importing
 
 One feature: the dry-run (`chezmoi diff`, cattery `status`). For this
-repo that is ~20 lines in deploy.sh — compare source and target hashes,
+repo that is ~20 lines in dotfiles.sh — compare source and target hashes,
 print the delta instead of copying — not a tool adoption. Offered
 separately.
 
 ## Conclusion
 
-`deploy.sh` is not a placeholder waiting for a real tool to exist; on the
+`dotfiles.sh` is not a placeholder waiting for a real tool to exist; on the
 evidence of this search it IS the mature implementation of the copy-model
 niche. Adopting any surveyed tool would reintroduce exactly one of the
 layers whose removal this week's bugs traced back to — name mangling,

@@ -71,10 +71,10 @@ alias ":q" = exit
 alias "/exit" = exit
 
 # rr — pull the repo and deploy: copy home/ over $HOME, then the hooks
-# (deploy.sh). The repo path rides an env var set in env.nu.
+# (dotfiles.sh). The repo path rides an env var set in env.nu.
 def rr [] {
     git -C $env.DOTFILES pull
-    sh ($env.DOTFILES | path join "deploy.sh")
+    sh ($env.DOTFILES | path join "dotfiles.sh")
 }
 
 def cf [file: path] {

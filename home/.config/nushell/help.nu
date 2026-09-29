@@ -7,7 +7,7 @@
 # ONE message for a missing corpus. The five near-identical variants this
 # replaced each named a different file and all ended in the same instruction:
 # the file that is missing is data a reader cannot act on, and `rr`
-# (pull + deploy.sh) is the whole of the action.
+# (pull + dotfiles.sh) is the whole of the action.
 def _help_missing [what: string] {
     error make {msg: $"help: the manual's ($what) is missing or empty — run `rr`"}
 }

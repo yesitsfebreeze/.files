@@ -9,11 +9,11 @@ default:
 # Deploy: copy home/ over $HOME, then the hooks. This is what `rr` runs.
 [doc('Copy home/ over $HOME and run the deploy hooks.')]
 deploy:
-    @sh "{{ justfile_directory() }}/deploy.sh"
+    @sh "{{ justfile_directory() }}/dotfiles.sh"
 
 # Publish this repo: stage, commit, push. Git only.
 # This does NOT deploy. Deploying is `just deploy` (or `rr` in the shell):
-# deploy.sh copies home/ over $HOME.
+# dotfiles.sh copies home/ over $HOME.
 [doc('Stage, commit and push. Git only — does NOT deploy.')]
 push message="dotfiles: update":
     git -C "{{ repo }}" add --all

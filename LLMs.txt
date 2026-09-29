@@ -10,7 +10,7 @@ are searched, together with the manual, by `?` in the shell.
 
 ## Start here
 
-- [deploy.txt](docs/llms/deploy.txt) — deploy.sh, install.sh, hooks/,
+- [deploy.txt](docs/llms/deploy.txt) — dotfiles.sh, install.sh, hooks/,
   removed.txt retirement, rr, the Brewfile. How the repo becomes the
   machine.
 - [conventions.txt](docs/llms/conventions.txt) — how to work in this
