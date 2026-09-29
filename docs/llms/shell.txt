@@ -41,8 +41,14 @@ the git block can lag reality by one refresh cycle. Nushell's
 $env.CMD_DURATION_MS is NOT per-command (0.115) — that is why no duration
 is shown.
 
-The shell header: one line at every interactive start, same blocks, FULL
-path (the prompt truncates, the header does not), time on blue.
+The first prompt of a shell draws its line WIDE (one prompt, no second
+line above it): full path, cached segments, date and time on blue, uptime
+and load on red. Which render is first is a per-shell flag file —
+PROMPT_COMMAND evaluates at shell start, every keystroke and Enter ONLY;
+after a command completes reedline redraws the CACHED string and evaluates
+nothing, which is also why the blue duration segment is empty and cannot
+be built on 0.115 (the render model is measured in
+manual/internals/nushell-modules).
 
 ## Navigation — one funnel
 

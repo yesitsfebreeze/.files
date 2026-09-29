@@ -479,13 +479,27 @@ THE DIRECTORY BLOCK'S RULES WERE DERIVED BY MEASUREMENT (starship's docs do not 
 $P_TO_DUR $P_FROM_DUR $P_RESET
 ```
 
-THE BLUE DURATION SEGMENT IS EMPTY, DELIBERATELY — IT ALWAYS WAS. Nushell's `$env.CMD_DURATION_MS` is NOT updated per command (measured 0.115.1: "0" after a `sleep 1`), so starship's min_time-500 duration block never fired once. A real per-command duration cannot be built from what nushell 0.115 offers: pre_prompt fires only at submit (~3ms after Enter, before the command runs), the after-command render fires NO hook at all, and PROMPT_COMMAND closures run in an isolated env — they cannot keep state between renders (a render-count tick was tried and the writes silently discarded). The empty segment stays for parity; the fix belongs upstream.
+THE BLUE DURATION SEGMENT IS EMPTY, DELIBERATELY — IT ALWAYS WAS, and it cannot be built on 0.115, now measured conclusively. THE RENDER MODEL (every claim timestamped in a logging closure): PROMPT_COMMAND evaluates at shell start, at every keystroke, and at Enter — and the submit render happens ~3-14ms AFTER pre_execution. When a command completes, reedline redraws the CACHED prompt string and evaluates NOTHING (no log entry between a `sleep 2` and three seconds of idle); the first evaluation after a command is the next keystroke, long after its end. Nushell's `$env.CMD_DURATION_MS` is not per-command either ("0" after a `sleep 1`), and closures run in an isolated env, so no state survives between renders. File-stamp workarounds were built twice and recorded the wrong moment both times, for exactly this reason. The empty segment stays; the fix belongs upstream (a post-execution hook, or a CMD_DURATION_MS that updates).
 
 ```
 $env.PROMPT_MULTILINE_INDICATOR = "\e[90m∅\e[0m "
 ```
 
 starship's continuation line, byte for byte: a dim empty-set glyph, then a space.
+
+```
+def _prompt_first [] { (_state_dir) | path join $"first-($nu.pid).txt" }
+```
+
+THE FIRST PROMPT OF A SHELL DRAWS ITS LINE WIDE — one prompt, never a
+second line above it: the full path where later prompts truncate, the
+cached git and language segments, date and time on blue, uptime + load on
+red (two sysctl spawns, once per shell start, never per render). WHICH
+RENDER IS FIRST lives in a per-shell flag file consumed by that render —
+closures cannot write $env, but they can unlink files; module load arms
+the flag and sweeps the flags of shells that died before their first
+prompt. `rm -p`, never `rm -f`: rm.always_trash makes -f a move to the
+Trash and the flag would survive (config.nu's own documented trap).
 
 ## `theme` (config.nu) and `theme.sh`
 
