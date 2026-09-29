@@ -430,6 +430,36 @@ The un-hijack rides this invocation like every other (finder.nu's header): our o
 
 R4's empty state is a PRINT AND RETURN, never an empty picker — the shipped manual entry (help/shell.nuon, Ctrl-Q) already promises "an empty log prints a hint rather than an empty picker", and this is what makes that entry true. tv is not spawned at all on that path.
 
+## `gitseg.nu`
+
+```
+def _gitseg_refresh [root: string] {
+```
+
+gitseg.nu — the prompt's git block, stale-while-revalidate. THE SLOWEST THING THE PROMPT EVER DID WAS `git status`: starship rendered it synchronously, and PROMPT_COMMAND is evaluated with the prompt blocked on every Enter, so a working repo put hundreds of milliseconds (measured 2026-09-29: 479ms of starship in-process time in kern2 under load ~74, 2.9s raw `git status --porcelain`) between every command and its result. This module is the loader-then-replace pattern: the prompt draws the cached segment instantly, a pre_prompt `job spawn` refreshes the cache off the critical path, and the next render replaces the view. `⋯` marks the one render between. THE TRADE IS ACCEPTED AND RECORDED (memos/decision/…): the git block can lag reality by one refresh cycle — after `git commit` the new state shows on the next prompt that renders after the job lands, not instantly.
+
+THE CACHE IS ONE FILE PER REPO, keyed by a 16-hex hash of the repo root, under `$state/nushell/gitseg/` — the same `_state_dir` dirstack.nu owns. Keying by the ROOT and not PWD means a cd between two directories of one repo keeps the segment warm; a cd into another repo shows `⋯` for exactly one render. THE ROOT IS FOUND BY WALKING UP FOR `.git` — `path exists`, never `path type`, because `.git` is a FILE in a worktree — and the walk is on the render path, so it must not spawn: `git rev-parse` there would cost the very spawn this module exists to remove.
+
+```
+let tmp = ($d | path join $".(_gitseg_key $root).($nu.pid).new")
+```
+
+TRAP: THE TMP NAME CARRIES THE PID. Two tmux panes in one repo refresh at once, and a shared tmp name would interleave their writes. The write is tmp + `mv` (same-directory rename, atomic — run_after_generate-shell-init.sh's idiom) because a truncated read would paint a half-segment on the prompt.
+
+```
+def _gitseg_style [] { ansi -e '30;42m' }
+```
+
+TRAP: THE TRAILING `m` IS REQUIRED. `ansi -e '30;42'` emits `\e[30;42` WITHOUT the SGR final byte, and the terminal then eats the next three characters of the segment — the two spaces and the `m` of `main` — as CSI parameter bytes, painting `ain` where the branch belongs. Found live in a tmux capture-pane; the segment read "ain !?" and the bytes were in the file, the escape was simply unterminated.
+
+```
+def --env _gitseg_revalidate [] {
+```
+
+The revalidate runs in pre_prompt, BEFORE each render, and keeps AT MOST ONE refresh per repo in flight: `$env._GITSEG_INFLIGHT` records the key, the cache mtime at issue, and the issue time; a job is reissued only when the cache mtime has advanced (the last job landed) or 30s passed without a write (a hung git — kern2's status can take seconds under load). The job writes the file, the NEXT render reads it; nothing on the render path ever waits. `--env` because the hook closure mutates `$env` in the shell's scope — zoxide.nu's `$env._NAV` is the precedent.
+
+SYMBOLS MATCH STARSHIP'S `$` `!` `?` (staged, unstaged-modified, untracked), classified from `git status --porcelain` columns X and Y. The ahead/behind `⇡` is NOT reproduced: computing it walked `git rev-list --left-right` on every render and it was the single largest cost. No branch (detached HEAD, empty repo) or no git means an EMPTY segment, and the prompt shows only the format's own arrows — exactly the non-git rendering starship produced before this module existed.
+
 ## `theme` (config.nu) and `theme.sh`
 
 ```

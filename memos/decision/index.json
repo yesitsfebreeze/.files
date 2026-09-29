@@ -1,6 +1,6 @@
 {
   "kind": "decision",
-  "memo_count": 9,
+  "memo_count": 10,
   "memos": {
     "a-retirement-is-two-edits": {
       "path": "decision/a-retirement-is-two-edits.md",
@@ -29,6 +29,12 @@
       "links": {
         "the-manual-is-markdown": "decision/the-manual-is-markdown.md"
       }
+    },
+    "the-git-block-is-a-cache": {
+      "path": "decision/the-git-block-is-a-cache.md",
+      "description": "The prompt's git block is drawn from a cache a background job refreshes, and the ahead/behind arrow is gone \u2014 the prompt never waits for git",
+      "read_when": "touching the prompt, starship.toml or gitseg.nu, or asking why the git block lags a commit or where the right prompt and the up-arrow went",
+      "links": {}
     },
     "the-manual-is-markdown": {
       "path": "decision/the-manual-is-markdown.md",

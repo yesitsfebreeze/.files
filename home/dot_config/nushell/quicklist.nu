@@ -37,6 +37,7 @@ export def --env quicklist [] {
         return
     }
     let raw = (try {
+        $env._TUI_RAN = "1"   # tv takes the screen
         tv quicklist --input-header "recents    [enter] open   [ctrl-r] replay in its dir   [esc] back" --keybindings 'enter="confirm_selection"' --expect ctrl-r
     } catch { "" })
     # --expect prints a key line only for ctrl-r; Enter prints the row alone.

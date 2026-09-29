@@ -195,10 +195,16 @@ Cost of the lookup: 100 lookups of an **absent** name take 410 µs (~4 µs each)
 100 of a present one 929 µs (~9 µs each) — three orders of magnitude under the
 spawn it gates.
 
-`^stty sane` runs **first** in the closure. A `cd` can arrive via a full-screen
-TUI that crashed mid-render and left the pty half-raw; with `onlcr` off the
-table's `\n` drops a row without returning to column 0 and the listing
-staircases. Sane mode is a no-op in the normal case.
+`^stty sane` runs **first** in the PWD closure — but only after a full-screen
+tool. A `cd` can arrive via a full-screen TUI that crashed mid-render and
+left the pty half-raw; with `onlcr` off the table's `\n` drops a row without
+returning to column 0 and the listing staircases. Sane mode is a no-op in
+the normal case. GATED 2026-09-29: the spawn is a per-cd tax of ~50ms that
+buys nothing unless a TUI ran, so a pre_execution sniff (config.nu's TUI
+WORDS) marks commandlines that name one, the in-shell launchers (finder,
+quicklist, zi, z's file-open, tv_history_local, _finder_open) mark their
+own, and the PWD closure pays `stty sane` only when the mark is set — then
+clears it. Command-not-found errors and unknown words never mark.
 
 ## `ls`
 

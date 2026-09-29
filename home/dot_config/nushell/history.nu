@@ -9,8 +9,9 @@ def _hist_cwd [] {
     | get command_line
 }
 
-def tv_history_local [] {
+def --env tv_history_local [] {
     let cur = (commandline | str substring 0..(commandline get-cursor))
+    $env._TUI_RAN = "1"   # tv takes the screen; the PWD hook repairs the pty after a TUI
     let out = (_hist_cwd | str join (char newline) | tv --no-status-bar --inline --input $cur | str trim)
     if ($out | is-not-empty) {
         commandline edit --replace $out

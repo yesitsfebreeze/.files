@@ -178,6 +178,26 @@ def --env mkcd [dir?: path] {
 alias cd = mkcd
 
 # ── HOOKS ──
+# TUI SNIFF — a full-screen tool that crashed mid-render leaves the pty
+# half-raw, and `stty sane` in the PWD hook below repairs that. The repair
+# is needed only after a TUI ran, so this marks those commandlines and the
+# hook pays the spawn only then — not on every cd. Internal launches (tv
+# from a keybinding, nvim from `z notes.md`) set the same mark themselves.
+const TUI_WORDS = [
+    tv nvim vi nv nn y yazi lazygit lg btop htop fzf less more man claude cc cr
+]
+
+$env.config.hooks.pre_execution = (
+    ($env.config.hooks.pre_execution? | default [])
+    | append {||
+        try {
+            if (commandline | split row -r '\s+' | any {|t| $t in $TUI_WORDS }) {
+                $env._TUI_RAN = "1"
+            }
+        }
+    }
+)
+
 # TRAP: THE DIRSTACK APPEND MUST STAY FIRST. An error in a PWD closure aborts
 # every closure appended after it, on every fire — the dirstack survives a
 # failing listing only by being appended ahead of it.
@@ -194,9 +214,15 @@ $env.config.hooks.env_change.PWD = (
     $env.config.hooks.env_change.PWD
     | append {|before, after|
         if $before != null and $after != $before and $nu.is-interactive {
+            # `stty sane` ONLY when the TUI sniff (or an internal launcher)
+            # marked a full-screen run — a ~50ms spawn per cd buys nothing in
+            # the normal case, and Sane mode is a no-op when it does run.
             # `which`, not `e> /dev/null` — with no child to spawn, nushell
             # raises external_command before any redirect can guard it.
-            if (which stty | is-not-empty) { ^stty sane e> /dev/null }
+            if ($env._TUI_RAN? | default "" | is-not-empty) {
+                $env._TUI_RAN = ""
+                if (which stty | is-not-empty) { ^stty sane e> /dev/null }
+            }
             # TRAP: the width test is a HANG guard — at 0 columns an EMPTY
             # directory spins the shell at 100% CPU, and `try` catches
             # neither that nor the noise. `print` is required: the hook
@@ -232,6 +258,23 @@ source ~/.config/nushell/history.nu
 source ~/.config/nushell/capsule.nu
 source ~/.config/nushell/finder.nu
 source ~/.config/nushell/quicklist.nu
+source ~/.config/nushell/gitseg.nu
+
+# ── PROMPT ──
+# The prompt's git block is drawn from the gitseg cache (MODULES above):
+# starship renders GITSEG as a literal and this replaces it per render.
+# TRAP: this must FOLLOW the gitseg source — a `source`d def does not exist
+# until its file has been sourced — and the closure must capture the value
+# BEFORE the assignment overwrites it.
+let starship_prompt = ($env.PROMPT_COMMAND)
+$env.PROMPT_COMMAND = {||
+    do $starship_prompt | str replace "GITSEG" (_gitseg)
+}
+
+# starship's init also defines PROMPT_COMMAND_RIGHT — a second full starship
+# spawn per render. Measured: its output is EMPTY; the left prompt carries
+# everything, so this is a spawn a render for nothing. The right prompt is off.
+$env.PROMPT_COMMAND_RIGHT = ""
 
 # TRAP: these three live HERE, not in help.nu — `use std/help` and `def
 # help` in ONE file fail at parse (predeclaration resolves std's @example

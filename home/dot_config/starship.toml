@@ -1,0 +1,107 @@
+# Starship prompt — identical on Nushell across Linux / macOS.
+# The palette below maps layout-slot names to standard ANSI color names, so
+# the prompt is drawn from the terminal's live palette (gruvbox dark hard) with
+# no hardcoded hex and no templating.
+
+"$schema" = "https://starship.rs/config-schema.json"
+
+add_newline = false
+
+# GITSEG is a literal marker, not a module: nushell's gitseg.nu replaces it
+# per render with a segment drawn from a cache a background job refreshes.
+# The git modules used to render synchronously and `git status` in a working
+# repo was the slowest thing in the whole shell (measured: 479ms in-process
+# in kern2) — on the critical path of every Enter. The arrows around GITSEG
+# are literals and stay drawn when the segment is empty, so a non-git
+# directory renders exactly as it did before.
+format = """
+[](surface0)\
+$os\
+$username\
+[](bg:peach fg:surface0)\
+$directory\
+[](fg:peach bg:green)\
+GITSEG\
+[](fg:green bg:teal)\
+$nodejs\
+$rust\
+$golang\
+$python\
+[](fg:teal bg:blue)\
+$cmd_duration\
+[](fg:blue)\
+$line_break\
+$character"""
+
+palette = "theme"
+
+[palettes.theme]
+surface0 = "bright-black"
+peach    = "yellow"
+green    = "green"
+teal     = "cyan"
+blue     = "blue"
+crust    = "black"
+text     = "white"
+red      = "red"
+
+[os]
+disabled = false
+style = "bg:surface0 fg:text"
+
+[os.symbols]
+Macos = "󰀵"
+Linux = "󰌽"
+Arch = "󰣇"
+Ubuntu = "󰕈"
+Debian = "󰣚"
+
+[username]
+show_always = true
+style_user = "bg:surface0 fg:text"
+style_root = "bg:surface0 fg:red"
+format = '[ $user ]($style)'
+
+[directory]
+style = "fg:crust bg:peach"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙"
+"Downloads" = " "
+"Music" = "󰝚"
+"Pictures" = " "
+"Developer" = "󰲋"
+
+[cmd_duration]
+min_time = 500
+style = "fg:crust bg:blue"
+format = '[  $duration ](fg:crust bg:blue)'
+
+[nodejs]
+symbol = ""
+style = "bg:teal"
+format = '[ $symbol ($version) ](fg:crust bg:teal)'
+
+[rust]
+symbol = ""
+style = "bg:teal"
+format = '[ $symbol ($version) ](fg:crust bg:teal)'
+
+[golang]
+symbol = ""
+style = "bg:teal"
+format = '[ $symbol ($version) ](fg:crust bg:teal)'
+
+[python]
+symbol = ""
+style = "bg:teal"
+format = '[ $symbol ($version) ](fg:crust bg:teal)'
+
+[character]
+format = "$symbol"
+success_symbol = "[](bold green)"
+error_symbol = "[](bold red)"
+vimcmd_symbol = "[](bold blue)"

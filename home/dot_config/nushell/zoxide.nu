@@ -23,6 +23,7 @@ def --env --wrapped _z_nav [...rest: string] {
     let target = ($rest | str join " " | path expand)
     if ($rest | length) == 1 and ($target | path type) == "file" {
         _recents_add "FileList" $target "zoxide"
+        $env._TUI_RAN = "1"   # nvim takes the screen; the PWD hook repairs the pty after a TUI
         ^$env.EDITOR $target
     } else {
         let before = $env.PWD
@@ -32,6 +33,7 @@ def --env --wrapped _z_nav [...rest: string] {
 }
 
 def --env --wrapped _zi_nav [...rest: string] {
+    $env._TUI_RAN = "1"   # fzf takes the screen (zoxide --interactive)
     let q = (^zoxide query --interactive -- ...$rest | complete)
     let path = ($q.stdout | str trim)
     if $q.exit_code != 0 or ($path | is-empty) { return }

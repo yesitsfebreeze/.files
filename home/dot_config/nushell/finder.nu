@@ -16,6 +16,7 @@ export def --env finder [
     let channel = $start
 
     let raw = (try {
+        $env._TUI_RAN = "1"   # tv takes the screen; the PWD hook repairs the pty after a TUI
         tv $channel --keybindings 'enter="confirm_selection";tab="toggle_selection"'
     } catch { "" })
     let entries = ($raw | lines | where { |l| ($l | str trim) != "" })
@@ -73,8 +74,10 @@ def --env _finder_open [sel: list] {
     let first = ($sel | first)
     let cols = (try { $first | columns } catch { [] })
     if ("file" in $cols) {
+        $env._TUI_RAN = "1"   # nvim takes the screen
         ^$env.EDITOR $"+($first.line)" $first.file
     } else if ("hash" in $cols) {
+        $env._TUI_RAN = "1"   # `git show` pages in less
         ^git show $first.hash
     } else {
         if (($first | path type) == "dir") {
