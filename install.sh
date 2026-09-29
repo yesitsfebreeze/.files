@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # install.sh — turn a fresh clone of this repo into a working machine.
-# macOS installs packages from the Brewfile; on Omarchy the packages come from
-# github.com/yesitsfebreeze/omarchy (packages/pacman.txt) before this runs.
+# macOS installs packages from the Brewfile.
 #
 # Order is the contract: every tool is on PATH before the apply, because the
 # apply's run_after scripts generate shell init by running those tools. No
@@ -15,11 +14,8 @@ have() { command -v "$1" >/dev/null 2>&1; }
 cd "$(dirname "$0")" || exit 1
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
-# --- 1. Homebrew and the Brewfile (macOS) / tinty (Linux) ------------------
-if [ "$(uname -s)" = Linux ]; then
-    # tinty has no Arch package; cargo builds the release into ~/.cargo/bin.
-    have tinty || cargo install --locked tinty || warn "tinty: cargo install failed"
-elif ! have brew; then
+# --- 1. Homebrew and the Brewfile -----------------------------------------
+if ! have brew; then
     log "installing Homebrew"
     NONINTERACTIVE=1 /bin/bash -c \
         "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
@@ -29,9 +25,7 @@ fi
 for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
     [ -x "$b" ] && { eval "$("$b" shellenv)"; hash -r; break; }
 done
-if [ "$(uname -s)" = Linux ]; then
-    :
-elif have brew; then
+if have brew; then
     # TRAP: Homebrew 6 refuses to load a formula from an untrusted third-party
     # tap and `brew bundle` will not trust one for you — without this line the
     # Brewfile's tinty is skipped with an error, and tinty owns the palette.
@@ -39,6 +33,25 @@ elif have brew; then
     brew bundle install --file Brewfile || warn "brew bundle incomplete"
 else
     warn "no brew — nothing was installed"
+fi
+
+# --- 1b. Remote access: sshd over the tailnet ------------------------------
+# Tailscale's GUI app (the cask above) cannot be a Tailscale SSH server on
+# macOS, so a tailnet peer reaches this machine over the built-in sshd with a
+# key. Loading its launchd job is Remote Login; the one sudo prompt in the run.
+# TRAP: `systemsetup -setremotelogin on` wants Full Disk Access for the
+# terminal on top of sudo — launchctl does not. Signing in to Tailscale is a
+# GUI action, hence the hint.
+if [ "$(uname -s)" = Darwin ]; then
+    if launchctl print system/com.openssh.sshd >/dev/null 2>&1; then
+        log "Remote Login already on"
+    else
+        sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist && log "Remote Login on" \
+            || warn "Remote Login: could not load sshd — System Settings > General > Sharing"
+    fi
+    [ -x /Applications/Tailscale.app/Contents/MacOS/Tailscale ] \
+        && ! /Applications/Tailscale.app/Contents/MacOS/Tailscale status >/dev/null 2>&1 \
+        && warn "Tailscale: open Tailscale.app and sign in, then peers reach this machine at \`tailscale status\`'s name"
 fi
 
 # --- 2. tmux-mcp ------------------------------------------------------------

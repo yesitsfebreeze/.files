@@ -41,3 +41,8 @@ brew "lazygit"
 brew "pass"
 
 cask "font-caskaydia-cove-nerd-font"
+
+# remote access: the tailnet reaches this machine over sshd (Remote Login,
+# turned on by install.sh). The cask's pkg installer asks for sudo; the GUI
+# app cannot be a Tailscale SSH server, so plain sshd over the tailnet it is.
+cask "tailscale-app"

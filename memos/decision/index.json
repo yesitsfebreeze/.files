@@ -1,6 +1,6 @@
 {
   "kind": "decision",
-  "memo_count": 8,
+  "memo_count": 9,
   "memos": {
     "a-retirement-is-two-edits": {
       "path": "decision/a-retirement-is-two-edits.md",
@@ -15,6 +15,12 @@
       "links": {
         "the-model-router-is-a-dotfile-after-all": "decision/the-model-router-is-a-dotfile-after-all.md"
       }
+    },
+    "remote-access-is-tailscale-plus-remote-login": {
+      "path": "decision/remote-access-is-tailscale-plus-remote-login.md",
+      "description": "A tailnet peer reaches this machine over the built-in sshd (Remote Login) with a key, not over Tailscale SSH or a public tunnel",
+      "read_when": "giving a remote agent (a chat's command runner, another machine) a way to run commands here, or asking why kern is not served publicly",
+      "links": {}
     },
     "tests-and-gates-retire": {
       "path": "decision/tests-and-gates-retire.md",
