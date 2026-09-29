@@ -1,0 +1,83 @@
+# Shell.txt — nushell, the daily driver
+
+Last updated: 2026-09-29
+
+Modules live in home/.config/nushell/. Deep system detail is in the
+manual's internals/ (searchable with `?` in the shell; hand-written):
+internals/nushell.md, internals/nushell-modules.md. This file is the map.
+
+## Startup
+
+env.nu runs before config.nu. It repairs PATH (macOS path_helper never
+runs for nushell — delete the block and a GUI-launched terminal loses
+Homebrew), sets XDG vars, EDITOR, $env.DOTFILES (~/dev/dotfiles, the
+deploy source for `rr`), and cds to the last start directory OUTSIDE tmux
+($state/nushell/startdir.txt — inside tmux the window's -c owns the start
+dir). The TypeSafe key is read from the Keychain ONCE per tmux server and
+handed to the server env; a locked Keychain can block `security`
+indefinitely, hence the bounded 3s call.
+
+config.nu is the one config file: anchors in load-bearing order (ALIASES,
+LISTING, FUNNEL, HOOKS, GENERATED, MODULES, PROMPT, THEME, KEYBINDINGS).
+Parse-time binding rules: `def`s are predeclared block-wide; `alias` and
+`source` bind textually — order matters for them.
+
+## The prompt (prompt.nu + gitseg.nu)
+
+The prompt is drawn in nushell — zero external processes per render
+(measured 0.6ms; starship's last measurement before retirement was 229ms
+under load). Byte-parity with the starship prompt it replaced was verified
+by hexdump: the colored blocks are os+user on bright-black, directory on
+yellow, git on green, language versions on teal, blue segment (empty,
+deliberately — the old duration block never fired once), and a styled
+empty character line. The powerline arrows are EMPTY strings — the look
+is adjacent color blocks.
+
+gitseg.nu is the stale-while-revalidate cache: the git block and the
+language-version blocks are read from $state/nushell/{gitseg,langseg}/ by
+background `job spawn` refreshers hooked to pre_prompt. `⋯` marks the one
+render between a cold cache and its replacement. The trade is accepted:
+the git block can lag reality by one refresh cycle. Nushell's
+$env.CMD_DURATION_MS is NOT per-command (0.115) — that is why no duration
+is shown.
+
+The shell header: one line at every interactive start, same blocks, FULL
+path (the prompt truncates, the header does not), time on blue.
+
+## Navigation — one funnel
+
+Every move (cd, z, zi, picker, bare-word fallback) lands in mkcd
+(alias cd), the single place that records the start dir. The PWD hook
+reacts to any move: dirstack push, then (only after a full-screen tool —
+the TUI sniff) stty sane, then the auto-listing (`la`, unless a jump
+flagged $env._NAV). zoxide jumps query `zoxide query --exclude $PWD`;
+a bare unknown word jumps if zoxide knows it (pre_execution hook, narrow
+trigger: first token, no metacharacters, not path-shaped).
+
+## Keys
+
+Ctrl-R tv history picker (cwd), Alt-R global, Up/Down cycle cwd-scoped
+history (env.nu-style tracking in $env._HIST_LOCAL_*), Ctrl-Q quicklist
+(the recents channel), Ctrl-T freed from tv's autocomplete, Esc clears
+the line. Keybindings append AFTER the generated tv init — reedline keeps
+the later record of duplicates.
+
+## State files ($state = ~/.local/state/nushell)
+
+dirstack.txt (recent dirs), startdir.txt, recents.nuon (the quicklist log,
+cap 200), gitseg/ + langseg/ (prompt caches).
+
+## finder/quicklist/help
+
+finder.nu wraps `tv <channel>` and decodes rows by channel type
+(FileList/GrepList/Commits); quicklist.nu is the recents runner (enter to
+open, ctrl-r to replay in the recorded dir). help.nu renders the manual
+from .nuon surfaces (topics.nuon order); `?` greps the manual's prose
+through the docs channel; `help --json` is the agent surface.
+
+## capsule / claude / pass
+
+capsule.nu: one container per project dir (docker, image hash-checked
+against the Dockerfile, credentials refreshed by a background job).
+claude.nu: `cc`/`cr` launch Claude Code with profile dirs under ~/.claude.
+pass.nu: completion for the standard password store.

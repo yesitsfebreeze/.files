@@ -1,0 +1,50 @@
+# dotfiles — an agent's map
+
+> One person's macOS daily driver: nushell + tmux + WezTerm + nvim +
+> television, deployed by a 60-line sh script that copies home/ over
+> $HOME. No manager, no templates, no gates. Read the file that matches
+> what you are about to touch, in the same change you touch it.
+
+These files explain how everything works. They live in docs/llms/ and
+are searched, together with the manual, by `?` in the shell.
+
+## Start here
+
+- [deploy.txt](docs/llms/deploy.txt) — deploy.sh, install.sh, hooks/,
+  removed.txt retirement, rr, the Brewfile. How the repo becomes the
+  machine.
+- [conventions.txt](docs/llms/conventions.txt) — how to work in this
+  repo: subtraction over machinery, TRAP comments, the pickers rule,
+  retirement, the manual.
+- [decisions.txt](docs/llms/decisions.txt) — the dated decision record:
+  what was chosen, why, what it beat.
+
+## Subsystems
+
+- [shell.txt](docs/llms/shell.txt) — nushell: env repair, config anchors,
+  the prompt and its caches (prompt.nu, gitseg.nu), the one navigation
+  funnel, keys, finder/quicklist/help, state files.
+- [tmux.txt](docs/llms/tmux.txt) — multiplexing, the F5 cockpit and its
+  frame cache, zen mode, the ~/.local/bin scripts.
+- [terminal.txt](docs/llms/terminal.txt) — WezTerm chrome, tinty palette
+  ownership, television channels and cable files.
+- [nvim.txt](docs/llms/nvim.txt) — lazy.nvim layout, plugins, the
+  editor-side constraints.
+- [capsule.txt](docs/llms/capsule.txt) — the one container tool:
+  image hash, credential refresh, the scripts.
+- [machines.txt](docs/llms/machines.txt) — provisioning order, secrets at
+  runtime, remote access over the tailnet, host traps.
+
+## The user-facing manual
+
+The shell's `?` and `help` read the manual shipped in
+home/.config/nushell/help/ — the .nuon surfaces are the source of truth
+for commands and keys (`just manual` regenerates the guide and reference
+halves); internals/ is hand-written system detail that these files point
+into rather than repeat.
+
+## Keeping this true
+
+Update the txt in the same commit as the behavior change. A stale file
+here is worse than no file: an agent that trusts it will rebuild the
+system wrong.

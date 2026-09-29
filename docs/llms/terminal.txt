@@ -1,0 +1,37 @@
+# Terminal.txt — wezterm, the palette, the pickers
+
+Last updated: 2026-09-29
+
+## WezTerm (~/.config/wezterm/wezterm.lua)
+
+Local chrome only: font, grid, background, launchd-PATH launch, pane keys
+handed to tmux (disable_default_key_bindings is load-bearing — stock
+bindings ship a second, conflicting set of pane keys). OSC 7 stays on
+(cwd to the multiplexer); OSC 133/633 stay off — the prompt is two lines
+and reedline re-emits the prompt-start mark per repaint, which renders as
+phantom blank lines. use_kitty_protocol is off: the kitty query reply
+leaks through the WezTerm pty as a literal `^[[?0u` and costs
+control+letter (hence Alt-R, not Ctrl-Shift-R).
+
+## The palette (~/.config/tinted-theming/tinty/)
+
+tinty owns the palette; every reader (tmux, nvim, tv, the shell) is
+downstream of one `tinty apply`. theme.sh is the single bash entry point:
+plain (paint), --toggle (dark/light variant, F5 t t), --preview (the tv
+preview paints live), --list, --palette (base16 for nvim). The prompt's
+colors are standard ANSI slots (gruvbox dark hard via the terminal's live
+palette) — nothing below tinty hardcodes hex.
+
+## television (~/.config/television/)
+
+tv owns every picker screen. Channels are cable files under
+cable/*.toml: a source command emitting rows, a preview, keybindings.
+Add a file and `tv <name>` + `finder --start <name>` reach it; teach
+finder.nu the channel's decode and every opener works. The channels:
+files, dirs, text (rg), docs (the manual, line by line), git-* (log, diff,
+stash, tags, remotes, worktrees, reflog, deletions, repos, submodules),
+nu-history, quicklist, recent-dirs, recent-files, theme, font.
+
+fzf is the ONE accepted second picker, reached only through
+`zoxide query --interactive` (frecency ranking television cannot do).
+tv needs a real TTY.

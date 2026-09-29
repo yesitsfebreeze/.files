@@ -1,0 +1,26 @@
+# Capsule.txt — containers
+
+Last updated: 2026-09-29
+
+One container tool, one image. capsule.nu (in the nushell config) wraps
+docker with the invariants; deep detail: manual internals/capsule.md
+(searchable with `?`).
+
+- `capsule` (from a project dir): the container is named after the dir
+  (basename + 8 hex of its path). The image `capsule:latest` carries a
+  label of the Dockerfile's sha256 — a changed Dockerfile rebuilds, an
+  unchanged one never does. `--rebuild` forces it.
+- Credentials refresh in a BACKGROUND job (nushell `job spawn`) when the
+  container exists: git (credential fill, bounded, GIT_TERMINAL_PROMPT
+  off), Claude (Keychain), opencode — written to ~/.cache/capsule/creds/
+  600, mounted read-only, run once on the create path by
+  setup-credentials.sh. `bounded` wraps every call that can block on a
+  locked Keychain.
+- The project dir mounts at /workspace; zsh lives inside the container
+  (the host shell is nushell; zsh survives only here).
+- `capsule list` / `capsule clean [--all]` — containers carrying the
+  capsule label; a same-named container without the label is an error,
+  not a takeover.
+- ~/.config/capsule/Dockerfile is the image definition; the kern host
+  config for the machine is deployed by deploy.sh
+  (~/Library/Application Support/kern/kern.toml).

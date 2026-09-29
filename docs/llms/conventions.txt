@@ -1,0 +1,52 @@
+# Conventions.txt — how to work in this repo
+
+Last updated: 2026-09-29
+
+## The shape
+
+AGENTS.md is the contract (CLAUDE.md symlinks it). LLMs.txt is the index
+for agents; docs/llms/*.txt explain how each subsystem works — UPDATE THE
+TXT IN THE SAME CHANGE AS THE BEHAVIOR, the same way a manual entry rides
+along with a keybinding change.
+
+## Rules that keep it small
+
+- Prefer subtraction, direct control flow, proven existing capabilities.
+  No new machinery where a deletion or a 60-line script does.
+- No dependencies, abstractions, configuration or frameworks beyond what
+  the Brewfile already carries.
+- Prefer explicit over clever: deploy.sh prints every file it copies;
+  errors warn and continue (a missing tool is never a dead deploy);
+  hooks are plain sh in a fixed order.
+- The deployed tree is never the working tree: edit home/ in the repo,
+  deploy, verify on the machine.
+
+## Code style (nushell and sh)
+
+- TRAP comments explain the one measured fact that keeps a line the way
+  it is; a comment without a measurement behind it is prose, not a TRAP.
+- `which X` before spawning X, never `e> /dev/null` — nushell raises
+  external_command before any redirect can guard it.
+- Module files parse standalone (`nu -n -c 'source f'`) and carry the
+  "manual -> internals/..." pointer as their second line.
+- A `source`d def does not exist at parse time until its file is sourced
+  — module order in config.nu is load-bearing and commented there.
+- Atomic writes: tmp file in the same directory, then mv (rename).
+
+## The pickers
+
+television owns every picker screen; fzf only through
+`zoxide query --interactive`. Before writing any workflow, read `?`.
+
+## Retirement
+
+Two edits: delete the source, append the target path to removed.txt.
+Deploy once; the sweep proves it at the target path.
+
+## The manual
+
+help/*.nuon are the surfaces (entries: cmd, title, use, topic, task,
+step, mode, also, why); guide/ and reference/ are GENERATED from them
+(`just manual`), internals/ is hand-written. An entry is true because
+someone deployed the change and used it. Add the entry in the same
+change as the command it documents.

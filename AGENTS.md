@@ -2,23 +2,24 @@ Working contract for agents in this repo. Read this before touching anything.
 
 ## What this repo is
 
-A rebuild of the dotfiles that used to live in `~/.files` (legacy, zsh-era)
-and `~/.config/*` (deployed by deploy.sh): rate every existing capability, take
-over only what earns its place, and ship a minimal daily-driver config.
-Nothing is ported because it exists; it is ported because a rating in
-`docs/capabilities-*.md` says it earns its place.
+A minimal macOS daily-driver: nushell + tmux + WezTerm + nvim +
+television, deployed by deploy.sh (a replacing copy, no manager, no
+templates). Read LLMs.txt first — it links the subsystem explanations in
+docs/llms/*.txt, and those files are kept true in the same change as the
+behavior they describe.
 
 ## Where things live
 
 | Path | What it is |
 |---|---|
-| `home/` | The deploy source, REAL filenames — deploy.sh copies it over `$HOME`. `~/.local/share/chezmoi` is a stale clone, never anything |
-| `docs/` | Rated capability inventories and background research |
-| `memos/` | The record: every settled claim as one memo, `SYSTEM.md` the entry point. `just memos-check` regenerates the index and gates it |
-| `home/dot_config/nushell/help/manual/` | The environment manual, read with `?` or `help` in the shell. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |
-| `scripts/` | `memos-check.py` (the memos gate + index), `generate-manual.mjs` |
-| `justfile` | Task runner: `push`, `manual`, `memos-check` |
-| `install.sh` | Package + provisioning bootstrap |
+| `home/` | The deploy source, REAL filenames — deploy.sh copies it over `$HOME` |
+| `hooks/` | The deploy hooks, run in deploy.sh's fixed order |
+| `removed.txt` | The retirement ledger — append a target path when a source file goes |
+| `LLMs.txt` + `docs/llms/` | The agent map and the subsystem explanations; `?` searches them with the manual |
+| `home/.config/nushell/help/` | The user-facing manual, read with `?` or `help`. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |
+| `scripts/` | `generate-manual.mjs` |
+| `justfile` | Task runner: `deploy`, `push`, `manual` |
+| `install.sh` | Package + provisioning bootstrap for a fresh machine |
 
 ## Scope decisions
 
@@ -36,8 +37,8 @@ Nothing is ported because it exists; it is ported because a rating in
   launchd PATH, capsule send-keys).
 - tinty owns the palette; every reader (tmux, Neovim, television, the
   shell) is downstream of one `tinty apply`. Nothing below it hardcodes hex.
-- Minimal base first — the excluded legacy capabilities are listed in
-  `docs/capabilities*.md`.
+- Minimal base first — nothing is ported because it exists; the dated
+  reasons live in `docs/llms/decisions.txt`.
 
 ## Hard-won constraints
 
@@ -51,8 +52,9 @@ unrotated LSP log can hit double-digit GB; a `dofile` must never become a
 Before suggesting or writing any shell/editor workflow, read `?` — it is
 what stops the standard failure mode of reaching for `fzf` when
 television is the picker, `grep` when `rg` is, `find` when `fd` is. Add a
-manual entry with every keybinding or command in the same change: the drift
-checker is gone, so nothing will tell you if you skip it.
+manual entry with every keybinding or command in the same change, and
+update the matching `docs/llms/*.txt` in the same change: nothing will
+tell you if you skip either.
 
 No dated correction lives in this file. If you find it wrong, fix the
 sentence — do not append a paragraph explaining that it used to be wrong.

@@ -1,10 +1,16 @@
-# docs — grep the manual line by line and open the hit in the editor.
+# docs — grep the manual and the agent docs line by line and open the hit
+# in the editor.
 #
-# This is the whole manual: `manual/guide/` and `manual/reference/` generated
-# from the same .nuon surfaces `help` reads, `manual/internals/` hand-written.
-# It replaced a fumadocs site on 2026-08-31 — a manual you have to `npm run
-# dev` to read is a manual you do not read. Markdown plus rg plus tv is the
-# same search with nothing to start.
+# This is the whole manual (`manual/guide/` and `manual/reference/` generated
+# from the same .nuon surfaces `help` reads, `manual/internals/` hand-written)
+# PLUS the repo's agent docs: LLMs.txt and docs/llms/*.txt, the subsystem
+# explanations that agents read. It replaced a fumadocs site on 2026-08-31 —
+# a manual you have to `npm run dev` to read is a manual you do not read.
+# Markdown plus rg plus tv is the same search with nothing to start.
+#
+# TRAP: rows carry paths relative to $HOME for BOTH trees — the rg runs from
+# $HOME with explicit dir arguments, so no `./` prefix appears and the one
+# output template (`~/{...}`) covers manual, llms and LLMs.txt rows alike.
 #
 # THIS IS THE ONLY PICKER OVER THE MANUAL. A companion `manual` channel
 # matched an ENTRY (a key or a command, by id and title) and printed it; it was
@@ -27,17 +33,17 @@ requirements = ["rg", "bat", "nu"]
 # /Users/... prefix on every row is 30 columns of the picker saying nothing.
 # `-n` loads no config; the latency reason is in nu-history.toml.
 [source]
-command = "nu -n -c 'cd ($nu.home-dir | path join .config nushell help manual); rg . ./ --no-heading --line-number --color=always --colors \"match:fg:white\" --colors \"path:fg:blue\"'"
+command = "nu -n -c 'cd $nu.home-dir; rg . .config/nushell/help/manual dev/dotfiles/docs/llms dev/dotfiles/LLMs.txt --no-heading --line-number --color=always --colors \"match:fg:white\" --colors \"path:fg:blue\"'"
 ansi = true
 # The rows are relative, but a caller has to be able to OPEN what it gets, and
 # finder.nu's GrepList decode `path expand`s the file field against the
 # CALLER's cwd — which is not this one. So the output re-absolutises with a
 # literal `~/` prefix: templates take literal text around the placeholder, and
 # `path expand` resolves the tilde.
-output = "~/.config/nushell/help/manual/{strip_ansi|split:\\::..2}"
+output = "~/{strip_ansi|split:\\::..2}"
 
 [preview]
-command = "nu -n -c 'bat -n --color=always ($nu.home-dir | path join .config nushell help manual \"{strip_ansi|split:\\::0}\")'"
+command = "nu -n -c 'bat -n --color=always ($nu.home-dir | path join \"{strip_ansi|split:\\::0}\")'"
 env = { BAT_THEME = "ansi" }
 offset = '{strip_ansi|split:\::1}'
 
@@ -45,7 +51,7 @@ offset = '{strip_ansi|split:\::1}'
 preview_panel = { size = 60, header = '{strip_ansi|split:\::..2}' }
 
 [ui.input_bar]
-header = "manual    [enter] open it in the editor at that line"
+header = "docs    [enter] open it in the editor at that line"
 
 # Standalone (`tv docs`) enter opens the editor itself. Through finder — the
 # Ctrl-Space remote and `?` — enter is un-hijacked back to `confirm_selection`
@@ -56,6 +62,6 @@ enter = "actions:edit"
 
 [actions.edit]
 description = "Open the manual page in the editor at that line"
-command = "${EDITOR:-nvim} '+{strip_ansi|split:\\::1}' \"$HOME/.config/nushell/help/manual/{strip_ansi|split:\\::0}\""
+command = "${EDITOR:-nvim} '+{strip_ansi|split:\\::1}' \"$HOME/{strip_ansi|split:\\::0}\""
 shell = "bash"
 mode = "execute"

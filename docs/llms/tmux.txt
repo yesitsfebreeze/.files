@@ -1,0 +1,37 @@
+# Tmux.txt — multiplexing and the cockpit
+
+Last updated: 2026-09-29
+
+tmux owns multiplexing (windows, panes, splits, copy mode, persistence
+across restarts); WezTerm keeps only local chrome. Deep detail:
+manual internals/tmux.md (searchable with `?`).
+
+## F5 — the cockpit
+
+F5 runs ~/.local/bin/cockpit: a which-key of every surface action, drawn as
+a tmux popup. It is frame-cached: cockpit.json compiles to a TSV, every
+menu is pre-drawn per popup width into ~/.cache/cockpit.WIDTH/, so opening
+F5 forks nothing but the popup itself — one read and one synchronized
+write per step. Arrows close into move mode; a digit goes to that window;
+`w z` is zen mode. After a deploy, hooks/reload-tmux.sh re-source's the
+config so new bindings exist on the keyboard, and warns clients that lack
+the `sync` terminal feature (popup redraws would flicker).
+
+## The ~/.local/bin tmux scripts
+
+cockpit (the F5 overlay), modal (the popup runner the cockpit invokes),
+tmux-main (session seeding — inside tmux the start dir comes from here,
+not env.nu), tmux-zen (zen mode: centres the active column between spacer
+panes, floats other columns), tmux-sys / tmux-panes / tmux-slot /
+tmux-relax / tmux-git (pane header bits; the header shows git state
+because the prompt is gone the moment a full-screen tool takes over),
+tmux-claude-state / tmux-claude-resume (Claude session bits),
+tmux-copy-open-link / tmux-copy-expand (copy-mode helpers), tv-go
+(channel actions), bounded (spawn with a timeout — used against the
+Keychain and git credential helpers, which can block indefinitely),
+wezterm-bg, font.sh/wallpaper.sh under wezterm/.
+
+## Config
+
+~/.config/tmux/tmux.conf + cockpit.json (the key map). Plugins:
+tmux-resurrect, tmux-continuum (cloned by install.sh, no tpm).

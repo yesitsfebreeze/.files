@@ -1,0 +1,24 @@
+# Nvim.txt — the editor
+
+Last updated: 2026-09-29
+
+~/.config/nvim/. lazy.nvim bootstrap (config/lazy.lua); plugin specs in
+lua/plugins/; options, keymaps, autocmds in lua/config/. Deep detail:
+manual internals/neovim.md (searchable with `?`).
+
+Plugins (lazy-lock.json pins): which-key, telescope (the editor's picker —
+two finders deliberately: television in the shell, telescope in the
+editor), gitsigns, completion, conform, lsp, treesitter, explorer,
+statusline, autopairs, table-mode, session, colorscheme (base16 via
+tinty's palette), shift-select, claude.
+
+Hard-won constraints worth carrying into any change:
+
+- lualine's `auto` theme breaks on base16 — the statusline pins the theme.
+- an unrotated LSP log can hit double-digit GB — it is rotated.
+- a `dofile` must never become a `require`: module-name caching hands
+  back the first read on a second call.
+- The icon set in the shell's `ls` overlay is machine-copied from
+  nvim-web-devicons (lazy-lock pin) — never hand-typed, so shell and
+  editor never disagree.
+- mason registry seeding happens as a deploy hook (seed-mason-registry.sh).

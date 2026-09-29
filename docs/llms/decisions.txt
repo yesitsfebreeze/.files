@@ -1,0 +1,79 @@
+# Decisions.txt — what was chosen, why, and what it beat
+
+Last updated: 2026-09-29
+
+The dated decision record. Each entry: the decision, the reason it beat
+the alternative. Older context: git history (memos/ until 2026-09-29,
+then this file).
+
+## The deploy is deploy.sh (2026-09-29)
+
+Real filenames + a replacing script, not chezmoi. Chezmoi was doing
+name-mangling, one real template, and copy ceremony for a tree whose
+secrets were already runtime Keychain reads; a ~60-line sh script covers
+install, replace, retirement (removed.txt) and hooks. Symlinks were
+considered and rejected in favour of copy-replace: a tool rewriting a
+config in place diverges the live copy silently under both, and copy
+keeps the repo insulated — the deployed tree is never the working tree.
+
+## The prompt is nushell (2026-09-29)
+
+prompt.nu draws the prompt (~0.6ms/render); starship is retired. Its
+229ms-per-render spawn was the last external process between every
+command and its result, and every block it drew was a constant or a
+gitseg cache read. Byte-parity came from hexdumps, not the config file —
+which found that the powerline arrows, the character glyphs were empty
+strings and the duration block had never fired (CMD_DURATION_MS is not
+per-command in 0.115).
+
+## The git block is a cache (2026-09-29)
+
+starship's synchronous git_status walked 479ms in-process in kern2;
+ahead/behind was the largest single cost and is NOT reproduced. The block
+is stale-while-revalidate: prompt reads a cache, a pre_prompt job spawn
+refreshes, the next render replaces the view, `⋯` marks the gap. Trade:
+one refresh cycle of lag. Language-version blocks ride the same shape
+with a one-hour cache.
+
+## The record is git + these txt files (2026-09-29)
+
+memos/ (16 kind folders, the memos-check gate, one-claim-per-memo) is
+retired: the knowledge that earned survival lives here and in the
+manual's internals/; git history is the archive. Before that the record
+WAS memos (2026-08-31) — this supersedes it.
+
+## The manual is markdown (2026-08-31)
+
+No docs site: a manual you `npm run dev` to read is a manual you do not
+read. Plain markdown shipped with the shell, generated halves from the
+same .nuon surfaces `help` reads (just manual), hand-written internals/,
+searched line by line through the `docs` television channel (`?`).
+
+## Retiring a file is two edits
+
+Delete the source file AND append its target path to removed.txt; the
+deploy sweep deletes it. Proven at the target path, never at the source
+or by a deploy's exit code.
+
+## tmux owns multiplexing (2026-08-21)
+
+Windows, panes, addressing, scrollback, persistence survive a restart and
+follow an ssh; WezTerm keeps only local chrome.
+
+## Remote access is Tailscale + Remote Login (2026-08-21)
+
+Built-in sshd over the tailnet, key auth; the GUI app cannot be a
+Tailscale SSH server on macOS, and public tunnels failed every URL
+reader (2026-09-29 measurement).
+
+## Tests and gates retire (2026-09-08)
+
+This tree is one person's dev setup, not a shipped product: tests/ and
+gates/ were deleted and the config stripped of board scaffolding.
+Verification happens by using the shell and reading these files.
+
+## The model router is a dotfile after all (2026-09-02 reversed)
+
+The llm router lives in home/ as one binary plus a registry. Astra rides
+the saved Codex Pro login (subscription pin) through a LiteLLM-compatible
+hop.
