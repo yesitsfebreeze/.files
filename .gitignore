@@ -9,27 +9,12 @@
 .claude/CLAUDE.local.md
 .claude/worktrees/
 .claude/RESUME.md
-# pearde lives in its own repo (~/dev/infra/pearde); this is a local symlink
-.claude/skills/pearde
-
-# pearde board view state — regenerable, rewritten continuously by the live
-# service; the board itself (.pearde/prds, .pearde/workflows, settings,
-# vision) is versioned
-.pearde
-pearde/.state/
-pearde/.claims/
-pearde/.lanes/
-pearde/.sessions/
-pearde/settings.md
-pearde/vision.md
 
 # kern store — machine-local
 .kern/
 
 # python cache
 __pycache__/
+
 # machine-local run state
 .pi/
-.orly/turns/
-.orly/log.jsonl
-memos/.compact.lock

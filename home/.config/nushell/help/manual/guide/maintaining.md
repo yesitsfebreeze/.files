@@ -41,7 +41,7 @@ See also: [`help`](./maintaining.md#help)
 
 *shell*
 
-`rr` is `chezmoi update --force`: fetch the dotfiles repo and apply it over `~`. Applying twice changes nothing the second time.
+`rr` fetches the dotfiles repo and deploys it over `~`: deploy.sh copies home/ file by file, then runs the hooks. Deploying twice changes nothing the second time.
 
 ## `pass <tab>`
 

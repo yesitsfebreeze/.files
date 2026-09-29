@@ -4,7 +4,7 @@
 //   manual/guide/<task>.md       task order, from tasks.nuon + `task`/`step`
 //   manual/reference/<topic>.md  subject order, from topics.nuon + `topic`
 //
-// Output is PLAIN markdown under the chezmoi source, so `chezmoi apply` ships
+// Output is PLAIN markdown under the deploy source, so `rr` ships
 // it to ~/.config/nushell/help/manual and `?` (the `docs` tv channel) greps it
 // line by line and opens the hit in nvim. There is no site and no build step
 // beyond this file — that is the whole point of it being markdown.
@@ -22,7 +22,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const HELP = resolve(root, 'home/dot_config/nushell/help')
+const HELP = resolve(root, 'home/.config/nushell/help')
 const MANUAL = join(HELP, 'manual')
 const SURFACES = ['shell', 'nvim', 'terminal', 'capsule']
 

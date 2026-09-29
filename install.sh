@@ -3,7 +3,7 @@
 # macOS installs packages from the Brewfile.
 #
 # Order is the contract: every tool is on PATH before the apply, because the
-# apply's run_after scripts generate shell init by running those tools. No
+# deploy hooks generate shell init by running those tools. No
 # `set -e`: a failed package warns and the run continues.
 set -uo pipefail
 
