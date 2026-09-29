@@ -16,6 +16,15 @@ considered and rejected in favour of copy-replace: a tool rewriting a
 config in place diverges the live copy silently under both, and copy
 keeps the repo insulated — the deployed tree is never the working tree.
 
+The script is dotfiles.sh and carries the three imports the deep
+research (docs/research-dotfile-managers.md) proved worth having:
+--status (chezmoi's dry-run plus the drift report it never had), --adopt
+(the chezmoi-add reverse direction), and an exec-bit preflight — the
+rename's one real failure, three dead scripts, made impossible to repeat
+silently. The same research found no tool worth adopting: cattery is the
+only one sharing the copy semantics and it is a single-author newborn on
+an obscure host.
+
 ## The prompt is nushell (2026-09-29)
 
 prompt.nu draws the prompt (~0.6ms/render); starship is retired. Its
