@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# chezmoi run_after — seed mason's package catalogue on a cold machine.
+# deploy hook — seed mason's package catalogue on a cold machine.
 #
 # lsp.lua sets `registry_cache = { refresh = false }` so mason never fetches
 # its catalogue on launch — that setting fixed a real bug: an unguarded
 # refresh discarded the first buffer write on an offline launch (full
 # record: memos/knowledge/mason-refresh-off-trades-auto-bootstrap.md). With
 # the refresh off, nothing else ever creates the catalogue, so this script
-# performs the one-time fetch instead. It runs on every `chezmoi apply` but
+# performs the one-time fetch instead. It runs on every deploy but
 # is gated only on the catalogue being absent, so it is a no-op after the
 # first successful seed — no separate switch needed; a cold registry IS
 # "first run on a new machine". It warns and exits 0 on every failure path:

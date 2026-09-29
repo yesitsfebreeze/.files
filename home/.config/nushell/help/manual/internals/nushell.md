@@ -66,7 +66,7 @@ So the failure to fear is **a working but naked REPL** — nothing looks broken,
 everything is merely absent.
 
 Two consequences:
-- A module and its `source` line land in the **same** change, so chezmoi deploys
+- A module and its `source` line land in the **same** change, so deploy.sh ships
   the pair atomically.
 - The shell-init generator writes an **empty** file when a tool is missing or
   failing, rather than no file. That guarantee is load-bearing, not a nicety.

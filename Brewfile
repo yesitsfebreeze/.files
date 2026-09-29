@@ -31,7 +31,6 @@ brew "tmux"
 brew "fzf"
 
 # git, containers, tasks, secrets
-brew "chezmoi"
 brew "docker"     # the CLI formula; the daemon is a separate, deliberate choice
 brew "gh"
 brew "gnupg"

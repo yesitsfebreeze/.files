@@ -54,7 +54,7 @@ leave the optional field out.
    it, and a stray comma or brace shows up as a parse error on the next `help`.
 2. Run `just manual`. This regenerates `manual/guide/` and `manual/reference/`
    from the surfaces; commit them with the source in the same change.
-3. Run `chezmoi apply` and use the thing you documented.
+3. Run `rr` (pull + deploy) and use the thing you documented.
 
 Nothing checks the manual against the configuration. It was checked, by a
 497-line drift check that spawned a headless Neovim, a second tmux server and a

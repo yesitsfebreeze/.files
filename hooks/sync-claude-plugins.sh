@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# chezmoi run_after — make the plugin set identical across every Claude login
+# deploy hook — make the plugin set identical across every Claude login
 # profile. Plugins are installed once, globally (~/.claude/plugins is symlinked
 # into every profile), but `enabledPlugins` and `extraKnownMarketplaces` live in
 # each profile's own settings.json, which `_claude_share` COPIES at creation —
@@ -16,7 +16,7 @@ log()  { printf '\033[1;34m::\033[0m claude-plugins: %s\n' "$*" >&2; }
 warn() { printf '\033[1;33m!!\033[0m claude-plugins: %s\n' "$*" >&2; }
 
 if ! command -v jq > /dev/null 2>&1; then
-    warn "jq is not on PATH — plugin sets stay unsynced (install jq, then re-run \`chezmoi apply\`)"
+    warn "jq is not on PATH — plugin sets stay unsynced (install jq, then re-run \`rr\`)"
     exit 0
 fi
 

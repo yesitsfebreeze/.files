@@ -59,7 +59,7 @@ Container label: the absolute directory mounted. Ownership marker — `list` and
 def _capsule_dockerfile [] { $env.HOME | path join ".config" "capsule" "Dockerfile" }
 ```
 
-The one Dockerfile — the chezmoi target of C.1 (01-capsule/02-dev-image).
+The one Dockerfile — the deploy target of C.1 (01-capsule/02-dev-image).
 
 ```
 def _capsule_creds_dir [] { $env.HOME | path join ".cache" "capsule" "creds" }
@@ -71,7 +71,7 @@ The exported credential material (C.3). Runtime state, so it sits in ~/.cache an
 def _capsule_setup_script [] { $env.HOME | path join ".config" "capsule" "setup-credentials.sh" }
 ```
 
-The first-run container-side setup script, as chezmoi deploys it. Mounted read-only and run once on the create path; C.3's spec02 owns its contents.
+The first-run container-side setup script, as deploy.sh ships it. Mounted read-only and run once on the create path; C.3's spec02 owns its contents.
 
 ```
 def _capsule_name [dir: string] {
@@ -289,7 +289,7 @@ set -eu
 
 !/usr/bin/env bash capsule's first-run credential setup (01-capsule/03, task C.3, spec02).
 
-chezmoi deploys this to ~/.config/capsule/setup-credentials.sh (0755, the `executable_` prefix). The capsule CLI mounts it read-only at /opt/capsule/setup-credentials.sh and runs it ONCE, as `dev`, on the create path. It turns the read-only host mounts into working SSH, git and agent auth inside the container. Nothing it writes ever leaves the container.
+deploy.sh ships this to ~/.config/capsule/setup-credentials.sh (0755, git's own exec bit). The capsule CLI mounts it read-only at /opt/capsule/setup-credentials.sh and runs it ONCE, as `dev`, on the create path. It turns the read-only host mounts into working SSH, git and agent auth inside the container. Nothing it writes ever leaves the container.
 
 IT LIVES BESIDE THE DOCKERFILE, AND THAT DIRECTORY IS THE BUILD CONTEXT. A script here is fine — the Dockerfile has no COPY and no ADD, and must not gain one — but a credential here would be one `COPY .` from an image layer. Never write generated material into ~/.config/capsule.
 

@@ -75,7 +75,7 @@ fi
 
 # --- 3. tmux plugins --------------------------------------------------------
 # The path must equal the one tmux.conf's two `run-shell` lines name. No tpm:
-# chezmoi and this script already install and update them.
+# deploy.sh and this script already install and update them.
 P="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins"
 for r in tmux-resurrect tmux-continuum; do
     if [ -d "$P/$r/.git" ]; then
@@ -88,11 +88,7 @@ for r in tmux-resurrect tmux-continuum; do
 done
 
 # --- 4. Apply the configs, last --------------------------------------------
-if have chezmoi; then
-    log "chezmoi apply"
-    chezmoi apply || warn "chezmoi apply failed"
-else
-    warn "chezmoi not found — install it, then re-run this script"
-fi
+log "deploy"
+sh ./deploy.sh || warn "deploy failed"
 
 exit 0   # a failed package already warned on its own line

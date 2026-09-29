@@ -70,7 +70,12 @@ alias q = exit
 alias ":q" = exit
 alias "/exit" = exit
 
-alias rr = chezmoi update --force
+# rr — pull the repo and deploy: copy home/ over $HOME, then the hooks
+# (deploy.sh). The repo path rides an env var set in env.nu.
+def rr [] {
+    git -C $env.DOTFILES pull
+    sh ($env.DOTFILES | path join "deploy.sh")
+}
 
 def cf [file: path] {
     let f = ($file | path expand)
@@ -235,7 +240,8 @@ $env.config.hooks.env_change.PWD = (
 )
 
 # ── GENERATED ──
-# Generated at chezmoi-apply time so shell start does no setup work.
+# Generated at deploy time by hooks/generate-shell-init.sh so shell start does
+# no setup work.
 #
 # TRAP: a `source` of a MISSING file is a parse error that DISCARDS THIS
 # WHOLE FILE, so the generator always writes all three, empty if the tool is

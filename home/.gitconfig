@@ -1,6 +1,6 @@
 [user]
-    name = {{ .name }}
-    email = {{ .email }}
+    name = Stefan Hoevelmanns
+    email = shadowhvlmnns@gmail.com
 
 [init]
     defaultBranch = main

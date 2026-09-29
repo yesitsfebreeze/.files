@@ -10,7 +10,7 @@ env.nu — nushell's env-config. Nushell evaluates this file BEFORE config.nu, a
 
 It does three things and nothing else: repair PATH for a login shell macOS never ran `path_helper` for (R1), set the handful of variables the rest of the epic reads (R2), and open an interactive shell where the user last navigated while leaving `nu -c` in its caller's directory (R7).
 
-It sources nothing. The generated shell integrations (zoxide, television) are produced at chezmoi-apply time by `run_after_generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md.
+It sources nothing. The generated shell integrations (zoxide, television) are produced at deploy time by `hooks/generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md.
 
 ```
 $env.PATH = (

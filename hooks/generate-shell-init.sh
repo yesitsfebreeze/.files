@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# chezmoi run_after — regenerate the files nushell's config.nu `source`s, so
+# deploy hook — regenerate the files nushell's config.nu `source`s, so
 # launching a shell does no setup work. TRAPs: the path is a literal, not
 # XDG_CACHE_HOME; brew is evaluated first and ~/.local/bin prepended over it;
 # the file must exist even when the tool does not. The prompt is drawn by

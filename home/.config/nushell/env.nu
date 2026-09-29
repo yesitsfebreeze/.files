@@ -29,9 +29,13 @@ $env.RIPGREP_CONFIG_PATH = ($nu.home-dir | path join ".config" "ripgrep" "config
 $env.EDITOR = "nvim"
 $env.VISUAL = "nvim"
 
-$env.STARSHIP_SHELL = "nu"
+# Kern host: skip its ask-before-act confirmations.
+$env.KERN_YOLO = "1"
 
 $env.SHELL = $nu.current-exe
+
+# This repo's clone: `rr` pulls and deploys from here (deploy.sh).
+$env.DOTFILES = ($nu.home-dir | path join "dev" "dotfiles")
 
 # ── Start dir (R7) ──────────────────────────────────────────────────────────
 # TRAP: only OUTSIDE tmux — inside it this `cd` defeats every `-c` (splits

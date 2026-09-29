@@ -1,10 +1,9 @@
 #!/bin/sh
-# chezmoi run_onchange — a running tmux server keeps the config it started
-# with, so an apply that changes tmux.conf or cockpit.json reloads it; otherwise
-# a new binding or cockpit row exists on disk and not on the keyboard. The
-# hashes below are what make chezmoi re-run this when either changes.
-# tmux.conf {{ include "dot_config/tmux/tmux.conf" | sha256sum }}
-# cockpit.json {{ include "dot_config/tmux/cockpit.json" | sha256sum }}
+# deploy hook — a running tmux server keeps the config it started with, so a
+# deploy that changed tmux.conf or cockpit.json reloads it; otherwise a new
+# binding or cockpit row exists on disk and not on the keyboard. Reloaded
+# every deploy (source-file is idempotent), which is the same guarantee the
+# old chezmoi hash-trick bought.
 tmux info >/dev/null 2>&1 || exit 0
 tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
 # terminal-features apply only at attach: a client that attached before

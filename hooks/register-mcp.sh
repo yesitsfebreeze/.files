@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# chezmoi run_after — register the tmux MCP server with Claude Code.
+# deploy hook — register the tmux MCP server with Claude Code.
 #
 # TRAP: the destination is top-level `mcpServers` in `~/.claude.json` (user
 # scope), NOT `~/.claude/settings.json`. Both the upstream README and this

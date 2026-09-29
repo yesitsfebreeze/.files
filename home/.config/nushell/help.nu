@@ -6,10 +6,10 @@
 
 # ONE message for a missing corpus. The five near-identical variants this
 # replaced each named a different file and all ended in the same instruction:
-# the file that is missing is data a reader cannot act on, and `chezmoi apply`
-# is the whole of the action.
+# the file that is missing is data a reader cannot act on, and `rr`
+# (pull + deploy.sh) is the whole of the action.
 def _help_missing [what: string] {
-    error make {msg: $"help: the manual's ($what) is missing or empty — run `chezmoi apply`"}
+    error make {msg: $"help: the manual's ($what) is missing or empty — run `rr`"}
 }
 
 def _help_dir [] { $nu.home-dir | path join ".config" "nushell" "help" }

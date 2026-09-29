@@ -3,7 +3,7 @@ Working contract for agents in this repo. Read this before touching anything.
 ## What this repo is
 
 A rebuild of the dotfiles that used to live in `~/.files` (legacy, zsh-era)
-and `~/.config/*` (chezmoi-managed): rate every existing capability, take
+and `~/.config/*` (deployed by deploy.sh): rate every existing capability, take
 over only what earns its place, and ship a minimal daily-driver config.
 Nothing is ported because it exists; it is ported because a rating in
 `docs/capabilities-*.md` says it earns its place.
@@ -12,7 +12,7 @@ Nothing is ported because it exists; it is ported because a rating in
 
 | Path | What it is |
 |---|---|
-| `home/` | The chezmoi source. Find it live with `chezmoi source-path` — never a literal path; `~/.local/share/chezmoi` is a stale clone, never the source |
+| `home/` | The deploy source, REAL filenames — deploy.sh copies it over `$HOME`. `~/.local/share/chezmoi` is a stale clone, never anything |
 | `docs/` | Rated capability inventories and background research |
 | `memos/` | The record: every settled claim as one memo, `SYSTEM.md` the entry point. `just memos-check` regenerates the index and gates it |
 | `home/dot_config/nushell/help/manual/` | The environment manual, read with `?` or `help` in the shell. `guide/` and `reference/` are generated from `.nuon` surfaces (`just manual`); `internals/` is hand-written |

@@ -379,7 +379,7 @@
     {
         cmd: "rr"
         title: "Pull and apply the latest dotfiles"
-        use: "`rr` is `chezmoi update --force`: fetch the dotfiles repo and apply it over `~`. Applying twice changes nothing the second time."
+        use: "`rr` fetches the dotfiles repo and deploys it over `~`: deploy.sh copies home/ file by file, then runs the hooks. Deploying twice changes nothing the second time."
         topic: "config"
         task: "maintaining"
         step: 5

@@ -22,3 +22,6 @@
 .local/bin/litellm-up
 .local/bin/llm-quota
 .config/starship.toml
+.config_x
+.config/chezmoi
+.chezmoiignore

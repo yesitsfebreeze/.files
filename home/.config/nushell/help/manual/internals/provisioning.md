@@ -1,13 +1,13 @@
 # Provisioning
 
-> `brew bundle` then `chezmoi apply`. Everything else is a trap that was paid
+> `brew bundle` then `deploy.sh`. Everything else is a trap that was paid
 > for once.
 
 `install.sh` is the whole of it, and it does four things in one order that is
 load-bearing: bootstrap Homebrew, `brew bundle install --file Brewfile`, fetch
-the two things no package manager carries, then `chezmoi apply` **last** —
-because the apply's `run_after` scripts generate shell init by *running* the
-tools, and a tool installed after the apply is a tool the generated init does
+the two things no package manager carries, then `deploy.sh` **last** —
+because the deploy hooks generate shell init by *running* the
+tools, and a tool installed after the deploy is a tool the generated init does
 not know about.
 
 The package set lives in one file, `Brewfile` at the repo root. Adding a tool
@@ -81,11 +81,10 @@ writes them once per apply. Three things in that script look odd and are not:
    was 0.9.9 and `/opt/homebrew/bin/zoxide` 0.10.0, and their `init nushell`
    output differed by 32 bytes.
 
-3. **It ends in an explicit `exit 0` and carries no `set -e`.** Measured: a
-   `run_after` script exiting 3 makes `chezmoi apply` print
-   `chezmoi: <script>: exit status 3` and exit 1. A missing tool must be a
-   warning, never a dead apply. Every `run_after` here ends the same way for
-   the same reason.
+3. **It ends in an explicit `exit 0` and carries no `set -e`.** A hook that
+   exits non-zero must not kill the deploy: deploy.sh runs each hook with
+   `|| warn` and continues, and every hook also ends `exit 0` itself — a
+   missing tool must be a warning, never a dead deploy.
 
 `gen_init` writes to a temp file in the same directory and `mv -f`s it into
 place (a same-directory rename, therefore atomic) only when the tool exited 0.

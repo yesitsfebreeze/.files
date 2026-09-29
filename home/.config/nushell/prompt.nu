@@ -98,9 +98,37 @@ def _prompt [] {
     ] | str join ""
 }
 
+# ── the shell header ─────────────────────────────────────────────────────────
+# One line at every interactive shell start, in the same block style: os +
+# user, the FULL path (no truncation — the prompt truncates, the header
+# does not), the cached git and language segments, and the time on blue.
+# The prompt draws itself right below, so the header is the wider view.
+def _prompt_header [] {
+    let git = (_gitseg)
+    let lang = (_langseg)
+    let dir = ($env.PWD | str replace $nu.home-dir "~")
+    let t = (date now | format date "%H:%M")
+    [
+        $P_SGR0 $P_OS (_prompt_os) " " ($env.USER? | default "") " "
+        $P_TO_DIR $P_CRUST " " $dir " "
+        $P_TO_GIT (if ($git | is-empty) { "" } else { $"($P_CRUST)($git)" })
+        $P_TO_LANG (if ($lang | is-empty) { "" } else { $"($P_CRUST)($lang)" })
+        $P_TO_DUR $P_CRUST " " $t " "
+        $P_FROM_DUR $P_RESET
+    ] | str join ""
+}
+
 # ── registration ─────────────────────────────────────────────────────────────
 $env.PROMPT_COMMAND = {|| _prompt }
 $env.PROMPT_COMMAND_RIGHT = ""
 $env.PROMPT_INDICATOR = ""
 # starship's continuation line verbatim: a dim empty-set glyph, then a space.
 $env.PROMPT_MULTILINE_INDICATOR = "\e[90m∅\e[0m "
+
+# The header prints once per interactive shell — the module is sourced at
+# config load, PWD is already where env.nu put it, and the segment caches
+# are warm from the previous shell (a cold cache shows ⋯ for one render,
+# exactly like the prompt).
+if $nu.is-interactive {
+    print (_prompt_header)
+}

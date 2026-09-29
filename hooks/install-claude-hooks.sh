@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# chezmoi run_after — wire Claude Code's state hooks into every profile's
+# deploy hook — wire Claude Code's state hooks into every profile's
 # settings.json, so a Claude pane tints its window digit. The script they call
 # is ~/.local/bin/tmux-claude-state. See internals/tmux for the colours.
 #
-# TRAP: these files are NOT chezmoi-managed and must not become so. They hold
+# TRAP: these files are NOT repo-managed and must not become so. They hold
 # the statusline, the theme, the enabled plugins and whatever the human changed
 # since — the same reason register-mcp shells out instead of writing
 # ~/.claude.json itself. So the block is MERGED in, and only entries naming
@@ -22,7 +22,7 @@ warn() { printf '\033[1;33m!!\033[0m claude-hooks: %s\n' "$*" >&2; }
 cmd="$HOME/.local/bin/tmux-claude-state"
 
 if ! command -v jq > /dev/null 2>&1; then
-    warn "jq is not on PATH — hooks stay unwired (install jq, then re-run \`chezmoi apply\`)"
+    warn "jq is not on PATH — hooks stay unwired (install jq, then re-run \`rr\`)"
     exit 0
 fi
 
