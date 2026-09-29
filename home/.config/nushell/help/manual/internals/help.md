@@ -5,7 +5,7 @@
 `help` addresses the manual's **entries** — one key, one command, by name —
 reading the four `.nuon` surfaces under `~/.config/nushell/help`. `?` addresses
 the manual's **prose** — every line of `guide/`, `reference/` and `internals/`,
-which `just manual` generates from those same surfaces — and opens the hit in
+which `sh dotfiles.sh --manual` generates from those same surfaces — and opens the hit in
 the editor. Two searches over one corpus, deliberately separate.
 
 The file is 198 lines and defines two names a person types, `help` and `docs`,

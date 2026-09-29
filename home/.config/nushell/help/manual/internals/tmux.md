@@ -1044,7 +1044,7 @@ fallback slots.
 ## Persistence
 
 **No tpm.** tpm exists to install and update plugins and to give a config a
-place to declare them; `install.sh` clones them and two `run-shell` lines
+place to declare them; `dotfiles.sh --install` clones them and two `run-shell` lines
 declare them, so tpm would be a third mechanism doing a finished job.
 
 **The guard and the run are one shell command, and that shape is forced.** The
@@ -1064,7 +1064,7 @@ string is handed to `/bin/sh` and `${XDG_DATA_HOME:-$HOME/.local/share}` is the
 **What the `-x` guard is honestly worth:** without it, `run-shell` on a missing
 file produces **no error anywhere** — not on stderr at load, not in
 `show-messages`. So the guard does not save you from a broken config; it saves
-you from spawning a shell that fails silently. A machine where `install.sh` has
+you from spawning a shell that fails silently. A machine where `dotfiles.sh --install` has
 not run gets a fully working tmux either way, minus persistence. That is the
 honest degradation, and it is why nothing here aborts.
 
@@ -1131,4 +1131,4 @@ gates the request on a matching `extkeys` feature.
 
 `~/.local/bin/bounded SECS CMD…` runs CMD in its own process group and, at the deadline or when `bounded` itself is killed, sends TERM to the whole group and KILL to anything still there two seconds later. Exit status is CMD's, or 124 on the deadline. macOS has no `timeout(1)`, and a timeout that only stops waiting leaves the process running: on 2026-09-23 seventeen orphaned `pass show` reads were found spinning at 50% CPU each, which made every exec on the machine cost 70–250 ms.
 
-Every detached or possibly-blocking call in this repo goes through it: the Keychain and git-credential reads in env.nu (interactive shells only) and capsule.nu. install.sh's downloads carry `curl --max-time`. The `.orly/specs/lifecycle/` checks hold all of this: no process may outlive an action.
+Every detached or possibly-blocking call in this repo goes through it: the Keychain and git-credential reads in env.nu (interactive shells only) and capsule.nu. dotfiles.sh --install's downloads carry `curl --max-time`. The `.orly/specs/lifecycle/` checks hold all of this: no process may outlive an action.

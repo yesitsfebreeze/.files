@@ -3,7 +3,7 @@
 > `brew bundle` then `dotfiles.sh`. Everything else is a trap that was paid
 > for once.
 
-`install.sh` is the whole of it, and it does four things in one order that is
+`dotfiles.sh --install` is the whole of it, and it does four things in one order that is
 load-bearing: bootstrap Homebrew, `brew bundle install --file Brewfile`, fetch
 the two things no package manager carries, then `dotfiles.sh` **last** —
 because the deploy hooks generate shell init by *running* the
@@ -26,7 +26,7 @@ tap tinted-theming/tinted. Run `brew trust ...`
 
 `brew bundle` will not trust a tap for you, and it does not fail the run — it
 prints the error and carries on, so a fresh machine finishes green with no
-tinty and therefore no palette. `install.sh` runs `brew trust --tap
+tinty and therefore no palette. `dotfiles.sh --install` runs `brew trust --tap
 tinted-theming/tinted` before the bundle for exactly this reason. Trust is
 machine state (`~/.homebrew/trust.json`), not repo state, so every machine
 needs the line.

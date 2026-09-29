@@ -11,7 +11,7 @@ Nothing is computed at deploy time; dynamic values are runtime concerns.
 
 ## dotfiles.sh (repo root)
 
-    sh dotfiles.sh                # deploy (what `rr` and `just deploy` run)
+    sh dotfiles.sh                # deploy (what `rr` runs)
     sh dotfiles.sh --status       # dry-run: NEW / DIFFERS / RETIRE
     sh dotfiles.sh --adopt <path> # copy a live file back into home/
 
@@ -25,9 +25,11 @@ Five steps, in order, each explicit in the script:
 3. The copy: every file under home/ overwrites its target in $HOME
    (cp -p; modes ride along; git tracks the exec bit, no name prefixes).
    .DS_Store, .git and __pycache__ are excluded by the find.
-4. Retirements: every path in removed.txt is deleted from $HOME. Retiring
-   a file is TWO EDITS and always was: delete the source file, append the
-   target path to removed.txt. The sweep is idempotent (rm -f).
+4. Retiring a file is two actions in one change: delete the source in
+   home/ and rm the live copy in $HOME — explicit, once, at the moment you
+   decide. There is no retirement ledger (removed.txt fired its whole
+   life on paths already gone, and a stale entry would silently delete a
+   future file at a retired path).
 5. Hooks: hooks/*.sh run in a fixed order, each with `|| warn` — one
    failure warns and the rest still run. The order in dotfiles.sh:
    generate-shell-init, install-claude-hooks, register-mcp,
@@ -39,7 +41,7 @@ Five steps, in order, each explicit in the script:
 `--status` is the dry-run chezmoi had (`diff`) plus the drift report it
 never had: NEW (no target yet), DIFFERS (source and target disagree —
 WHICH SIDE moved is `git status` in the repo; there is no state database
-by design), RETIRE (removed.txt paths still present). It changes nothing
+by design). It changes nothing
 and runs no hooks. `--adopt <path>` is the reverse direction — the
 `chezmoi add` equivalent: a live file under $HOME is copied into home/ at
 its own path, refusing anything outside $HOME or containing `..`.
@@ -51,7 +53,7 @@ is set in env.nu (~/.config/nushell/env.nu) to ~/dev/dotfiles. Editing any
 file in home/ is live the moment you deploy; there is nothing to "apply"
 afterwards.
 
-## install.sh (a fresh machine)
+## dotfiles.sh --install (a fresh machine)
 
 Order is the contract: Homebrew bootstrap + brew bundle (Brewfile) ->
 Remote Login (sshd over the tailnet) -> tmux-mcp binary -> tmux plugins
@@ -72,8 +74,7 @@ step just installed. A failed package warns; the run continues.
 - reload-tmux.sh — unconditionally `tmux source-file` (idempotent) plus a
   warning to any client without terminal feature `sync`.
 
-## Removed.txt
+## The Brewfile
 
-The retirement ledger. Currently-retired paths include .config/starship.toml
-(the prompt is nushell now), .config/chezmoi, .chezmoiignore, .config_x.
-Keep it append-only; entries run `rm -rf` on every deploy.
+home/.config/Brewfile is the machine's package set — a plain file like any
+other, deployed to ~/.config/Brewfile, read from the tree by --install.

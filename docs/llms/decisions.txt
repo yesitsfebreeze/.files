@@ -11,7 +11,10 @@ then this file).
 Real filenames + a replacing script, not chezmoi. Chezmoi was doing
 name-mangling, one real template, and copy ceremony for a tree whose
 secrets were already runtime Keychain reads; a ~60-line sh script covers
-install, replace, retirement (removed.txt) and hooks. Symlinks were
+install, replace and hooks. Retiring a file is the same shape: delete the
+source, rm the live copy, one change — removed.txt (the retirement ledger,
+inherited from chezmoi) was deleted 2026-09-29 after its whole life fired
+on paths already gone, leaving only the stale-entry hazard. Symlinks were
 considered and rejected in favour of copy-replace: a tool rewriting a
 config in place diverges the live copy silently under both, and copy
 keeps the repo insulated — the deployed tree is never the working tree.
@@ -59,13 +62,14 @@ WAS memos (2026-08-31) — this supersedes it.
 
 No docs site: a manual you `npm run dev` to read is a manual you do not
 read. Plain markdown shipped with the shell, generated halves from the
-same .nuon surfaces `help` reads (just manual), hand-written internals/,
+same .nuon surfaces `help` reads (dotfiles.sh --manual), hand-written internals/,
 searched line by line through the `docs` television channel (`?`).
 
 ## Retiring a file is two edits
 
-Delete the source file AND append its target path to removed.txt; the
-deploy sweep deletes it. Proven at the target path, never at the source
+Delete the source file and rm the live copy, one change — no ledger
+(the removed.txt experiment ended 2026-09-29; stale entries could silently
+delete future files at retired paths). Proven at the target path, never at the source
 or by a deploy's exit code.
 
 ## tmux owns multiplexing (2026-08-21)

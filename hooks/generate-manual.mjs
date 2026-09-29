@@ -1,3 +1,4 @@
+// generate-manual.mjs — NOT a deploy hook; run as `sh dotfiles.sh --manual`.
 // Generates the task half and the subject half of the manual from the .nuon
 // files that `help` itself reads, so neither can drift from the shell:
 //
@@ -15,7 +16,7 @@
 // command) and render as ONE block on the guide, which is what stops the same
 // thing being listed twice.
 //
-// Run: just manual
+// Run: sh dotfiles.sh --manual
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'

@@ -12,6 +12,9 @@
 #   sh dotfiles.sh                # deploy: copy, retire, hooks (what `rr` runs)
 #   sh dotfiles.sh --status       # dry-run: what a deploy would change + drift
 #   sh dotfiles.sh --adopt <path> # copy a live file back into home/
+#   sh dotfiles.sh --install      # fresh machine: brew, sshd, tools, then deploy
+#   sh dotfiles.sh --manual       # regenerate the manual's generated halves
+#   sh dotfiles.sh --push         # stage, commit, push — git only, no deploy
 #
 # The contract, explicit:
 #   1. PATH first — hooks run tools (the generator runs brew's nushell).
@@ -21,17 +24,19 @@
 #   3. The copy: every file under home/ overwrites its target (cp -p; the
 #      exec bit rides git, no name prefixes). .DS_Store, .git and
 #      __pycache__ are excluded by the find.
-#   4. Retire: every path in removed.txt is deleted in $HOME. Retiring a
-#      file is still two edits: the source file goes, the target path joins
-#      removed.txt (docs/llms/decisions.txt).
-#   5. Hooks: hooks/*.sh in a fixed order, each non-fatal — one failure
+#   4. Hooks: hooks/*.sh in a fixed order, each non-fatal — one failure
 #      warns and the rest run. The reload comes last (a running tmux keeps
 #      the config it started with).
 #
-# --status changes nothing and runs no hooks; it reports three buckets:
-# NEW (no target yet), DIFFERS (source and target disagree — WHICH SIDE
-# moved is `git status` in the repo, there is no state database by design),
-# and RETIRE (removed.txt paths still present in $HOME).
+# RETIRING A FILE is two actions in one change: delete the source in home/
+# and rm the live copy in $HOME — explicit, once, at the moment you decide.
+# There is no retirement ledger: the old removed.txt fired its whole life
+# on paths that were already gone, and a stale entry would silently delete
+# any future file created at a retired path. No hidden state survives.
+#
+# --status changes nothing and runs no hooks; it reports two buckets:
+# NEW (no target yet) and DIFFERS (source and target disagree — WHICH SIDE
+# moved is `git status` in the repo, there is no state database by design).
 set -u
 
 repo=$(cd "$(dirname "$0")" && pwd)
@@ -39,6 +44,7 @@ home_src=$repo/home
 
 log()  { printf '\033[1;34m::\033[0m %s\n' "$*" >&2; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
 
 # --- the tree walk, shared by deploy and status -------------------------------
 walk() {
@@ -57,18 +63,11 @@ preflight() {
 
 # --- --status: the dry-run -----------------------------------------------------
 status() {
-    n_new=0; n_diff=0; n_ret=0
     walk | while read -r f; do
         if   [ ! -e "$HOME/$f" ]; then printf 'NEW     %s\n' "$f"
         elif ! cmp -s "$home_src/$f" "$HOME/$f"; then printf 'DIFFERS %s\n' "$f"
         fi
     done
-    if [ -f "$repo/removed.txt" ]; then
-        while read -r p; do
-            case $p in ''|'#'*) continue ;; esac
-            [ -e "$HOME/$p" ] && printf 'RETIRE  %s\n' "$p"
-        done < "$repo/removed.txt"
-    fi
 }
 
 # --- --adopt: live file into the repo ------------------------------------------
@@ -94,6 +93,83 @@ adopt() {
     printf '%s\n' "adopted: home/$rel"
 }
 
+# --- 0. PATH: everything below runs tools -------------------------------------
+if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+# --- --install: the fresh-machine bootstrap, then fall through to the deploy ---
+# Order is the contract: every tool is on PATH before the deploy, because the
+# hooks generate shell init by running those tools. A failed step warns and
+# the run continues — a missing tool must be a warning, never a dead install.
+install() {
+    if ! have brew; then
+        log "installing Homebrew"
+        NONINTERACTIVE=1 /bin/bash -c \
+            "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+            || warn "Homebrew: bootstrap failed — install it by hand and re-run"
+    fi
+    if have brew; then
+        # TRAP: Homebrew 6 refuses a formula from an untrusted third-party tap
+        # and `brew bundle` will not trust one for you — without this the
+        # Brewfile's tinty is skipped with an error, and tinty owns the palette.
+        brew trust --tap tinted-theming/tinted || warn "could not trust the tinted tap"
+        brew bundle install --file "$home_src/.config/Brewfile" \
+            || warn "brew bundle incomplete"
+    else
+        warn "no brew — nothing was installed"
+    fi
+
+    # Remote access: sshd over the tailnet. The GUI cask cannot be a Tailscale
+    # SSH server on macOS, so tailnet peers reach this machine over the built-in
+    # sshd with a key. Loading its launchd job is Remote Login; the one sudo
+    # prompt in the run (launchctl, not `systemsetup`, which wants Full Disk
+    # Access on top of sudo).
+    if [ "$(uname -s)" = Darwin ]; then
+        if launchctl print system/com.openssh.sshd >/dev/null 2>&1; then
+            log "Remote Login already on"
+        else
+            sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist && log "Remote Login on" \
+                || warn "Remote Login: could not load sshd — System Settings > General > Sharing"
+        fi
+        [ -x /Applications/Tailscale.app/Contents/MacOS/Tailscale ] \
+            && ! /Applications/Tailscale.app/Contents/MacOS/Tailscale status >/dev/null 2>&1 \
+            && warn "Tailscale: open Tailscale.app and sign in"
+    fi
+
+    # tmux-mcp: no package manager has it; prebuilt release. TRAP: the assets
+    # are named with an UNDERSCORE, tmux-mcp_<os>_<arch>.
+    if ! have tmux-mcp; then
+        case "$(uname -m)" in arm64|aarch64) a=arm64 ;; *) a=amd64 ;; esac
+        t="$(curl -fsSL --max-time 30 https://api.github.com/repos/MadAppGang/tmux-mcp/releases/latest \
+            | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+        d="$(mktemp -d)"
+        if [ -n "$t" ] && curl -fsSL --max-time 300 -o "$d/a.tgz" \
+            "https://github.com/MadAppGang/tmux-mcp/releases/download/$t/tmux-mcp_$(uname -s | tr A-Z a-z)_$a.tar.gz" \
+            && tar -xf "$d/a.tgz" -C "$d"; then
+            mkdir -p "$HOME/.local/bin"
+            install -m 755 "$d/tmux-mcp" "$HOME/.local/bin/tmux-mcp" && log "installed tmux-mcp $t"
+        else
+            warn "tmux-mcp: could not install (GitHub rate limit?)"
+        fi
+        rm -rf "$d"
+    fi
+
+    # tmux plugins: the path must equal tmux.conf's two `run-shell` lines. No
+    # tpm — the install and the deploy keep them updated instead.
+    P="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins"
+    for r in tmux-resurrect tmux-continuum; do
+        if [ -d "$P/$r/.git" ]; then
+            git -C "$P/$r" pull --ff-only --quiet || warn "$r: pull failed"
+        else
+            mkdir -p "$P"
+            git clone --depth 1 --quiet "https://github.com/tmux-plugins/$r" "$P/$r" \
+                || warn "$r: clone failed"
+        fi
+    done
+}
+
 case ${1-} in
     --status)
         status
@@ -104,13 +180,20 @@ case ${1-} in
         adopt "$@"
         exit 0
         ;;
+    --manual)
+        node "$repo/hooks/generate-manual.mjs" || warn "manual regeneration failed"
+        exit 0
+        ;;
+    --push)
+        git -C "$repo" add --all
+        git -C "$repo" diff --cached --quiet || git -C "$repo" commit -m "chore: update"
+        git -C "$repo" push
+        exit 0
+        ;;
+    --install)
+        install
+        ;;
 esac
-
-# --- 1. PATH: hooks run tools --------------------------------------------------
-if [ -x /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 preflight
 
@@ -123,15 +206,7 @@ walk | while read -r f; do
 done
 log "deployed $(walk | wc -l | tr -d ' ') files into $HOME"
 
-# --- 3. Retirements ------------------------------------------------------------
-if [ -f "$repo/removed.txt" ]; then
-    while read -r p; do
-        case $p in ''|'#'*) continue ;; esac
-        [ -e "$HOME/$p" ] && { rm -rf "$HOME/$p"; printf '%s\n' "removed: $p"; }
-    done < "$repo/removed.txt"
-fi
-
-# --- 4. Hooks ------------------------------------------------------------------
+# --- 3. Hooks ------------------------------------------------------------------
 for h in \
     generate-shell-init.sh \
     install-claude-hooks.sh \

@@ -6,7 +6,7 @@ The configuration files themselves are short. What is *not* obvious about them
 lives here: the constraints each line is defending against, and the measurement
 that established it.
 
-`index.md` and every page it lists are hand-written. `just manual` generates
+`index.md` and every page it lists are hand-written. `sh dotfiles.sh --manual` generates
 `guide/` and `reference/` from the `.nuon` surfaces, so those two cannot drift;
 these cannot be regenerated, so nothing but a person corrects them. Add a page
 here and add its row below in the same change.

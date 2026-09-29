@@ -4,12 +4,12 @@ Last updated: 2026-09-29
 
 ## The order contract
 
-install.sh on a fresh clone: Homebrew -> brew bundle (Brewfile) ->
+dotfiles.sh --install on a fresh clone: Homebrew -> brew bundle (Brewfile) ->
 Remote Login -> tmux-mcp -> tmux plugins -> dotfiles.sh LAST. The hooks
 generate shell init by RUNNING the tools; a tool installed after the
 deploy is a tool the generated init does not know about. Homebrew 6
 refuses untrusted taps — `brew trust --tap tinted-theming/tinted` is in
-install.sh because tinty owns the palette and `brew bundle` will not
+dotfiles.sh --install because tinty owns the palette and `brew bundle` will not
 trust a tap for you.
 
 ## Secrets are runtime, never deploy-time
@@ -25,7 +25,7 @@ templates at all — the gitconfig identity is plain text.
 A tailnet peer reaches this machine over the BUILT-IN sshd (Remote Login)
 with a key — the Tailscale GUI app cannot be an SSH server on macOS, and
 public tunnels failed every chat's URL reader (serveo/pinggy "Continue"
-pages, Cloudflare 403s). install.sh loads the sshd launchd job (one sudo
+pages, Cloudflare 403s). dotfiles.sh --install loads the sshd launchd job (one sudo
 prompt; launchctl, not `systemsetup`, which wants Full Disk Access).
 
 ## Host scope

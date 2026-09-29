@@ -10,9 +10,8 @@ are searched, together with the manual, by `?` in the shell.
 
 ## Start here
 
-- [deploy.txt](docs/llms/deploy.txt) — dotfiles.sh, install.sh, hooks/,
-  removed.txt retirement, rr, the Brewfile. How the repo becomes the
-  machine.
+- [deploy.txt](docs/llms/deploy.txt) — dotfiles.sh, dotfiles.sh --install, hooks/,
+  rr, the Brewfile, --install. How the repo becomes the machine.
 - [conventions.txt](docs/llms/conventions.txt) — how to work in this
   repo: subtraction over machinery, TRAP comments, the pickers rule,
   retirement, the manual.
@@ -39,7 +38,7 @@ are searched, together with the manual, by `?` in the shell.
 
 The shell's `?` and `help` read the manual shipped in
 home/.config/nushell/help/ — the .nuon surfaces are the source of truth
-for commands and keys (`just manual` regenerates the guide and reference
+for commands and keys (`sh dotfiles.sh --manual` regenerates the guide and reference
 halves); internals/ is hand-written system detail that these files point
 into rather than repeat.
 

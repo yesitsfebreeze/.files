@@ -34,4 +34,4 @@ wezterm-bg, font.sh/wallpaper.sh under wezterm/.
 ## Config
 
 ~/.config/tmux/tmux.conf + cockpit.json (the key map). Plugins:
-tmux-resurrect, tmux-continuum (cloned by install.sh, no tpm).
+tmux-resurrect, tmux-continuum (cloned by dotfiles.sh --install, no tpm).

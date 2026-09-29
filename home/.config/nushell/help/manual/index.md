@@ -40,7 +40,7 @@ silently suppresses an OSC 52.
 
 Guide and Reference are both **generated** from the four `.nuon` files that
 `help` reads in the shell, so this manual and `help` cannot disagree. Edit the
-`.nuon` surfaces and run `just manual`, never the generated pages. Internals is
+`.nuon` surfaces and run `sh dotfiles.sh --manual`, never the generated pages. Internals is
 hand-written and is the one place to add a *why*.
 
 ## If you only read one thing
