@@ -49,17 +49,18 @@ if $nu.is-interactive and ($env.TMUX? | is-empty) {
     cd (if ($start == null) { $dev_dir } else { $start })
 }
 
-# ── The Ollama endpoint probe (R2) ──────────────────────────────────────────
-if $nu.is-interactive and (which ollama-host | is-not-empty) {
-    let _ollama = (do { ^ollama-host } | complete)
-    if $_ollama.exit_code == 0 {
-        $env.OLLAMA_HOST = ($_ollama.stdout | str trim)
-    }
-}
+# No Ollama probe (R2, retired): `ollama-host` only ever answered
+# `http://127.0.0.1:11434`, which is every Ollama client's default, so the
+# spawn set nothing the clients did not already assume.
 
 # TypeSafe key for orly / fast-jev-compaction, read from the Keychain (never
 # stored here). Interactive only, and bounded: a locked Keychain can block
-# `security` indefinitely, and this runs at every shell start.
-if $nu.is-interactive {
+# `security` indefinitely. Read once per tmux server: the first shell hands
+# it to the server's global environment and every later pane inherits it,
+# so a new pane pays no Keychain round trip (~25 ms).
+if $nu.is-interactive and ($env.TYPESAFE_API_KEY? | default "" | is-empty) {
     $env.TYPESAFE_API_KEY = (try { ^bounded 3 security find-generic-password -a typesafe/api-key -s kern -w | str trim } catch { "" })
+    if ($env.TMUX? | default "" | is-not-empty) and ($env.TYPESAFE_API_KEY | is-not-empty) {
+        ^tmux set-environment -g TYPESAFE_API_KEY $env.TYPESAFE_API_KEY
+    }
 }

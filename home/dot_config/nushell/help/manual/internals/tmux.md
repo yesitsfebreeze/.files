@@ -156,7 +156,7 @@ empty, which keeps the old behaviour for a bare `nu` (the no-tmux fallback in
 
 `#{E:@cwd}` — set at the top of `tmux.conf` — is the pane's real working
 directory, and the only thing a gesture meaning "here" may use: the split
-binds, the F3/F8 pickers' `-c`, the status bar.
+binds, the F5 s q/F5 s c pickers' `-c`, the status bar.
 
 **TRAP: `#{pane_current_path}` is not where the pane is.** It is the pane
 process's OS cwd, and nushell never changes it — `cd` moves `$env.PWD` and
@@ -284,11 +284,15 @@ history then follows the number, not the place.
 The cockpit reads an arrow's escape sequence (`\e[A` or `\eOA`, and the
 rest), writes `U D L R`, and closes; the launcher runs `select-pane -t PANE
 -U|-D|-L|-R` and `switch-client -c CLIENT -T jump`. Shift+arrow (`\e[1;2A`…)
-writes the split flags instead (`vb v h hb`) and the launcher runs
-`split-window -t PANE -FLAGS -c '#{E:@cwd}'` before arming `jump`. Any other
+writes greedy split flags instead (`fvb fv fh fhb`), Alt+arrow (`\e[1;3A`…)
+the local ones (`vb v h hb`), and the launcher runs
+`split-window -t PANE -FLAGS -c '#{E:@cwd}'` before arming `jump`. `-f` splits
+at the top of the layout tree: with the window split top/bottom, Shift+→ in the
+lower pane adds a full-height column on the right, half the window wide, where
+Alt+→ halves only the lower pane. Any other
 escape sequence closes the cockpit unrun, so a key the cockpit does not name
 is swallowed — every arrow it should act on must be listed. Every binding in `jump` —
-arrows, Shift+arrow splits, `q` — ends in `switch-client -T jump`, so the mode
+arrows, Shift+arrow and Alt+arrow splits, `q` — ends in `switch-client -T jump`, so the mode
 lasts; `Enter` and `Escape` go back to `root`.
 
 A digit at the cockpit's top level writes `wN`; the launcher runs
@@ -329,15 +333,54 @@ own colour (`pane-active-border-style`, the scheme's accent `base0D`; inactive
 borders are `base03`), so a header repaint only rewrites text. Tinty sets both
 border colours, so a palette switch updates them together.
 
-Both `window-style` and `window-active-style` are `default`: pane contents
-retain the terminal and application colours regardless of focus. Only the
-title indicates an inactive pane; the content is never dimmed by tmux.
+Both `window-style` and `window-active-style` are set in `tmux.conf` with
+ANSI slots and overridden by `colors.conf` (tinty's, per scheme). The
+inactive panes recede 15%.
 
-### `F6` is never forwarded
+### The inactive panes recede
 
-`F6` gets no table and no `send-keys` anywhere, deliberately: the palette
+`window-style` is the mechanism that works and the `dim` attribute is not.
+tmux merges **only the colours** of `window-style` into a cell, never the
+attributes: measured 2026-09-27 on 3.7c, `window-style 'dim'` (and `bold`,
+`underscore`, `reverse`, `italics`) emits no attribute escape at all — the
+pane's text comes out with a bare `\e[m`. `infocmp tmux-256color` does
+advertise `dim=\E[2m` and the terminal honours it, so the loss is tmux's.
+
+**A 15% dim is therefore a colour, not an attribute.** tmux 3.7c style syntax
+has no percentage either — `dim=15%`, `bg=#ffffff%15` and `fg=default,dim=15%`
+all fail with `invalid style:` and leave the option at `default`. So the
+inactive foreground is **computed per scheme**: base05 (the foreground)
+blended 15% toward base00 (the background), each channel
+`(c05*85 + c00*15)/100`. `theme.sh` writes it into `colors.conf` as
+`setw -g window-style 'fg=$dim'`, which is the option tmux actually applies
+to an inactive pane. For the scheme shipping today, `base16-caroline`,
+that is `#93665c`.
+
+`tmux.conf` carries the ANSI-slot fallback, `set -gw window-style 'fg=colour8'`
+(colour8 is base03), for a checkout that has never applied a theme and so has
+no `colors.conf`. It is a bigger step than 15%, deliberately: a fallback that
+is too subtle is indistinguishable from no dimming at all.
+
+Two traps, both measured, both of which cost a day:
+
+- **`window-active-style` MERGES over `window-style`.** `fg=default` there is
+  not "no override" — it is the dimming colour winning in the *active* pane
+  as well, so every pane in the window is dimmed. `fg=terminal,bg=terminal`
+  is the repair: `terminal` is the emulator's own colour, and it leaves the
+  ground alone, so the WezTerm background image shows through (any explicit `bg=`
+  paints an opaque ground over every pane).
+- **Only text that names no colour of its own dims.** A cell with its own
+  `fg` keeps it: in every measurement a red or green span in an inactive pane
+  stayed exactly `\e[31m`/`\e[32m`. A plain shell prompt recedes fully; a
+  syntax-highlighted buffer in an inactive pane stays bright. There is no
+  per-pane fade behind this — it is one foreground colour for the pane's
+  default-coloured text.
+
+### `F5 t t` is never forwarded
+
+`F5 t t` gets no table and no `send-keys` anywhere, deliberately: the palette
 belongs to the **outermost** terminal, because that is the process that owns
-the ANSI colours and reads the OSC. An `F6` forwarded into a nested session
+the ANSI colours and reads the OSC. An `F5 t t` forwarded into a nested session
 could only retint a session that does not own them.
 
 It is bound in the multiplexer rather than the shell because a full-screen TUI
@@ -361,15 +404,31 @@ and both are `$HOME`-relative, so they are inert where they do not exist. Do
 toggle would then fail one layer deeper, on `tinty`, where the cause is far
 harder to see than a missing shell.
 
-## F1 — the cockpit
+## F5 — the cockpit
 
-`F1` opens the cockpit, laid out as [which-key.nvim]: a popup the pickers'
+`F5` opens the cockpit, laid out as [which-key.nvim]: a popup the pickers'
 width, centred, its bottom edge on theirs, listing the keys in columns as
 `k ➜ icon label`. The key's letter is lit inside its label where it occurs
 (`c ➜ copy mode`), actions come before `+`groups, a `»` breadcrumb names the
 group you are in, and the help line is last. `~/.local/bin/cockpit` reads
-`cockpit.tsv` (key path, icon, label, tmux command; a row with no command is a
-group). A group's key redraws in place, `Backspace` goes up, `Escape` closes,
+`~/.config/tmux/cockpit.json`: each key path maps to `label`, `icon` and at
+most one action, and an entry with no action is a group. The action says
+where it runs: `tmux` is a tmux command, `popup` a shell command in the
+floating terminal, `shell` text typed into the pane you were in followed by
+Enter, `wezterm` a `wezterm.lua` cockpit action. Every string is expanded as
+a tmux format first (`#{E:@cwd}`, `#{pane_id}`; a literal `#` is `##`). The
+file is compiled to `~/.cache/cockpit.tsv` whenever it is newer than the
+cache; an edit that does not parse keeps the last good table and says so.
+The table is drawn once per popup width into `~/.cache/cockpit.WIDTH/`:
+one finished frame per menu, the popup height and each action's tmux
+command, so the popup itself forks nothing — a key is one `read` of a
+frame file and one synchronized write, and the open pays only for the
+popup's shell.
+
+```json
+"gL": {"label": "lazygit", "icon": "", "popup": "lazygit"},
+"gp": {"label": "pull", "icon": "", "shell": "git pull"}
+``` A group's key redraws in place, `Backspace` goes up, `Escape` closes,
 an action's key closes the popup and runs its command. The chezmoi reload
 hook re-sources tmux.conf when either file changes.
 
@@ -380,30 +439,137 @@ columns are the point. Every step after the open is one synchronized redraw
 inside the same process, so a group or `Backspace` never shows the panes.
 
 - The popup blocks until closed; `cockpit` then expands the row's command
-  against the pane F1 was pressed in (`display -p -c CLIENT -t PANE`) and runs
+  against the pane F5 was pressed in (`display -p -c CLIENT -t PANE`) and runs
   it there (`if -F -t PANE 1 …`), so a row writes `#{E:@cwd}` and
   `#{pane_id}` plainly, and a row may open a picker popup (the cockpit has
   closed by then).
 - bash 3.2 `read` has no fractional timeout, so any escape sequence closes:
-  `Escape`, an arrow, `F1` again.
+  `Escape`, an arrow, `F5` again.
 - The `u` group writes OSC 1337 `SetUserVar=wez=<base64 name>` with
   `run-shell … > #{client_tty}`, straight to the client's own terminal (no
   passthrough); wezterm.lua's `user-var-changed` maps the name to an action.
-- orly checks: `cockpit_wired` — tmux.conf parses and binds F1 to cockpit,
+- orly checks: `cockpit_wired` — tmux.conf parses and binds F5 to cockpit,
   every row has four fields, an icon and a group, every `wez` name is mapped.
   `cockpit_whichkey` — the drawn frames have columns, lit keys, actions before
   groups, the breadcrumb and the help line, and group/`Backspace` move.
-  `no_flicker` — on a real client, F1, a group key and `Backspace` each keep
+  `no_flicker` — on a real client, F5, a group key and `Backspace` each keep
   the whole border in every synchronized frame.
 
 [which-key.nvim]: https://github.com/folke/which-key.nvim
 
+## F5 p r — evening the panes out
+
+`F5 p r`, and the cockpit's `p r` (`relax`), spread a window's panes out evenly
+at every level of the layout. Both run `~/.local/bin/tmux-relax PANE`, which
+is one `select-layout -E -t PANE` followed by one `-E` per pane in the window.
+
+**`equalize-panes` does not exist on tmux 3.7c.** It was removed; the only
+primitive left is `select-layout -E`, which evens *the pane you name and the
+panes directly next to it* — one level of the layout tree, not the window.
+Measured as the total sibling size mismatch left over, over 50 ragged windows
+of 2–7 panes:
+
+| what you press | left over |
+|---|---|
+| `-E` once on the window | 30.1 |
+| that call iterated to a fixed point | 9.6 |
+| a window call, then one call per pane | **1.5** |
+
+Row 2 is the trap: iterating *looks* like the safe version, and it is the one
+to avoid. `-E` spreads by the group the named pane sits in, so iterating on
+the active pane settles that group and never reaches the groups it does not
+touch — the leftovers shrink a little and stop. The sweep is also idempotent
+(49/50 windows byte-identical on a second press; the fixed-point loop is not a
+fixed point of the sweep, only of the group it reached).
+
+- It **unzooms**: `-E` cannot lay out a window it cannot see, so a zoomed
+  window comes back unzoomed and evened. That is the right reading of a key
+  meaning "even this out", and it is what to know before pressing it.
+- TRAP: the binding passes `#{pane_id}`, never `$TMUX_PANE`. Inside
+  `run-shell` that variable holds an id from the tmux **server's**
+  environment (measured `%12` while the client's window held `%0`–`%3`), so a
+  binding relying on it evens a pane nobody is looking at. Formats like
+  `#{pane_id}` expand before the shell sees the string, so the pressed pane's
+  id arrives as a literal.
+- The cockpit row is `run-shell -b`, so it detaches and works while the popup
+  is still closing; the row's own `display -p` / `if -F` expansion in
+  `cockpit` supplies the pane.
+- `tmux-relax` is `/bin/sh`, takes the pane as `$1` with `$TMUX_PANE` only as
+  a fallback, and exits 0 in silence when there is no pane at all. manual →
+  internals/tmux, "Where a split starts" for the same one-pane-per-verb shape.
+
+## F5 w z — zen mode
+
+`F5 w z`, the cockpit's `w z` (`zen`), runs `~/.local/bin/tmux-zen toggle`:
+it flips the global `@zen` and refits every window on the server. On, every
+window is a strip: the active pane centred at `@zen-width` percent (50) of
+the window, the panes before it (by pane index) stacked in a column on the
+left, the panes after it in a column on the right, a blank spacer pane on a
+side with nothing; a lone pane has no border. `F5 →` / `F5 ←` run `tmux-zen
+next` / `prev`, which select the next or previous pane of the strip and so
+bring it to the centre, with no move mode. `set -g @zen 1` starts it on.
+
+- **The strip is one `select-layout`.** The frames build's `window_layout`
+  is JSON (`"V":2`): every leaf carries its pane index (`i`), so any pane can
+  go in any cell regardless of list order, and the active pane (`a`) and the
+  last-pane order (`l`, kept from the current layout so `select-pane -l`
+  still works) are set in the same call. `tmux-zen apply` reads the current
+  layout, builds the target with `jq`, and applies it only when the leaf
+  geometry differs — a fixed point, since its own call fires the hook again.
+  Floating panes (popups, `z`) are carried over unchanged: the parser wants a
+  cell per pane, and dropping one is "have N panes but need M".
+- **An empty side is a spacer pane.** tmux has no margins. A spacer is a full
+  height (`split-window -f`) pane running `sleep`, with `@zen_spacer 1` and an
+  empty `pane-border-format` (both are pane options); its width is set by the
+  layout like any other cell. Apply makes or kills spacers to the count the
+  strip needs and stops there; the split or kill fires the layout hook, whose
+  run builds the strip. The bar's process chip is
+  `#(~/.local/bin/tmux-zen procs)`, which skips them. TRAP: a format inside
+  that `#()` is expanded twice (`@procs` is read through `E:`), and a comma
+  in it splits the `#{?window_end_flag,…}` around it — the chip printed the
+  tail of its own filter.
+- **A popup is a pane.** On the frames build `display-popup` — F5 itself —
+  is a floating pane in the window (`pane_floating_flag`), and it fires
+  `window-layout-changed`; counted as real, it made the middle 1 column
+  wide. Every listing in `tmux-zen` filters `@zen_spacer` and
+  `pane_floating_flag` together; stock tmux has no such pane and the unknown
+  variable is empty. While a popup is the active pane apply does nothing
+  (the layout's `a` is on the popup, which is not in the strip).
+- **The border goes with `pane-active-border-style hidden`** set on the
+  lone pane itself (a pane option on this build): the seam between it and a
+  spacer is drawn in the active pane's style, and `hidden` is the same SGR 8
+  that blanks inactive seams. The header stays, being `nohidden`. Leaving
+  zen or splitting unsets it (`set -pu`) on every real pane.
+- **The hooks are `window-layout-changed` and `after-select-pane`**, both
+  `run-shell -b` behind an `if -F '#{@zen}'`: with zen off a focus change or
+  resize forks nothing (`toggle` runs `apply` on every window itself, so the
+  spacers still go when it turns off). One split fires the first several times at once (measured
+  four runs building spacers side by side), so the lock is an atomic `mkdir`
+  under `$TMPDIR` named by server pid and window; a later run waits its
+  turn, up to ten seconds, since it may be the one that saw the newest
+  layout. TRAP: it used to give up after one second; at load average 40 one
+  tmux command takes a second, the split's run gave up, and the spacers
+  stayed beside two panes. A zoomed window is left alone.
+- **Focus never rests on a spacer.** `pane-focus-in` cannot move focus (it
+  runs after the fact and the `select-pane -l` in it is dropped); an
+  `after-select-pane` hook can, and it fires for its own `select-pane -l`
+  too, which lands on a real pane and ends there. Move mode's arrows and a
+  mouse click both go through `select-pane`, so both refit.
+- The cockpit popup is half the client wide, zen or not, and the menu takes
+  more rows.
+- Known ceiling: tmux-resurrect restores a spacer as a shell. After a reboot
+  restore, `F5 w z` off and on rebuilds them. Turning zen off leaves the
+  strip layout as it is; `F5 p r` evens it out.
+
 ## Pickers: shown once drawn
 
-F3, F7, F8, F9 and the cockpit's picker rows run tv-go through
-`~/.local/bin/modal CLIENT ORIGIN DIR 'CMD'`: a centred popup, 90% × 85%,
+F5 s q, F5 s t, F5 s c, F5 t s and the cockpit's picker rows run tv-go through
+`~/.local/bin/modal CLIENT ORIGIN DIR 'CMD' [border] [h=N]`: a centred popup, 90% × 85%
+(`h=30` for the theme, font and wallpaper rows — `"height": 30` in cockpit.json —
+so the retint, font and image they preview stay visible around the box; a
+short one keeps the 85% box's bottom line, the cockpit's edge),
 that opens already drawn. tmux paints a popup's box empty the moment it opens
-and cannot hold it back ([tmux #2801]); measured on F8, the empty box stood
+and cannot hold it back ([tmux #2801]); measured on F5 s c, the empty box stood
 from 12 ms to 53 ms, while fzf started. So `modal` starts the command first,
 in a session exactly the popup's size, polls `capture-pane` until it holds a
 whole frame (non-blank, unchanged across two 10 ms polls, 2 s bound), prints
@@ -424,7 +590,7 @@ session, which draws its first frame over an identical one.
 - The status bar must stay at the bottom — see "The status bar".
 - orly check `no_flicker` (`.orly/modal-frames.py`): at 168×54, with the pane
   behind printing every 50 ms and a pane option changing every 250 ms, every
-  synchronized frame after F8 holds the popup's corners.
+  synchronized frame after F5 s c holds the popup's corners.
 
 [tmux #2801]: https://github.com/tmux/tmux/issues/2801
 
@@ -437,7 +603,7 @@ construction, because only the program in front of the human can read that
 human's clipboard. The one binding that broke the invariant is recorded below
 rather than deleted quietly.
 
-### `F4`, and the chord it replaced
+### `F5 c`, and the chord it replaced
 
 **07-multiplexer I1**: every gesture in this layer works on a bare server with
 no WezTerm. `Ctrl+Shift+X` did not, and it was the only keyboard entry to copy
@@ -458,14 +624,14 @@ about tmux. Measured 2026-09-01 on this desk — WezTerm advertising `extkeys` i
 pressing the key did nothing at all. tmux received an unbound `C-x` in root and
 passed it to the program in the pane.
 
-So the binding is gone rather than kept as a second name for `F4`. Keeping it
+So the binding is gone rather than kept as a second name for `F5 c`. Keeping it
 would leave the manual documenting a key that works on some terminals and
 silently does nothing on others, which is the exact failure I1 exists to catch:
 correct on paper, silent in practice, invisible to anyone not sitting at the
 one terminal it was tried on.
 
-`F4` asks the terminal for nothing. It joins `F3` (search), `F5` (jump) and
-`F6` (theme) in the row this config reserves for keys no program in a pane
+`F5 c` asks the terminal for nothing. It joins `F5 s q` (search), `F5` (jump) and
+`F5 t t` (theme) in the row this config reserves for keys no program in a pane
 wants. A root binding is always taken by the outermost server, so a nested
 tmux never sees it.
 
@@ -680,16 +846,16 @@ out a line's tty row (`py = woy + wy`) and then asks whether an overlay covers
 it with the *window* row `wy`. With the bar on top `woy` is 1, so the check is
 one row off and a popup's or menu's **first row** is repainted by every pane
 redraw — the modal's top border blinked on each header tick, broken in 87 of
-~155 frames with F8 open at 168×54, and whole in every frame after opening with
-the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the clock; **`tmux-sys`** — CPU, memory and GPU as a
+~155 frames with F5 s c open at 168×54, and whole in every frame after opening with
+the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the **mode chip**, as in nvim —
+COCKPIT while F5's popup is up, JUMP in move mode, COPY in copy mode, ZEN
+with zen on, else NORMAL; the clock; **`tmux-sys`** — CPU, memory and GPU as a
 five-cell bar plus percent; VRAM as a bar plus used/max GB — the unified
 memory the GPU holds (`ioreg`'s "In use system memory"; Apple Silicon has no
 separate VRAM) over Metal's `recommendedMaxWorkingSetSize`, cached in
 `$TMPDIR/tmux-sys.gpumax` until `iogpu.wired_limit_mb` changes; and the default interface's download/upload in
 Mbit/s since the previous tick, every field fixed width so the chip and digits
-never shift; the **key-table chip**, which appears the
-instant a table is pushed and names it (copy-mode, or the prefix);
-and at the right every window's number, the current one in the accent, its digits bold and underlined, then
+never shift; and at the right every window's number, the current one in the accent, its digits bold and underlined, then
 the server's process count — `list-panes -a`, one `#()` per status tick — as
 a reverse-video chip, drawn once by the last window's format
 (`window_end_flag`) because `status-right` must stay empty for
@@ -714,14 +880,19 @@ looks like random "unable to write index" errors that nothing points back at
 the bar). `#()` runs in the background and re-runs every `status-interval`, so
 a slow answer arrives late rather than freezing a redraw.
 
-The **key-table chip** is the awesome-tmux prefix-highlight idea rebuilt on the
-tables this config actually uses, there being no prefix key here to highlight —
-until it existed, nothing on screen said a table was armed. **Trap for
-anyone re-measuring it:** a real keypress redraws the status, so the chip
-appears and clears instantly, but driving the same change from the CLI with
-`switch-client -T copy-mode` does *not* mark the status dirty and the chip does not
-appear until the next tick. That reads exactly like a broken format and is not
-one.
+The **mode chip** is `@mode`, one nested conditional in precedence order:
+`@cockpit` (a global option the cockpit script sets around its popup — a
+user option does not redraw the bar, but the popup's open and close do,
+and closing follows with a plain `refresh-client`; never `-S`, which
+re-runs every `#()` job), then `client_key_table` = `jump`, then the active
+pane's `pane_in_mode`, then the global `@zen`. It began as the awesome-tmux
+prefix-highlight idea rebuilt on the tables this config actually uses, there
+being no prefix key here to highlight — until it existed, nothing on screen
+said a table was armed. **Trap for anyone re-measuring it:** a real keypress
+redraws the status, so the chip changes instantly, but driving the same
+change from the CLI with `switch-client -T jump` does *not* mark the status
+dirty and the chip does not change until the next tick. That reads exactly
+like a broken format and is not one.
 
 A second status row was dropped for the pane headers. Rows sit wherever
 `status-position` says, because it is **one option for the whole bar**. Measured 2026-09-01 on **tmux 3.7c**: `status 2` with
@@ -765,8 +936,8 @@ the `$HOME` reaches the format literally, nothing matches, and the row prints
 the full `/Users/...` path with no error to say why — measured 2026-09-01 while
 building the cwd segment. It is why both arms of the SSH test are double-quoted.
 
-Every pane keeps its top border label visible. The config removes the former
-`window-layout-changed` hook so splitting or closing a pane cannot hide it.
+Every pane keeps its top border label visible; the `window-layout-changed`
+hook only refits zen mode and never touches the labels.
 
 ## Claude's state is no longer drawn
 

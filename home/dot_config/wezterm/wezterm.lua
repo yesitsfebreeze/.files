@@ -1,11 +1,9 @@
--- macOS and Omarchy (Linux). `mac` gates the few macOS-only settings.
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 local act = wezterm.action
 
 local home = os.getenv("HOME") or ""
-local mac = wezterm.target_triple:find("darwin") ~= nil
-local default_font = mac and "CaskaydiaCove Nerd Font" or "DepartureMono Nerd Font"
+local default_font = "CaskaydiaCove Nerd Font"
 
 config.default_prog = { home .. "/.local/bin/tmux-main" }
 
@@ -17,18 +15,9 @@ config.set_environment_variables = {
 }
 
 config.color_scheme = "Gruvbox Material (Gogh)"
--- Omarchy: the current Omarchy theme, rendered as base16 by the omarchy repo's
--- tinty-scheme.yaml.tpl on every `omarchy theme set`; watched so a theme
--- change repaints open windows.
-local omarchy_scheme = home .. "/.local/state/omarchy/current/theme/tinty-scheme.yaml"
-if not mac and io.open(omarchy_scheme) then
-	config.color_scheme = nil
-	config.colors = wezterm.color.load_base16_scheme(omarchy_scheme)
-	wezterm.add_to_config_reload_watch_list(omarchy_scheme)
-end
 config.enable_tab_bar = false
 
--- The F8 font pick and its live preview. manual → internals/wezterm, "Font".
+-- The F5 s c font pick and its live preview. manual → internals/wezterm, "Font".
 local font_file = home .. "/.local/state/wezterm/font.txt"
 wezterm.add_to_config_reload_watch_list(font_file)
 local picked = io.open(font_file)
@@ -36,7 +25,7 @@ local family = picked and picked:read("l") or ""
 if picked then
 	picked:close()
 end
--- The F1 cockpit's `wezterm` group (cockpit.tsv) names one of these actions.
+-- The F5 cockpit's `wezterm` group (cockpit.json) names one of these actions.
 local cockpit = {
 	window = act.SpawnWindow,
 	bigger = act.IncreaseFontSize,
@@ -73,11 +62,10 @@ config.font_dirs = { home .. "/Library/Fonts" }
 -- every resize re-fills a window whose width matches no screen (throttled 2 s),
 -- unless Alt+Enter took that window out of fullscreen.
 -- Width only: fullscreen stops below the MacBook notch, so height never matches.
--- macOS only: on Hyprland the compositor tiles the window.
 -- manual → internals/wezterm.
 config.native_macos_fullscreen_mode = false
 local function fill(window)
-	if not mac or (wezterm.GLOBAL.windowed or {})[tostring(window:window_id())] then
+	if (wezterm.GLOBAL.windowed or {})[tostring(window:window_id())] then
 		return
 	end
 	local d = window:get_dimensions()
@@ -101,22 +89,58 @@ end
 wezterm.on("window-config-reloaded", fill)
 wezterm.on("window-resized", fill)
 
-config.window_decorations = "RESIZE"
+-- An opaque macOS window gets a shadow and a light 1 px frame line; drop both.
+config.window_decorations = "RESIZE|MACOS_FORCE_DISABLE_SHADOW"
 config.default_cursor_style = "BlinkingBlock"
--- On Hyprland the compositor applies Omarchy's window opacity and blur.
-config.window_background_opacity = mac and 0.9 or 1.0
-config.macos_window_background_blur = 30
+-- The background image `wezterm-bg` renders (blur baked in) and its darkness.
+-- manual → internals/wezterm, "Background".
+local bg_dir = home .. "/.local/state/wezterm/"
+wezterm.add_to_config_reload_watch_list(bg_dir .. "background.txt")
+wezterm.add_to_config_reload_watch_list(bg_dir .. "background")
+local bg_state = io.open(bg_dir .. "background.txt")
+local bg_img = io.open(bg_dir .. "background")
+if bg_state and bg_img then
+	-- The source is on the watch too: replacing that file re-renders it
+	-- (only when it is newer than the render, so the reload this causes stops).
+	local src = bg_state:read("l")
+	wezterm.add_to_config_reload_watch_list(src)
+	-- WezTerm's own env lacks magick; hand it the PATH panes get.
+	wezterm.background_child_process({
+		"env", "PATH=" .. config.set_environment_variables.PATH,
+		"sh", "-c", '[ "$1" -nt "$2" ] && exec wezterm-bg "$1"', "_", src, bg_dir .. "background",
+	})
+	bg_state:read("l")
+	local dark = tonumber(bg_state:read("l")) or 60
+	config.background = {
+		{
+			source = { File = bg_dir .. "background" },
+			width = "Cover",
+			height = "Cover",
+			-- Cover crops from the top left unless told to centre.
+			horizontal_align = "Center",
+			vertical_align = "Middle",
+			repeat_x = "NoRepeat",
+			repeat_y = "NoRepeat",
+			-- Every 20 halves the brightness: the image nears black as dark grows
+			-- but never gets there, so the last stretch stays fine-tunable.
+			hsb = { brightness = 0.5 ^ (dark / 20) },
+		},
+	}
+end
+if bg_state then
+	bg_state:close()
+end
+if bg_img then
+	bg_img:close()
+end
 config.audible_bell = "Disabled"
 -- Zero padding anchors the grid top-left; the sub-cell remainder sits at the
 -- right and bottom edges, so the grid never shifts on fullscreen or resize.
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 config.adjust_window_size_when_changing_font_size = false
--- Linux: WebGpu over Vulkan, and no eased cursor-blink animation — on the
--- Omarchy laptop's Intel iGPU, OpenGL plus 60 fps blink redraws lagged.
-config.front_end = mac and "OpenGL" or "WebGpu"
-config.webgpu_power_preference = "LowPower"
+config.front_end = "OpenGL"
 config.max_fps = 60
-config.animation_fps = mac and 60 or 1
+config.animation_fps = 60
 config.enable_kitty_keyboard = false
 config.disable_default_key_bindings = true
 
@@ -135,25 +159,19 @@ config.keys = {
 	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
 	-- handles select-then-copy now, so this just passes the key through.
 	{ key = "c", mods = "CTRL", action = act.SendKey({ key = "c", mods = "CTRL" }) },
-	-- Omarchy's universal Super+C / Super+V arrive as Ctrl+Insert / Shift+Insert.
-	{ key = "Insert", mods = "CTRL", action = act.CopyTo("Clipboard") },
-	{ key = "Insert", mods = "SHIFT", action = act.PasteFrom("Clipboard") },
 }
 -- Alt+Enter: leaving fullscreen opts this window out of `fill`; entering opts
--- back in. macOS only: on Hyprland, WezTerm's own fullscreen toggle crashed the
--- window; the compositor's fullscreen binding owns it there.
-if mac then
-	table.insert(config.keys, {
-		key = "Enter",
-		mods = "ALT",
-		action = wezterm.action_callback(function(window)
-			local windowed, id = wezterm.GLOBAL.windowed or {}, tostring(window:window_id())
-			windowed[id] = window:get_dimensions().is_full_screen or nil
-			wezterm.GLOBAL.windowed = windowed
-			window:toggle_fullscreen()
-		end),
-	})
-end
+-- back in.
+table.insert(config.keys, {
+	key = "Enter",
+	mods = "ALT",
+	action = wezterm.action_callback(function(window)
+		local windowed, id = wezterm.GLOBAL.windowed or {}, tostring(window:window_id())
+		windowed[id] = window:get_dimensions().is_full_screen or nil
+		wezterm.GLOBAL.windowed = windowed
+		window:toggle_fullscreen()
+	end),
+})
 
 -- SHIFT+click opens a link in both mouse-reporting states; the bypass moves
 -- to ALT and the Down stroke is Nopped. manual → internals/wezterm.

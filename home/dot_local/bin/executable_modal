@@ -1,11 +1,14 @@
 #!/bin/bash
-# modal — a picker as a centred popup that opens already drawn: F3, F7, F8,
-# F9 and the cockpit's search, git and theme rows.
+# modal — a picker as a centred popup that opens already drawn: F5 s q, F5 s t, F5 s c,
+# F5 t s and the cockpit's search, git and theme rows.
 #
-#   modal CLIENT ORIGIN_PANE DIR 'SHELL COMMAND'
+#   modal CLIENT ORIGIN_PANE DIR 'SHELL COMMAND' [border]
+#
+# Pickers draw their own box; `border` gives a program that does not
+# (lazygit) the cockpit's rounded one, its session two cells smaller.
 #
 # tmux paints a popup's box empty the moment it opens and the program's first
-# frame arrives later (~40 ms for tv-go on F8), and nothing holds a popup
+# frame arrives later (~40 ms for tv-go on F5 s c), and nothing holds a popup
 # back. So the command starts first, in a hidden session exactly the popup's
 # size; this waits until it holds a whole frame (non-blank, unchanged across
 # two polls), and only then opens the popup, which runs a nested `tmux attach`
@@ -14,10 +17,14 @@
 # The session has an empty key table and no prefix, so every key reaches the
 # picker. manual → internals/tmux.
 set -u
-client=$1 origin=$2 dir=$3 cmd=$4
+client=$1 origin=$2 dir=$3 cmd=$4 box=(-B) in=0 hp=85
+# Flags after CMD: `border` draws a box, `h=N` makes it N% tall (default 85).
+for f in "${@:5}"; do case $f in border) box=(-b rounded -S fg=colour8) in=2 ;; h=*) hp=${f#h=} ;; esac; done
 # TRAP: not `display -p -c CLIENT`: that expands client_* for another client.
 read -r cw ch < <(tmux list-clients -f "#{==:#{client_name},$client}" -F '#{client_width} #{client_height}')
-w=$((cw * 90 / 100)) h=$((ch * 85 / 100)) s="modal$$"
+# -y is the bottom line: the one an 85%-tall centred popup has, whatever hp,
+# so a short picker sits on the cockpit's bottom edge (same formula there).
+w=$((cw * 90 / 100)) h=$((ch * hp / 100)) y=$(((ch - 1) / 2 + ch * 85 / 100 / 2)) s="modal$$"
 # Its own server (-L modal, no config): a nested client of THIS server is
 # redrawn on every option change here (each header tick), clear first, and
 # the popup repaints mid-redraw: the top row blinked on every tick. tv-go
@@ -26,19 +33,19 @@ w=$((cw * 90 / 100)) h=$((ch * 85 / 100)) s="modal$$"
 # its first frame over the snapshot below, which is that same frame, instead
 # of blanking the popup for one frame first.
 m="tmux -L modal -f /dev/null"
-$m new-session -d -s "$s" -x "$w" -y "$h" -c "$dir" \
+$m new-session -d -s "$s" -x $((w - in)) -y $((h - in)) -c "$dir" \
     "export TMUX='$TMUX' TV_ALL_ORIGIN='$origin' TV_ALL_CLIENT='$client'; $cmd" \; \
     set -t "$s" status off \; set -t "$s" key-table none \; set -t "$s" prefix None \; \
     set -s terminal-overrides '*:smcup@:rmcup@:clear=\E[H' || exit 1
-last=""
-# ponytail: 2 s bound on the wait; a picker slower than that is shown as-is.
-for _ in $(seq 200); do
+last="" i=0
+# No sleep between polls: each capture is one round trip (~3 ms), which is
+# the interval. ponytail: ~2 s bound on the wait; a slower picker is shown as-is.
+while [ $((i += 1)) -le 600 ]; do
     now=$($m capture-pane -p -t "$s" 2>/dev/null) || exit 0
-    [ -n "$(printf '%s' "$now" | tr -d ' \n')" ] && [ "$now" = "$last" ] && break
+    case $now in *[![:space:]]*) [ "$now" = "$last" ] && break ;; esac
     last=$now
-    sleep 0.01
 done
-snap=$(mktemp)
-$m capture-pane -e -p -t "$s" | awk 'NR > 1 { printf "\r\n" } { printf "%s", $0 }' > "$snap"
-tmux display-popup -c "$client" -E -B -w "$w" -h "$h" -x C -y C \
+snap=${TMPDIR:-/tmp}/modal$$.snap
+now=$($m capture-pane -e -p -t "$s"); printf '%s' "${now//$'\n'/$'\r\n'}" > "$snap"
+tmux display-popup -c "$client" -E "${box[@]}" -w "$w" -h "$h" -x C -y "$y" \
     "cat '$snap'; rm -f '$snap'; TMUX= exec $m attach -t '$s'"

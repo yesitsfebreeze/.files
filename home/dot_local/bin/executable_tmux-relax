@@ -1,0 +1,25 @@
+#!/bin/sh
+# tmux-relax — even a window's panes out, every level of the layout.
+#
+#   tmux-relax [PANE]      default: $TMUX_PANE; does nothing without one
+#
+# tmux 3.7c has no `equalize-panes` (it was removed). `select-layout -E` evens
+# the pane you name and the panes NEXT TO it — one level of the layout tree —
+# so this is one call on the window, then one per pane. Do NOT loop it: `-E`
+# spreads by the group the named pane sits in, so iterating settles that group
+# and never reaches the others, which measures worse than this single sweep.
+# It UNZOOMS: `-E` cannot lay out a window it cannot see. manual →
+# internals/tmux, "F5 p r — evening the panes out"; the measurements are
+# [[evening-out-panes-is-a-per-level-sweep]].
+#
+# TRAP: PANE is a pane ID, never a `#{...}` template. tmux expands formats in
+# a `run-shell` command BEFORE the shell sees it, so a `#{pane_id}` meant for
+# the `list-panes` below would have been spent on the pane F5 p r was pressed in.
+set -u
+pane=${1:-${TMUX_PANE:-}}
+[ -n "$pane" ] || exit 0
+
+tmux select-layout -E -t "$pane" 2>/dev/null
+for p in $(tmux list-panes -t "$pane" -F '#{pane_id}' 2>/dev/null); do
+    tmux select-layout -E -t "$p" 2>/dev/null
+done

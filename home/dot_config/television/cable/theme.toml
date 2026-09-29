@@ -1,5 +1,6 @@
-# `tv theme` — the scheme list as a plain tv channel. F8, F9 and `theme` use
-# tv-go's fzf picker instead, which re-runs the preview on every focus.
+# `tv theme` — the scheme list as a plain tv channel, so F5 s c lists it. Every
+# picker (F5 s c, F5 t s, `theme`) opens it in tv-go's fzf look, which previews
+# on every focus; tv itself would cache the retint (#969), so no [preview] here.
 
 [metadata]
 name = "theme"
@@ -11,15 +12,3 @@ command = "~/.config/tinted-theming/tinty/theme.sh --list"
 output = "{}"
 no_sort = true
 frecency = false
-
-[preview]
-command = "~/.config/tinted-theming/tinty/theme.sh --preview '{}'"
-# The preview's job is the retint, a side effect: a cached row would show its
-# swatch but leave the terminal on the last scheme painted.
-cached = false
-
-[ui]
-preview_panel = { size = 65 }
-
-[ui.input_bar]
-header = "theme: {}"

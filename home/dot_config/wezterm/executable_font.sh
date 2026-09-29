@@ -1,5 +1,5 @@
 #!/bin/bash
-# The `font` channel of the F8 overlay. WezTerm owns the font; this tells it
+# The `font` channel of the F5 s c overlay. WezTerm owns the font; this tells it
 # which. manual → internals/wezterm, Font.
 #
 #   font.sh --list       monospace families, the current one first (tv source)

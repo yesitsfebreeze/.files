@@ -13,6 +13,7 @@ REPO = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=Tru
 THEME = f"{HOME}/.config/tinted-theming/tinty/theme.sh"
 tmp = tempfile.mkdtemp()
 sock = f"beh{os.getpid()}"
+ME = os.getpid()
 env = dict(os.environ, XDG_DATA_HOME=f"{tmp}/data", XDG_STATE_HOME=f"{tmp}/state",
            XDG_CONFIG_HOME=f"{tmp}/config", TMPDIR=f"{tmp}/", TERM="xterm-256color")
 env.pop("TMUX", None)
@@ -48,7 +49,10 @@ try:
     pid, fd = pty.fork()
     if pid == 0:
         os.execvpe("tmux", ["tmux", "-L", sock, "-f", f"{REPO}/home/dot_config/tmux/tmux.conf",
-                            "new-session", "-A", "-s", "main"], env)
+                            "new-session", "-A", "-s", "main",
+                            # Watchdog, not a shell: orly SIGKILLs a check past its budget and the
+                            # server has left that process group, so the pane ends it once we are gone.
+                            f"bash -c 'while kill -0 {ME}; do sleep 1; done; tmux -L {sock} kill-server'"], env)
     out, end = b"", time.time() + 10
     while time.time() < end and b"\x1b]4;0;" not in out:
         if select.select([fd], [], [], 0.2)[0]:

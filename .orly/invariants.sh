@@ -53,22 +53,24 @@ bash_32)
     echo "$bad"; [ -z "$bad" ] ;;
 size_budget)
     # Complexity ceiling on code (not data like kern.toml): no file over 500
-    # lines, all of it under 4100.
+    # lines, all of it under 4400 (raised from 4100 on 2026-09-29 by the owner:
+    # the cockpit which-key menus, modal and tmux-slot/panes/relax grew it).
     git ls-files -z home install.sh justfile scripts | grep -z -v /help/ \
         | grep -zE '(\.(sh|nu|lua|py|mjs|conf)|/executable_[^/]*|justfile|install\.sh)$' \
         | xargs -0 wc -l \
         | awk '{ n = $1; sub(/^ *[0-9]+ /, "") }
                $0 != "total" { t += n; if (n > 500) { print "over 500:", $0; bad = 1 } }
-               END { print "total=" t; exit bad || t > 4100 }' ;;
+               END { print "total=" t; exit bad || t > 4400 }' ;;
 cockpit_wired)
-    # F1: tmux.conf parses and binds F1 to cockpit; every cockpit.tsv row has
+    # F5: tmux.conf parses and binds F5 to cockpit; every compiled cockpit.json row has
     # four fields and sits under a group row; every `wez` action it sends is
     # one wezterm.lua maps — else the key silently does nothing.
-    t=home/dot_config/tmux/cockpit.tsv
-    tmux -L orly-cockpit -f /dev/null new -d || exit 2
-    tmux -L orly-cockpit source-file home/dot_config/tmux/tmux.conf; rc=$?
-    tmux -L orly-cockpit list-keys | rg -q '^bind-key +-T root +F1 +run-shell .*cockpit' || { echo "cockpit: F1 does not run cockpit"; rc=1; }
-    tmux -L orly-cockpit kill-server
+    t=$(mktemp); trap 'rm -f "$t"' EXIT
+    bash home/dot_local/bin/executable_cockpit --tsv home/dot_config/tmux/cockpit.json > "$t" || { echo "cockpit.json does not compile"; exit 1; }
+    tmux -L orly-cockpit-$$ -f /dev/null new -d || exit 2
+    tmux -L orly-cockpit-$$ source-file home/dot_config/tmux/tmux.conf; rc=$?
+    tmux -L orly-cockpit-$$ list-keys | rg -q '^bind-key +-T root +F5 +run-shell .*cockpit' || { echo "cockpit: F5 does not run cockpit"; rc=1; }
+    tmux -L orly-cockpit-$$ kill-server
     # A digit must select by exact index (`:=N`): plain `:N` prefix-matches a
     # window *named* `2.1.280` (Claude's version) when index N is missing.
     rg -q 'select-window -t "\$s:=\$\{key#w\}"' home/dot_local/bin/executable_cockpit || { echo "cockpit: digit target is not exact (:=N)"; rc=1; }
@@ -87,7 +89,9 @@ cockpit_whichkey)
     # where they fit, each row is `k ➜ icon label` with the key's letter lit in
     # the label when it occurs there, a group shows a `»` breadcrumb, and a
     # group key and Backspace move between menus.
-    python3 - home/dot_config/tmux/cockpit.tsv <<'PY'
+    t=$(mktemp); trap 'rm -rf "$t" "$t".*' EXIT
+    bash home/dot_local/bin/executable_cockpit --tsv home/dot_config/tmux/cockpit.json > "$t" || exit 1
+    python3 - "$t" <<'PY'
 import re, subprocess, sys
 tsv = sys.argv[1]
 rows = [l.rstrip("\n").split("\t") for l in open(tsv)]

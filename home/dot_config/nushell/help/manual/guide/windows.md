@@ -6,33 +6,19 @@
 
 There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see.
 
-## `F1`
-
-**Open the cockpit: every surface action by mnemonic**
-
-*terminal*
-
-Press `F1` in any pane — a shell, the editor, an agent — and the cockpit opens: every key in columns, `k ➜ label`, the key's letter lit inside its label, a `+` marking a group. At the top level: `s` search (`s s` sessions: any pane by name or content), `g` git, `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config. A group key shows that group in place, so `F1 s f` picks a file, `F1 s g` greps, `F1 g l` walks the git log, `F1 p l` splits right, `F1 t t` flips dark/light, `F1 u +` makes the font bigger, `F1 u q` closes this WezTerm window (as `Ctrl+Shift+Q` does; the tmux session lives on). `Backspace` returns to the top; `Escape` closes it.
-
-> **Why it is this way**
->
-> Laid out as which-key.nvim so the whole surface reads at a glance, and it is plain tmux, so it works on a bare tmux over ssh; only the `u` group needs WezTerm. The keys are data, one row each in `~/.config/tmux/cockpit.tsv`, so adding one is adding a line. Search and git rows open the same pickers as `F8` with the channel step skipped. WezTerm has no command channel of its own, so its rows write an OSC 1337 user variable to the terminal and wezterm.lua runs the named action.
-
-See also: [`F8`](./files.md#f8) · [`F5`](./windows.md#f5) · [`F6`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
-
 ## `F5`
 
 **Open the cockpit; an arrow in it moves between panes**
 
 *terminal*
 
-Press `F5` and the cockpit opens — the which-key menu `F1` also opens. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits that way at once, also into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in.
+Press `F5` in any pane — a shell, the editor, an agent — and the cockpit opens. It is the only function key: every action lives under it by mnemonic, `k ➜ label` in columns with the key's letter lit, a `+` marking a group. Top level: `s` search, `g` git (`g l` is lazygit), `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config; `Backspace` goes up, `Escape` closes. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits the whole window that way at once (the new pane runs the full height or width), Alt and an arrow splits only the pane you are in, both into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in.
 
 > **Why it is this way**
 >
 > The menu is the thing to reach for first, and moving is the next most common thing, so an arrow is the way out of it into moving. The cockpit reads the arrow itself, moves, and arms tmux's `jump` table on the client as it closes, so move mode's keys are plain key tables that act the instant they are pressed.
 
-See also: [`F1`](./windows.md#f1) · [`F5 s s`](./windows.md#f5-s-s) · [`F5 <arrow>`](./windows.md#f5-arrow)
+See also: [`F5 s s`](./windows.md#f5-s-s) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
 ## `F5 s s`
 
@@ -110,19 +96,47 @@ See also: [`F5 w w`](./windows.md#f5-w-w) · [`F5 s s`](./windows.md#f5-s-s)
 
 *terminal*
 
-Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift and an arrow splits that way straight away. Arrows keep moving, Shift and an arrow splits that way (the new pane in the old one's directory), `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed.
+Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift or Alt and an arrow splits that way straight away. Arrows keep moving; Shift and an arrow splits greedily — at the top of the layout, so with the window split top/bottom, Shift+→ in the lower pane puts a full-height pane on the right half — and Alt and an arrow splits only the pane you are in (either way the new pane opens in the old one's directory); `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed.
 
 > **Why it is this way**
 >
-> Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. A split inherits the directory through the shell's OSC 7 report (`@cwd`).
+> Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. Shift's split is `split-window -f`, which splits the whole window rather than the pane; Alt's is the plain split. A split inherits the directory through the shell's OSC 7 report (`@cwd`).
 
 See also: [`F5`](./windows.md#f5) · [`F5 s s`](./windows.md#f5-s-s)
+
+## `F5 p r`
+
+**Even the panes out, every level of the layout**
+
+*terminal*
+
+Press `F5 p r` and the panes in this window are spread evenly — the level you are in, and the levels inside every other pane, so a column you widened by hand stops being wider than its neighbour.
+
+> **Why it is this way**
+>
+> tmux 3.7c has no `equalize-panes` — it was removed — and the one primitive left, `select-layout -E`, evens the pane you name and the panes directly next to it, so one call straightens one level of the layout tree and not the window. Measured over 50 ragged windows of 2–7 panes as the total sibling size mismatch left behind: once on the window leaves 30.1, iterating that call to a fixed point leaves 9.6 (the active pane's group settles and the groups it never reaches stay ugly), and one window call followed by one call per pane leaves 1.5. That sweep is the whole command, and it is idempotent — pressing it again changes nothing. It UNZOOMS: `-E` cannot lay out a window it cannot see, so a zoomed window comes back unzoomed and evened.
+
+See also: [`F5`](./windows.md#f5) · [`F5 <arrow>`](./windows.md#f5-arrow)
+
+## `F5 w z`
+
+**Zen: the active pane centred, the rest as previews beside it**
+
+*terminal*
+
+Press `F5 w z` and zen mode is on for every window: the active pane sits centred at half the screen width, the panes before it stacked in a column on the left, the panes after it in a column on the right, blank space on a side with nothing. A lone pane has no border. `F5 →` and `F5 ←` bring the next or previous pane to the centre at once; a click or a split does the same for the pane it lands on. The cockpit is half the screen wide and grows down. `F5 w z` again turns it off. `set -g @zen 1` in tmux.conf starts it on, `@zen-width` changes the half.
+
+> **Why it is this way**
+>
+> tmux has no margins, so an empty side is a blank spacer pane, full height, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. The strip is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call, so nothing is resized step by step. The layout and select-pane hooks refit after every split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. Zoom is left alone.
+
+See also: [`F5 p r`](./windows.md#f5-p-r) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
 ## Read the bar across the top
 
 *terminal*
 
-Nothing to press. The left of the bar is the clock and the machine's load; the right end lists the session's windows by number, the current one in the accent, then a reverse-video chip counting every process (pane) in every session. Over ssh the machine's name appears in each pane's header.
+Nothing to press. The left of the bar is the mode — NORMAL, COCKPIT while `F5` is open, JUMP in move mode, COPY in copy mode, ZEN — then the clock and the machine's load; the right end lists the session's windows by number, the current one in the accent, then a reverse-video chip counting every process (pane) in every session. Over ssh the machine's name appears in each pane's header.
 
 > **Why it is this way**
 >

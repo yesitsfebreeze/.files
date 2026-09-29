@@ -1,0 +1,45 @@
+#!/bin/bash
+# The WezTerm background image. manual → internals/wezterm, Background.
+#
+#   wezterm-bg IMAGE    use IMAGE (blur and darkness kept)
+#   wezterm-bg blur N   blur radius in px, 0 = sharp
+#   wezterm-bg dark N   darkness, 0 = untouched, every 20 halves the brightness
+#   wezterm-bg off      no image
+#   wezterm-bg          print image, blur, dark
+#
+# Blur is baked into `background` (JPEG, or GIF for an animated source) by magick (WezTerm cannot blur an image);
+# darkness is applied by wezterm.lua, so `dark` never re-renders. Both files
+# are on wezterm.lua's reload watch.
+
+DIR="$HOME/.local/state/wezterm"
+STATE="$DIR/background.txt"
+OUT="$DIR/background"
+src="" blur=20 dark=60
+[[ -f "$STATE" ]] && { read -r src; read -r blur; read -r dark; } < "$STATE"
+
+render() {
+    [[ -f "$src" ]] || { echo "wezterm-bg: no such image: $src" >&2; exit 1; }
+    # Blur at quarter size (sigma / 4) and scale back: a full-size 4K blur
+    # takes seconds, and a blurred image loses nothing to the round trip.
+    # The centre crop is a 3% zoom that hides the blur's soft edge.
+    local shrink=()
+    ((blur > 0)) && shrink=(-resize 25% -blur "0x$((blur / 4)).$((blur % 4 * 25))" -resize 400%)
+    # An animated GIF stays a GIF, every frame blurred; WezTerm plays it.
+    local fmt=jpg
+    [[ $(magick identify -format '%n\n' "$src" | head -1) -gt 1 ]] && fmt=gif
+    magick "$src" -coalesce -quality 92 -resize '2560x2560>' "${shrink[@]}" \
+        -gravity center -crop 97x97%+0+0 +repage "$fmt:$OUT.tmp" && mv "$OUT.tmp" "$OUT"
+}
+
+int() { [[ "$1" =~ ^[0-9]+$ ]] || { echo "wezterm-bg: not a number: $1" >&2; exit 1; }; }
+
+mkdir -p "$DIR"
+case "${1:-}" in
+"") [[ -f "$OUT" ]] || { echo off; exit 0; }
+    printf 'image %s\nblur  %s\ndark  %s\n' "$src" "$blur" "$dark"; exit 0 ;;
+off) rm -f "$OUT"; exit 0 ;;
+blur) int "${2:-}"; blur=$2; render ;;
+dark) int "${2:-}"; dark=$2 ;;
+*) src=$(cd "$(dirname "$1")" && pwd)/$(basename "$1"); render ;;
+esac
+printf '%s\n%s\n%s\n' "$src" "$blur" "$dark" > "$STATE"

@@ -126,7 +126,7 @@
         task: "history"
         step: 5
         mode: "shell"
-        also: ["F3", "mkcd"]
+        also: ["F5 s q", "mkcd"]
         # Two handles, one gesture: the key, and the command it runs. Naming
         # only the key left `quicklist` reported undocumented in the reverse
         # direction while the entry describing it sat right here.
@@ -139,19 +139,19 @@
         task: "files"
         step: 3
         mode: "shell"
-        also: ["F3", "tv channel"]
+        also: ["F5 s q", "tv channel"]
         why: "Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI."
     }
     {
         cmd: "tv channel"
         title: "Understand what a channel is, and add one"
-        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` and `F8` list it at once; `tv-go` decides what picking one of its rows does, and anything it does not know lands on a fresh prompt unrun."
+        use: "Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F5 s q` and `F5 s c` list it at once; `tv-go` decides what picking one of its rows does, and anything it does not know lands on a fresh prompt unrun."
         topic: "find"
         task: "files"
         step: 5
         kind: "concept"
         mode: "shell"
-        also: ["finder", "F3"]
+        also: ["finder", "F5 s q"]
         why: "One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, `nu-history` and `docs` (every line of the manual's prose, opened in the editor at the hit), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi` reaches fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values."
     }
     {
@@ -162,7 +162,7 @@
         task: "files"
         step: 4
         mode: "shell"
-        also: ["F3", "idioms"]
+        also: ["F5 s q", "idioms"]
         why: "`rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both."
     }
 
@@ -258,7 +258,7 @@
         task: "copy"
         step: 4
         mode: "shell"
-        why: "It picks `pbcopy`, `wl-copy` or `xclip` by session type and checks the display variables first, so on a headless box it fails fast rather than hanging on a clipboard nobody is listening to."
+        why: "`pbcopy` is macOS's own clipboard command, and macOS is the only host: nothing to detect, nothing that can hang."
     }
 
     # --------------------------------------------------------------------- git
@@ -309,13 +309,13 @@
     {
         cmd: "cr [...args]"
         title: "Resume a Claude session in this directory"
-        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F4 s` types for you."
+        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F5 c s` types for you."
         topic: "agents"
         task: "agents"
         step: 2
         does: "resume-claude"
         mode: "shell"
-        also: ["cc [...args]", "F4 s"]
+        also: ["cc [...args]", "F5 c s"]
     }
     {
         cmd: "help --json"
@@ -410,13 +410,13 @@
         task: "appearance"
         step: 1
         mode: "shell"
-        also: ["theme toggle", "F9"]
+        also: ["theme toggle", "F5 t s"]
         why: "Browsing never runs `tinty apply` — the preview is `theme.sh --preview`, which paints tmux and the terminal from the scheme file and records nothing, so a focused row costs one tmux call. The one real apply happens after tv exits, and `Esc` repaints the current scheme over whatever the preview left."
     }
     {
         cmd: "theme toggle"
         title: "Switch between dark and light"
-        use: "Run `theme toggle` — or press `F6` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium)."
+        use: "Run `theme toggle` — or press `F5 t t` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium)."
         topic: "config"
         task: "appearance"
         step: 2

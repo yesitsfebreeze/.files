@@ -31,7 +31,7 @@
       "command": "bash -c 'bad=$(rg -n \"nohup|security find-generic-password|pass show\" home install.sh --glob \"!**/help/**\" | grep -v bounded; rg -n \"curl \" install.sh home --glob \"!**/help/**\" --glob \"!**/Dockerfile\" | grep -v -- --max-time); echo \"$bad\"; [ -z \"$bad\" ]'"
     },
     "shellcheck": {
-      "command": "bash -c 'rc=0; for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" || continue; shellcheck -S warning -f gcc \"$f\" || rc=1; done; exit $rc'"
+      "command": "bash -c 'shellcheck -S warning -f gcc $(for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" && echo \"$f\"; done)'"
     },
     "channels_fast": {
       "command": "bash .orly/channels.sh"

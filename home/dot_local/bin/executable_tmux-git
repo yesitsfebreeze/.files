@@ -1,31 +1,37 @@
 #!/bin/sh
 # tmux-git — branch, dirty flag, ahead/behind and last-commit age for a pane header.
 # In the pane header, not left to starship: the prompt is gone the moment a
-# pane runs nvim or Claude. `#()` re-runs it every status-interval, so both git
-# calls are the cheap forms. Prints nothing outside a work tree.
+# pane runs nvim or Claude. `#()` re-runs it every status-interval, so it is
+# two git calls: one `status --porcelain=v2 --branch` answers branch, dirty
+# and ahead/behind at once, one `log` the age. Prints nothing outside a work tree.
 dir=${1:-$PWD}
 
 command -v git > /dev/null 2>&1 || exit 0
 cd "$dir" 2> /dev/null || exit 0
-git rev-parse --is-inside-work-tree > /dev/null 2>&1 || exit 0
-
-# Detached HEAD shows the short sha.
-branch=$(git symbolic-ref --quiet --short HEAD 2> /dev/null) ||
-    branch=$(git rev-parse --short HEAD 2> /dev/null) ||
-    exit 0
-
 # `-uno`: tracked files only, this runs on a timer. TRAP: `--no-optional-locks`
 # or the poll fights your own git for `.git/index.lock`.
-dirty=''
-[ -n "$(git --no-optional-locks status --porcelain -uno 2> /dev/null | head -n 1)" ] &&
-    dirty='*'
+st=$(git --no-optional-locks status --porcelain=v2 --branch -uno 2> /dev/null) || exit 0
 
-# No upstream, no arrows.
-sync=''
-# shellcheck disable=SC2046  # the split into two counts is the point
-set -- $(git rev-list --count --left-right '@{u}...HEAD' 2> /dev/null)
-[ "${1:-0}" -gt 0 ] && sync="$sync ↓$1"
-[ "${2:-0}" -gt 0 ] && sync="$sync ↑$2"
+branch='' oid='' dirty='' sync=''
+while IFS= read -r line; do
+    case $line in
+    '# branch.oid '*) oid=${line#'# branch.oid '} ;;
+    '# branch.head '*) branch=${line#'# branch.head '} ;;
+    # `+ahead -behind`; no upstream, no line, no arrows.
+    '# branch.ab '*)
+        # shellcheck disable=SC2086  # the split into two counts is the point
+        set -- ${line#'# branch.ab '}
+        [ "${2#-}" -gt 0 ] && sync="$sync ↓${2#-}"
+        [ "${1#+}" -gt 0 ] && sync="$sync ↑${1#+}" ;;
+    '#'*) ;;
+    # Any entry (changed, renamed, unmerged) is dirty; one is enough.
+    ?*) dirty='*'; break ;;
+    esac
+done <<EOF
+$st
+EOF
+# Detached HEAD shows the short sha.
+[ "$branch" = '(detached)' ] && branch=$(printf '%.7s' "$oid")
 
 age=$(git log -1 --format=%cr 2> /dev/null)
 

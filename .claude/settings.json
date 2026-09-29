@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.kern/hooks/prompt-recall",
+            "timeout": 20,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

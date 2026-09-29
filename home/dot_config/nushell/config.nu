@@ -77,7 +77,7 @@ def cf [file: path] {
     if not ($f | path exists) {
         error make { msg: $"cf: no such file: ($file)" }
     }
-    if $nu.os-info.name == "macos" { open --raw $f | pbcopy } else { open --raw $f | wl-copy }
+    open --raw $f | pbcopy
     print $"copied ($f) to clipboard"
 }
 
@@ -243,7 +243,7 @@ source ~/.config/nushell/help.nu
 # ── THEME ──
 # The palette is terminal-wide (theme.sh writes every client tty on attach),
 # so no shell re-asserts it. `theme` picks with a live preview; Esc repaints
-# the current scheme. `theme toggle` is F6.
+# the current scheme. `theme toggle` is F5 t t.
 def theme [sub?: string] {
     let sh = ($nu.home-dir | path join ".config/tinted-theming/tinty/theme.sh")
     if $sub == "toggle" { ^$sh --toggle; return }

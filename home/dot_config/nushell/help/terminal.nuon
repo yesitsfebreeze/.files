@@ -19,25 +19,14 @@
 [
     # ---------------------------------------------------------------- terminal
     {
-        key: "F1"
-        title: "Open the cockpit: every surface action by mnemonic"
-        use: "Press `F1` in any pane — a shell, the editor, an agent — and the cockpit opens: every key in columns, `k ➜ label`, the key's letter lit inside its label, a `+` marking a group. At the top level: `s` search (`s s` sessions: any pane by name or content), `g` git, `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config. A group key shows that group in place, so `F1 s f` picks a file, `F1 s g` greps, `F1 g l` walks the git log, `F1 p l` splits right, `F1 t t` flips dark/light, `F1 u +` makes the font bigger, `F1 u q` closes this WezTerm window (as `Ctrl+Shift+Q` does; the tmux session lives on). `Backspace` returns to the top; `Escape` closes it."
-        topic: "terminal"
-        task: "windows"
-        step: 0
-        mode: "terminal"
-        also: ["F8", "F5", "F6", "F9"]
-        why: "Laid out as which-key.nvim so the whole surface reads at a glance, and it is plain tmux, so it works on a bare tmux over ssh; only the `u` group needs WezTerm. The keys are data, one row each in `~/.config/tmux/cockpit.tsv`, so adding one is adding a line. Search and git rows open the same pickers as `F8` with the channel step skipped. WezTerm has no command channel of its own, so its rows write an OSC 1337 user variable to the terminal and wezterm.lua runs the named action."
-    }
-    {
         key: "F5"
         title: "Open the cockpit; an arrow in it moves between panes"
-        use: "Press `F5` and the cockpit opens — the which-key menu `F1` also opens. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits that way at once, also into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in."
+        use: "Press `F5` in any pane — a shell, the editor, an agent — and the cockpit opens. It is the only function key: every action lives under it by mnemonic, `k ➜ label` in columns with the key's letter lit, a `+` marking a group. Top level: `s` search, `g` git (`g l` is lazygit), `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config; `Backspace` goes up, `Escape` closes. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits the whole window that way at once (the new pane runs the full height or width), Alt and an arrow splits only the pane you are in, both into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in."
         topic: "terminal"
         task: "windows"
         step: 0
         mode: "terminal"
-        also: ["F1", "F5 s s", "F5 <arrow>"]
+        also: ["F5 s s", "F5 <arrow>"]
         why: "The menu is the thing to reach for first, and moving is the next most common thing, so an arrow is the way out of it into moving. The cockpit reads the arrow itself, moves, and arms tmux's `jump` table on the client as it closes, so move mode's keys are plain key tables that act the instant they are pressed."
     }
     {
@@ -98,18 +87,40 @@
     {
         key: "F5 <arrow>"
         title: "Move mode: walk, split and close panes until Enter"
-        use: "Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift and an arrow splits that way straight away. Arrows keep moving, Shift and an arrow splits that way (the new pane in the old one's directory), `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed."
+        use: "Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift or Alt and an arrow splits that way straight away. Arrows keep moving; Shift and an arrow splits greedily — at the top of the layout, so with the window split top/bottom, Shift+→ in the lower pane puts a full-height pane on the right half — and Alt and an arrow splits only the pane you are in (either way the new pane opens in the old one's directory); `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed."
         topic: "terminal"
         task: "windows"
         step: 2
         mode: "terminal"
         also: ["F5", "F5 s s"]
-        why: "Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. A split inherits the directory through the shell's OSC 7 report (`@cwd`)."
+        why: "Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. Shift's split is `split-window -f`, which splits the whole window rather than the pane; Alt's is the plain split. A split inherits the directory through the shell's OSC 7 report (`@cwd`)."
+    }
+    {
+        key: "F5 p r"
+        title: "Even the panes out, every level of the layout"
+        use: "Press `F5 p r` and the panes in this window are spread evenly — the level you are in, and the levels inside every other pane, so a column you widened by hand stops being wider than its neighbour."
+        topic: "terminal"
+        task: "windows"
+        step: 3
+        mode: "terminal"
+        also: ["F5", "F5 <arrow>"]
+        why: "tmux 3.7c has no `equalize-panes` — it was removed — and the one primitive left, `select-layout -E`, evens the pane you name and the panes directly next to it, so one call straightens one level of the layout tree and not the window. Measured over 50 ragged windows of 2–7 panes as the total sibling size mismatch left behind: once on the window leaves 30.1, iterating that call to a fixed point leaves 9.6 (the active pane's group settles and the groups it never reaches stay ugly), and one window call followed by one call per pane leaves 1.5. That sweep is the whole command, and it is idempotent — pressing it again changes nothing. It UNZOOMS: `-E` cannot lay out a window it cannot see, so a zoomed window comes back unzoomed and evened."
+    }
+    {
+        key: "F5 w z"
+        title: "Zen: the active pane centred, the rest as previews beside it"
+        use: "Press `F5 w z` and zen mode is on for every window: the active pane sits centred at half the screen width, the panes before it stacked in a column on the left, the panes after it in a column on the right, blank space on a side with nothing. A lone pane has no border. `F5 →` and `F5 ←` bring the next or previous pane to the centre at once; a click or a split does the same for the pane it lands on. The cockpit is half the screen wide and grows down. `F5 w z` again turns it off. `set -g @zen 1` in tmux.conf starts it on, `@zen-width` changes the half."
+        topic: "terminal"
+        task: "windows"
+        step: 4
+        mode: "terminal"
+        also: ["F5 p r", "F5 <arrow>"]
+        why: "tmux has no margins, so an empty side is a blank spacer pane, full height, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. The strip is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call, so nothing is resized step by step. The layout and select-pane hooks refit after every split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. Zoom is left alone."
     }
     {
         cmd: "the status bar"
         title: "Read the bar across the top"
-        use: "Nothing to press. The left of the bar is the clock and the machine's load; the right end lists the session's windows by number, the current one in the accent, then a reverse-video chip counting every process (pane) in every session. Over ssh the machine's name appears in each pane's header."
+        use: "Nothing to press. The left of the bar is the mode — NORMAL, COCKPIT while `F5` is open, JUMP in move mode, COPY in copy mode, ZEN — then the clock and the machine's load; the right end lists the session's windows by number, the current one in the accent, then a reverse-video chip counting every process (pane) in every session. Over ssh the machine's name appears in each pane's header."
         topic: "terminal"
         task: "windows"
         step: 5
@@ -131,19 +142,19 @@
         why: "The session outliving the terminal is free — the server is a separate process and the attach is idempotent, so opening the terminal again is the same gesture as opening it the first time. Surviving a REBOOT is not free and is two plugins: one saves and restores the layout, the other runs the timer. What comes back is the shape of the work — where each pane was, what it was running — and not a copy of its scrollback, which would put the output of every command on disk and grow without bound. Editors come back through the editor's own session file rather than by dropping an untracked file in every project directory."
     }
     {
-        key: "F4"
+        key: "F5 c"
         title: "Freeze the screen and select text with the keyboard"
-        use: "Press `F4` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` opens a selection by hand for what those miss, `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection."
+        use: "Press `F5 c` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` grows a selection a press at a time: the link under the cursor, else the word (everything between spaces), then the whole line, then one more line down per press, scrolling along to the end. `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection."
         topic: "terminal"
         task: "copy"
         step: 1
         does: "enter-copy-mode"
         mode: "terminal"
         also: ["drag", "Ctrl+C"]
-        why: "A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. The selection keys are the multiplexer's own, unchanged: a hand-rolled `c` cycle that grew the selection a step at a time was retired on 2026-09-02, because it needed a hook to reset itself on every exit and a cycle left half-armed for the next time was a real failure. What that costs is a word in a single keystroke — there is no such key, and the mouse double-click is the way to take one. The one motion that is not a default is `w`, and it is the word END: stock `w` is the start of the NEXT word and it wraps onto the line below, so it takes you off the line you were reading; the end-of-word motion never leaves its line and parks at the last word end. The Shift row and `p` are the selection keys the retired cycle was reaching for, one unit each instead of one key cycling through them, and they need no `Space` first. Shift is the whole rule: one unit, copied and gone in one key. Only the paragraph has a select-only twin, because `w` and `l` are motions and stay motions — `l` was tried as the line-end selection and handed back, since shadowing the vi cursor-right to save a Shift is not a trade worth making. `l` shadows the vi cursor-right, and that is the trade it was worth: the arrows move the cursor and always have, so `hjk` keeps three of the four and the fourth buys a selection key under the fingers. `P` and `p` are the pair with a constraint behind them: the multiplexer has no select-paragraph command, and the obvious build — grow whatever is selected by a paragraph — mis-anchors, so it takes the whole paragraph the cursor is in every time. Reading it as widening is what makes that right rather than a limitation. A cursor motion is not a way to widen a word selection: it leaves copy mode in the multiplexer's own word-selection state, where a motion grows by whole words and can reach backwards past the word taken. Inside a nested session `F5 F4` sends the literal key down to the inner server, because a root binding is always taken by the outermost one."
+        why: "A function key asks the terminal for nothing, which is why this one replaced a chord. `Ctrl+Shift+X` was the entry until 2026-09-01 and it did not work: the legacy encoding cannot spell it — it is the same byte as a plain `Ctrl+X` — so it only arrives where the terminal has negotiated an extended-key protocol, and where that does not happen the multiplexer sees an unbound key and hands it to the program in the pane. The mode never opened and nothing said why, on a binding documented as working since the cutover. Motions belong to the mode rather than to keys outside it, which is why searching the scrollback is `/` from inside. The selection keys are the multiplexer's own, unchanged: a hand-rolled `c` cycle that grew the selection a step at a time was retired on 2026-09-02, because it needed a hook to reset itself on every exit and a cycle left half-armed for the next time was a real failure. `Space` grows by press instead, and carries no state past the selection: it continues only while a selection is open and the cursor is where its last press left it, so any motion (which clears the selection) or leaving the mode starts it over — nothing to reset on exit. The one motion that is not a default is `w`, and it is the word END: stock `w` is the start of the NEXT word and it wraps onto the line below, so it takes you off the line you were reading; the end-of-word motion never leaves its line and parks at the last word end. The Shift row and `p` are the selection keys the retired cycle was reaching for, one unit each instead of one key cycling through them, and they need no `Space` first. Shift is the whole rule: one unit, copied and gone in one key. Only the paragraph has a select-only twin, because `w` and `l` are motions and stay motions — `l` was tried as the line-end selection and handed back, since shadowing the vi cursor-right to save a Shift is not a trade worth making. `l` shadows the vi cursor-right, and that is the trade it was worth: the arrows move the cursor and always have, so `hjk` keeps three of the four and the fourth buys a selection key under the fingers. `P` and `p` are the pair with a constraint behind them: the multiplexer has no select-paragraph command, and the obvious build — grow whatever is selected by a paragraph — mis-anchors, so it takes the whole paragraph the cursor is in every time. Reading it as widening is what makes that right rather than a limitation. A cursor motion is not a way to widen a word selection: it leaves copy mode in the multiplexer's own word-selection state, where a motion grows by whole words and can reach backwards past the word taken."
     }
     {
-        key: "F4 s"
+        key: "F5 c s"
         title: "Resume the Claude session this pane already printed"
         use: "In copy mode, reads back through this pane's scrollback for the newest `--resume` or `--continue` id, leaves the mode, and types `cr <id>` at the prompt WITHOUT running it — press Enter at the prompt, or edit the line first. Press the gesture again and it steps one id older, wrapping round to the newest; the status line says which of how many you are on. A pane that has never printed a session id says so and types nothing."
         topic: "terminal"
@@ -151,7 +162,7 @@
         step: 2
         does: "resume-claude"
         mode: "terminal"
-        also: ["cr [...args]", "F4", "cc [...args]"]
+        also: ["cr [...args]", "F5 c", "cc [...args]"]
         why: "`cr` on its own offers every session recorded for the directory, and they are uuids: the list cannot tell you which one is the session that just died in front of you. The scrollback can, because that session printed its own id there. So the pick is made from what this pane has seen rather than from what the directory holds, and the two routes stay side by side. The multiplexer can find the text without help — copy mode's search takes an extended regex — but it cannot KEEP the part that matched: a format hands over the whole cursor line and has no capture group, which is the one reason there is a script behind this key at all. Copy mode is left before anything is typed, because a pane sitting in a mode swallows sent keys and there is no route from inside the mode to the shell. The line is typed and not run: which session to resume is a decision, and the gesture stops one key short of making it. The cycle keeps its place in two pane options and resets when the NEWEST id in the pane changes — that is, exactly when a new session has announced itself. There is no timer and no hook to leave half-armed, which is what the widening `c` cycle retired on 2026-09-02 could not manage. It is `s` and not that freed `c` because a hand reaching for `c` in this mode is reaching to start a copy, whatever the table currently says."
     }
     {
@@ -162,7 +173,7 @@
         task: "copy"
         step: 2
         mode: "terminal"
-        also: ["Ctrl+C", "Ctrl+V", "F4"]
+        also: ["Ctrl+C", "Ctrl+V", "F5 c"]
         why: "The selection belongs to the multiplexer, not the terminal, and it has to: a terminal-level drag across a vertical split runs straight through the divider and takes both panes\' columns as one line. Having taken the gesture the multiplexer owes it a clipboard, and that is the part that shipped broken — every stock copy path, the drag-release and both click counts included, pipes to NO command, which fills the multiplexer\'s own paste buffer and stops. The text highlighted, it looked copied, and `Cmd+V` still pasted whatever was there before. Each path now names the sink explicitly. A program that tracks the mouse itself — the editor, an agent pane — still gets its own clicks."
     }
     {
@@ -184,7 +195,7 @@
         task: "copy"
         step: 3
         mode: "terminal"
-        also: ["Ctrl+V", "F4", "drag"]
+        also: ["Ctrl+V", "F5 c", "drag"]
         why: "Two bindings in series, and the order is the whole trick. The terminal's reads ITS own selection first and sends the key on when there is none — which under the multiplexer is always, since the multiplexer owns the mouse and the terminal never sees the drag. So the key always arrives, and the multiplexer decides: copy when a selection is present, leave when it is not. Corrected 2026-09-01. This said mouse selection was left to the terminal because the multiplexer's mouse mode was off; the mouse mode is ON and has been, so the terminal's half found nothing to copy and the multiplexer's half was bound to plain `cancel` — the obvious gesture, select and press `Ctrl+C`, threw the selection away and touched no clipboard."
     }
     {
@@ -221,15 +232,15 @@
         why: "Three measured facts: `mouse_reporting` on the duplicate binding is what keeps it working while an application captures the mouse; tmux must also forward the underlying OSC 8 (`terminal-features ,*:hyperlinks`), a feature only a client attached after it was set receives; and the click's Down stroke is Nopped, because with only Up bound tmux takes the press and turns the click into a copy-mode selection."
     }
     {
-        key: "F8"
+        key: "F5 s c"
         title: "Pick a channel, then a row, and act on it"
-        use: "Press `F8` in any pane and a list of channels floats over it in a centred box, already drawn when it appears. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane."
+        use: "Press `F5 s c` in any pane and a list of channels floats over it in a centred box, already drawn when it appears. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane."
         topic: "find"
         task: "files"
         step: 3
         mode: "terminal"
-        also: ["F7", "F3", "F9"]
-        why: "F3 is the same two steps with the query typed first. The font channel lives only here: the font is WezTerm's, so a pick is written to `~/.local/state/wezterm/font.txt`, which the WezTerm config watches, and the live preview is a user variable WezTerm turns into a per-window override. The channel step and the theme and font pickers run in fzf, not television: television 0.15.9 only auto-accepts a single entry at startup and caches each row's preview, so going back to a row would not repaint. fzf's `one:accept` and its per-focus preview do both."
+        also: ["F5 s t", "F5 s q", "F5 t s"]
+        why: "F5 s q is the same two steps with the query typed first. The font channel lives only here: the font is WezTerm's, so a pick is written to `~/.local/state/wezterm/font.txt`, which the WezTerm config watches, and the live preview is a user variable WezTerm turns into a per-window override. The channel step and the theme and font pickers run in fzf, not television: television 0.15.9 only auto-accepts a single entry at startup and caches each row's preview, so going back to a row would not repaint. fzf's `one:accept` and its per-focus preview do both."
     }
     {
         key: "Ctrl-x in the files picker"
@@ -239,45 +250,56 @@
         task: "files"
         step: 3
         mode: "terminal"
-        also: ["F8", "F3"]
-        why: "They are television's own channel actions (`[actions.*]` in `files.toml`), so they work wherever the files channel opens. Every picker has the same shape: the preview on top, the results under it, the input line at the bottom, like telescope's vertical layout (`orientation = portrait` in television's `config.toml`). An action ends the picker and prints nothing, so `F8` has no row left to act on afterwards. The move asks `mv -i` before overwriting anything."
+        also: ["F5 s c", "F5 s q"]
+        why: "They are television's own channel actions (`[actions.*]` in `files.toml`), so they work wherever the files channel opens. Every picker has the same shape: the preview on top, the results under it, the input line at the bottom, like telescope's vertical layout (`orientation = portrait` in television's `config.toml`). An action ends the picker and prints nothing, so `F5 s c` has no row left to act on afterwards. The move asks `mv -i` before overwriting anything."
     }
     {
-        key: "F7"
+        key: "F5 s t"
         title: "Pick a channel, then a row, and type it into this pane"
-        use: "Same two steps as `F8`, but whatever you pick is typed into the pane you pressed `F7` in, unrun — a path, a commit hash, a branch, a history line."
+        use: "Same two steps as `F5 s c`, but whatever you pick is typed into the pane you pressed `F5 s t` in, unrun — a path, a commit hash, a branch, a history line."
         topic: "find"
         task: "files"
         step: 4
         mode: "terminal"
-        also: ["F8"]
+        also: ["F5 s c"]
     }
     {
-        key: "F9"
+        key: "F5 t s"
         title: "Pick a colour scheme from anywhere"
-        use: "Press `F9` in any pane — a shell, an editor, an agent — and the scheme picker floats over it in a centred box. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F6` switches to, stays as it was."
+        use: "Press `F5 t s` in any pane — a shell, an editor, an agent — and the scheme picker floats over it in a centred box. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F5 t t` switches to, stays as it was."
         topic: "config"
         task: "appearance"
         step: 3
         mode: "terminal"
-        also: ["F6", "theme"]
-        why: "It is `F8` with the channel step skipped, so it works over a full-screen program. F6 is a dark/light switch, so the picker is filtered to the active mode and a pick can only ever replace that mode's scheme."
+        also: ["F5 t t", "theme"]
+        why: "It is `F5 s c` with the channel step skipped, so it works over a full-screen program. F5 t t is a dark/light switch, so the picker is filtered to the active mode and a pick can only ever replace that mode's scheme."
     }
     {
-        key: "F3"
+        key: "F5 s q"
         title: "Search: say what, then pick the channel"
-        use: "Press `F3` in any pane — a shell, an editor, a running agent — and a one-line box titled `search` opens. Type what you are looking for and press enter; the channel list opens, and whichever channel you pick opens with your query already typed into its row list. Pick a row and it acts exactly as `F8` does: files and matches open in the editor below your pane, a directory opens a shell there, anything else lands on a fresh prompt unrun. Esc at any step leaves nothing behind. To search your whole machine, `cd ~` first."
+        use: "Press `F5 s q` in any pane — a shell, an editor, a running agent — and a one-line box titled `search` opens. Type what you are looking for and press enter; the channel list opens, and whichever channel you pick opens with your query already typed into its row list. Pick a row and it acts exactly as `F5 s c` does: files and matches open in the editor below your pane, a directory opens a shell there, anything else lands on a fresh prompt unrun. Esc at any step leaves nothing behind. To search your whole machine, `cd ~` first."
         topic: "find"
         task: "files"
         step: 1
         mode: "terminal"
-        also: ["F8", "finder", "Ctrl-Q"]
-        why: "It is `F8` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. A bare tmux popup is painted as an empty box before television draws, a visible flash, so `modal` starts the picker in a hidden session first and opens the popup only once the picker has drawn."
+        also: ["F5 s c", "finder", "Ctrl-Q"]
+        why: "It is `F5 s c` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. A bare tmux popup is painted as an empty box before television draws, a visible flash, so `modal` starts the picker in a hidden session first and opens the popup only once the picker has drawn."
     }
     {
-        key: "F6"
+        key: "F5 t w"
+        title: "Pick a wallpaper, darkness and blur"
+        use: "Press `F5 t w` in any pane and the images in `~/wallpapers` float over it. The row you stop on is drawn behind the terminal at once; `←`/`→` darken or lighten it in steps of 5, `Shift+←`/`Shift+→` blur or sharpen it in steps of 4 px, and the preview pane shows both values. `Enter` keeps the pick, `Esc` puts back the image you had, and the `off` row removes the image altogether."
+        topic: "config"
+        task: "appearance"
+        step: 4
+        mode: "terminal"
+        also: ["F5 t s", "F5 t f"]
+        why: "Nothing in a tmux popup can draw a picture — the picker runs in a nested tmux server, which eats graphics escapes — so the preview is the wallpaper itself: every focus runs `wezterm-bg` on the row and WezTerm's reload watch repaints. Darkness is applied by WezTerm and costs nothing — on a curve where every 20 halves the brightness, so the image nears black without ever reaching it and the dark end stays fine-tunable; blur is baked in by magick, which is why it moves in coarser steps."
+    }
+    {
+        key: "F5 t t"
         title: "Switch the colour scheme from anywhere"
-        use: "Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh."
+        use: "Press `F5 t t` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh."
         topic: "config"
         task: "appearance"
         step: 2

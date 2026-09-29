@@ -1,79 +1,56 @@
 #!/bin/bash
 # tmux-copy-expand PANE — Space in copy mode grows the selection one step:
-# first the word under the cursor, then one more word onto each side that
-# still has room, and once the line is fully covered one more line onto each
-# side, stopping at a blank line. A Space anywhere but where the last one left
-# the cursor starts over (tmux.conf's motion keys clear the selection).
+# first the link under the cursor (trailing punctuation and any lead-in like
+# "(" peeled off), else the word under it — the run of non-spaces; then the
+# whole line; then every further press adds the line below, scrolling the view
+# along, until the end of the scrollback. A Space with no selection, or with
+# the cursor moved since the last one, starts over (tmux.conf's motion keys
+# clear the selection).
 #
-# @expand-at is where the last press left the cursor, @expand-span the span it
-# selected: "rowstart,s,rowend,e", e=9999 meaning "to the end of that row".
+# @expand-at is where the last press left the cursor.
 #
 # TRAP: every exec costs ~80 ms on this host (2026-09-23), so this is bash
-# builtins and three tmux calls; the sh version forked a `cut` per character.
-# manual → internals/tmux, "`Space` widens the selection".
+# builtins and two tmux calls.
+# manual → guide/copy (terminal.nuon, the copy-mode entry).
 
 PANE=${1:?tmux-copy-expand: no pane}
 
-IFS='|' read -r CX CY TOP H LAST_AT LAST_SPAN < <(tmux display -p -t "$PANE" \
-    '#{copy_cursor_x}|#{copy_cursor_y}|#{scroll_position}|#{pane_height}|#{@expand-at}|#{@expand-span}')
-# One element per row of the copy-mode view, which is what CY counts: scrolled
-# back by scroll_position, and no -J, since a joined wrap shifts every row below.
-# A read loop, not mapfile: /bin/bash is 3.2 here.
-ROWS=(); while IFS= read -r l; do ROWS+=("$l"); done < <(tmux capture-pane -p -t "$PANE" -S $((-TOP)) -E $((H - 1 - TOP)))
+# The line last: it may hold a `|`, and read hands the rest to the last name.
+IFS='|' read -r CX CY SEL AT STAGE L < <(tmux display -p -t "$PANE" \
+    '#{copy_cursor_x}|#{copy_cursor_y}|#{selection_present}|#{@expand-at}|#{@expand-stage}|#{copy_cursor_line}')
 
-fail() { tmux send-keys -t "$PANE" -X clear-selection; exit 0; }
-blank() { [[ -z "${1//[[:space:]]/}" ]]; }
-
-# The run of non-spaces touching the cursor, or of spaces when on a space.
-word_span() {
-    L=${ROWS[CY]}; (( CX < ${#L} )) || fail
-    local k sp
-    kind() { [[ ${L:$1:1} == " " ]] && k=1 || k=0; }
-    kind "$CX"; sp=$k S=$CX E=$CX
-    while (( S > 0 )) && kind $((S - 1)) && (( k == sp )); do ((S--)); done
-    while (( E < ${#L} - 1 )) && kind $((E + 1)) && (( k == sp )); do ((E++)); done
-    ((E++)); ROWSTART=$CY ROWEND=$CY
-}
-
-# One more word onto each side with room: the gap of spaces, then the word.
-grow_word() {
-    while (( S > 0 )) && [[ ${L:S-1:1} == " " ]]; do ((S--)); done
-    while (( S > 0 )) && [[ ${L:S-1:1} != " " ]]; do ((S--)); done
-    while (( E < ${#L} )) && [[ ${L:E:1} == " " ]]; do ((E++)); done
-    while (( E < ${#L} )) && [[ ${L:E:1} != " " ]]; do ((E++)); done
-}
-
-# One more non-blank line onto each side with room.
-grow_line() {
-    (( ROWSTART > 0 )) && ! blank "${ROWS[ROWSTART-1]}" && ((ROWSTART--))
-    (( ROWEND < ${#ROWS[@]} - 1 )) && ! blank "${ROWS[ROWEND+1]}" && ((ROWEND++))
-    S=0 E=9999
-}
-
-if [[ $LAST_AT == "$CX,$CY" && -n $LAST_SPAN ]]; then
-    IFS=, read -r ROWSTART S ROWEND E <<< "$LAST_SPAN"
-    L=${ROWS[ROWSTART]}
-    if (( ROWSTART != ROWEND )) || (( S == 0 && E >= ${#L} )); then grow_line; else grow_word; fi
-else
-    word_span
-fi
-
-# Draw as one tmux command list: walk to the start, select, walk to the end.
-# A selection includes both end cells, so [S,E) is E-S-1 cursor-rights.
-# Crossing rows selects whole lines, so the last row re-anchors at its start.
-c=(send-keys -t "$PANE" -X clear-selection)
+c=(send-keys -t "$PANE" -X)
 x() { c+=(";" send-keys -t "$PANE" -X "$@"); }
-up=$((CY - ROWSTART)) down=$((ROWEND - ROWSTART)) moves=$((E - S - 1))
-(( up > 0 )) && x -N "$up" cursor-up
-x start-of-line
-(( S > 0 )) && x -N "$S" cursor-right
-x begin-selection
-if (( down > 0 )); then
-    x -N "$down" cursor-down
-    if (( E < 9000 )); then x start-of-line; else x end-of-line; moves=0; fi
+
+if [[ $SEL == 1 && $AT == "$CX,$CY" ]]; then
+    # Already a selection from here: the line, or one more line below. After
+    # select-line the selection is in line mode, so cursor-down takes whole
+    # lines and scrolls when it passes the bottom of the view.
+    if [[ $STAGE == word ]]; then c+=(select-line); else c+=(cursor-down); x end-of-line; fi
+    STAGE=line
+elif (( CX < ${#L} )) && [[ ${L:CX:1} != " " ]]; then
+    S=$CX E=$CX
+    while (( S > 0 )) && [[ ${L:S-1:1} != " " ]]; do ((S--)); done
+    while (( E < ${#L} )) && [[ ${L:E:1} != " " ]]; do ((E++)); done
+    W=${L:S:E-S}
+    if [[ $W == *http://* || $W == *https://* ]]; then
+        pre=${W%%http*}; ((S += ${#pre})); W=${W:${#pre}}
+        while [[ $W == *[.,\;:!?\)\]\>\'\"] ]]; do W=${W%?}; ((E--)); done
+    fi
+    # Relative moves, never start-of-line: that follows a wrap up a row.
+    # A selection includes both end cells, so [S,E) is E-S-1 cursor-rights.
+    c+=(clear-selection)
+    (( CX > S )) && x -N $((CX - S)) cursor-left
+    (( CX < S )) && x -N $((S - CX)) cursor-right
+    x begin-selection
+    (( E - S > 1 )) && x -N $((E - S - 1)) cursor-right
+    STAGE=word
+else
+    # On a space or past the text: nothing word-like here, take the line.
+    c+=(select-line); STAGE=line
 fi
-(( moves > 0 )) && x -N "$moves" cursor-right
+
 # -F reads the cursor back where the moves actually left it.
 c+=(";" set -p -t "$PANE" -F @expand-at '#{copy_cursor_x},#{copy_cursor_y}'
-    ";" set -p -t "$PANE" @expand-span "$ROWSTART,$S,$ROWEND,$E")
+    ";" set -p -t "$PANE" @expand-stage "$STAGE")
 tmux "${c[@]}"

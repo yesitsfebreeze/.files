@@ -33,7 +33,7 @@ def --env _recents_replay [entry] {
 export def --env quicklist [] {
     if not $nu.is-interactive { return }
     if (_recents_load | is-empty) {
-        print "quicklist: nothing recent yet — jump with `z` or pick something with F3, and it lands here."
+        print "quicklist: nothing recent yet — jump with `z` or pick something with F5 s q, and it lands here."
         return
     }
     let raw = (try {

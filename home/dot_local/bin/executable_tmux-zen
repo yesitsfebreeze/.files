@@ -1,0 +1,126 @@
+#!/bin/sh
+# tmux-zen — zen mode, one switch for the server. On, every window is a
+# strip: the active pane centred at `@zen-width` percent (50), the panes
+# before it stacked in a column on the left, the panes after it in a column
+# on the right, a blank spacer pane on any empty side. A lone pane has no
+# border. Off, the spacers go and the layout is left as it is.
+#
+#   tmux-zen toggle           switch zen for every window (F5 w z)
+#   tmux-zen apply TARGET     re-fit; the layout and select-pane hooks run it
+#   tmux-zen next|prev PANE   focus the next/previous pane of the strip (F5 →/←)
+#   tmux-zen procs            every pane on the server that is not a spacer
+#                             or a popup, for the status bar's chip
+#
+# TARGET is a pane or window id. `@zen` and `@zen-width` are global (`-g`)
+# options. A spacer is a pane running `sleep` with `@zen_spacer` set; the
+# status bar's process count and the focus hook skip it.
+# manual → internals/tmux, "F5 w z — zen mode".
+set -u
+# A popup is a floating pane on the frames build (`pane_floating_flag`; stock
+# tmux has no such pane, and an unknown variable is empty), never a real one.
+real='#{&&:#{!=:#{@zen_spacer},1},#{!=:#{pane_floating_flag},1}}'
+cmd=${1:-apply}; t=${2:-${TMUX_PANE:-}}
+case $cmd in
+procs) tmux list-panes -a -f "$real" | wc -l | tr -d ' '; exit 0 ;;
+toggle)
+    if [ "$(tmux show -gqv @zen)" = 1 ]; then tmux set -g @zen 0; else tmux set -g @zen 1; fi
+    for w in $(tmux list-windows -a -F '#{window_id}'); do "$0" apply "$w"; done
+    exit 0 ;;
+next | prev)
+    # The strip is pane-index order; the ends wrap. Selecting fires the
+    # after-select-pane hook, which re-fits.
+    p=$(tmux list-panes -t "$t" -f "$real" -F '#{pane_id} #{pane_active}' |
+        awk -v d="$cmd" '{ id[NR] = $1; if ($2 == 1) k = NR }
+            END { if (!k) k = 1; print id[d == "next" ? k % NR + 1 : (k + NR - 2) % NR + 1] }')
+    [ -n "$p" ] && tmux select-pane -t "$p"
+    exit 0 ;;
+esac
+[ -n "$t" ] || exit 0
+win=$(tmux display -p -t "$t" '#{window_id}') || exit 0
+
+# One run at a time: a split fires the hook several times at once, and this
+# run's own layout fires it again. `mkdir` is the atomic lock; a later run
+# waits its turn (it may be the one that saw the newest layout) and gives up
+# after ten seconds: under load one tmux command takes a second, and a run
+# that gives up leaves the window wrong. A dead owner's lock is taken over.
+lock=${TMPDIR:-/tmp}/tmux-zen.$(tmux display -p -t "$win" '#{pid}').${win#@}
+n=0
+until mkdir "$lock" 2>/dev/null; do
+    owner=$(cat "$lock/pid" 2>/dev/null)
+    if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then rm -rf "$lock"; continue; fi
+    n=$((n + 1)); [ $n -lt 200 ] || exit 0
+    sleep 0.05
+done
+echo $$ > "$lock/pid"
+trap 'rm -rf "$lock"' EXIT
+
+spacers=$(tmux list-panes -t "$win" -f '#{@zen_spacer}' -F '#{pane_id}')
+reals=$(tmux list-panes -t "$win" -f "$real" -F '#{pane_id}')
+# shellcheck disable=SC2086
+kill_spacers() { for p in $spacers; do tmux kill-pane -t "$p"; done; }
+# shellcheck disable=SC2086
+show_borders() { for p in $reals; do tmux set -pu -t "$p" pane-active-border-style; done; }
+if [ "$(tmux show -gqv @zen)" != 1 ]; then
+    kill_spacers; show_borders
+    exit 0
+fi
+[ "$(tmux display -p -t "$win" '#{window_zoomed_flag}')" = 1 ] && exit 0
+
+# The lone pane's border is hidden by its own option (the seam to a spacer
+# is drawn in the active pane's style); the header text is `nohidden`.
+if [ "$(printf '%s\n' "$reals" | grep -c .)" -eq 1 ]; then
+    tmux set -p -t "$reals" pane-active-border-style hidden
+else show_borders; fi
+
+# The whole strip is one `select-layout` of the frames build's JSON layout
+# (`window_layout`, "V":2): every leaf carries its pane index (`i`), so any
+# pane goes in any cell, and the active pane (`a`) and the last-pane order
+# (`l`) are set in the same call. Floating panes (popups, `z`) ride along
+# unchanged, as the parser needs a cell per pane. The geometry is compared
+# first, so apply is a fixed point: a layout that fits does nothing.
+pct=$(tmux show -gqv @zen-width); pct=${pct:-50}
+sp=$(printf '%s\n' "$spacers" | grep . | while read -r p; do tmux display -p -t "$p" '#{pane_index}'; done | tr '\n' ',')
+out=$(tmux display -p -t "$win" '#{window_layout}' | jq -r --argjson pct "$pct" --argjson sp "[${sp%,}]" '
+.L.w as $W | .L.h as $H |
+def geo: [.. | objects | select(.t == "p") | {i, w, h, x, y, a: (.a == true)}] | sort_by(.i);
+def col(ps; x; w): (ps | length) as $n
+  | if $n == 1 then ps[0] + {w: w, h: $H, x: x, y: 0}
+    else {t: "v", w: w, h: $H, x: x, y: 0, c: [(($H - $n + 1) / $n | floor) as $e | range($n) as $j
+      | ps[$j] + {w: w, x: x, y: ($j * ($e + 1)), h: (if $j == $n - 1 then $H - ($n - 1) * ($e + 1) else $e end)}]} end;
+[.L | .. | objects | select(.t == "p")] as $leafs
+| ($leafs | map(select(has("z")))) as $float
+| ($leafs | map(select(.a == true)) | .[0].i) as $act
+| ($leafs | map(select(has("z") | not)) | sort_by(.i)
+    | map({t: "p", i} + (if has("l") then {l} else {} end))) as $tiled
+| ($tiled | map(select(.i as $i | $sp | index($i) != null))) as $spc
+| ($tiled | map(select(.i as $i | $sp | index($i) == null))) as $reals
+| ($reals | map(.i) | index($act)) as $k
+| if $k == null then "skip" else
+  $reals[:$k] as $L | $reals[$k + 1:] as $R
+  | (if ($L | length) == 0 then 1 else 0 end) + (if ($R | length) == 0 then 1 else 0 end) as $need
+  | if ($spc | length) != $need then "spacers \($need - ($spc | length))" else
+    ($W * $pct / 100 | floor) as $c | ($W - $c - 2) as $rem | ($rem / 2 | floor) as $l | ($rem - $l) as $r
+    | {V: 2, L: {t: "h", w: $W, h: $H, x: 0, y: 0, c: ([
+        (if ($L | length) == 0 then $spc[0] + {w: $l, h: $H, x: 0, y: 0} else col($L; 0; $l) end),
+        ($reals[$k] + {w: $c, h: $H, x: ($l + 1), y: 0, a: true}),
+        (if ($R | length) == 0 then $spc[-1] + {w: $r, h: $H, x: ($l + $c + 2), y: 0} else col($R; $l + $c + 2; $r) end)
+      ] + $float)}} as $new
+    | if (. | geo) == ($new | geo) then "same" else $new | tojson end
+  end end')
+case $out in
+skip | same) exit 0 ;;
+"spacers "*)
+    # A spacer is a full-height split running `sleep`; the split or kill fires
+    # the layout hook, whose run builds the strip.
+    n=${out#spacers }
+    while [ "$n" -gt 0 ]; do
+        s=$(tmux split-window -f -h -d -P -F '#{pane_id}' -t "$win" -l 2 'sleep 2147483647') || exit 0
+        tmux set -p -t "$s" @zen_spacer 1
+        tmux set -p -t "$s" pane-border-format ''
+        n=$((n - 1))
+    done
+    # shellcheck disable=SC2086
+    set -- $spacers
+    while [ "$n" -lt 0 ]; do tmux kill-pane -t "$1"; shift; n=$((n + 1)); done ;;
+*) tmux select-layout -t "$win" "$out" ;;
+esac

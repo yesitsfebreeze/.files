@@ -9,11 +9,17 @@ run="lc$$"; tmp=$(mktemp -d); mkdir "$tmp/cwd"; cd "$tmp/cwd" || exit 1
 export XDG_DATA_HOME="$tmp/data" XDG_STATE_HOME="$tmp/state" TMPDIR="$tmp/"
 mkdir -p "$XDG_DATA_HOME/tinted-theming" "$XDG_STATE_HOME"
 # -L: current_scheme is an absolute symlink into the real tree.
-cp -RL ~/.local/share/tinted-theming/tinty "$XDG_DATA_HOME/tinted-theming/"
+d=~/.local/share/tinted-theming/tinty; dst="$XDG_DATA_HOME/tinted-theming/tinty"; mkdir "$dst"
+# Everything but the 39M repos/gogh-src: repos is read-only here, so a symlink.
+for e in "$d"/* "$d"/.[!.]*; do case ${e##*/} in repos|gogh-src) ;; *) cp -RL "$e" "$dst/" ;; esac; done
+ln -s "$d/repos" "$dst/repos"
 export XDG_CONFIG_HOME="$tmp/config"; mkdir -p "$XDG_CONFIG_HOME/tmux"
 cp -R ~/.config/tinted-theming "$XDG_CONFIG_HOME/"
 T=~/.config/tinted-theming/tinty/theme.sh F=~/.config/wezterm/font.sh
-tmux -L "$run" -f /dev/null new -d -s t -x 160 -y 40 "exec bash"; sleep 1
+# The origin pane is a watchdog: orly SIGKILLs a check past its budget, and a
+# tmux server has already left that process group, so the pane ends the
+# server itself once this script is gone.
+tmux -L "$run" -f /dev/null new -d -s t -x 160 -y 40 "bash -c 'while kill -0 $$; do sleep 1; done; tmux -L $run kill-server'"; sleep 1
 export TMUX="$(tmux -L "$run" display -p '#{socket_path},0,0')"
 cur=$(cat "$XDG_DATA_HOME/tinted-theming/tinty/current_scheme")
 $T; $T --list >/dev/null; $T --preview base16-nord >/dev/null; $T

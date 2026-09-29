@@ -15,5 +15,6 @@ Every entry links to where the guide explains it.
 | `pass <tab>` | Complete pass subcommands and entry names | shell | [Read the manual and keep it current](../guide/maintaining.md#pass-tab) |
 | `theme` | Pick a colour scheme with a live preview | shell | [Change how it looks](../guide/appearance.md#theme) |
 | `theme toggle` | Switch between dark and light | shell | [Change how it looks](../guide/appearance.md#switch-scheme) |
-| `F9` | Pick a colour scheme from anywhere | terminal | [Change how it looks](../guide/appearance.md#f9) |
-| `F6` | Switch the colour scheme from anywhere | terminal | [Change how it looks](../guide/appearance.md#switch-scheme) |
+| `F5 t s` | Pick a colour scheme from anywhere | terminal | [Change how it looks](../guide/appearance.md#f5-t-s) |
+| `F5 t w` | Pick a wallpaper, darkness and blur | terminal | [Change how it looks](../guide/appearance.md#f5-t-w) |
+| `F5 t t` | Switch the colour scheme from anywhere | terminal | [Change how it looks](../guide/appearance.md#switch-scheme) |

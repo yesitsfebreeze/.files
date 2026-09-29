@@ -45,9 +45,14 @@ fi
     echo --prev
     cat "$state" 2> /dev/null
 } | awk -v now="$now" -v gpumax="${gpumax:-0}" -v iface="$iface" -v state="$state" '
-    function bar(p,   s, i, n) {
-        n = int(p / 20 + 0.5); s = ""
-        for (i = 0; i < 5; i++) s = s (i < n ? "█" : "░")
+    function bar(p,   s, i, n, f) {
+        n = int(p / 20); if (n > 5) n = 5
+        f = (p - n * 20) / 20; s = ""
+        for (i = 0; i < 5; i++) {
+            if (i < n) s = s "█"
+            else if (i == n) s = s (f < 0.33 ? "░" : f < 0.66 ? "▒" : "▓")
+            else s = s "░"
+        }
         return s
     }
     NR == 1 { ncpu = $1; next }

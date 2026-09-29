@@ -45,7 +45,7 @@ $env.SHELL = $nu.current-exe
 SHELL advertises nu to anything that spawns "the user's shell" by $SHELL. This is a FALLBACK, not the primary path — nothing in this configuration relies on it — but anything that does fall back to $SHELL should land on nu.
 
 ```
-if $nu.is-interactive {
+if $nu.is-interactive and ($env.TMUX? | is-empty) {
 ```
 
 ── Start dir (R7) ────────────────────────────────────────────────────────── Open every interactive shell in the last directory navigated into by any means (real `cd`, zoxide, picker jump) — `mkcd`, the single funnel, records it in startdir.txt on every move — falling back to ~/dev on a fresh machine.
@@ -66,14 +66,12 @@ THE GUARD IS `$nu.is-interactive`, AND IT IS NOT THE ONE THE LIVE CONFIG USES. M
 ~/dev is `mkdir`-ed first so the fallback `cd` cannot fail on a fresh machine.
 
 ```
-if $nu.is-interactive and (which ollama-host | is-not-empty) {
+if $nu.is-interactive and ($env.TYPESAFE_API_KEY? | default "" | is-empty) {
 ```
 
-── The Ollama endpoint probe (R2) ────────────────────────────────────────── Resolves the Ollama endpoint by running `ollama-host` and taking its stdout, and ONLY when it exits 0 — a missing or failing probe leaves OLLAMA_HOST unset rather than setting it to noise.
+── The TypeSafe key ──────────────────────────────────────────────────────── The Keychain read (`bounded 3 security find-generic-password`, ~25 ms, bounded because a locked Keychain blocks `security` for good) runs once per tmux server, not once per shell: a shell that finds `TYPESAFE_API_KEY` already in its environment skips it, and the first shell that reads it hands it to the server with `tmux set-environment -g`, which every later pane inherits. Guarded on the same `$nu.is-interactive` as the start dir, so a scripted `nu -c ...` caller pays nothing.
 
-COST, measured on this machine 2026-08-21 (~/.local/bin/ollama-host is a sh script running one `curl -fs --max-time 0.4`): ~11 ms per call with Ollama listening on 127.0.0.1:11434, ~10 ms with nothing listening (a refused connection returns immediately), and a worst case bounded by curl's own --max-time at 400 ms, reachable only against a host that DROPS rather than refuses. Recorded here rather than described as "cheap", because it is one external spawn on every interactive start and R9's promise is a zero-work startup. For scale: config.nu's palette re-assert costs ~5 ms.
-
-Guarded on the same `$nu.is-interactive` as the start dir (see the measurement there), so a scripted `nu -c ...` caller pays nothing and spawns nothing.
+── The Ollama endpoint probe (R2), retired 2026-09-29 ──────────────────── It ran `~/.local/bin/ollama-host` (one `curl -fs --max-time 0.4` against 127.0.0.1:11434) on every interactive start, ~11 ms measured 2026-08-21 and up to 400 ms against a host that drops packets, and the only value it ever set was `http://127.0.0.1:11434` — every Ollama client's default. A spawn that sets the default is a spawn for nothing under R9's zero-work startup, so the block is gone; its two lessons on probing an external at startup stay:
 
 AND ON `which`, BECAUSE `complete` DOES NOT CATCH A MISSING EXTERNAL. This repo deploys no `ollama-host` — `git ls-files home` carries nothing under `.local/bin` and no package list names it — so on a fresh provision the binary is absent. Measured 2026-08-23 on 0.114.1 under a real pty with it absent, the unguarded `do { ^ollama-host } | complete` printed `nu::shell::external_command` / "Command `ollama-host` not found" at EVERY interactive start AND ABORTED THE REST OF THIS FILE: a `$env.X = ...` appended below this block never ran. The block being LAST is the only reason the visible damage is the message alone — anything appended below it would silently not run.
 
@@ -333,7 +331,7 @@ The clamp floors at 0 and ceils at n−1, so Down before any Up injects the NEWE
 export def --env finder [
 ```
 
-finder.nu — the typed channel runner over `tv` (television): `finder`, the typed decoder, and the open-by-type dispatcher. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F3`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
+finder.nu — the typed channel runner over `tv` (television): `finder`, the typed decoder, and the open-by-type dispatcher. DEFS ONLY, and since 2026-09-01 that is all: the entry points `tv_finder` and `tv_remote` lived in config.nu rather than here, because they had to parse-bind `theme` (defined at the THEME anchor, after MODULES) and later `quicklist`, which a def in this earlier-sourced file could not. Both are gone with the three keybinding records that called them, and the ordering constraint they forced went with them — `finder` itself binds nothing defined below this file. The finder key is now `F5 s q`, handled outside nushell entirely by `~/.local/bin/tv-go find`. The file parses standalone under `nu -n`.
 
 tv LIMITATIONS (04-shell/04-television R7), each one measured: (a) tv REQUIRES a TTY. It panics ("Failed to create TUI instance") when run without a terminal, so every entry point is interactive-only. The guard is `$nu.is-interactive`, NOT `is-terminal --stdout`: measured on the pinned 0.114.1 (see config.nu's PALETTE anchor), a parenthesised `is-terminal --stdout` as an `if` condition captures stdout and is false unconditionally — on a terminal or off one. (b) The CLI `--keybindings` grammar is `key="action"` (e.g. enter="confirm_selection"), the INVERSE of the config-file `action = "key"` form. Verified: the config-file form is rejected by the CLI flag. (c) With `--expect`, an expected key prints its name on line 1 before the row; a plain enter prints the row alone, with no key line (television 0.15.9, measured 2026-09-24). `.orly/recents.sh` drives quicklist through both.
 
@@ -438,11 +436,11 @@ R4's empty state is a PRINT AND RETURN, never an empty picker — the shipped ma
 def theme [sub?: string] {
 ```
 
-theme: a thin caller of `~/.config/tinted-theming/tinty/theme.sh`, which is the whole theme system. `theme` opens the F9 picker (`tv-go act theme`); `theme toggle` is `theme.sh --toggle`, the same action as F6.
+theme: a thin caller of `~/.config/tinted-theming/tinty/theme.sh`, which is the whole theme system. `theme` opens the F5 t s picker (`tv-go act theme`); `theme toggle` is `theme.sh --toggle`, the same action as F5 t t.
 
-theme.sh modes: plain (paint the current scheme — tinty's hook, tmux's client-session-changed hook, Esc), `--apply ID` (paint, record the pick as its variant's slot in `$XDG_STATE_HOME/tinted-theming/{dark,light}.txt`, then let `tinty apply` record it as current), `--toggle` (`--apply` the other variant's slot, gruvbox dark/light hard when empty), `--preview ID` (paint into a scratch conf, record nothing, print the swatch — the tv preview, so moving the cursor retints the whole terminal), `--list` (current, then every scheme of the same variant, one `rg` over the catalog — the tv source).
+theme.sh modes: plain (paint the current scheme — tinty's hook, tmux's client-session-changed hook, Esc), `--apply ID` (paint, record the pick as its variant's slot in `$XDG_STATE_HOME/tinted-theming/{dark,light}.txt`, then let `tinty apply` record it as current), `--toggle` (`--apply` the other variant's slot, gruvbox dark/light hard when empty), `--palette ID` (print the palette as `baseXX=#hex` lines: tinted-nvim's fallback for the schemes it does not bundle, so nvim never parses a yaml itself), `--preview ID` (paint into a scratch conf, record nothing, print the swatch — the tv preview, so moving the cursor retints the whole terminal), `--list` (current, then every scheme of the same variant, one `rg` over the catalog — the tv source).
 
-Why one bash script: every exec costs ~80 ms on this host (measured 2026-09-23). The old split — a nu module, a nu-sourcing tv source, a grep|sed preview script and a grep|sed hook — parsed the palette three times and made an apply take five seconds and F6 two. theme.sh parses the yaml with bash builtins and calls tmux once (`source-file` and `list-clients` in one command), so a paint is ~0.1 s; F6 paints before tinty records, so the colour changes first.
+Why one bash script: every exec costs ~80 ms on this host (measured 2026-09-23). The old split — a nu module, a nu-sourcing tv source, a grep|sed preview script and a grep|sed hook — parsed the palette three times and made an apply take five seconds and F5 t t two. theme.sh parses the yaml with bash builtins and calls tmux once (`source-file` and `list-clients` in one command), so a paint is ~0.1 s; F5 t t paints before tinty records, so the colour changes first.
 
 ## `claude.nu`
 

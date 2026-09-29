@@ -1,16 +1,16 @@
 #!/bin/sh
-# tv-go — F8, F7, F9 and F3: pick a channel, then a row in it.
+# tv-go — F5 s c, F5 s t, F5 t s and F5 s q: pick a channel, then a row in it.
 #
-#   tv-go act         (F8) act on the row: open a file or a match below this
-#                     pane, cd to a directory in a new pane, apply a theme or
-#                     font; anything else lands on a new prompt, unrun
-#   tv-go type        (F7) type the row into this pane, whatever the channel
-#   tv-go act theme   (F9) skip the channel step
-#   tv-go find QUERY  (F3) F8 with QUERY already typed into the row list
+#   tv-go act         (F5 s c) act on the row: open a file or a match below this
+#                     pane, cd to a directory in a new pane, apply a theme,
+#                     font or wallpaper; anything else lands on a new prompt, unrun
+#   tv-go type        (F5 s t) type the row into this pane, whatever the channel
+#   tv-go act theme   (F5 t s) skip the channel step
+#   tv-go find QUERY  (F5 s q) F5 s c with QUERY already typed into the row list
 #
 # The pane is TV_ALL_ORIGIN and the client TV_ALL_CLIENT, named by the
 # binding: tv-go runs in its own window (`modal`), not the pane it acts on.
-# manual → internals/tmux, "F8 / F7".
+# manual → internals/tmux, "F5 s c / F5 s t".
 #
 # fzf, not tv 0.15.9, for three steps: accept the channel once one is left
 # (`one:accept`), re-run a look preview on every focus (tv caches it, #969),
@@ -30,14 +30,15 @@ export FZF_DEFAULT_OPTS="--reverse --border rounded --info inline-right \
  --color prompt:5,pointer:1,marker:2,info:8,header:8,spinner:6,preview-border:8"
 LOOKS="$HOME/.config/tinted-theming/tinty/theme.sh"
 FONT="$HOME/.config/wezterm/font.sh"
+WALL="$HOME/.config/wezterm/wallpaper.sh"
 
 [ -n "$ch" ] || ch=$(tv list-channels | fzf --bind one:accept --prompt 'channel> ' \
     --header "${q:+“${q}” — }type until one is left, or enter; esc cancels")
 [ -n "$ch" ] || exit 0
 # limit=0: the reply holds no match list, so the only "text" is the focus.
 still='sleep 0.15; case $(curl -s --max-time 1 "localhost:$FZF_PORT?limit=0") in *\"text\":\"{}\"*) ;; *) exit 0 ;; esac'
-look() { fzf --listen --with-shell 'sh -c' --no-sort --prompt "$1> " --query "$q" \
-             --preview "$still; $2 --preview {}" --preview-window right,65%; }
+look() { _p=$1 _s=$2; shift 2; fzf --listen --with-shell 'sh -c' --no-sort --prompt "$_p> " --query "$q" \
+             --preview "$still; $_s --preview {}" --preview-window right,65% "$@"; }
 case $ch in
 # F5 s s: fzf, because tv matches only the text it shows and cannot re-run
 # its source per keystroke; each keystroke re-lists the panes whose name or
@@ -60,17 +61,23 @@ panes)
     exit 0 ;;
 theme) row=$("$LOOKS" --list | look theme "$LOOKS") ;;
 font)  row=$("$FONT" --list | look font "$FONT") ;;
+# F5 t w: ←/→ nudge darkness, shift-←/→ blur, in the same box; the preview
+# pane's header shows both.
+wallpaper) row=$("$WALL" --list | look wallpaper "$WALL" \
+    --bind "left:execute-silent($WALL dark -5)+refresh-preview" --bind "right:execute-silent($WALL dark +5)+refresh-preview" \
+    --bind "shift-left:execute-silent($WALL blur -4)+refresh-preview" --bind "shift-right:execute-silent($WALL blur +4)+refresh-preview") ;;
 # Enter returns the row: several channels bind it to an action of their own
 # (text opens nvim, git-stash applies), which would run inside the picker.
 *)     row=$(tv "$ch" --no-remote --keybindings 'enter="confirm_selection"' \
            ${q:+--input "$q"} | head -1) ;;
 esac
 
-# theme and font preview by side effect: settle it whether or not a row came
-# back, so Esc and F7 both leave the current look on screen.
+# theme, font and wallpaper preview by side effect: settle it whether or not a row came
+# back, so Esc and F5 s t both leave the current look on screen.
 case $ch in
 theme) if [ -n "$row" ] && [ "$mode" = act ]; then "$LOOKS" --apply "$row"; else "$LOOKS"; fi ;;
 font)  if [ -n "$row" ] && [ "$mode" = act ]; then "$FONT" --apply "$row"; else "$FONT"; fi ;;
+wallpaper) if [ -n "$row" ] && [ "$mode" = act ]; then "$WALL" --apply "$row"; else "$WALL"; fi ;;
 esac
 [ -n "$row" ] || exit 0
 : "${ORIGIN:?tv-go: set TV_ALL_ORIGIN}"
@@ -107,7 +114,7 @@ prefill() {
 edit() { split "$PWD" "\${EDITOR:-nvim} $1 -- '$(_q "$2")'" >/dev/null; }
 
 case $ch in
-theme|font) ;;
+theme|font|wallpaper) ;;
 files|recent-files) edit "" "$row" ;;
 text|docs)
     n=$(printf '%s' "$row" | cut -d: -f2); case $n in ''|*[!0-9]*) n=1 ;; esac

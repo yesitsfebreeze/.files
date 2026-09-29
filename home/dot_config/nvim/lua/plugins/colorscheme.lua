@@ -8,29 +8,18 @@ return {
   lazy = false,
   config = function()
     -- tinty is the palette owner: the scheme is whatever tinty's current_scheme
-    -- names (theme.sh and the Omarchy theme-set hook write it). Schemes that
-    -- tinted-nvim does not bundle (base16-omarchy) are read from tinty's
-    -- custom-schemes on every load, so a new Omarchy theme under the same
-    -- name still repaints.
+    -- names (theme.sh writes it). Schemes that tinted-nvim does not bundle
+    -- (tinty's custom schemes, gogh-*) come from `theme.sh --palette ID`: theme.sh
+    -- is the one scheme parser.
     local tinty = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. "/.local/share")) .. "/tinted-theming/tinty"
     local current = tinty .. "/current_scheme"
+    local theme = (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. "/.config")) .. "/tinted-theming/tinty/theme.sh"
 
     local function custom_scheme(name)
-      local system, slug = name:match("^(base%d%d)%-(.+)$")
-      if not system then return nil end
-      for _, ext in ipairs({ "yaml", "yml" }) do
-        local ok, lines = pcall(vim.fn.readfile, string.format("%s/custom-schemes/%s/%s.%s", tinty, system, slug, ext))
-        if ok and #lines > 0 then
-          local spec = {}
-          for _, l in ipairs(lines) do
-            local k, v = l:match('^%s*(base%x%x):%s*"?#?(%x%x%x%x%x%x)')
-            if k then spec[k:sub(1, 4) .. k:sub(5):upper()] = "#" .. v:lower() end
-            local variant = l:match('^variant:%s*"?(%a+)')
-            if variant then spec.variant = variant end
-          end
-          return spec.base00 and spec or nil
-        end
-      end
+      local ok, out = pcall(vim.fn.system, { theme, "--palette", name })
+      local spec = {}
+      for k, v in (ok and out or ""):gmatch("(%w+)=(%S+)") do spec[k:sub(1, 4) .. k:sub(5):upper()] = v end -- base0a → base0A
+      return spec.base00 and spec or nil
     end
 
     local tn = require("tinted-nvim")
@@ -55,8 +44,7 @@ return {
     end
     load()
 
-    -- Reload on every write, not only on a name change: the Omarchy hook
-    -- rewrites the same name with new colours.
+    -- Reload on every write; re-arm after a rename (a writer may replace the file).
     local function watch()
       local handle = vim.uv.new_fs_event()
       if not handle then return end

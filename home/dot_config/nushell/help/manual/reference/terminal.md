@@ -9,7 +9,6 @@ Every entry links to where the guide explains it.
 | | what it does | where | guide |
 |---|---|---|---|
 | `q / :q / /exit` | Leave the shell | shell | [Move around windows and panes](../guide/windows.md#q-q-exit) |
-| `F1` | Open the cockpit: every surface action by mnemonic | terminal | [Move around windows and panes](../guide/windows.md#f1) |
 | `F5` | Open the cockpit; an arrow in it moves between panes | terminal | [Move around windows and panes](../guide/windows.md#f5) |
 | `F5 s s` | Search sessions: find a pane by name or content, swap it in | terminal | [Move around windows and panes](../guide/windows.md#f5-s-s) |
 | `F5 w w` | Replace this pane with a fresh shell | terminal | [Move around windows and panes](../guide/windows.md#f5-w-w) |
@@ -17,10 +16,12 @@ Every entry links to where the guide explains it.
 | `F5 w h` | Hide this pane | terminal | [Move around windows and panes](../guide/windows.md#f5-w-h) |
 | `F5 w q` | Close this pane | terminal | [Move around windows and panes](../guide/windows.md#f5-w-q) |
 | `F5 <arrow>` | Move mode: walk, split and close panes until Enter | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
+| `F5 p r` | Even the panes out, every level of the layout | terminal | [Move around windows and panes](../guide/windows.md#f5-p-r) |
+| `F5 w z` | Zen: the active pane centred, the rest as previews beside it | terminal | [Move around windows and panes](../guide/windows.md#f5-w-z) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
-| `F4` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
-| `F4 s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
+| `F5 c` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
+| `F5 c s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
 | `drag` | Select with the mouse and have it on the clipboard | terminal | [Copy and paste](../guide/copy.md#drag) |
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |
 | `Ctrl+C` | Copy the selection, or interrupt when there is none | terminal | [Copy and paste](../guide/copy.md#ctrl-c) |

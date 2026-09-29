@@ -66,4 +66,4 @@ See also: [`Up / Down`](./history.md#up-down) · [`Alt-R`](./history.md#alt-r)
 
 Press `Ctrl-Q` for one list of everything recent across every channel — jumps, files opened via `z`, finder picks — newest first. `enter` opens it by type. `ctrl-r` replays instead: it cds to the directory the pick was made in and re-runs the channel it came from, so a grep result reopens the same search where you ran it. An empty log prints a hint rather than an empty picker.
 
-See also: [`F3`](./files.md#f3) · [`mkcd`](./directories.md#mkcd)
+See also: [`F5 s q`](./files.md#f5-s-q) · [`mkcd`](./directories.md#mkcd)

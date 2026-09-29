@@ -18,16 +18,16 @@ Run `theme` and the scheme picker opens with the current scheme at the top and o
 >
 > Browsing never runs `tinty apply` — the preview is `theme.sh --preview`, which paints tmux and the terminal from the scheme file and records nothing, so a focused row costs one tmux call. The one real apply happens after tv exits, and `Esc` repaints the current scheme over whatever the preview left.
 
-See also: [`theme toggle`](./appearance.md#switch-scheme) · [`F9`](./appearance.md#f9)
+See also: [`theme toggle`](./appearance.md#switch-scheme) · [`F5 t s`](./appearance.md#f5-t-s)
 
-## `theme toggle` · `F6`
+## `theme toggle` · `F5 t t`
 
 **Switch between dark and light**
 
 Two routes to the same thing:
 
-- `theme toggle` *(shell)* — Run `theme toggle` — or press `F6` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium).
-- `F6` *(terminal)* — Press `F6` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh.
+- `theme toggle` *(shell)* — Run `theme toggle` — or press `F5 t t` in the terminal — to switch between your dark scheme and your light scheme. Each is whatever you last picked while in that mode; before the first pick they are Gruvbox Material dark and light (medium).
+- `F5 t t` *(terminal)* — Press `F5 t t` in any pane — even over a full-screen TUI — and the scheme parked in the other slot is applied at once: the terminal's own colours, the status bar, and every pane. Press it again to come back. It works on any terminal that honours the standard colour escapes, including one at the far end of an ssh.
 
 > **Why it is this way**
 >
@@ -35,16 +35,30 @@ Two routes to the same thing:
 
 See also: [`theme`](./appearance.md#theme) · [`F5`](./windows.md#f5)
 
-## `F9`
+## `F5 t s`
 
 **Pick a colour scheme from anywhere**
 
 *terminal*
 
-Press `F9` in any pane — a shell, an editor, an agent — and the scheme picker floats over it in a centred box. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F6` switches to, stays as it was.
+Press `F5 t s` in any pane — a shell, an editor, an agent — and the scheme picker floats over it in a centred box. Moving through the list retints the whole terminal live; `Enter` keeps the pick, `Esc` puts back what you had. The list shows only schemes of the mode you are in — dark or light — and the pick becomes that mode's scheme; the other mode, which `F5 t t` switches to, stays as it was.
 
 > **Why it is this way**
 >
-> It is `F8` with the channel step skipped, so it works over a full-screen program. F6 is a dark/light switch, so the picker is filtered to the active mode and a pick can only ever replace that mode's scheme.
+> It is `F5 s c` with the channel step skipped, so it works over a full-screen program. F5 t t is a dark/light switch, so the picker is filtered to the active mode and a pick can only ever replace that mode's scheme.
 
-See also: [`F6`](./appearance.md#switch-scheme) · [`theme`](./appearance.md#theme)
+See also: [`F5 t t`](./appearance.md#switch-scheme) · [`theme`](./appearance.md#theme)
+
+## `F5 t w`
+
+**Pick a wallpaper, darkness and blur**
+
+*terminal*
+
+Press `F5 t w` in any pane and the images in `~/wallpapers` float over it. The row you stop on is drawn behind the terminal at once; `←`/`→` darken or lighten it in steps of 5, `Shift+←`/`Shift+→` blur or sharpen it in steps of 4 px, and the preview pane shows both values. `Enter` keeps the pick, `Esc` puts back the image you had, and the `off` row removes the image altogether.
+
+> **Why it is this way**
+>
+> Nothing in a tmux popup can draw a picture — the picker runs in a nested tmux server, which eats graphics escapes — so the preview is the wallpaper itself: every focus runs `wezterm-bg` on the row and WezTerm's reload watch repaints. Darkness is applied by WezTerm and costs nothing — on a curve where every 20 halves the brightness, so the image nears black without ever reaching it and the dark end stays fine-tunable; blur is baked in by magick, which is why it moves in coarser steps.
+
+See also: [`F5 t s`](./appearance.md#f5-t-s) · `F5 t f`

@@ -4,21 +4,21 @@
 
 > The finder in the shell, telescope in the editor, and ripgrep underneath.
 
-One key opens everything: `F3` asks what you are looking for, then which channel to look in — files, directories, file contents, git log, the manual, history — and opens that channel with your query already typed. Pick a row and it opens in a new pane below you. It is a tmux binding, so it answers from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one.
+One key opens everything: `F5 s q` asks what you are looking for, then which channel to look in — files, directories, file contents, git log, the manual, history — and opens that channel with your query already typed. Pick a row and it opens in a new pane below you. It is a tmux binding, so it answers from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one.
 
-## `F3`
+## `F5 s q`
 
 **Search: say what, then pick the channel**
 
 *terminal*
 
-Press `F3` in any pane — a shell, an editor, a running agent — and a one-line box titled `search` opens. Type what you are looking for and press enter; the channel list opens, and whichever channel you pick opens with your query already typed into its row list. Pick a row and it acts exactly as `F8` does: files and matches open in the editor below your pane, a directory opens a shell there, anything else lands on a fresh prompt unrun. Esc at any step leaves nothing behind. To search your whole machine, `cd ~` first.
+Press `F5 s q` in any pane — a shell, an editor, a running agent — and a one-line box titled `search` opens. Type what you are looking for and press enter; the channel list opens, and whichever channel you pick opens with your query already typed into its row list. Pick a row and it acts exactly as `F5 s c` does: files and matches open in the editor below your pane, a directory opens a shell there, anything else lands on a fresh prompt unrun. Esc at any step leaves nothing behind. To search your whole machine, `cd ~` first.
 
 > **Why it is this way**
 >
-> It is `F8` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. A bare tmux popup is painted as an empty box before television draws, a visible flash, so `modal` starts the picker in a hidden session first and opens the popup only once the picker has drawn.
+> It is `F5 s c` with the query first — one script (`tv-go find`), and the channels under `~/.config/television/cable` are the only list of places to search. It replaced `tv-all`, a 456-line second copy of those channels that counted hits per channel and ran a background scan of `$HOME`; the counts cost a hand-written lane per channel, and `$HOME` needed a cache, a second ignore list and a reaper. It is a tmux binding rather than a reedline one so that it fires inside nvim and inside an agent pane; the query comes from tmux's own `command-prompt`, whose Escape cancels silently. A bare tmux popup is painted as an empty box before television draws, a visible flash, so `modal` starts the picker in a hidden session first and opens the popup only once the picker has drawn.
 
-See also: [`F8`](./files.md#f8) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)
+See also: [`F5 s c`](./files.md#f5-s-c) · [`finder`](./files.md#finder) · [`Ctrl-Q`](./history.md#ctrl-q)
 
 ## `finder`
 
@@ -32,21 +32,21 @@ See also: [`F8`](./files.md#f8) · [`finder`](./files.md#finder) · [`Ctrl-Q`](.
 >
 > Typed decode per channel is what lets one opener do the right thing for a file, a directory, a grep hit and a commit — and it is why new pickers are new channels plus a decode, never a new hand-rolled TUI.
 
-See also: [`F3`](./files.md#f3) · [`tv channel`](./files.md#tv-channel)
+See also: [`F5 s q`](./files.md#f5-s-q) · [`tv channel`](./files.md#tv-channel)
 
-## `F8`
+## `F5 s c`
 
 **Pick a channel, then a row, and act on it**
 
 *terminal*
 
-Press `F8` in any pane and a list of channels floats over it in a centred box, already drawn when it appears. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane.
+Press `F5 s c` in any pane and a list of channels floats over it in a centred box, already drawn when it appears. Type until one is left and it opens by itself (or press `Enter`), then pick a row: a file or a text match opens in the editor below your pane, a directory opens a shell there, a commit is shown, a history line lands on a fresh prompt unrun. The `theme` and `font` channels preview live over the whole terminal and `Enter` keeps the pick. Any other channel types its row into your pane.
 
 > **Why it is this way**
 >
-> F3 is the same two steps with the query typed first. The font channel lives only here: the font is WezTerm's, so a pick is written to `~/.local/state/wezterm/font.txt`, which the WezTerm config watches, and the live preview is a user variable WezTerm turns into a per-window override. The channel step and the theme and font pickers run in fzf, not television: television 0.15.9 only auto-accepts a single entry at startup and caches each row's preview, so going back to a row would not repaint. fzf's `one:accept` and its per-focus preview do both.
+> F5 s q is the same two steps with the query typed first. The font channel lives only here: the font is WezTerm's, so a pick is written to `~/.local/state/wezterm/font.txt`, which the WezTerm config watches, and the live preview is a user variable WezTerm turns into a per-window override. The channel step and the theme and font pickers run in fzf, not television: television 0.15.9 only auto-accepts a single entry at startup and caches each row's preview, so going back to a row would not repaint. fzf's `one:accept` and its per-focus preview do both.
 
-See also: [`F7`](./files.md#f7) · [`F3`](./files.md#f3) · [`F9`](./appearance.md#f9)
+See also: [`F5 s t`](./files.md#f5-s-t) · [`F5 s q`](./files.md#f5-s-q) · [`F5 t s`](./appearance.md#f5-t-s)
 
 ## `Ctrl-x in the files picker`
 
@@ -58,9 +58,9 @@ In the files channel, `Ctrl-x` lists every action by name. `Ctrl-b` copies the f
 
 > **Why it is this way**
 >
-> They are television's own channel actions (`[actions.*]` in `files.toml`), so they work wherever the files channel opens. Every picker has the same shape: the preview on top, the results under it, the input line at the bottom, like telescope's vertical layout (`orientation = portrait` in television's `config.toml`). An action ends the picker and prints nothing, so `F8` has no row left to act on afterwards. The move asks `mv -i` before overwriting anything.
+> They are television's own channel actions (`[actions.*]` in `files.toml`), so they work wherever the files channel opens. Every picker has the same shape: the preview on top, the results under it, the input line at the bottom, like telescope's vertical layout (`orientation = portrait` in television's `config.toml`). An action ends the picker and prints nothing, so `F5 s c` has no row left to act on afterwards. The move asks `mv -i` before overwriting anything.
 
-See also: [`F8`](./files.md#f8) · [`F3`](./files.md#f3)
+See also: [`F5 s c`](./files.md#f5-s-c) · [`F5 s q`](./files.md#f5-s-q)
 
 ## `grep`
 
@@ -74,29 +74,29 @@ See also: [`F8`](./files.md#f8) · [`F3`](./files.md#f3)
 >
 > `rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both.
 
-See also: [`F3`](./files.md#f3) · [`idioms`](./agents.md#idioms)
+See also: [`F5 s q`](./files.md#f5-s-q) · [`idioms`](./agents.md#idioms)
 
-## `F7`
+## `F5 s t`
 
 **Pick a channel, then a row, and type it into this pane**
 
 *terminal*
 
-Same two steps as `F8`, but whatever you pick is typed into the pane you pressed `F7` in, unrun — a path, a commit hash, a branch, a history line.
+Same two steps as `F5 s c`, but whatever you pick is typed into the pane you pressed `F5 s t` in, unrun — a path, a commit hash, a branch, a history line.
 
-See also: [`F8`](./files.md#f8)
+See also: [`F5 s c`](./files.md#f5-s-c)
 
 ## Understand what a channel is, and add one
 
 *shell*
 
-Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F3` and `F8` list it at once; `tv-go` decides what picking one of its rows does, and anything it does not know lands on a fresh prompt unrun.
+Nothing to run. A channel is a cable file under `~/.config/television` naming a source command that emits rows, plus how to preview one. Add a file and `tv <name>` and `finder --start <name>` reach it immediately; teach `finder` how to decode its rows and every opener works on it too. `F5 s q` and `F5 s c` list it at once; `tv-go` decides what picking one of its rows does, and anything it does not know lands on a fresh prompt unrun.
 
 > **Why it is this way**
 >
 > One rule keeps the picker surface from sprawling: television owns every picker screen. The curated set is files, dirs, text, zoxide, env, quicklist, git-log, git-files, git-branch, recent dirs (`recent-dirs`, fed by the dirstack), recent files, alias, `nu-history` and `docs` (every line of the manual's prose, opened in the editor at the hit), plus the `theme` channel behind the scheme picker — anything else migrates on demand. The rule has exactly one exception, and it is named rather than tolerated: `zi` reaches fzf through `zoxide query --interactive`. A second picker outside tv would be a new decision, not an appeal to that one. tv runs on the `default` ANSI theme so it inherits the terminal's palette instead of baking hex values.
 
-See also: [`finder`](./files.md#finder) · [`F3`](./files.md#f3)
+See also: [`finder`](./files.md#finder) · [`F5 s q`](./files.md#f5-s-q)
 
 ## `<leader>ff and <leader><space>`
 

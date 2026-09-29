@@ -16,7 +16,7 @@ cat > "$tmp/.config/tinted-theming/tinty/theme.sh" <<SH
 HOME="$HOME" exec "$HOME/.config/tinted-theming/tinty/theme.sh" "\$@"
 SH
 chmod +x "$tmp/.config/tinted-theming/tinty/theme.sh"
-tmux -L "$run" -f /dev/null new -d -s t -x 170 -y 40 "exec bash"; sleep 1
+tmux -L "$run" -f /dev/null new -d -s t -x 170 -y 40 "bash -c 'while kill -0 $$; do sleep 1; done; tmux -L $run kill-server'"; sleep 1  # watchdog pane, see lifecycle.sh
 o=$(tmux -L "$run" display -p '#{pane_id}')
 tmux -L "$run" split-window -d -l 30 "HOME=$tmp TV_ALL_ORIGIN=$o $HOME/.local/bin/tv-go act theme"
 p=$(tmux -L "$run" list-panes -F '#{pane_id}' | tail -1)

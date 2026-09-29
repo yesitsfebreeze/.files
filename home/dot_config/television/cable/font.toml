@@ -1,4 +1,4 @@
-# `tv font` — the font list as a plain tv channel, so F8 lists it. F8 opens
+# `tv font` — the font list as a plain tv channel, so F5 s c lists it. F5 s c opens
 # it in tv-go's fzf picker, which previews every focus in the whole terminal.
 
 [metadata]

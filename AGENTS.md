@@ -22,8 +22,7 @@ Nothing is ported because it exists; it is ported because a rating in
 
 ## Scope decisions
 
-- Hosts: macOS and Omarchy (Arch Linux). Omarchy packages and the login
-  shell live in github.com/yesitsfebreeze/omarchy; this repo owns the configs.
+- Host: macOS only.
 - Nushell is the host shell; zsh survives only inside capsule dev containers.
 - One container tool (Capsule), one image definition.
 - Two finders, deliberately: television in the shell, telescope in the
@@ -33,7 +32,7 @@ Nothing is ported because it exists; it is ported because a rating in
   last match, re-run a preview on every focus, re-run the source on every
   keystroke).
 - tmux owns multiplexing (windows, panes, splits, copy, status,
-  persistence); WezTerm keeps only local chrome (font, grid, opacity,
+  persistence); WezTerm keeps only local chrome (font, grid, background image,
   launchd PATH, capsule send-keys).
 - tinty owns the palette; every reader (tmux, Neovim, television, the
   shell) is downstream of one `tinty apply`. Nothing below it hardcodes hex.

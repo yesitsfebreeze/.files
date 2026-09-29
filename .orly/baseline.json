@@ -19,11 +19,11 @@
     },
     {
       "id": "new_terminal",
-      "instructions": "Do `command_results` include, after the last edit to a theme file, a run of /tmp/ptytest.py against a freshly started tmux server whose output contains `fresh OSC4 seen: True`?"
+      "instructions": "Do `command_results` include, after the last edit to a theme file, a run of `.orly/pty-fresh.py` against a freshly started tmux server whose output contains `fresh OSC4 seen: True`?"
     },
     {
       "id": "preview_retint",
-      "instructions": "Do `command_results` include, after the last edit to a theme file, running the `tv theme` channel's preview command for one scheme id and then a `tmux show` output of status-style containing a hex colour different from the one shown before the preview?"
+      "instructions": "Do `command_results` include, after the last edit to a theme file, running the theme preview path (`theme.sh --preview ID`, what the `tv theme` channel runs on focus) for one scheme id, with evidence that the terminal palette changed to that scheme (an OSC 11 carrying its background hex reaching the client, e.g. `osc11_nord=True`) while tmux's status-style printed after the preview equals the one printed before it (tmux is never restyled on preview: a restyle redraws every popup and flickered)?"
     },
     {
       "id": "probe",
@@ -269,7 +269,7 @@
     },
     {
       "id": "size_budget",
-      "instructions": "Complexity ceiling: no tracked code file exceeds 500 lines and all tracked code under home/, install.sh, justfile and scripts/ stays at or under 4100 lines.",
+      "instructions": "Complexity ceiling: no tracked code file exceeds 500 lines and all tracked code under home/, install.sh, justfile and scripts/ stays at or under 4400 lines (4100 until 2026-09-29; raised by the owner for the cockpit menus, modal and tmux-slot/panes/relax).",
       "require": {
         "path": "checks.size_budget.exit",
         "op": "equals",
@@ -309,7 +309,7 @@
       "command": "bash -c 'bad=$(rg -n \"nohup|security find-generic-password|pass show\" home install.sh --glob \"!**/help/**\" | grep -v bounded; rg -n \"curl \" install.sh home --glob \"!**/help/**\" --glob \"!**/Dockerfile\" | grep -v -- --max-time); echo \"$bad\"; [ -z \"$bad\" ]'"
     },
     "shellcheck": {
-      "command": "bash -c 'rc=0; for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" || continue; shellcheck -S warning -f gcc \"$f\" || rc=1; done; exit $rc'"
+      "command": "bash -c 'shellcheck -S warning -f gcc $(for f in $(git ls-files home install.sh | grep -E \"(\\.sh$|/executable_|install\\.sh$)\"); do head -1 \"$f\" | grep -qE \"bash|/sh\" && echo \"$f\"; done)'"
     },
     "channels_fast": {
       "command": "bash .orly/channels.sh"

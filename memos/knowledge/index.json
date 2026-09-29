@@ -1,6 +1,6 @@
 {
   "kind": "knowledge",
-  "memo_count": 21,
+  "memo_count": 24,
   "memos": {
     "always-trash-changes-what-rm-means": {
       "path": "knowledge/always-trash-changes-what-rm-means.md",
@@ -20,11 +20,29 @@
       "read_when": "touching the status bar's Claude state, or the tmux-claude-state hook",
       "links": {}
     },
+    "evening-out-panes-is-a-per-level-sweep": {
+      "path": "knowledge/evening-out-panes-is-a-per-level-sweep.md",
+      "description": "`select-layout -E` evens ONE level of the layout tree, so evening a whole window is a window call then one per pane \u2014 and iterating that call to a fixed point measures WORSE than the sweep",
+      "read_when": "evening panes out, touching F2 or the cockpit's `p r` row, or trusting `select-layout -E` to do what `equalize-panes` did",
+      "links": {
+        "tmux-3-7c-is-the-pinned-version": "fact/tmux-3-7c-is-the-pinned-version.md",
+        "panes-are-found-not-addressed": "knowledge/panes-are-found-not-addressed.md"
+      }
+    },
     "every-abort-measurement-was-missing-wget": {
       "path": "knowledge/every-abort-measurement-was-missing-wget.md",
       "description": "every measurement of the offline first-save abort ran on a PATH with no wget, which the machine has \u2014 the bug is unmeasured on a faithful PATH",
       "read_when": "measuring an offline behaviour, or trusting the mason abort numbers",
       "links": {}
+    },
+    "inactive-panes-recede-by-a-computed-colour": {
+      "path": "knowledge/inactive-panes-recede-by-a-computed-colour.md",
+      "description": "an inactive pane recedes 45% and that dim is a COMPUTED COLOUR, because tmux 3.7c drops every style attribute and has no percentage in style syntax",
+      "read_when": "dimming inactive panes, touching window-style or window-active-style, or reaching for the `dim` attribute anywhere in tmux",
+      "links": {
+        "hard-won-constraints-belong-on-the-record": "insight/hard-won-constraints-belong-on-the-record.md",
+        "tinty-owns-the-palette-every-reader-follows": "knowledge/tinty-owns-the-palette-every-reader-follows.md"
+      }
     },
     "install-sh-is-four-things-in-one-order": {
       "path": "knowledge/install-sh-is-four-things-in-one-order.md",
@@ -131,6 +149,14 @@
       "description": "$nu.default-config-dir and $nu.history-path are launch-time constants \u2014 assigning XDG_CONFIG_HOME in env.nu runs too late to move them",
       "read_when": "touching XDG_CONFIG_HOME, the history path, or a config landing in ~/Library",
       "links": {}
+    },
+    "zen-centres-one-column-with-spacer-panes": {
+      "path": "knowledge/zen-centres-one-column-with-spacer-panes.md",
+      "description": "tmux has no margins, so zen mode fills an empty side with a spacer pane and builds its strip as one JSON `select-layout` \u2014 refit from a `window-layout-changed` hook that must be a fixed point, and focus bounced by `after-select-pane`, because `pane-focus-in` cannot move it",
+      "read_when": "touching tmux-zen, the cockpit's `w z` row, the process chip, or any hook that resizes panes",
+      "links": {
+        "evening-out-panes-is-a-per-level-sweep": "knowledge/evening-out-panes-is-a-per-level-sweep.md"
+      }
     }
   }
 }

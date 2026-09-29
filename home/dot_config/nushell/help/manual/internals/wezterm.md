@@ -1,6 +1,6 @@
 # WezTerm
 
-> The local chrome \u2014 font, opacity, launchd PATH.
+> The local chrome \u2014 font, background image, launchd PATH.
 
 WezTerm keeps only what is true of this machine; tmux owns multiplexing.
 
@@ -10,7 +10,7 @@ WezTerm keeps only what is true of this machine; tmux owns multiplexing.
 local wezterm = require("wezterm")
 ```
 
-WezTerm appearance: font, palette reader, derived tab bar, baseline, clock, F6 theme toggle — prds/02-terminal/01-appearance owns that scope. The self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's; later terminal nodes (F5, copy mode) extend this file.
+WezTerm appearance: font, palette reader, derived tab bar, baseline, clock, F5 t t theme toggle — prds/02-terminal/01-appearance owns that scope. The self-healing nine-tab floor below is prds/02-terminal/02-startup-layout's; later terminal nodes (F5, copy mode) extend this file.
 
 The launch environment — default_prog, set_environment_variables and the macOS PATH prefix — is prds/02-terminal/06-launchd-path's, and it sits immediately below: a GUI-launched WezTerm inherits launchd's environment, so nushell has to be named and its PATH seeded before the spawn.
 
@@ -82,17 +82,7 @@ config.window_decorations = "RESIZE"
 
 ── R7, R8, R9: the appearance baseline ─────────────────────────────────────
 
-```
-config.window_background_opacity = 0.95
-```
-
-The translucent tint is the active scheme's base00 by construction: config.colors.background (with a theme) or the fallback scheme's own base00 (without) — never pure black, never a constant.
-
-```
-config.macos_window_background_blur = 30
-```
-
-macOS frosts the desktop directly behind the translucent cell colour; there is no WezTerm image layer.
+The window is opaque on macOS; the `wezterm-bg` image (see "Background") is the only thing behind the text.
 
 ```
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
@@ -130,7 +120,7 @@ config.disable_default_key_bindings = true
 
 ── the keys that are still WezTerm's ───────────────────────────────────────
 
-07-multiplexer/08-wezterm-reduction emptied this table of everything that addressed a tab, a pane or the palette. F5 (window/pane jump), F6 (theme toggle) and Ctrl+Shift+X (copy mode) are tmux bindings now — WezTerm must pass those keys THROUGH, which is exactly what binding nothing achieves — and Ctrl+Shift+Q went with the nine-tab floor it existed to defeat.
+07-multiplexer/08-wezterm-reduction emptied this table of everything that addressed a tab, a pane or the palette. F5 (window/pane jump), F5 t t (theme toggle) and Ctrl+Shift+X (copy mode) are tmux bindings now — WezTerm must pass those keys THROUGH, which is exactly what binding nothing achieves — and Ctrl+Shift+Q went with the nine-tab floor it existed to defeat.
 
 What is left is local chrome and nothing else: the capsule wrappers, paste, and the copy-or-interrupt Ctrl+C. Mouse selection is deliberately still WezTerm's (tmux's `mouse` option stays off), which is what keeps that last binding meaningful. WezTerm's DEFAULT bindings are switched off, and that is the load-bearing half of this section. `show-keys` on a stock config lists ActivateTab, ActivateTabRelative and SplitVertical/Horizontal — a full second set of window and pane keys, shipped, that no line of this file ever wrote. Left on, the epic's invariant ("WezTerm binds nothing that addresses a tab or a pane") would be false out of the box and untestable, because the bindings that break it are not in the file you would read to check.
 
@@ -196,4 +186,8 @@ SHIFT + left-click opens the hyperlink under the cursor. Three measured facts ho
 
 ## Font
 
-The font comes from `~/.local/state/wezterm/font.txt` when that file exists, with the built-in fallback list behind it. The F8 `font` channel (`~/.config/wezterm/font.sh`) writes the file on Enter, and the config's reload watch applies it to every window. Its live preview is OSC 1337 `SetUserVar=font=…` written straight to each tmux client tty, past tmux, which would swallow it; the `user-var-changed` handler turns it into a per-window override, and an empty value, sent on Esc and after Enter, drops the override.
+The font comes from `~/.local/state/wezterm/font.txt` when that file exists, with the built-in fallback list behind it. The F5 s c `font` channel (`~/.config/wezterm/font.sh`) writes the file on Enter, and the config's reload watch applies it to every window. Its live preview is OSC 1337 `SetUserVar=font=…` written straight to each tmux client tty, past tmux, which would swallow it; the `user-var-changed` handler turns it into a per-window override, and an empty value, sent on Esc and after Enter, drops the override.
+
+## Background
+
+`F5 t w` opens the wallpaper picker over `~/wallpapers` (`~/.config/wezterm/wallpaper.sh`): the focused row is rendered behind the terminal at once, `←`/`→` nudge darkness by 5, `Shift+←`/`Shift+→` blur by 4 px, `Enter` keeps, `Esc` re-renders what was there, and the `off` row removes the image. Under it, `wezterm-bg IMAGE` puts IMAGE behind every window; `wezterm-bg blur N` sets the blur radius in pixels (0 is sharp), `wezterm-bg dark N` the darkness (every 20 halves the brightness, so it nears black but never reaches it: 0 = untouched, 20 = half, 60 = an eighth), `wezterm-bg off` removes it, and bare `wezterm-bg` prints the current settings. Defaults: blur 20, dark 60. WezTerm cannot blur an image, so the script bakes the blur into `~/.local/state/wezterm/background` with `magick`, downscaled to 2560 px first so a large source renders in well under a second, then centre-cropped by 3% so the soft edge the blur leaves is off-screen; darkness is an `hsb` brightness of `0.5 ^ (dark / 20)` in `wezterm.lua`, read from `background.txt`, so changing it never re-renders. An animated GIF stays an animated GIF, every frame blurred, and WezTerm plays it. The source image is on the reload watch too: overwrite it in place and WezTerm re-runs `wezterm-bg` on it (only while the source is newer than the render, so it stops after one pass). Both files are on the reload watch, so every open window repaints. The image only shows where a cell has the default background: tmux keeps `bg=terminal`, but an editor or TUI that paints its own background covers it.

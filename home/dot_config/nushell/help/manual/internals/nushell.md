@@ -371,9 +371,7 @@ list, so there is no reedline default to override. `tv init nu` binds only
 
 ## Clipboard: `cf`
 
-The display-var guards on `$env.WAYLAND_DISPLAY?` and `$env.DISPLAY?` are what
-make this safe headless: `wl-copy` and `xclip` **hang forever** waiting for a
-compositor or X server when none is attached, so a `which` hit alone must never
-select them.
+`pbcopy` is the only clipboard: macOS is the only host, so there is nothing to
+detect and nothing that can hang waiting for a display.
 
 The `path`-typed argument gives filesystem tab-completion for free.

@@ -1,6 +1,6 @@
 #!/bin/sh
 # tmux-claude-resume — put the session id this pane already printed back on the
-# command line. Bound to `s` in copy mode; see manual → terminal, `F4 s`.
+# command line. Bound to `s` in copy mode; see manual → terminal, `F5 c s`.
 #
 # WHY A SCRIPT AND NOT A BINDING. tmux can find the text on its own — copy
 # mode's `search-backward` takes an extended regex — but finding it is not the
