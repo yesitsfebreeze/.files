@@ -2,7 +2,10 @@
 # chezmoi run_after — regenerate the files nushell's config.nu `source`s, so
 # launching a shell does no setup work. TRAPs: the path is a literal, not
 # XDG_CACHE_HOME; brew is evaluated first and ~/.local/bin prepended over it;
-# the file must exist even when the tool does not. See internals/provisioning.
+# the file must exist even when the tool does not. The prompt is drawn by
+# nushell itself (prompt.nu) — starship's init is gone, and its stale file is
+# deleted so no shell ever sources a prompt it no longer uses. See
+# internals/provisioning.
 set -uo pipefail
 
 eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -11,6 +14,7 @@ hash -r
 
 INIT_DIR="$HOME/.cache/nushell/init"
 mkdir -p "$INIT_DIR"
+rm -f "$INIT_DIR/starship.nu"
 
 # Output goes to a temp file in the SAME directory and is moved into place with
 # `mv -f` (a same-directory rename, therefore atomic) and only when the tool
@@ -28,7 +32,6 @@ gen_init() {
     fi
 }
 
-gen_init "$INIT_DIR/starship.nu"    starship init nu
 gen_init "$INIT_DIR/zoxide.nu"      zoxide init nushell
 gen_init "$INIT_DIR/television.nu"  tv init nu
 

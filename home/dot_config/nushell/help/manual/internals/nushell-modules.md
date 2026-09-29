@@ -10,13 +10,13 @@ env.nu — nushell's env-config. Nushell evaluates this file BEFORE config.nu, a
 
 It does three things and nothing else: repair PATH for a login shell macOS never ran `path_helper` for (R1), set the handful of variables the rest of the epic reads (R2), and open an interactive shell where the user last navigated while leaving `nu -c` in its caller's directory (R7).
 
-It sources nothing. The generated shell integrations (starship, zoxide, television) are produced at chezmoi-apply time by `run_after_generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md.
+It sources nothing. The generated shell integrations (zoxide, television) are produced at chezmoi-apply time by `run_after_generate-shell-init.sh` and merely `source`d by config.nu (R9); nothing here does startup work beyond the one guarded probe at the bottom. See prds/04-shell/01-core-config/specs/spec01.md.
 
 ```
 $env.PATH = (
 ```
 
-── PATH repair (R1) ──────────────────────────────────────────────────────── macOS seeds Homebrew and the system dirs into a login shell's PATH via `path_helper` (which reads /etc/paths and /etc/paths.d/*), but path_helper is only ever invoked from /etc/zprofile and /etc/profile — i.e. from bash and zsh. NUSHELL NEVER RUNS IT. So when nu is the login shell (`chsh`) and WezTerm is launched from the GUI rather than from another terminal, /opt/homebrew/bin and the system dirs are simply absent, and bat, rg, starship, tv and lazygit all go missing. This block is not cargo-culting: delete it and a GUI-launched terminal loses Homebrew.
+── PATH repair (R1) ──────────────────────────────────────────────────────── macOS seeds Homebrew and the system dirs into a login shell's PATH via `path_helper` (which reads /etc/paths and /etc/paths.d/*), but path_helper is only ever invoked from /etc/zprofile and /etc/profile — i.e. from bash and zsh. NUSHELL NEVER RUNS IT. So when nu is the login shell (`chsh`) and WezTerm is launched from the GUI rather than from another terminal, /opt/homebrew/bin and the system dirs are simply absent, and bat, rg, tv and lazygit all go missing. This block is not cargo-culting: delete it and a GUI-launched terminal loses Homebrew.
 
 The user dirs are `prepend`ed (they win) and the system dirs are `append`ed (they lose), and `uniq` makes the whole thing a no-op whenever the parent process already provided them — so running nu inside nu changes nothing.
 
@@ -32,11 +32,12 @@ $env.RIPGREP_CONFIG_PATH = ($nu.home-dir | path join ".config" "ripgrep" "config
 
 RIPGREP_CONFIG_PATH is what makes `rg` share the ignore rules `fd` reads natively from ~/.config/fd/ignore (node_modules, target, build, …). Without this pointer the two finders disagree about what is worth searching, and the same query gives different answers depending on which tool you reached for.
 
-```
-$env.STARSHIP_SHELL = "nu"
-```
-
-STARSHIP_SHELL names the prompt. starship is the prompt for this shell, sourced from the generated init that config.nu picks up (R9), and it is specifically starship's TWO-LINE prompt that forces config.nu's OSC 133/633 disable — reedline repaints re-emit the prompt-start mark and the terminal renders it as a phantom blank line. The file that names the prompt and the file that works around it have to be readable together, so this is that name.
+RETIRED 2026-09-29: `$env.STARSHIP_SHELL` is gone — starship is gone with it
+(prompt.nu draws the prompt), and nothing else reads the variable. The OSC
+133/633 disable survives it for the same reason it existed: the prompt is
+still two lines, reedline still re-emits the prompt-start mark on every
+repaint, and the terminal still renders each one as a phantom blank line
+(internals/nushell, "osc133: false").
 
 ```
 $env.SHELL = $nu.current-exe
@@ -436,7 +437,7 @@ R4's empty state is a PRINT AND RETURN, never an empty picker — the shipped ma
 def _gitseg_refresh [root: string] {
 ```
 
-gitseg.nu — the prompt's git block, stale-while-revalidate. THE SLOWEST THING THE PROMPT EVER DID WAS `git status`: starship rendered it synchronously, and PROMPT_COMMAND is evaluated with the prompt blocked on every Enter, so a working repo put hundreds of milliseconds (measured 2026-09-29: 479ms of starship in-process time in kern2 under load ~74, 2.9s raw `git status --porcelain`) between every command and its result. This module is the loader-then-replace pattern: the prompt draws the cached segment instantly, a pre_prompt `job spawn` refreshes the cache off the critical path, and the next render replaces the view. `⋯` marks the one render between. THE TRADE IS ACCEPTED AND RECORDED (memos/decision/…): the git block can lag reality by one refresh cycle — after `git commit` the new state shows on the next prompt that renders after the job lands, not instantly.
+gitseg.nu — the prompt's CACHED SEGMENTS (git block, language versions), stale-while-revalidate. THE SLOWEST THING THE PROMPT EVER DID WAS `git status`: starship rendered it synchronously, and PROMPT_COMMAND is evaluated with the prompt blocked on every Enter, so a working repo put hundreds of milliseconds (measured 2026-09-29: 479ms of starship in-process time in kern2 under load ~74, 2.9s raw `git status --porcelain`) between every command and its result. This module is the loader-then-replace pattern: the prompt draws the cached segment instantly, a pre_prompt `job spawn` refreshes the cache off the critical path, and the next render replaces the view. `⋯` marks the one render between. THE TRADE IS ACCEPTED AND RECORDED (memos/decision/…): the git block can lag reality by one refresh cycle — after `git commit` the new state shows on the next prompt that renders after the job lands, not instantly.
 
 THE CACHE IS ONE FILE PER REPO, keyed by a 16-hex hash of the repo root, under `$state/nushell/gitseg/` — the same `_state_dir` dirstack.nu owns. Keying by the ROOT and not PWD means a cd between two directories of one repo keeps the segment warm; a cd into another repo shows `⋯` for exactly one render. THE ROOT IS FOUND BY WALKING UP FOR `.git` — `path exists`, never `path type`, because `.git` is a FILE in a worktree — and the walk is on the render path, so it must not spawn: `git rev-parse` there would cost the very spawn this module exists to remove.
 
@@ -446,11 +447,7 @@ let tmp = ($d | path join $".(_gitseg_key $root).($nu.pid).new")
 
 TRAP: THE TMP NAME CARRIES THE PID. Two tmux panes in one repo refresh at once, and a shared tmp name would interleave their writes. The write is tmp + `mv` (same-directory rename, atomic — run_after_generate-shell-init.sh's idiom) because a truncated read would paint a half-segment on the prompt.
 
-```
-def _gitseg_style [] { ansi -e '30;42m' }
-```
-
-TRAP: THE TRAILING `m` IS REQUIRED. `ansi -e '30;42'` emits `\e[30;42` WITHOUT the SGR final byte, and the terminal then eats the next three characters of the segment — the two spaces and the `m` of `main` — as CSI parameter bytes, painting `ain` where the branch belongs. Found live in a tmux capture-pane; the segment read "ain !?" and the bytes were in the file, the escape was simply unterminated.
+SEGMENT CONTENT IS PLAIN TEXT — prompt.nu owns every SGR byte. The first version styled its own segments, and the lesson is kept here because it will come back with the next hand-drawn escape: `ansi -e '30;42'` emits `\e[30;42` WITHOUT the SGR final byte, and the terminal then eats the next three characters — the two spaces and the `m` of `main` — as CSI parameter bytes, painting `ain` where the branch belongs. Found live in a tmux capture-pane; the bytes were in the file, the escape was simply unterminated.
 
 ```
 def --env _gitseg_revalidate [] {
@@ -458,7 +455,37 @@ def --env _gitseg_revalidate [] {
 
 The revalidate runs in pre_prompt, BEFORE each render, and keeps AT MOST ONE refresh per repo in flight: `$env._GITSEG_INFLIGHT` records the key, the cache mtime at issue, and the issue time; a job is reissued only when the cache mtime has advanced (the last job landed) or 30s passed without a write (a hung git — kern2's status can take seconds under load). The job writes the file, the NEXT render reads it; nothing on the render path ever waits. `--env` because the hook closure mutates `$env` in the shell's scope — zoxide.nu's `$env._NAV` is the precedent.
 
-SYMBOLS MATCH STARSHIP'S `$` `!` `?` (staged, unstaged-modified, untracked), classified from `git status --porcelain` columns X and Y. The ahead/behind `⇡` is NOT reproduced: computing it walked `git rev-list --left-right` on every render and it was the single largest cost. No branch (detached HEAD, empty repo) or no git means an EMPTY segment, and the prompt shows only the format's own arrows — exactly the non-git rendering starship produced before this module existed.
+SYMBOLS MATCH STARSHIP'S `$` `!` `?` (staged, unstaged-modified, untracked), classified from `git status --porcelain` columns X and Y. The ahead/behind `⇡` is NOT reproduced: computing it walked `git rev-list --left-right` on every render and it was the single largest cost. No branch (detached HEAD, empty repo) or no git means an EMPTY segment, and the prompt shows only its own colour transitions — exactly the non-git rendering starship produced before this module existed.
+
+```
+const LANGSEG_MARKERS = [
+```
+
+THE LANGUAGE-VERSION BLOCKS RIDE THE SAME SHAPE with a ONE-HOUR cache under `langseg/`: markers are checked in the current directory first and then at the repo root (kern2/crates/api carries the rust block its root owns), the reader never spawns — it reads `<lang>.ver` written by the probe job, versions spelled the way starship spelled them (`v1.98.1` for node and rust, `go1.24.5`, bare for python). After the first probe the file exists even when the answer is empty — an absent tool is an answer, not a retry — so a prompt pays at most four `path exists` checks and a mtime look.
+
+## `prompt.nu`
+
+```
+def _prompt [] {
+```
+
+prompt.nu — the prompt itself, drawn in nushell at ~0.6ms a render. Starship was the LAST external process between every command and its result (measured 2026-09-29: 229ms median per render under load ~74); every block it drew is a constant, an env lookup, or a gitseg cache read, so it is gone from the Brewfile, and run_after_generate-shell-init.sh deletes its stale generated init. DECISION MEMO: the-git-block-is-a-cache, and this file is its second half.
+
+PARITY WAS HEXDUMPED, not eyeballed: the SGR constants in this file are the byte sequences the starship prompt actually emitted, and the render was diffed against those dumps in a repo, a repo subdirectory, ~, ~/Library and ~/Documents. TWO SURPRISES CAME OUT OF THE DUMPS. THE POWERLINE ARROWS ARE EMPTY — starship's format carried `""` glyphs, so the look is adjacent colour blocks and this file reproduces exactly the transitions, no arrow bytes. THE CHARACTER IS EMPTY TOO — success_symbol and error_symbol carried empty glyphs, so the second line is a styled empty string and the cursor alone marks the input position.
+
+THE DIRECTORY BLOCK'S RULES WERE DERIVED BY MEASUREMENT (starship's docs do not spell them out): inside a git repo the shown path is the repo's basename plus the path below it, with one leading `…` for everything above the repo root (`…/kern2/crates/api`); elsewhere ~ for home; then components beyond three collapse to `…/` keeping the last three (`~/testd/a/b` → `…/testd/a/b`, but `~/testd/a` stays whole).
+
+```
+$P_TO_DUR $P_FROM_DUR $P_RESET
+```
+
+THE BLUE DURATION SEGMENT IS EMPTY, DELIBERATELY — IT ALWAYS WAS. Nushell's `$env.CMD_DURATION_MS` is NOT updated per command (measured 0.115.1: "0" after a `sleep 1`), so starship's min_time-500 duration block never fired once. A real per-command duration cannot be built from what nushell 0.115 offers: pre_prompt fires only at submit (~3ms after Enter, before the command runs), the after-command render fires NO hook at all, and PROMPT_COMMAND closures run in an isolated env — they cannot keep state between renders (a render-count tick was tried and the writes silently discarded). The empty segment stays for parity; the fix belongs upstream.
+
+```
+$env.PROMPT_MULTILINE_INDICATOR = "\e[90m∅\e[0m "
+```
+
+starship's continuation line, byte for byte: a dim empty-set glyph, then a space.
 
 ## `theme` (config.nu) and `theme.sh`
 

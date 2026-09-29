@@ -1,4 +1,4 @@
-# gitseg.nu — the prompt's git block, stale-while-revalidate.
+# gitseg.nu — the prompt's cached segments, stale-while-revalidate.
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
@@ -8,16 +8,19 @@
 # every Enter. This module is the loader-then-replace pattern: the prompt
 # draws the cached segment instantly, a pre_prompt `job spawn` refreshes
 # the cache off the critical path, and the next render replaces the view.
-# `⋯` marks the one render between. Trade, accepted in the decision memo:
-# the git block can lag reality by one refresh cycle.
+# `⋯` marks the one render between. The language-version blocks ride the
+# same shape with a ONE-HOUR cache — a toolchain's version does not change
+# between keystrokes, so the reader never probes, the job does.
 #
-# TRAP: the cache is written via a same-directory tmp + `mv` (atomic
-# rename) — a truncated read would paint a half-segment on the prompt.
+# Both caches are written via a same-directory tmp + `mv` (atomic rename)
+# — a truncated read would paint a half-segment on the prompt. Segment
+# CONTENT is plain text: prompt.nu owns every SGR byte.
 
-def _gitseg_dir [] { (_state_dir) | path join "gitseg" }
+def _seg_dir [name: string] { (_state_dir) | path join $name }
 
 # Walk up from PWD looking for `.git` — no spawn on the render path. `.git`
 # is a FILE in a worktree, so `path exists` is the test, not `path type`.
+# prompt.nu also walks this for the directory block.
 def _gitseg_root [] {
     mut p = $env.PWD
     loop {
@@ -30,18 +33,13 @@ def _gitseg_root [] {
 
 def _gitseg_key [root: string] { $root | hash sha256 | str substring 0..15 }
 
-def _gitseg_file [root: string] { (_gitseg_dir) | path join (_gitseg_key $root) }
-
-# TRAP: the trailing `m` is REQUIRED — `ansi -e '30;42'` emits `\e[30;42`
-# without the SGR final byte, and the terminal then eats the segment's next
-# three characters ("  m" of "  main") as CSI parameter bytes.
-def _gitseg_style [] { ansi -e '30;42m' }   # starship's `fg:crust bg:green`
+def _gitseg_file [root: string] { (_seg_dir "gitseg") | path join (_gitseg_key $root) }
 
 # The refresh job — never on the render path. Symbols match starship's
-# git_status: `$` staged, `!` unstaged-modified, `?` untracked. With no
-# branch (detached, empty repo) or no git at all, the segment is empty and
-# the prompt shows only the format's own arrows — exactly the non-git
-# rendering starship produced before this module existed.
+# git_status: `$` staged, `!` unstaged-modified, `?` untracked. No branch
+# (detached, empty repo) or no git at all means an EMPTY segment and the
+# prompt shows only its own transitions — exactly the non-git rendering
+# starship produced before this module existed.
 def _gitseg_refresh [root: string] {
     let seg = (try {
         let branch = (^git -C $root branch --show-current | str trim)
@@ -52,10 +50,10 @@ def _gitseg_refresh [root: string] {
                 (if ($st | any {|r| ($r | str substring 1..1) =~ '[MD]' }) { "!" } else { "" })
                 (if ($st | any {|r| ($r | str starts-with "??") }) { "?" } else { "" })
             ] | str join)
-            $"(_gitseg_style)  ($branch)(if ($symbols | is-empty) { "" } else { $" ($symbols)" }) (ansi reset)"
+            $"  ($branch)(if ($symbols | is-empty) { "" } else { $" ($symbols)" }) "
         }
     } catch { "" })
-    let d = (_gitseg_dir)
+    let d = (_seg_dir "gitseg")
     mkdir $d
     # TRAP: tmp carries the pid — two panes in one repo refresh at once and
     # a shared tmp name would interleave their writes.
@@ -69,7 +67,7 @@ def _gitseg [] {
     let root = (_gitseg_root)
     if ($root == null) { return "" }
     let f = (_gitseg_file $root)
-    if not ($f | path exists) { return $"(_gitseg_style) ⋯ (ansi reset)" }
+    if not ($f | path exists) { return " ⋯ " }
     open --raw $f
 }
 
@@ -96,7 +94,100 @@ def --env _gitseg_revalidate [] {
     job spawn { _gitseg_refresh $root } | ignore
 }
 
+# ── language versions ────────────────────────────────────────────────────────
+# One marker table per language, checked in the current directory first and
+# then at the repo root (starship showed the root's toolchain from a
+# subdirectory — kern2/crates/api carries the rust block from its root).
+# The version files live under langseg/ keyed by language name, written by
+# the probe job, refreshed at most hourly — the reader never spawns.
+
+const LANGSEG_MARKERS = [
+    [lang marker];
+    [nodejs "package.json"]
+    [nodejs "node_modules"]
+    [nodejs ".nvmrc"]
+    [rust "Cargo.toml"]
+    [rust "Cargo.lock"]
+    [golang "go.mod"]
+    [golang "go.sum"]
+    [golang "go.work"]
+    [python ".python-version"]
+    [python "pyproject.toml"]
+    [python "requirements.txt"]
+    [python "setup.py"]
+    [python "setup.cfg"]
+]
+# starship's block order, which is the display order.
+const LANGSEG_ORDER = [nodejs rust golang python]
+
+def _langseg_present [] {
+    let root = (_gitseg_root)
+    let dirs = ([$env.PWD] | append (if ($root == null) { [] } else { [$root] }))
+    ($dirs | each {|d|
+        $LANGSEG_MARKERS
+        | where {|m| ($d | path join $m.marker | path exists) }
+        | get lang
+    } | flatten | uniq)
+}
+
+def _langseg_file [lang: string] { (_seg_dir "langseg") | path join $"($lang).ver" }
+
+# The probe job — versions spelled the way starship spelled them: node and
+# rust keep their leading v, go keeps its go, python is bare.
+def _langseg_refresh [langs: list<string>] {
+    for lang in $langs {
+        let v = (try {
+            match $lang {
+                "nodejs" => { (^node --version | str trim) }
+                "rust" => { "v" + (^rustc --version | split row " " | get 1) }
+                "golang" => { (^go version | split row " " | get 1) }
+                "python" => { (^python3 --version | split row " " | get 2) }
+                _ => { "" }
+            }
+        } catch { "" })
+        let d = (_seg_dir "langseg")
+        mkdir $d
+        let tmp = ($d | path join $".($lang).($nu.pid).new")
+        ($v | str trim) | save -f --raw $tmp
+        mv -f $tmp (_langseg_file $lang)
+    }
+}
+
+# The reader: blocks in starship's format — two spaces, the version, one
+# space — for every present language whose version file has landed.
+def _langseg [] {
+    let present = (_langseg_present)
+    $LANGSEG_ORDER
+    | where {|lang| $lang in $present }
+    | each {|lang|
+        let f = (_langseg_file $lang)
+        if not ($f | path exists) { return "" }
+        let v = (open --raw $f | str trim)
+        if ($v | is-empty) { "" } else { $"  ($v) " }
+    }
+    | str join ""
+}
+
+# The revalidate: probe a language when its file is missing or an hour old.
+# After the first probe the file exists (empty counts — an absent tool is an
+# answer, not a retry), so a prompt pays at most four `path exists` checks
+# and a mtime look.
+def --env _langseg_revalidate [] {
+    let present = (_langseg_present)
+    if ($present | is-empty) { return }
+    let stale = ($present | where {|lang|
+        let f = (_langseg_file $lang)
+        if not ($f | path exists) { true } else { (ls $f | get 0.modified) < ((date now) - 1hr) }
+    })
+    if ($stale | is-empty) { return }
+    job spawn { _langseg_refresh $stale } | ignore
+}
+
 $env.config.hooks.pre_prompt = (
     ($env.config.hooks.pre_prompt? | default [])
     | append {|| _gitseg_revalidate }
+)
+$env.config.hooks.pre_prompt = (
+    ($env.config.hooks.pre_prompt? | default [])
+    | append {|| _langseg_revalidate }
 )

@@ -1,6 +1,6 @@
 {
   "kind": "decision",
-  "memo_count": 10,
+  "memo_count": 12,
   "memos": {
     "a-retirement-is-two-edits": {
       "path": "decision/a-retirement-is-two-edits.md",
@@ -30,6 +30,12 @@
         "the-manual-is-markdown": "decision/the-manual-is-markdown.md"
       }
     },
+    "the-deploy-is-symlinks": {
+      "path": "decision/the-deploy-is-symlinks.md",
+      "description": "The deploy is real filenames plus a symlink farm \u2014 chezmoi is retired once the in-flight tmux/zen work lands",
+      "read_when": "touching install.sh, the home/ tree's file names, or asking why nothing needs an apply after an edit",
+      "links": {}
+    },
     "the-git-block-is-a-cache": {
       "path": "decision/the-git-block-is-a-cache.md",
       "description": "The prompt's git block is drawn from a cache a background job refreshes, and the ahead/behind arrow is gone \u2014 the prompt never waits for git",
@@ -46,6 +52,12 @@
       "path": "decision/the-model-router-is-a-dotfile-after-all.md",
       "description": "the model router lives in home/ as one binary plus a registry; the 2026-09-02 answer that moved it to its own project is reversed",
       "read_when": "touching the llm router, or asking where it lives",
+      "links": {}
+    },
+    "the-prompt-is-nushell": {
+      "path": "decision/the-prompt-is-nushell.md",
+      "description": "The prompt is drawn by nushell itself (prompt.nu) \u2014 starship, its config and its per-render spawn are gone",
+      "read_when": "touching the prompt, prompt.nu or the SGR constants, or asking where starship went and why the blue duration segment is empty",
       "links": {}
     },
     "the-record-is-memos": {

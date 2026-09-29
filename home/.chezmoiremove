@@ -21,3 +21,4 @@
 .local/bin/litellm-gen-config
 .local/bin/litellm-up
 .local/bin/llm-quota
+.config/starship.toml

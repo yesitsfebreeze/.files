@@ -239,8 +239,8 @@ $env.config.hooks.env_change.PWD = (
 #
 # TRAP: a `source` of a MISSING file is a parse error that DISCARDS THIS
 # WHOLE FILE, so the generator always writes all three, empty if the tool is
-# missing.
-source ~/.cache/nushell/init/starship.nu
+# missing. starship's init is gone with starship itself (prompt.nu draws the
+# prompt) — the generator deletes its stale file, and no source remains.
 source ~/.cache/nushell/init/zoxide.nu
 source ~/.cache/nushell/init/television.nu
 
@@ -259,22 +259,13 @@ source ~/.config/nushell/capsule.nu
 source ~/.config/nushell/finder.nu
 source ~/.config/nushell/quicklist.nu
 source ~/.config/nushell/gitseg.nu
+source ~/.config/nushell/prompt.nu
 
 # ── PROMPT ──
-# The prompt's git block is drawn from the gitseg cache (MODULES above):
-# starship renders GITSEG as a literal and this replaces it per render.
-# TRAP: this must FOLLOW the gitseg source — a `source`d def does not exist
-# until its file has been sourced — and the closure must capture the value
-# BEFORE the assignment overwrites it.
-let starship_prompt = ($env.PROMPT_COMMAND)
-$env.PROMPT_COMMAND = {||
-    do $starship_prompt | str replace "GITSEG" (_gitseg)
-}
-
-# starship's init also defines PROMPT_COMMAND_RIGHT — a second full starship
-# spawn per render. Measured: its output is EMPTY; the left prompt carries
-# everything, so this is a spawn a render for nothing. The right prompt is off.
-$env.PROMPT_COMMAND_RIGHT = ""
+# prompt.nu draws the prompt (it registers PROMPT_COMMAND at its end, no
+# starship spawn on any render). TRAP: it must be the LAST module — its
+# defs call gitseg's cross-file defs, and a `source`d def does not exist at
+# parse time until its file has been sourced.
 
 # TRAP: these three live HERE, not in help.nu — `use std/help` and `def
 # help` in ONE file fail at parse (predeclaration resolves std's @example

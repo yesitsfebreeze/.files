@@ -15,7 +15,7 @@ requirements = ["nu"]
 # files; recent-dirs.toml already uses the same idiom for `_dirstack_list`.
 # `nu -n` loads no config, which is the latency reason nu-history.toml
 # records: the builtin channels that cold-start a FULL nushell re-source
-# starship, zoxide and the tv init on every keypress.
+# zoxide and the tv init on every keypress.
 [source]
 command = "nu -n -c 'source ~/.config/nushell/dirstack.nu; source ~/.config/nushell/recents.nu; _recents_lines'"
 # BOTH KEYS ARE LOAD-BEARING, and the live cable file has neither. The log is

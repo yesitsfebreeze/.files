@@ -104,7 +104,7 @@ global history picker is bound to **Alt-R** instead.
 
 ### `osc133: false`, `osc633: false`, `osc7: true`
 
-starship's prompt here is two lines, and reedline re-emits the prompt-start mark
+The prompt here is two lines (prompt.nu draws it), and reedline re-emits the prompt-start mark
 on every repaint; the terminal renders each one as a **phantom blank line**
 above the input. Nothing in this environment uses the terminal's semantic-zone
 features, so the markers are a clean cut.

@@ -1,6 +1,6 @@
 #!/bin/sh
 # tmux-git — branch, dirty flag, ahead/behind and last-commit age for a pane header.
-# In the pane header, not left to starship: the prompt is gone the moment a
+# In the pane header, not left to the prompt: the prompt is gone the moment a
 # pane runs nvim or Claude. `#()` re-runs it every status-interval, so it is
 # two git calls: one `status --porcelain=v2 --branch` answers branch, dirty
 # and ahead/behind at once, one `log` the age. Prints nothing outside a work tree.

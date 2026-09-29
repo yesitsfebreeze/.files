@@ -1,7 +1,7 @@
 # Custom nu-history channel — a deliberate local override of tv's builtin,
 # for two reasons worth keeping (04-shell/04-television R5):
 #   * the builtin cold-starts a FULL nushell per keypress — re-sourcing
-#     starship, zoxide and the tv init on every Ctrl-R / Alt-R;
+#     zoxide and the tv init on every Ctrl-R / Alt-R;
 #   * it assumes the plaintext history format, while this config runs
 #     `file_format: sqlite` (nushell/config.nu), so the builtin read a
 #     SQLiteDatabase as text and mangled the list.

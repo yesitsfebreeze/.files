@@ -3,9 +3,8 @@
 
 tap "tinted-theming/tinted"
 
-# shell, prompt, navigation
+# shell, navigation
 brew "nushell"
-brew "starship"
 brew "zoxide"
 brew "television"
 brew "tinted-theming/tinted/tinty"
