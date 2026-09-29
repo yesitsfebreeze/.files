@@ -23,8 +23,12 @@ prompt.nu draws the prompt (~0.6ms/render); starship is retired. Its
 command and its result, and every block it drew was a constant or a
 gitseg cache read. Byte-parity came from hexdumps, not the config file —
 which found that the powerline arrows, the character glyphs were empty
-strings and the duration block had never fired (CMD_DURATION_MS is not
-per-command in 0.115).
+strings and the duration block had never fired. The blue segment stays
+empty for good: the measured render model of 0.115 has NO render after a
+command completes (reedline redraws the cached string; the closure
+evaluates only at shell start, per keystroke, and at Enter), so no
+per-command duration can exist. File-stamp workarounds were built twice
+and measured wrong both times; the fix belongs upstream.
 
 ## The git block is a cache (2026-09-29)
 
