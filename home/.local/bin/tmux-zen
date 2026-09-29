@@ -1,24 +1,30 @@
 #!/bin/sh
 # tmux-zen — zen mode, one switch for the server. On, every window is a
-# strip: the active pane centred at `@zen-width` percent (50), the panes
-# before it stacked in a column on the left, the panes after it in a column
-# on the right, a blank spacer pane on any empty side. A lone pane has no
-# border. Off, the spacers go and the layout is left as it is.
+# carousel of columns: the active column centred at `@zen-width` percent
+# (50), every other column the same size, the previous one left of it and
+# the next one right of it, cut off by the window edges and dimmed as
+# inactive panes are; the rest wait off-screen. The ends wrap. A vertical
+# split stacks inside the column, a horizontal one starts a new column
+# (`@zen_col` on each pane names its column). Off, the spacers go and the
+# columns are tiled side by side again.
 #
 #   tmux-zen toggle           switch zen for every window (F5 w z)
-#   tmux-zen apply TARGET     re-fit; the layout and select-pane hooks run it
-#   tmux-zen next|prev PANE   focus the next/previous pane of the strip (F5 →/←)
+#   tmux-zen apply TARGET     re-fit; the layout, new-window and select-pane
+#                             hooks run it
+#   tmux-zen next|prev PANE   focus the next/previous column (F5 →/←)
 #   tmux-zen procs            every pane on the server that is not a spacer
 #                             or a popup, for the status bar's chip
 #
 # TARGET is a pane or window id. `@zen` and `@zen-width` are global (`-g`)
 # options. A spacer is a pane running `sleep` with `@zen_spacer` set; the
-# status bar's process count and the focus hook skip it.
+# status bar's process count and the focus hook skip it. The side panes are
+# floating panes of the frames build, marked `@zen_float`.
 # manual → internals/tmux, "F5 w z — zen mode".
 set -u
 # A popup is a floating pane on the frames build (`pane_floating_flag`; stock
-# tmux has no such pane, and an unknown variable is empty), never a real one.
-real='#{&&:#{!=:#{@zen_spacer},1},#{!=:#{pane_floating_flag},1}}'
+# tmux has no such pane, and an unknown variable is empty), never a real one
+# — unless zen floated it (`@zen_float`).
+real='#{&&:#{!=:#{@zen_spacer},1},#{||:#{!=:#{pane_floating_flag},1},#{==:#{@zen_float},1}}}'
 cmd=${1:-apply}; t=${2:-${TMUX_PANE:-}}
 case $cmd in
 procs) tmux list-panes -a -f "$real" | wc -l | tr -d ' '; exit 0 ;;
@@ -27,11 +33,11 @@ toggle)
     for w in $(tmux list-windows -a -F '#{window_id}'); do "$0" apply "$w"; done
     exit 0 ;;
 next | prev)
-    # The strip is pane-index order; the ends wrap. Selecting fires the
-    # after-select-pane hook, which re-fits.
-    p=$(tmux list-panes -t "$t" -f "$real" -F '#{pane_id} #{pane_active}' |
-        awk -v d="$cmd" '{ id[NR] = $1; if ($2 == 1) k = NR }
-            END { if (!k) k = 1; print id[d == "next" ? k % NR + 1 : (k + NR - 2) % NR + 1] }')
+    # The strip is column order (a column's first pane index); the ends
+    # wrap. Selecting fires the after-select-pane hook, which re-fits.
+    p=$(tmux list-panes -t "$t" -f "$real" -F '#{pane_index} #{pane_id} #{?#{@zen_col},#{@zen_col},-} #{pane_active}' | sort -n |
+        awk -v d="$cmd" '!($3 in seen) { seen[$3] = ++n; id[n] = $2 } $4 == 1 { k = seen[$3] }
+            END { if (!k) k = 1; print id[d == "next" ? k % n + 1 : (k + n - 2) % n + 1] }')
     [ -n "$p" ] && tmux select-pane -t "$p"
     exit 0 ;;
 esac
@@ -56,65 +62,121 @@ trap 'rm -rf "$lock"' EXIT
 
 spacers=$(tmux list-panes -t "$win" -f '#{@zen_spacer}' -F '#{pane_id}')
 reals=$(tmux list-panes -t "$win" -f "$real" -F '#{pane_id}')
+# The last real pane gone leaves only spacers, which would keep the window
+# open: the window goes with it, as it does without zen.
+[ -z "$reals" ] && [ -n "$spacers" ] && { tmux kill-window -t "$win"; exit 0; }
+idx() { tmux list-panes -t "$win" -f "$1" -F '#{pane_index}' | paste -sd, -; }
+# {"%5":"%5","%7":""}: every real pane's column, $1 when it has none yet.
+cols() { tmux list-panes -t "$win" -f "$real" -F "\"#{pane_id}\":\"#{?#{@zen_col},#{@zen_col},$1}\"" | paste -sd, - | sed 's/.*/{&}/'; }
 # shellcheck disable=SC2086
 kill_spacers() { for p in $spacers; do tmux kill-pane -t "$p"; done; }
 # shellcheck disable=SC2086
 show_borders() { for p in $reals; do tmux set -pu -t "$p" pane-active-border-style; done; }
 if [ "$(tmux show -gqv @zen)" != 1 ]; then
     kill_spacers; show_borders
+    # Floated panes go back into the tiling: the columns side by side in
+    # index order, each column's panes stacked at equal height.
+    [ -n "$(tmux list-panes -t "$win" -f '#{&&:#{@zen_float},#{pane_floating_flag}}' -F x)" ] || exit 0
+    out=$(tmux display -p -t "$win" '#{window_layout}' | jq -c --argjson col "$(cols '#{pane_id}')" '
+    .L.w as $W | .L.h as $H |
+    def cell: {t: "p", i} + (if .a == true then {a} elif has("l") then {l} else {} end);
+    [.L | .. | objects | select(.t == "p")] as $leafs
+    | ($leafs | map(select($col[.I] != null)) | group_by($col[.I]) | map(sort_by(.y, .i)) | sort_by(map(.i) | min)) as $cols
+    | ($leafs | map(select($col[.I] == null))) as $popups
+    | ($cols | length) as $n | (($W - $n + 1) / $n | floor) as $e
+    | [range($n) as $j | $cols[$j] as $cc | ($cc | length) as $m | (($H - $m + 1) / $m | floor) as $fh
+        | ($j * ($e + 1)) as $x | (if $j == $n - 1 then $W - ($n - 1) * ($e + 1) else $e end) as $w
+        | if $m == 1 then ($cc[0] | cell) + {w: $w, h: $H, x: $x, y: 0}
+          else {t: "v", w: $w, h: $H, x: $x, y: 0, c: [range($m) as $q | ($cc[$q] | cell)
+            + {w: $w, x: $x, y: ($q * ($fh + 1)), h: (if $q < $m - 1 then $fh else $H - ($m - 1) * ($fh + 1) end)}]} end] as $cells
+    | {V: 2, L: (if ($cells + $popups | length) == 1 then $cells[0]
+        else {t: "h", w: $W, h: $H, x: 0, y: 0, c: ($cells + $popups)} end)}')
+    tmux select-layout -t "$win" "$out"
+    for p in $reals; do tmux set -pu -t "$p" @zen_float; tmux set -pu -t "$p" @zen_col; done
     exit 0
 fi
 [ "$(tmux display -p -t "$win" '#{window_zoomed_flag}')" = 1 ] && exit 0
+for p in $(tmux list-panes -t "$win" -f "#{&&:$real,#{!=:#{@zen_float},1}}" -F '#{pane_id}'); do
+    tmux set -p -t "$p" @zen_float 1
+done
 
-# The lone pane's border is hidden by its own option (the seam to a spacer
-# is drawn in the active pane's style); the header text is `nohidden`.
+# The lone pane's seams to the spacers are drawn in its own active style, so
+# they go with `hidden` set on it; the header and frame go with the window's
+# `pane-border-status off` (tmux.conf's `@lone` hook).
 if [ "$(printf '%s\n' "$reals" | grep -c .)" -eq 1 ]; then
     tmux set -p -t "$reals" pane-active-border-style hidden
 else show_borders; fi
 
-# The whole strip is one `select-layout` of the frames build's JSON layout
-# (`window_layout`, "V":2): every leaf carries its pane index (`i`), so any
-# pane goes in any cell, and the active pane (`a`) and the last-pane order
-# (`l`) are set in the same call. Floating panes (popups, `z`) ride along
-# unchanged, as the parser needs a cell per pane. The geometry is compared
-# first, so apply is a fixed point: a layout that fits does nothing.
+# The whole carousel is one `select-layout` of the frames build's JSON
+# layout (`window_layout`, "V":2): every leaf carries its pane index (`i`),
+# so any pane goes in any cell. The tiling is spacer | active column |
+# spacer, the column a `v` stack when it holds more than one pane; every
+# other column floats (`z`) at the active column's size — the previous one
+# left of it and the next one right of it, clipped by the window edge, the
+# rest off-screen at x = width + 2. A float's x/y/w/h are its content, so
+# they copy the active pane's content: on a `separate` border type that is
+# the cell less its left frame column and top and bottom rows (measured:
+# a 60x30 cell holds 59x28). A pane's column is `@zen_col`; a pane without
+# one is new: in a `v` container it joins a sibling's column (the active
+# pane's when its siblings are containers, a full-width -fv), else it is a
+# column of its own — the jq prints `col PANE COL` lines before the layout.
+# Within a column the order is the current top-to-bottom order, and the
+# centre keeps its heights (a split or a drag) when they still fill the
+# window, else shares it equally; floats always share equally. Popups ride
+# along unchanged, as the parser needs a cell per pane. The geometry is
+# compared first, so apply is a fixed point.
 pct=$(tmux show -gqv @zen-width); pct=${pct:-50}
-sp=$(printf '%s\n' "$spacers" | grep . | while read -r p; do tmux display -p -t "$p" '#{pane_index}'; done | tr '\n' ',')
-out=$(tmux display -p -t "$win" '#{window_layout}' | jq -r --argjson pct "$pct" --argjson sp "[${sp%,}]" '
+case $(tmux display -p -t "$win" '#{pane-border-type}') in separate*) sep=1 ;; *) sep=0 ;; esac
+out=$(tmux display -p -t "$win" '#{window_layout}' | jq -r --argjson pct "$pct" --argjson sep "$sep" \
+    --argjson sp "[$(idx '#{@zen_spacer}')]" --argjson col "$(cols '')" '
 .L.w as $W | .L.h as $H |
 def geo: [.. | objects | select(.t == "p") | {i, w, h, x, y, a: (.a == true)}] | sort_by(.i);
-def col(ps; x; w): (ps | length) as $n
-  | if $n == 1 then ps[0] + {w: w, h: $H, x: x, y: 0}
-    else {t: "v", w: w, h: $H, x: x, y: 0, c: [(($H - $n + 1) / $n | floor) as $e | range($n) as $j
-      | ps[$j] + {w: w, x: x, y: ($j * ($e + 1)), h: (if $j == $n - 1 then $H - ($n - 1) * ($e + 1) else $e end)}]} end;
+def cell: {t: "p", i} + (if has("l") then {l} else {} end);
 [.L | .. | objects | select(.t == "p")] as $leafs
-| ($leafs | map(select(has("z")))) as $float
-| ($leafs | map(select(.a == true)) | .[0].i) as $act
-| ($leafs | map(select(has("z") | not)) | sort_by(.i)
-    | map({t: "p", i} + (if has("l") then {l} else {} end))) as $tiled
-| ($tiled | map(select(.i as $i | $sp | index($i) != null))) as $spc
-| ($tiled | map(select(.i as $i | $sp | index($i) == null))) as $reals
-| ($reals | map(.i) | index($act)) as $k
-| if $k == null then "skip" else
-  $reals[:$k] as $L | $reals[$k + 1:] as $R
-  | (if ($L | length) == 0 then 1 else 0 end) + (if ($R | length) == 0 then 1 else 0 end) as $need
-  | if ($spc | length) != $need then "spacers \($need - ($spc | length))" else
-    ($W * $pct / 100 | floor) as $c | ($W - $c - 2) as $rem | ($rem / 2 | floor) as $l | ($rem - $l) as $r
-    | {V: 2, L: {t: "h", w: $W, h: $H, x: 0, y: 0, c: ([
-        (if ($L | length) == 0 then $spc[0] + {w: $l, h: $H, x: 0, y: 0} else col($L; 0; $l) end),
-        ($reals[$k] + {w: $c, h: $H, x: ($l + 1), y: 0, a: true}),
-        (if ($R | length) == 0 then $spc[-1] + {w: $r, h: $H, x: ($l + $c + 2), y: 0} else col($R; $l + $c + 2; $r) end)
-      ] + $float)}} as $new
-    | if (. | geo) == ($new | geo) then "same" else $new | tojson end
-  end end')
+| ($leafs | map(select(.a == true)) | .[0].I) as $act
+| ($leafs | map(select(.i as $i | $sp | index($i) != null)) | sort_by(.i) | map(cell)) as $spc
+| ($leafs | map(select(.i as $i | ($sp | index($i) == null) and $col[.I] == null))) as $popups
+| ([.L | select(.t == "p") | {I, pt: "h", sib: []}]
+   + [.L | .. | objects | select(has("c")) | .t as $pt | (.c | map(select(.t == "p") | .I)) as $sib
+      | .c[] | select(.t == "p" and $col[.I] != null) | {I, pt: $pt, sib: $sib}]) as $rl
+| (reduce $rl[] as $l ($col; if .[$l.I] != "" or $l.pt == "v" then . else . + {($l.I): $l.I} end)) as $c1
+| (reduce $rl[] as $l ($c1; if .[$l.I] != "" then . else . as $m
+     | . + {($l.I): (([$l.sib[] | $m[.] // "" | select(. != "")] | first) // (if $m[$act] // "" != "" then $m[$act] else $l.I end))} end)) as $cmap
+| ($leafs | map(select($cmap[.I] != null)) | group_by($cmap[.I]) | map(sort_by(.y, .i)) | sort_by(map(.i) | min)) as $cols
+| ($cols | map(map(.I) | index($act) != null) | index(true)) as $k
+| ($cmap | to_entries[] | select($col[.key] == "") | "col \(.key) \(.value)"),
+  if $k == null then "skip" elif ($spc | length) != 2 then "spacers \(2 - ($spc | length))" else
+  ($cols | length) as $n | $cols[$k] as $ac | ($ac | length) as $m
+  | ($W * $pct / 100 | floor) as $c | ($W - $c - 2) as $rem | ($rem / 2 | floor) as $l
+  | ($l + 1 + $sep) as $ax | ($c - $sep) as $aw | ($H - 1 - $sep) as $ah
+  | (if ($ac | map(.h) | add) + $m - 1 == $H then ($ac | map(.h))
+     else [range($m) | if . < $m - 1 then (($H - $m + 1) / $m | floor) else $H - $m + 1 - ($m - 1) * (($H - $m + 1) / $m | floor) end] end) as $hs
+  | (if $m == 1 then ($ac[0] | cell) + {w: $c, h: $H, x: ($l + 1), y: 0, a: true}
+     else {t: "v", w: $c, h: $H, x: ($l + 1), y: 0, c: [range($m) as $q | ($ac[$q] | cell)
+       + {w: $c, h: $hs[$q], x: ($l + 1), y: (($hs[:$q] | add // 0) + $q)} + (if $ac[$q].I == $act then {a: true} else {} end)]} end) as $centre
+  | {V: 2, L: {t: "h", w: $W, h: $H, x: 0, y: 0, c: ([
+      ($spc[0] + {w: $l, h: $H, x: 0, y: 0}), $centre,
+      ($spc[1] + {w: ($rem - $l), h: $H, x: ($l + $c + 2), y: 0})
+    ] + ([range($n) as $j | select($j != $k)
+      | (if $j == ($k + 1) % $n then $ax + $aw + 2
+         elif $j == ($k + $n - 1) % $n then $ax - $aw - 2 else $W + 2 end) as $x
+      | $cols[$j] as $cc | ($cc | length) as $m2 | (($ah - $m2 + 1) / $m2 | floor) as $fh
+      | range($m2) as $q | ($cc[$q] | cell)
+        + {w: $aw, x: $x, y: (1 + $q * ($fh + 1)), h: (if $q < $m2 - 1 then $fh else $ah - ($m2 - 1) * ($fh + 1) end)}]
+      | to_entries | map(.value + {z: .key})) + $popups)}} as $new
+  | if geo == ($new | geo) then "same" else $new | tojson end
+end')
+printf '%s\n' "$out" | grep '^col ' | while read -r _ p c; do tmux set -p -t "$p" @zen_col "$c"; done
+out=$(printf '%s\n' "$out" | tail -n 1)
 case $out in
 skip | same) exit 0 ;;
 "spacers "*)
-    # A spacer is a full-height split running `sleep`; the split or kill fires
-    # the layout hook, whose run builds the strip.
+    # A spacer is a split running `sleep` (not `-f`: on a `separate` border
+    # type it finds "no space" beside a 2-column cell); the split or kill fires
+    # the layout hook, whose run builds the carousel.
     n=${out#spacers }
     while [ "$n" -gt 0 ]; do
-        s=$(tmux split-window -f -h -d -P -F '#{pane_id}' -t "$win" -l 2 'sleep 2147483647') || exit 0
+        s=$(tmux split-window -h -d -P -F '#{pane_id}' -t "$win" -l 2 'sleep 2147483647') || exit 0
         tmux set -p -t "$s" @zen_spacer 1
         tmux set -p -t "$s" pane-border-format ''
         n=$((n - 1))

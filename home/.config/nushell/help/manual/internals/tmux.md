@@ -71,7 +71,7 @@ updates the `terminal-features` option (visible in `tmux show -s`) but an
 already-attached client keeps the set it was attached with — reloading is not
 enough, the client must detach and come back. Check the live value with
 `tmux display -p '#{client_termfeatures}'`; `hyperlinks` and `sync` have to
-be in it. The chezmoi reload hook names every client missing `sync`.
+be in it. The deploy reload hook names every client missing `sync`.
 
 ### `escape-time 10`
 
@@ -407,10 +407,22 @@ harder to see than a missing shell.
 ## F5 — the cockpit
 
 `F5` opens the cockpit, laid out as [which-key.nvim]: a popup the pickers'
-width, centred, its bottom edge on theirs, listing the keys in columns as
-`k ➜ icon label`. The key's letter is lit inside its label where it occurs
-(`c ➜ copy mode`), actions come before `+`groups, a `»` breadcrumb names the
-group you are in, and the help line is last. `~/.local/bin/cockpit` reads
+width — half the client **plus one cell**, so its content matches the zen
+centre shell's content exactly: the popup opens `-B`, the box it shows is the
+frame's own, and that box sits inside its `-w` (two columns) the way a pane's
+`separate` border takes only its cell's left column (the right one is the
+neighbour's), so both land on `floor(W/2) - 1` — centred, its bottom edge on
+theirs, in a **rounded box the frame draws itself** (colour8, the pickers'
+own arrangement): this tmux build's `display-popup -b rounded` draws square
+corners — `rounded` and `double` both render `┌─┐`, measured — so the box
+is ours and `modal` keeps `-b rounded` only where a program draws none of
+its own. **No title**: the line the `»` breadcrumb used to hold stays as
+blank padding. The keys sit in **evenly gapped** columns — left pad, right
+pad and every gap between columns one width, `(W − cols·colw)/(cols+1)`,
+the division's remainder spread over the leftmost gaps so no two gaps
+differ by more than a cell — as `k ➜ icon label`. The key's letter is lit
+inside its label where it occurs (`c ➜ copy mode`), actions come before
+`+`groups, and the **centred** help line is last. `~/.local/bin/cockpit` reads
 `~/.config/tmux/cockpit.json`: each key path maps to `label`, `icon` and at
 most one action, and an entry with no action is a group. The action says
 where it runs: `tmux` is a tmux command, `popup` a shell command in the
@@ -429,11 +441,12 @@ popup's shell.
 "gL": {"label": "lazygit", "icon": "", "popup": "lazygit"},
 "gp": {"label": "pull", "icon": "", "shell": "git pull"}
 ``` A group's key redraws in place, `Backspace` goes up, `Escape` closes,
-an action's key closes the popup and runs its command. The chezmoi reload
+an action's key closes the popup and runs its command. The deploy reload
 hook re-sources tmux.conf when either file changes.
 
-**One frame on open, none after.** A popup is a process, so tmux paints its
-box before the program's first frame; a native `display-menu` would avoid
+**One frame on open, none after.** A popup is a process, so tmux paints it
+blank before the program's first frame — box included, since the frame
+draws it; a native `display-menu` would avoid
 that, but a menu is one column with the key pushed to the far right, and the
 columns are the point. Every step after the open is one synchronized redraw
 inside the same process, so a group or `Backspace` never shows the panes.
@@ -450,8 +463,9 @@ inside the same process, so a group or `Backspace` never shows the panes.
   passthrough); wezterm.lua's `user-var-changed` maps the name to an action.
 - orly checks: `cockpit_wired` — tmux.conf parses and binds F5 to cockpit,
   every row has four fields, an icon and a group, every `wez` name is mapped.
-  `cockpit_whichkey` — the drawn frames have columns, lit keys, actions before
-  groups, the breadcrumb and the help line, and group/`Backspace` move.
+  `cockpit_whichkey` — the drawn frames have the rounded box, blank title
+  line, uniform line widths, equalized gaps, a centred help line, lit keys,
+  actions before groups, and group/`Backspace` move.
   `no_flicker` — on a real client, F5, a group key and `Backspace` each keep
   the whole border in every synchronized frame.
 
@@ -502,64 +516,105 @@ fixed point of the sweep, only of the group it reached).
 
 `F5 w z`, the cockpit's `w z` (`zen`), runs `~/.local/bin/tmux-zen toggle`:
 it flips the global `@zen` and refits every window on the server. On, every
-window is a strip: the active pane centred at `@zen-width` percent (50) of
-the window, the panes before it (by pane index) stacked in a column on the
-left, the panes after it in a column on the right, a blank spacer pane on a
-side with nothing; a lone pane has no border. `F5 →` / `F5 ←` run `tmux-zen
-next` / `prev`, which select the next or previous pane of the strip and so
-bring it to the centre, with no move mode. `set -g @zen 1` starts it on.
+window is a carousel of columns: the active column centred at `@zen-width`
+percent (50) of the window, every other column the same size — the previous
+one (by first pane index, wrapping) left of it and the next one right of it,
+dimmed and cut off by the window edges, the rest off-screen. A pane's column
+is the pane option `@zen_col`: a pane without one is new, and joins a
+sibling's column when the split put it in a `v` container (a top/bottom
+split; the active pane's column for a full-width `-fv`, whose siblings are
+containers), else starts its own. In zen the Shift splits (cockpit and
+`jump`) drop `-f`: a whole-window split beside the floats fails with `no
+space for a new pane` on a `separate` border, and the refit places the pane
+by column anyway. `F5 →` / `F5 ←` run `tmux-zen next` / `prev`, which
+select the first pane of the next or previous column and so bring it to the
+centre, and arm move mode (the `jump` table), whose ←/→ run the same
+`tmux-zen prev` / `next` behind an `if -F '#{@zen}'` — Left Left Left
+Enter; ↑/↓ walk the centre stack. `set -g @zen 1` starts it on. Off, the
+spacers go, `@zen_col` is unset and the columns are tiled side by side
+again, each column's panes at equal heights.
 
-- **The strip is one `select-layout`.** The frames build's `window_layout`
-  is JSON (`"V":2`): every leaf carries its pane index (`i`), so any pane can
-  go in any cell regardless of list order, and the active pane (`a`) and the
-  last-pane order (`l`, kept from the current layout so `select-pane -l`
-  still works) are set in the same call. `tmux-zen apply` reads the current
-  layout, builds the target with `jq`, and applies it only when the leaf
-  geometry differs — a fixed point, since its own call fires the hook again.
-  Floating panes (popups, `z`) are carried over unchanged: the parser wants a
-  cell per pane, and dropping one is "have N panes but need M".
-- **An empty side is a spacer pane.** tmux has no margins. A spacer is a full
-  height (`split-window -f`) pane running `sleep`, with `@zen_spacer 1` and an
-  empty `pane-border-format` (both are pane options); its width is set by the
-  layout like any other cell. Apply makes or kills spacers to the count the
-  strip needs and stops there; the split or kill fires the layout hook, whose
-  run builds the strip. The bar's process chip is
-  `#(~/.local/bin/tmux-zen procs)`, which skips them. TRAP: a format inside
-  that `#()` is expanded twice (`@procs` is read through `E:`), and a comma
-  in it splits the `#{?window_end_flag,…}` around it — the chip printed the
-  tail of its own filter.
+- **The carousel is one `select-layout`.** The frames build's
+  `window_layout` is JSON (`"V":2`): every leaf carries its pane index
+  (`i`), so any pane can go in any cell regardless of list order, and the
+  active pane (`a`) and the last-pane order (`l`, kept from the current
+  layout so `select-pane -l` still works) are set in the same call. The
+  tiling is spacer | active column | spacer, the column a `v` cell of its
+  panes in their current top-to-bottom order, at the heights a split or a
+  drag left when they still fill the window, else equal; every pane of
+  every other column is a floating leaf (`z`) in the same call, the
+  column's panes stacked at equal heights. `tmux-zen apply` reads the
+  current layout, builds the target with `jq` — which also prints the
+  `@zen_col` of each new pane for the shell to set — and applies it only
+  when the leaf geometry differs — a fixed point, since its own call fires
+  the hook again.
+- **The neighbours are floating panes past the window edge.** A floating
+  pane's `x` may be negative or beyond the width, and the redraw clips it at
+  the window edge (`redraw_pane_to_scene`), so a neighbour at the active
+  pane's size shows only its inner half and never reflows. A float's
+  `x/y/w/h` are its content, so they copy the active pane's content: on the
+  `separate-active` border type a 60x30 cell holds 59x28 (the left frame
+  column, top and bottom rows). The left one ends two columns before the
+  active content, the right one starts two after, so the active frame is
+  whole between them; the rest sit at `x = width + 2`. A window resize
+  clamps floats inside the window; the layout hook refits them.
+- **A zen float is not a popup.** Every pane zen floats is marked
+  `@zen_float 1` while it is still tiled, so the `real` filter reads "not a
+  spacer, and tiled or zen-floated". Turning zen off tiles them back in
+  index order and unsets the mark.
+- **The sides are spacer panes.** tmux has no margins, and a tiling must
+  fill the window. A spacer is a split (`split-window -h`, not `-f`: on a
+  `separate` border type `-f` answers "no space" beside a 2-column cell)
+  running `sleep`, with `@zen_spacer 1` and an empty `pane-border-format`
+  (both are pane options); its width is set by the layout like any other
+  cell. Apply makes or kills spacers to two and stops there; the split or
+  kill fires the layout hook, whose run builds the carousel. Killing the
+  last real pane leaves only spacers, so that run kills the window, as
+  the last pane's death does without zen. The bar's
+  process chip is `#(~/.local/bin/tmux-zen procs)`, which skips them. TRAP:
+  a format inside that `#()` is expanded twice (`@procs` is read through
+  `E:`), and a comma in it splits the `#{?window_end_flag,…}` around it —
+  the chip printed the tail of its own filter.
 - **A popup is a pane.** On the frames build `display-popup` — F5 itself —
   is a floating pane in the window (`pane_floating_flag`), and it fires
   `window-layout-changed`; counted as real, it made the middle 1 column
-  wide. Every listing in `tmux-zen` filters `@zen_spacer` and
-  `pane_floating_flag` together; stock tmux has no such pane and the unknown
-  variable is empty. While a popup is the active pane apply does nothing
-  (the layout's `a` is on the popup, which is not in the strip).
-- **The border goes with `pane-active-border-style hidden`** set on the
-  lone pane itself (a pane option on this build): the seam between it and a
-  spacer is drawn in the active pane's style, and `hidden` is the same SGR 8
-  that blanks inactive seams. The header stays, being `nohidden`. Leaving
-  zen or splitting unsets it (`set -pu`) on every real pane.
-- **The hooks are `window-layout-changed` and `after-select-pane`**, both
-  `run-shell -b` behind an `if -F '#{@zen}'`: with zen off a focus change or
-  resize forks nothing (`toggle` runs `apply` on every window itself, so the
-  spacers still go when it turns off). One split fires the first several times at once (measured
-  four runs building spacers side by side), so the lock is an atomic `mkdir`
-  under `$TMPDIR` named by server pid and window; a later run waits its
-  turn, up to ten seconds, since it may be the one that saw the newest
-  layout. TRAP: it used to give up after one second; at load average 40 one
-  tmux command takes a second, the split's run gave up, and the spacers
-  stayed beside two panes. A zoomed window is left alone.
+  wide. Every listing in `tmux-zen` skips spacers and floating panes that
+  are not `@zen_float`; stock tmux has no such pane and the unknown variable
+  is empty. While a popup is the active pane apply does nothing (the
+  layout's `a` is on the popup, which is not in the carousel).
+- **A lone pane has no border, zen or not.** `@lone` in tmux.conf counts the
+  window's real panes in one format (`#{P:…}`); the layout and new-window
+  hooks set the window's `pane-border-status off` and `pane-border-type
+  joined` when it is one and unset both when it is not, each guarded by the
+  current value because the set relayouts and fires the hook again. In zen
+  the seams to the spacers are drawn in the lone pane's active style, so
+  apply also sets `pane-active-border-style hidden` on it (a pane option on
+  this build); leaving zen or splitting unsets it on every real pane.
+- **The hooks are `window-layout-changed`, `after-new-window`,
+  `after-new-session` and `after-select-pane`**, the zen ones `run-shell -b`
+  behind an `if -F '#{@zen}'`: with zen off a focus change or resize forks
+  nothing (`toggle` runs `apply` on every window itself, so the spacers
+  still go when it turns off). TRAP: `new-window` fires no
+  `window-layout-changed` (measured: only `after-new-window`, attached or
+  not), so a window opened with zen on stayed a full-width pane with a frame
+  until its first split or focus change. One split fires the layout hook
+  several times at once (measured four runs building spacers side by side),
+  so the lock is an atomic `mkdir` under `$TMPDIR` named by server pid and
+  window; a later run waits its turn, up to ten seconds, since it may be the
+  one that saw the newest layout. TRAP: it used to give up after one second;
+  at load average 40 one tmux command takes a second, the split's run gave
+  up, and the spacers stayed beside two panes. A zoomed window is left
+  alone.
 - **Focus never rests on a spacer.** `pane-focus-in` cannot move focus (it
   runs after the fact and the `select-pane -l` in it is dropped); an
   `after-select-pane` hook can, and it fires for its own `select-pane -l`
   too, which lands on a real pane and ends there. Move mode's arrows and a
-  mouse click both go through `select-pane`, so both refit.
+  mouse click both go through `select-pane`, so a click on a neighbour
+  brings it to the centre.
 - The cockpit popup is half the client wide, zen or not, and the menu takes
   more rows.
 - Known ceiling: tmux-resurrect restores a spacer as a shell. After a reboot
-  restore, `F5 w z` off and on rebuilds them. Turning zen off leaves the
-  strip layout as it is; `F5 p r` evens it out.
+  restore, `F5 w z` off and on rebuilds them.
 
 ## Pickers: shown once drawn
 
@@ -849,13 +904,30 @@ redraw — the modal's top border blinked on each header tick, broken in 87 of
 ~155 frames with F5 s c open at 168×54, and whole in every frame after opening with
 the bar at the bottom. Upstream removed popups (2026-09-21) instead. Left to right: the **mode chip**, as in nvim —
 COCKPIT while F5's popup is up, JUMP in move mode, COPY in copy mode, ZEN
-with zen on, else NORMAL; the clock; **`tmux-sys`** — CPU, memory and GPU as a
-five-cell bar plus percent; VRAM as a bar plus used/max GB — the unified
+with zen on, else NORMAL — **one colour per mode**: `@mode-col` mirrors `@mode`'s
+own conditions (the two can never disagree) and expands inside the chip's
+`#[…]`, where format expansion runs before the style parser — the same
+mechanism as `@procs`. colour5 COCKPIT, colour6 JUMP, colour3 COPY, the
+foreground colour7 for quiet ZEN, the accent colour4 for NORMAL; reverse
+video in every mode, inline ANSI slots, so tinty retints it with the rest and
+`colors.conf` cannot move it; the clock; **`tmux-sys`** — the real disk fill
+as the bar's one **double-resolution gauge**, the GB still free right after
+it: ten cells of 10% against the five-cell bars' 20%, every cell full or
+empty — a
+half-full disk is where the day actually changes. TRAP: the source is
+`df -k /System/Volumes/Data`, never `df -k /` — on macOS `/` is the sealed
+system snapshot and df answers ITS fill (measured 16% while the Data volume
+read 86%), which shows as an inverted-looking bar; the Data volume is what
+Finder shows, and APFS still counts purgeable space as available, so the bar
+can read slightly under Finder's;
+CPU, memory, GPU and VRAM as five-cell bars; every gauge's label
+in front and its percent centred inside: a gauge is two flat shades, no
+block characters — full cells bg colour8 with colour0 text, empty cells bg
+colour18 (base01, the one slot past 15 that theme.sh paints) with colour8 text; VRAM is the unified
 memory the GPU holds (`ioreg`'s "In use system memory"; Apple Silicon has no
 separate VRAM) over Metal's `recommendedMaxWorkingSetSize`, cached in
 `$TMPDIR/tmux-sys.gpumax` until `iogpu.wired_limit_mb` changes; and the default interface's download/upload in
-Mbit/s since the previous tick, every field fixed width so the chip and digits
-never shift; and at the right every window's number, the current one in the accent, its digits bold and underlined, then
+Mbit/s since the previous tick; the gauges and the net fields are fixed width so nothing shifts; and at the right every window's number, the current one in the accent, its digits bold and underlined, then
 the server's process count — `list-panes -a`, one `#()` per status tick — as
 a reverse-video chip, drawn once by the last window's format
 (`window_end_flag`) because `status-right` must stay empty for
@@ -936,8 +1008,9 @@ the `$HOME` reaches the format literally, nothing matches, and the row prints
 the full `/Users/...` path with no error to say why — measured 2026-09-01 while
 building the cwd segment. It is why both arms of the SSH test are double-quoted.
 
-Every pane keeps its top border label visible; the `window-layout-changed`
-hook only refits zen mode and never touches the labels.
+Every pane keeps its top border label visible, except a lone pane: the
+`@lone` hook turns the window's border status off while it holds one real
+pane ("F5 w z — zen mode").
 
 ## Claude's state is no longer drawn
 

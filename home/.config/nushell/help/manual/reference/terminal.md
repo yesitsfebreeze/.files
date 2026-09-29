@@ -17,7 +17,9 @@ Every entry links to where the guide explains it.
 | `F5 w q` | Close this pane | terminal | [Move around windows and panes](../guide/windows.md#f5-w-q) |
 | `F5 <arrow>` | Move mode: walk, split and close panes until Enter | terminal | [Move around windows and panes](../guide/windows.md#f5-arrow) |
 | `F5 p r` | Even the panes out, every level of the layout | terminal | [Move around windows and panes](../guide/windows.md#f5-p-r) |
-| `F5 w z` | Zen: the active pane centred, the rest as previews beside it | terminal | [Move around windows and panes](../guide/windows.md#f5-w-z) |
+| `F5 w z` | Zen: one pane centred, its neighbours dimmed and cut off beside it | terminal | [Move around windows and panes](../guide/windows.md#f5-w-z) |
+| `Cmd+← / Cmd+→` | Step to the previous or next window | terminal | [Move around windows and panes](../guide/windows.md#cmd-cmd) |
+| `a lone pane` | A window with one pane has no border | terminal | [Move around windows and panes](../guide/windows.md#a-lone-pane) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
 | `F5 c` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |

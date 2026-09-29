@@ -120,17 +120,31 @@ See also: [`F5`](./windows.md#f5) · [`F5 <arrow>`](./windows.md#f5-arrow)
 
 ## `F5 w z`
 
-**Zen: the active pane centred, the rest as previews beside it**
+**Zen: one pane centred, its neighbours dimmed and cut off beside it**
 
 *terminal*
 
-Press `F5 w z` and zen mode is on for every window: the active pane sits centred at half the screen width, the panes before it stacked in a column on the left, the panes after it in a column on the right, blank space on a side with nothing. A lone pane has no border. `F5 →` and `F5 ←` bring the next or previous pane to the centre at once; a click or a split does the same for the pane it lands on. The cockpit is half the screen wide and grows down. `F5 w z` again turns it off. `set -g @zen 1` in tmux.conf starts it on, `@zen-width` changes the half.
+Press `F5 w z` and zen mode is on for every window: the active column sits centred at half the screen width, and every other column is the same size — the previous one to its left and the next one to its right, dimmed and cut off by the screen edges, the rest out of sight. A split left or right (Shift or Alt with ←/→) starts a new column; a split up or down stacks a pane inside the column you are in, where ↑/↓ walk the stack. `F5 →` and `F5 ←` cycle through the columns, wrapping at the ends, and leave you in move mode: keep pressing ← or → until the column you want is centred, then Enter; a click on a neighbour or a split brings that column to the centre. The cockpit is half the screen wide and grows down. `F5 w z` again turns it off and tiles the columns side by side. `set -g @zen 1` in tmux.conf starts it on, `@zen-width` changes the half.
 
 > **Why it is this way**
 >
-> tmux has no margins, so an empty side is a blank spacer pane, full height, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. The strip is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call, so nothing is resized step by step. The layout and select-pane hooks refit after every split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. Zoom is left alone.
+> tmux has no margins, so the two sides of the centre are blank spacer panes, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. Each pane's column is the pane option `@zen_col`: a new pane in a top/bottom split joins its sibling's column, any other starts its own. The centre is the active column's panes stacked (a `v` cell) at the heights the split or a drag left; every pane of every other column is a floating pane of the frames build, marked `@zen_float`, the column's panes stacked at equal heights within the active column's content size; a floating pane may sit past the window edge and is clipped there, which is what cuts the neighbours off and keeps every column the same size, so nothing reflows as you cycle. In zen a Shift split is the plain pane split, not the whole-window one: `split-window -f` beside the floats fails with `no space for a new pane` on a `separate` border, and the refit places the pane by column anyway. Inactive panes are dimmed by `window-style` as everywhere. The carousel is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call. The layout, new-window and select-pane hooks refit after every new window, split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. TRAP: `new-window` fires no `window-layout-changed`, so without `after-new-window` a window opened with zen on stayed unfitted until its first split. Zoom is left alone.
 
 See also: [`F5 p r`](./windows.md#f5-p-r) · [`F5 <arrow>`](./windows.md#f5-arrow)
+
+## `Cmd+← / Cmd+→`
+
+**Step to the previous or next window**
+
+*terminal*
+
+Cmd+← goes to the previous tmux window, Cmd+→ to the next; both wrap at the ends. The bar's window numbers show where you are.
+
+> **Why it is this way**
+>
+> WezTerm keeps only local chrome, so it binds nothing itself: it relays Cmd+arrow as Ctrl+Alt+Shift+arrow (`CSI 1;8D` / `CSI 1;8C`), a chord no program here uses, and tmux maps that to `previous-window` / `next-window`.
+
+See also: [`the status bar`](./windows.md#the-status-bar)
 
 ## Read the bar across the top
 
@@ -143,6 +157,20 @@ Nothing to press. The left of the bar is the mode — NORMAL, COCKPIT while `F5`
 > Background says which window has focus, foreground says which windows are busy — two signals that never have to be decoded out of one channel. A window counts as busy when any of its panes is running something that is not a shell, read from the pane's foreground process rather than from prompt marking, which is deliberately off. There is no key legend on the bar: the digits are the legend, and a legend in words was tried and removed as noise. The colours are ANSI slots, never fixed values, so a theme switch retints the bar with everything else.
 
 See also: [`F5`](./windows.md#f5)
+
+## `a lone pane`
+
+**A window with one pane has no border**
+
+*terminal*
+
+Nothing to press. A window holding one pane shows it with no frame and no header, zen or not; split it and the frames and headers come back.
+
+> **Why it is this way**
+>
+> `@lone` counts the window's panes that are not zen spacers or popups inside one tmux format (`#{P:…}`); the layout and new-window hooks set the window's `pane-border-status off` and `pane-border-type joined` when it is one and unset both when it is not. No fork, and each set is guarded by the current value, since the set itself relayouts and fires the hook again.
+
+See also: [`F5 w z`](./windows.md#f5-w-z)
 
 ## Close the terminal without losing your work
 

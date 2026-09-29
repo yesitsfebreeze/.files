@@ -127,8 +127,8 @@ if [[ -n "$CONF" ]]; then
     [[ "$conf"$'\n' == "$old" ]] || { mkdir -p "${CONF%/*}"; printf '%s\n' "$conf" > "$CONF"; }
 fi
 
-# OSC 4 slots 0-15 (base16 brights reuse the normal colours), then 10/11/12
-# foreground, background, cursor.
+# OSC 4 slots 0-15 (base16 brights reuse the normal colours), 18 base01 (the
+# tmux-sys gauges' empty cells), then 10/11/12 foreground, background, cursor.
 # TRAP: ESC held as a character, never through `printf %b` — %b doubled a
 # backslash and corrupted every slot after the first (2026-09-01).
 E=$'\033' ST=$'\033\\' seq="" i=0
@@ -136,7 +136,7 @@ for c in "$base00" "$base08" "$base0b" "$base0a" "$base0d" "$base0e" "$base0c" "
          "$base03" "$base08" "$base0b" "$base0a" "$base0d" "$base0e" "$base0c" "${base07:-$base05}"; do
     seq+="$E]4;$i;$c$ST"; i=$((i + 1))
 done
-seq+="$E]10;$base05$ST$E]11;$base00$ST$E]12;$base05$ST"
+seq+="$E]4;18;$base01$ST$E]10;$base05$ST$E]11;$base00$ST$E]12;$base05$ST"
 
 # Sent as tmux PASSTHROUGH into each client's active pane, never written raw
 # to the client tty: a raw write lands in the middle of tmux's own escape

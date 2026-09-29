@@ -1,13 +1,21 @@
 #!/bin/sh
-# tmux-sys — CPU, memory and GPU gauges, GPU memory, and network Mbit/s
+# tmux-sys — disk, CPU, memory, GPU and GPU-memory gauges, and network Mbit/s
 # down/up for the status bar.
 #
 # Called from `status-left` as `#(tmux-sys)`. tmux runs it in the BACKGROUND
 # every `status-interval`, so the ~80 ms per exec this host bills is never a
-# redraw stall. Every field is fixed width so the bar does not jitter.
+# redraw stall. The net fields are fixed width so their digits never shift;
+# each gauge's number sits tight against its bar.
 #
 # CPU is the sum of `ps` %cpu over all cores — a decayed average, not an
 # instantaneous sample. ponytail: `top -l 2` is exact but costs a second a tick.
+# Disk is the real disk fill, read from /System/Volumes/Data — NOT `df -k /`:
+# on macOS `/` is the sealed system snapshot and df answers ITS fill (measured
+# 16% while the Data volume read 86%), which is the inverted-looking bar. The
+# Data volume is what Finder shows; GB left beside the bar. APFS still counts
+# purgeable space as available, so the bar can read under Finder's. Its bar is the one
+# DOUBLE-RESOLUTION gauge: ten cells of 10% against the other gauges' five of
+# 20% — a half-full disk is where the day actually changes.
 # Memory is active + wired + compressed pages over physical RAM, roughly
 # Activity Monitor's "Memory Used".
 # GPU is the accelerator's "Device Utilization %" and VRAM its "In use system
@@ -40,20 +48,20 @@ fi
     vm_stat
     echo --gpu
     ioreg -r -d 1 -c IOAccelerator | grep -o '"\(Device Utilization %\|In use system memory\)"=[0-9]*'
+    echo --disk
+    df -k /System/Volumes/Data
     echo --net
     [ -n "$iface" ] && netstat -ibn -I "$iface" | awk 'NR == 2 { print $7, $10 }'
     echo --prev
     cat "$state" 2> /dev/null
 } | awk -v now="$now" -v gpumax="${gpumax:-0}" -v iface="$iface" -v state="$state" '
-    function bar(p,   s, i, n, f) {
-        n = int(p / 20); if (n > 5) n = 5
-        f = (p - n * 20) / 20; s = ""
-        for (i = 0; i < 5; i++) {
-            if (i < n) s = s "█"
-            else if (i == n) s = s (f < 0.33 ? "░" : f < 0.66 ? "▒" : "▓")
-            else s = s "░"
-        }
-        return s
+    # w cells, each full (bg colour8) or empty (bg colour18, base01 — theme.sh
+    # paints that slot), rounded; the percent is centred across them, dark on
+    # full and bar-coloured on empty.
+    function bar(p, w,   n, t) {
+        n = int(p * w / 100 + 0.5); if (n > w) n = w
+        t = sprintf("%d%%", p); t = sprintf("%*s%-*s", int((w - length(t)) / 2), "", w - int((w - length(t)) / 2), t)
+        return "#[bg=colour8,fg=colour0]" substr(t, 1, n) "#[bg=colour18,fg=colour8]" substr(t, n + 1) "#[bg=default]"
     }
     NR == 1 { ncpu = $1; next }
     NR == 2 { mem = $1; next }
@@ -63,6 +71,9 @@ fi
     sec == "--vm" && /^Pages (active|wired down|occupied by compressor):/ { gsub(/\./, "", $NF); used += $NF }
     sec == "--gpu" && /Device/ { sub(/.*=/, ""); gpu = $0 }
     sec == "--gpu" && /memory/ { sub(/.*=/, ""); vram = $0 }
+    # df header rows fail the %$ test, so only the mount row lands here;
+    # field 5 is Capacity with the % (iused/%iused sit right of it).
+    sec == "--disk" && $5 ~ /%$/ { dsk = $5 + 0; dfree = $4 }
     sec == "--net" { rx = $1; tx = $2 }
     sec == "--prev" { pt = $1; pif = $2; prx = $3; ptx = $4 }
     END {
@@ -75,5 +86,5 @@ fi
             up = (tx - ptx) * 8 / 1e6 / (now - pt)
         }
         if (iface != "") print now, iface, rx, tx > state
-        printf "cpu %s %3d%%  mem %s %3d%%  gpu %s %3d%%  vram %s %4.1f/%.0fG  ↓%5.1f ↑%5.1f Mb/s\n", bar(c), c, bar(m), m, bar(gpu), gpu, bar(v), vram / 2^30, gpumax / 2^30, down, up
+        printf "disk %s %.0fG  cpu %s  mem %s  gpu %s  vram %s  ↓%5.1f ↑%5.1f Mb/s\n", bar(dsk, 10), dfree / 2^20, bar(c, 5), bar(m, 5), bar(gpu, 5), bar(v, 5), down, up
     }'

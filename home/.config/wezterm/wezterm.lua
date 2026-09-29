@@ -155,6 +155,10 @@ config.keys = {
 	-- client, so closing the tab closes the window; the session detaches.
 	{ key = "q", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
 	{ key = "n", mods = "SUPER", action = act.SpawnWindow },
+	-- Cmd+←/→ step through tmux's windows. WezTerm only relays a key no
+	-- program here binds (Ctrl+Alt+Shift+arrow); tmux.conf maps it.
+	{ key = "LeftArrow", mods = "SUPER", action = act.SendKey({ key = "LeftArrow", mods = "CTRL|ALT|SHIFT" }) },
+	{ key = "RightArrow", mods = "SUPER", action = act.SendKey({ key = "RightArrow", mods = "CTRL|ALT|SHIFT" }) },
 	{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
 	-- Mouse ownership moved to tmux (`mouse on`); its own copy-mode Ctrl+C
 	-- handles select-then-copy now, so this just passes the key through.
