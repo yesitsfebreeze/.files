@@ -25,3 +25,7 @@
 .config_x
 .config/chezmoi
 .chezmoiignore
+.config/tinted-theming/tinty/executable_theme.sh
+.config/wezterm/executable_font.sh
+.config/wezterm/executable_wallpaper.sh
+.config/capsule/executable_setup-credentials.sh
