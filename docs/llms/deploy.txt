@@ -63,6 +63,8 @@ step just installed. A failed package warns; the run continues.
 
 ## hooks/ (repo root)
 
+- install-shell-env.sh — appends the shared cockpit environment loader to
+  bash/zsh startup files, preserving their existing content.
 - generate-shell-init.sh — writes ~/.cache/nushell/init/{zoxide,television}.nu
   from `zoxide init nushell` / `tv init nu`, tmp+mv atomic, truncated (never
   missing) on failure — a missing file would be a parse error in every

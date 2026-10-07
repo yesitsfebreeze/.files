@@ -208,6 +208,7 @@ log "deployed $(walk | wc -l | tr -d ' ') files into $HOME"
 
 # --- 3. Hooks ------------------------------------------------------------------
 for h in \
+    install-shell-env.sh \
     generate-shell-init.sh \
     install-claude-hooks.sh \
     register-mcp.sh \

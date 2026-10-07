@@ -95,3 +95,15 @@ capsule.nu: one container per project dir (docker, image hash-checked
 against the Dockerfile, credentials refreshed by a background job).
 claude.nu: `cc`/`cr` launch Claude Code with profile dirs under ~/.claude.
 pass.nu: completion for the standard password store.
+## Cockpit environment across shells
+
+F5 environment edits are stored as literal KEY=VALUE lines in
+$XDG_STATE_HOME/env/vars (default ~/.local/state/env/vars). Nushell loads
+this in env.nu. Bash and zsh load the same store through
+~/.config/shell/env.sh, installed into .bash_profile, .bashrc and .zshenv
+by hooks/install-shell-env.sh without replacing existing startup files.
+The store wins over inherited values; values are never evaluated as code.
+New shell processes see changes. Existing shells must reload their loader;
+existing GUI processes keep their inherited environment until relaunched
+from a shell with the updated environment. Noninteractive bash children
+inherit the launching shell's environment.
