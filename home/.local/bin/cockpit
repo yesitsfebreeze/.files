@@ -1,42 +1,33 @@
 #!/bin/bash
-# cockpit — F5's which-key: every surface action by mnemonic, laid out as
-# which-key.nvim. A popup the pickers' width, centred, its bottom edge on
-# theirs, in a rounded box the frame draws ITSELF (colour8, like the
-# pickers' own boxes: this tmux's `-b rounded` draws square corners), no
-# title — the breadcrumb's line stays as blank padding — and the keys in
-# evenly gapped columns: left pad, right pad and every gap between columns
-# one width, `k ➜ label`, the key's letter lit inside its label where it
-# occurs, actions before `+`groups, the help line last. A group's key redraws in place,
-# Backspace goes up, Escape closes, an action's key closes and runs it, and
-# an arrow (or Shift+arrow, which splits) closes into move mode (tmux's
-# `jump` table) until Enter, and a digit 1-9 at the top level goes to that
-# window.
+# cockpit — F5's which-key, drawn in the STATUS LINE like VS Code's leader
+# mode: no popup, no second program reading keys. F5 enters the `cockpit` key
+# table; every key in it runs `key`; the menu for the current level is printed
+# by `line`, a status #() job — `k label`, groups marked `+`. A group's key
+# stays in the table and moves the menu one level down (@cockpit-at);
+# Backspace goes up, Escape and Enter close, any UNBOUND key resets the client
+# to root and is dropped (move mode's contract). An arrow closes into move
+# mode (the `jump` table) until Enter, Shift+arrow splits the whole window,
+# Alt+arrow splits the pane, a digit 1-9 at the top level goes to that window.
 #
-#   cockpit CLIENT PANE WIDTH HEIGHT     (F5)
-#   cockpit --pick TSV WIDTH OUT         (inside the popup; writes the path)
-#   cockpit --tsv JSON                   (prints the compiled table)
+#   cockpit gen                        (refresh tsv + key tables)
+#   cockpit key KEY CLIENT PANE SOCKET (every key in the table)
+#   cockpit line AT                    (the status bar's menu)
+#   cockpit --tsv JSON                 (print the compiled table)
 #
 # cockpit.json maps a key path to {label, icon?} plus at most one action;
 # an entry with no action is a group. The action names where it runs:
 #   "tmux":    a tmux command, run against the pane F5 was pressed in
-#   "popup":   a shell command, run in the centred floating terminal;
-#              "border": true boxes it (pickers draw their own box)
-#              "height": N makes it N% tall (85 by default)
+#   "popup":   a shell command, run in the centred floating terminal
+#              (a picker; "border": true boxes it, "height": N is N% tall)
 #   "shell":   text typed into the pane F5 was pressed in, then Enter
 #   "wezterm": a wezterm.lua cockpit action (window, close, bigger, ...)
 # Every string is expanded as a tmux format first, so `#{E:@cwd}` and
-# `#{pane_id}` work anywhere and a literal `#` is written `##`. It is
-# compiled to a TSV cache (key, icon, label, tmux command) when it changes,
-# and the TSV is drawn once per popup width into `cockpit.WIDTH/`: one
-# finished frame per menu (`PATH.f`), the popup height (`h`) and each
-# action's command (`PATH.a`). So F5 forks nothing but the popup: every
-# step is one `read` and one synchronized write. Only the open costs a
-# frame (tmux paints the popup blank before the program's first write —
-# the box included, since the frame draws it).
+# `#{pane_id}` work anywhere and a literal `#` is written `##`.
 # manual → internals/tmux, "F5 — the cockpit".
 set -u
 json=${XDG_CONFIG_HOME:-$HOME/.config}/tmux/cockpit.json
 tsv=${XDG_CACHE_HOME:-$HOME/.cache}/cockpit.tsv
+tables=${tsv%.tsv}-tables.conf
 
 # `tq` escapes typed text for a tmux double-quoted string.
 read -r -d '' jqprog <<'JQ'
@@ -48,188 +39,95 @@ to_entries[] | .value as $v | [.key, ($v.icon // ""), $v.label,
     elif $v.wezterm then "run-shell \"printf '\\\\033]1337;SetUserVar=wez=%s\\\\007' $(printf \($v.wezterm) | base64) > #{client_tty}\""
     else "" end] | join("\t")
 JQ
-[ "${1-}" = --tsv ] && exec jq -r "$jqprog" "$2"
 
-# draw TSV DIR WIDTH: every menu's frame for a popup WIDTH of text wide
-# inside the box it draws, the height the tallest needs, and each action's
-# command — one awk.
-draw() {
-    mkdir -p "$2" && awk -F'\t' -v d="$2" -v w="$3" '
-    { k[NR] = $1; icon[$1] = $2; label[$1] = $3; cmd[$1] = $4
-      if ($4 != "") { f = d "/" $1 ".a"; printf "%s", $4 > f; close(f) } }
-    function rank(c) { return (cmd[c] == "" ? 2 : 0) + (substr(c, length(c)) ~ /[[:alnum:]]/ ? 0 : 1) }
-    # The first occurrence of the key in the label, any case, is lit.
-    function lit(key, t,   i) {
-        i = index(tolower(t), tolower(key))
-        return i ? substr(t, 1, i - 1) "\033[1;4;34m" substr(t, i, 1) "\033[22;24;39m" substr(t, i + 1) : t
-    }
-    function pad(n) { return n > 0 ? sprintf("%" n "s", "") : "" }
-    function rep(s, n,   t) { t = ""; while (n-- > 0) t = t s; return t }
-    function frame(p,   n, cw, r, i, c, cols, rows, out, line, pline, col, j, f, colw, g, gs, b, hl) {
-        n = 0; cw = 0
-        for (r = 0; r < 4; r++) for (i = 1; i <= NR; i++) {
-            c = k[i]
-            if (length(c) != length(p) + 1 || substr(c, 1, length(p)) != p || rank(c) != r) continue
-            n++; key[n] = substr(c, length(c)); plain[n] = (cmd[c] == "" ? "+" : "") label[c]
-            text[n] = "\033[1;34m" key[n] "\033[0m \033[90m➜\033[0m " icon[c] " " \
-                (cmd[c] == "" ? "\033[35m+" lit(key[n], label[c]) "\033[39m" : lit(key[n], label[c]))
-            if (length(plain[n]) > cw) cw = length(plain[n])
-        }
-        # Equalized gaps: left pad, right pad and every gap between columns
-        # are ONE width, (w - cols*colw)/(cols+1) — the menu is centred by its
-        # own whitespace, not packed at the left. The remainder of the
-        # division (always < cols+1 cells) is spread over the leftmost
-        # gaps, so no two gaps differ by more than one cell.
-        colw = cw + 6; cols = int((w - 4) / (colw + 4)); if (cols < 1) cols = 1
-        rows = int((n + cols - 1) / cols); if (rows < 1) rows = 1
-        # cols the fill leaves EMPTY get dropped (rows = ceil(n/cols) can hold
-        # n in cols-1 columns when n is a multiple of rows) — an empty column
-        # would show as one huge right gap once the gaps are equalized.
-        cols = int((n + rows - 1) / rows); if (cols < 1) cols = 1
-        g = int((w - cols * colw) / (cols + 1)); if (g < 1) g = 1
-        rem = (w - cols * colw) % (cols + 1)
-        if (rows > tall) tall = rows
-        # The rounded box is OURS, colour8: this tmux `display-popup -b
-        # rounded` draws SQUARE corners (measured: rounded and double both
-        # render ┌─┐), so the frame draws the box itself and the popup opens
-        # -B, the same arrangement as the pickers. No title: the line the
-        # breadcrumb used to hold stays as blank padding.
-        b = "\033[90m"
-        out = "\033[?2026h\033[?25l\033[H\033[2J" b "╭" rep("─", w) "╮\033[0m\r\n"
-        out = out b "│" pad(w) "│\033[0m\r\n" b "│" pad(w) "│\033[0m\r\n"
-        for (r = 1; r <= rows; r++) {
-            # gap i is one of cols+1 gaps; the first `rem` take the leftover cell.
-            line = pad(g + (0 < rem)); pline = line
-            for (col = 0; col < cols; col++) {
-                j = col * rows + r
-                if (j > n) break
-                line = line text[j] pad(colw - length(plain[j]) - 6) pad(g + (col + 1 < rem))
-                pline = pline plain[j] sprintf("%6s", "") pad(colw - length(plain[j]) - 6) pad(g + (col + 1 < rem))
-            }
-            out = out b "│\033[0m" line pad(w - length(pline)) b "│\033[0m\r\n"
-        }
-        out = out b "│" pad(w) "│\033[0m\r\n"
-        # The help line is centred, not packed left. TRAP: length() counts
-        # BYTES — the "·" seps are two each — so the CHAR count is the byte
-        # length minus one per sep; hl itself carries no leading space.
-        hl = "1-9 window · arrows move · esc close" (p == "" ? "" : " · bs back")
-        _t = hl; hlen = length(hl) - gsub(/·/, "", _t)
-        hlp = int((w - hlen) / 2); if (hlp < 0) hlp = 0
-        out = out b "│\033[0m" pad(hlp) hl pad(w - hlp - hlen) b "│\033[0m\r\n"
-        out = out b "╰" rep("─", w) "╯\033[0m\033[?2026l"
-        f = d "/" p ".f"; printf "%s", out > f; close(f)
-    }
-    END {
-        frame("")
-        for (i = 1; i <= NR; i++) if (cmd[k[i]] == "") frame(k[i])
-        # The tallest menu, the box top and bottom, the blank title line, a
-        # blank line, the help line: tall + 6 rows, every one of them ours.
-        print tall + 6 > (d "/h")
-    }' "$1"
-}
+case ${1-} in
+--tsv) exec jq -r "$jqprog" "$2" ;;
 
-if [ "${1-}" = --pick ]; then
-    d=${2%.tsv}.$3.box p=""
-    # .box: frame format v2 (own rounded box, no title). The frame cache is
-    # also dropped whenever the SCRIPT is newer than it — a draw-code edit
-    # deploys with the next apply and redraws, no version bump needed.
-    # TRAP: $0 here is the literal path the popup command baked in at open.
-    [ -d "$d" ] && [ "$0" -nt "$d" ] && rm -rf "$d"
-    [ -d "$d" ] || draw "$2" "$d" "$3"
-    # Echo off for the whole popup: `read -s` restores it between keys, and an
-    # arrow's escape tail would print over the menu. The tty dies with the popup.
-    stty -echo -icanon 2>/dev/null
-    while :; do
-        IFS= read -r -d '' f < "$d/$p.f"; printf '%s' "$f"
-        IFS= read -rn1 c || exit 0
-        # The rest of an escape sequence arrives in the same write; a lone
-        # Escape times out after 0.1 s (bash 3.2's `read -t` is whole seconds).
-        [ "$c" = $'\e' ] && { stty min 0 time 1; c=$'\e'$(dd bs=8 count=1 2>/dev/null); stty min 1 time 0; }
-        case $c in
-        [1-9]) [ -z "$p" ] && { printf 'w%s' "$c" > "$4"; exit 0; } ;;
-        $'\e[A' | $'\eOA') printf U > "$4"; exit 0 ;;
-        $'\e[B' | $'\eOB') printf D > "$4"; exit 0 ;;
-        $'\e[C' | $'\eOC') printf R > "$4"; exit 0 ;;
-        $'\e[D' | $'\eOD') printf L > "$4"; exit 0 ;;
-        # Shift+arrow splits the whole window (greedy, `-f`), Alt+arrow only
-        # this pane; any other escape would close unrun.
-        $'\e[1;2A') printf fvb > "$4"; exit 0 ;;
-        $'\e[1;2B') printf fv > "$4"; exit 0 ;;
-        $'\e[1;2C') printf fh > "$4"; exit 0 ;;
-        $'\e[1;2D') printf fhb > "$4"; exit 0 ;;
-        $'\e[1;3A') printf vb > "$4"; exit 0 ;;
-        $'\e[1;3B') printf v > "$4"; exit 0 ;;
-        $'\e[1;3C') printf h > "$4"; exit 0 ;;
-        $'\e[1;3D') printf hb > "$4"; exit 0 ;;
-        $'\e'*) exit 0 ;;
-        $'\x7f' | $'\b') p=${p%?} ;;
-        *)  if [ -e "$d/$p$c.f" ]; then p=$p$c
-            elif [ -e "$d/$p$c.a" ]; then printf '%s' "$p$c" > "$4"; exit 0; fi ;;
-        esac
-    done
-fi
-
-client=$1 pane=$2
-# Half the client wide PLUS one cell: a popup's border is INSIDE its -w
-# (two columns), a pane's separate border takes only its cell's left column
-# (the right one is the neighbour's), so this makes the cockpit's content
-# land exactly on the zen centre shell's content: both floor(W/2) - 1.
-# The menu grows down instead.
-w=$(($3 / 2 + 1)) d=${tsv%.tsv}.$(($3 / 2 - 1)).box
-# Recompiled unless the cache is strictly newer, its frames with it; a broken
-# edit keeps the last good table and says so.
-[ "$tsv" -nt "$json" ] || {
+# Recompile when the json or this script is newer than its output, with the key table that
+# binds every key the menu uses; a fresh server only sources the table. A broken edit keeps the last good table.
+gen)
+    if [ "$tsv" -nt "$json" ] && [ "$tables" -nt "$0" ]; then tmux source-file "$tables"; exit 0; fi
     mkdir -p "${tsv%/*}"
-    if jq -r "$jqprog" "$json" > "$tsv.new" 2>/dev/null; then mv "$tsv.new" "$tsv"; rm -rf "${tsv%.tsv}".[0-9]*
-    else tmux display -c "$client" "cockpit: $json does not parse"; fi
-}
-[ -d "$d" ] && [ "$0" -nt "$d" ] && rm -rf "$d"
-[ -d "$d" ] || draw "$tsv" "$d" $((w - 2))
-read -r h < "$d/h"
-# A popup's -y is its bottom line; y is the pickers' (85% tall, centred).
-y=$((($4 - 1) / 2 + $4 * 85 / 100 / 2))
-out=${TMPDIR:-/tmp}/cockpit.$$; : > "$out"; trap 'rm -f "$out"' EXIT
-# `@cockpit` is the bar's COCKPIT mode: the popup's open and close each
-# redraw the bar, so no `refresh-client -S` (that re-runs every `#()` job).
-# TRAP: `display-popup -E` inside a command list opens an empty box. -B: no
-# tmux box — the frame draws its own rounded one (this build's -b rounded
-# draws square corners, measured).
-tmux set -g @cockpit 1
-tmux display-popup -c "$client" -E -B -w "$w" -h "$h" -x C -y "$y" \
-    "bash '$0' --pick '$tsv' $((w - 2)) '$out'"
-# off [\; tmux command...]: the chip off, the bar redrawn, then the rest, one
-# call. TRAP: the client is `-t`; `-c` reads as an adjustment and the list dies.
-off() { tmux set -gu @cockpit \; refresh-client -t "$client" "$@"; }
-read -r key < "$out" || :
-[ -n "$key" ] || { off; exit 0; }
-# An arrow moves that way, Shift+arrow splits the window that way, Alt+arrow
-# splits the pane that way, and each arms move
-# mode (the `jump` table) until Enter.
-# A digit goes to that window of the session, made at ~ when it is missing.
-case $key in
-U | D | L | R)
-    # With zen on, ←/→ step the carousel — the next pane comes to the
-    # centre — and arm move mode too, whose ←/→ keep stepping.
-    case $key$(tmux show -gqv @zen) in
-    L1 | R1)
-        off \; switch-client -c "$client" -T jump
-        # TRAP: exec skips the EXIT trap that rm's the out-file, so rm here
-        # first — else every zen carousel step leaves a cockpit.$$ in TMPDIR.
-        rm -f "$out"
-        [ "$key" = L ] && exec ~/.local/bin/tmux-zen prev "$pane"
-        exec ~/.local/bin/tmux-zen next "$pane" ;;
-    esac
-    off \; select-pane -t "$pane" "-$key" \; switch-client -c "$client" -T jump; exit ;;
-v | vb | h | hb | fv | fvb | fh | fhb)
-    # In zen a whole-window split finds no room beside the floats and the
-    # refit places it anyway: ←/→ start a column, ↑/↓ stack in it.
-    [ "$(tmux show -gqv @zen)" = 1 ] && key=${key#f}
-    off \; split-window -t "$pane" "-$key" -c '#{E:@cwd}' \; switch-client -c "$client" -T jump; exit ;;
-w[1-9])
-    s=$(tmux display -p -t "$pane" '#{session_name}')
-    # `=`: exact index, else `2` prefix-matches a window named `2.1.280`.
-    off \; select-window -t "$s:=${key#w}" 2>/dev/null || tmux new-window -t "$s:${key#w}" -c ~
+    jq -r "$jqprog" "$json" > "$tsv.new" 2>/dev/null \
+        || { tmux display "cockpit: $json does not parse"; exit 1; }
+    mv "$tsv.new" "$tsv"
+    {
+        # Every character of every path, the digits for windows, the editing
+        # keys and the arrows. Escape and Enter close; the rest re-arm the
+        # table in the binding itself, so a fast second key is never dropped.
+        for k in $({ cut -f1 "$tsv" | fold -w1; printf '%s\n' 1 2 3 4 5 6 7 8 9; } | sort -u) \
+            BSpace Up Down Left Right S-Up S-Down S-Left S-Right M-Up M-Down M-Left M-Right; do
+            printf 'bind -T cockpit %s switch-client -T cockpit \\; run-shell -b "%s/.local/bin/cockpit key %s \\"#{client_name}\\" \\"#{pane_id}\\" \\"#{socket_path}\\""\n' \
+                "$k" "$HOME" "$k"
+        done
+        for k in Escape Enter; do
+            printf 'bind -T cockpit %s run-shell -b "%s/.local/bin/cockpit key %s \\"#{client_name}\\" \\"#{pane_id}\\" \\"#{socket_path}\\""\n' \
+                "$k" "$HOME" "$k"
+        done
+    } > "$tables.new" && mv "$tables.new" "$tables"
+    tmux source-file "$tables"
     exit 0 ;;
+
+# The menu for level $2: actions first, then +groups, then the help keys.
+line)
+    [ -r "$tsv" ] || exit 0
+    awk -F'\t' -v at="${2-}" '
+    BEGIN { n = length(at) }
+    $1 == at { crumb = $3 }
+    length($1) == n + 1 && substr($1, 1, n) == at { k[++m] = $1; label[$1] = $3; grp[$1] = ($4 == "") }
+    END {
+        out = (crumb != "" ? "#[fg=colour8]" crumb " ›  " : "")
+        for (pass = 0; pass < 2; pass++) for (i = 1; i <= m; i++) if (grp[k[i]] == pass)
+            out = out "#[fg=colour7]" substr(k[i], n + 1) (pass ? "#[fg=colour4] +" : "#[fg=colour8] ") label[k[i]] "  "
+        print out "#[fg=colour7]⌫#[fg=colour8] back  #[fg=colour7]Esc#[fg=colour8] close"
+    }' "$tsv" ;;
+
+key)
+    key=$2 client=$3 pane=$4 sock=$5
+    t() { tmux -S "$sock" "$@"; }
+    at=$(t show -gqv @cockpit-at)
+    # close: back to root, bar redrawn. TRAP: the client is `-t` on
+    # refresh-client; `-c` reads as an adjustment and the list dies.
+    close() { t switch-client -c "$client" -T root \; refresh-client -S -t "$client" "$@"; }
+    stay() { t set -g @cockpit-at "$1" \; refresh-client -S -t "$client"; }
+    case $key in
+    Escape | Enter) t set -g @cockpit-at ''; close; exit 0 ;;
+    BSpace) if [ -n "$at" ]; then stay "${at%?}"; else close; fi; exit 0 ;;
+    Up | Down | Left | Right)
+        d=${key:0:1}
+        # With zen on, ←/→ step the carousel — the next pane comes to the
+        # centre — and arm move mode too, whose ←/→ keep stepping.
+        case $d$(t show -gqv @zen) in
+        L1 | R1)
+            close \; switch-client -c "$client" -T jump
+            [ "$d" = L ] && exec ~/.local/bin/tmux-zen prev "$pane"
+            exec ~/.local/bin/tmux-zen next "$pane" ;;
+        esac
+        close \; select-pane -t "$pane" "-$d" \; switch-client -c "$client" -T jump; exit 0 ;;
+    S-* | M-*)
+        d=${key#?-}; d=${d:0:1}
+        case $d in U) f=vb ;; D) f=v ;; R) f=h ;; L) f=hb ;; esac
+        # Shift splits the whole window (-f), Alt the pane. In zen a
+        # whole-window split finds no room beside the floats and the refit
+        # places it anyway: ←/→ start a column, ↑/↓ stack in it.
+        [ "${key%%-*}" = S ] && [ "$(t show -gqv @zen)" != 1 ] && f=f$f
+        close \; split-window -t "$pane" "-$f" -c '#{E:@cwd}' \; switch-client -c "$client" -T jump
+        exit 0 ;;
+    esac
+    path=$at$key
+    if cmd=$(awk -F'\t' -v p="$path" '$1 == p { print $4; f = 1 } END { exit !f }' "$tsv"); then
+        if [ -z "$cmd" ]; then stay "$path"; exit 0; fi
+        t set -g @cockpit-at ''
+        close \; if -F -t "$pane" 1 "$(t display -p -c "$client" -t "$pane" "$cmd")"
+        exit 0
+    fi
+    # A digit at the top level goes to that window of the session, made at ~
+    # when it is missing. `=`: exact index, else `2` prefix-matches `2.1.280`.
+    case $key$at in
+    [1-9])
+        s=$(t display -p -t "$pane" '#{session_name}')
+        close \; select-window -t "$s:=$key" 2>/dev/null || t new-window -t "$s:$key" -c ~
+        exit 0 ;;
+    esac
+    close ;;
 esac
-read -r cmd < "$d/$key.a" || :
-off \; if -F -t "$pane" 1 "$(tmux display -p -c "$client" -t "$pane" "$cmd")"
