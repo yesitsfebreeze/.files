@@ -1,0 +1,501 @@
+# The curated scheme list — what the picker offers, ranked. The head is
+# hand-picked from the web roundups (moltamp, terminalcolors.com,
+# nathan-long, sudoscience, it's FOSS, omarchy, zellij, r/neovim). The
+# long tail after the hand-picked sections adds every scheme the big
+# aggregators — Gogh, iTerm2-Color-Schemes, terminalcolors.com — carry too,
+# ranked by how many of them list it, then alphabetically. --list keeps
+# only entries of the active variant (dark/light); a missing or renamed
+# id falls out silently. base24 duplicates of a base16 scheme are dropped.
+
+# ── The essentials — every roundup agrees on these, in order of recurrence
+base16-gruvbox-material-dark-medium
+base16-catppuccin-mocha
+base16-tokyo-night-storm
+base16-nord
+base16-dracula
+base16-solarized-dark
+base16-rose-pine
+base16-onedark
+base16-kanagawa            # after Hokusai's wave
+base16-everforest-dark-medium
+base16-monokai
+base16-ayu-mirage
+base16-vesper              # deterministic, contrast-checked
+base16-flexoki-dark
+base16-darcula
+base16-github-dark
+
+# ── Connoisseur picks — distinctive palettes with a following
+base16-gruber              # gruvbox, darker (rexim's gruber-darker)
+base16-apprentice          # romainl's low-contrast classic
+base16-tender
+base16-gotham
+base16-zenburn             # the vim classic
+base16-moonlight
+base16-tokyodark
+base16-edge-dark
+base16-eldritch
+base16-oxocarbon-dark
+base16-material-darker
+base16-jellybeans
+base16-spacemacs
+base16-railscasts          # the Rails-screencast era
+base16-zenbones            # zenwritten, Japanese ink
+base24-cobalt2             # wes bos
+base16-shades-of-purple
+
+# ── The curious — one concept each, ranked by curiosity
+base16-feb                # ours: blink-contrast's slate, white text, blue + orange, red/green status
+base16-valve              # ours: the CS 1.6 olive VGUI — the buy-menu panels
+base16-black-metal-bathory # the black-metal family (burzum, mayhem, venom…)
+base16-isotope             # radioactive, by Jan T. Sott
+base16-digital-rain        # The Matrix, 90s retro terminals
+base16-outrun-dark         # synthwave night drive
+base16-synth-midnight-dark
+base16-windows-95          # nostalgia mode
+base16-tube                # the London Underground, by Jan T. Sott
+base16-greenscreen         # phosphor CRT
+base16-macintosh           # classic Mac
+base16-linux-vt            # the Linux console itself
+base16-cyberpunk
+base24-scarlet-protocol    # Cyberpunk 2077
+base16-vice                # Miami Vice
+base16-heetch              # the French night-ride brand
+base16-unikitty-dark       # "a vibrant scheme for hacking"
+base16-uwunicorn
+base16-pinky
+base16-silk-dark           # dark pastel
+base16-apathy              # aggressively muted
+base16-grayscale-dark      # no colour at all
+base16-vulcan
+base24-adventure-time
+base24-batman
+base24-under-the-sea
+base24-mona-lisa           # a painting
+base16-tarot
+base16-evenok-dark         # bioluminescence
+base16-katy                # the Katy Trail, Missouri
+base24-purple-rain         # Prince
+base16-boo-shnickle-dark
+base16-summercamp           # the 80s summer camp
+
+# ── Light — the same ranking, light variants
+base16-gruvbox-material-light-medium
+base16-catppuccin-latte
+base16-rose-pine-dawn
+base16-everforest-light-medium
+base16-flexoki-light
+base16-nord-light
+base16-solarized-light
+base16-ayu-light
+base16-papercolor-light
+base16-one-light
+base16-brushtrees
+base16-sakura              # cherry blossom
+base16-cupcake
+base16-arroz-con-dulce     # the Puerto Rican rice pudding
+base16-kissa-latte         # the kissaten coffee shop
+base16-mexico-light
+base16-dirtysea
+base16-still-alive         # Portal
+base16-windows-95-light
+base24-man-page            # looks like man pages
+
+# ── The long tail — every other scheme the aggregators (Gogh, iTerm2-Color-
+#    Schemes, terminalcolors.com, zellij, the roundups) carry, ranked by
+#    how many of them list it, then alphabetically. Sites per line.
+base16-ayu-dark  # gogh+iterm+terminalcolors+zellij+roundups
+base16-gruvbox-dark  # gogh+iterm+terminalcolors+zellij+roundups
+base16-gruvbox-light  # gogh+iterm+terminalcolors+zellij+roundups
+base16-tokyo-night-dark  # gogh+iterm+terminalcolors+zellij+roundups
+base16-tokyo-night-light  # gogh+iterm+terminalcolors+zellij+roundups
+base24-one-dark  # gogh+terminalcolors+zellij+roundups
+base24-one-half-light  # gogh+iterm+terminalcolors+roundups
+base16-atelier-sulphurpool  # gogh+iterm+zellij
+base16-atelier-sulphurpool-light  # gogh+iterm+zellij
+base16-catppuccin-frappe  # gogh+iterm+zellij
+base16-catppuccin-macchiato  # gogh+iterm+zellij
+base16-everforest  # gogh+terminalcolors+roundups
+base16-github  # gogh+iterm+terminalcolors
+base16-onedark-dark  # gogh+zellij+roundups
+base16-tomorrow  # gogh+iterm+terminalcolors
+base16-tomorrow-night  # gogh+iterm+roundups
+base24-pencil-light  # gogh+iterm+zellij
+base16-0x96f  # gogh+iterm
+base16-black-metal  # gogh+iterm
+base16-black-metal-burzum  # gogh+iterm
+base16-black-metal-dark-funeral  # gogh+iterm
+base16-black-metal-gorgoroth  # gogh+iterm
+base16-black-metal-immortal  # gogh+iterm
+base16-black-metal-khold  # gogh+iterm
+base16-black-metal-marduk  # gogh+iterm
+base16-black-metal-mayhem  # gogh+iterm
+base16-black-metal-nile  # gogh+iterm
+base16-black-metal-venom  # gogh+iterm
+base16-brogrammer  # gogh+iterm
+base16-chalk  # gogh+iterm
+base16-charcoal-dark  # gogh+iterm
+base16-charcoal-light  # gogh+iterm
+base16-embers  # gogh+iterm
+base16-embers-light  # gogh+iterm
+base16-espresso  # gogh+iterm
+base16-everforest-dark-hard  # gogh+iterm
+base16-everforest-dark-soft  # gogh+iterm
+base16-everforest-light-hard  # gogh+iterm
+base16-everforest-light-soft  # gogh+iterm
+base16-flat  # gogh+iterm
+base16-framer  # gogh+iterm
+base16-github-dark-colorblind  # gogh+iterm
+base16-github-dark-dimmed  # gogh+iterm
+base16-github-dark-high-contrast  # gogh+iterm
+base16-github-light-colorblind  # gogh+iterm
+base16-github-light-high-contrast  # gogh+iterm
+base16-gruvbox-dark-hard  # gogh+iterm
+base16-gruvbox-light-hard  # gogh+iterm
+base16-hardcore  # gogh+iterm
+base16-hopscotch  # gogh+iterm
+base16-horizon-dark  # gogh+iterm
+base16-horizon-light  # gogh+iterm
+base16-irblack  # gogh+iterm
+base16-kanagawa-dragon  # gogh+iterm
+base16-material  # gogh+iterm
+base16-ocean  # gogh+iterm
+base16-oceanicnext  # gogh+iterm
+base16-oxocarbon-light  # gogh+iterm
+base16-pandora  # gogh+iterm
+base16-paraiso  # gogh+iterm
+base16-rebecca  # gogh+iterm
+base16-rose-pine-moon  # gogh+iterm
+base16-selenized-black  # gogh+iterm
+base16-selenized-dark  # gogh+iterm
+base16-selenized-light  # gogh+iterm
+base16-seti  # gogh+iterm
+base16-snazzy  # gogh+iterm
+base16-soft-server  # gogh+iterm
+base16-solarflare  # gogh+iterm
+base16-solarflare-light  # gogh+iterm
+base16-tokyo-night-moon  # gogh+iterm
+base16-tomorrow-night-eighties  # gogh+iterm
+base16-twilight  # gogh+iterm
+base16-unikitty-light  # gogh+iterm
+base24-3024-day  # gogh+iterm
+base24-3024-night  # gogh+iterm
+base24-alien-blood  # gogh+iterm
+base24-argonaut  # gogh+iterm
+base24-arthur  # gogh+iterm
+base24-banana-blueberry  # gogh+iterm
+base24-birds-of-paradise  # gogh+iterm
+base24-blazer  # gogh+iterm
+base24-blue-berry-pie  # gogh+iterm
+base24-blue-matrix  # gogh+iterm
+base24-bluloco-dark  # gogh+iterm
+base24-bluloco-light  # gogh+iterm
+base24-borland  # gogh+iterm
+base24-breeze  # gogh+iterm
+base24-broadcast  # gogh+iterm
+base24-builtin-dark  # gogh+iterm
+base24-builtin-light  # gogh+iterm
+base24-builtin-pastel-dark  # gogh+iterm
+base24-builtin-tango-dark  # gogh+iterm
+base24-builtin-tango-light  # gogh+iterm
+base24-chalkboard  # gogh+iterm
+base24-challenger-deep  # gogh+iterm
+base24-ciapre  # gogh+iterm
+base24-clrs  # gogh+iterm
+base24-cobalt-neon  # gogh+iterm
+base24-crayon-pony-fish  # gogh+iterm
+base24-cyberdyne  # gogh+iterm
+base24-deep  # gogh+iterm
+base24-desert  # gogh+iterm
+base24-dimmed-monokai  # gogh+iterm
+base24-earthsong  # gogh+iterm
+base24-elemental  # gogh+iterm
+base24-elementary  # gogh+iterm
+base24-encom  # gogh+iterm
+base24-espresso-libre  # gogh+iterm
+base24-fideloper  # gogh+iterm
+base24-firefox-dev  # gogh+iterm
+base24-fish-tank  # gogh+iterm
+base24-flatland  # gogh+iterm
+base24-floraverse  # gogh+iterm
+base24-forest-blue  # gogh+iterm
+base24-front-end-delight  # gogh+iterm
+base24-fun-forrest  # gogh+iterm
+base24-galaxy  # gogh+iterm
+base24-grape  # gogh+iterm
+base24-hacktober  # gogh+iterm
+base24-highway  # gogh+iterm
+base24-hipster-green  # gogh+iterm
+base24-hivacruz  # gogh+iterm
+base24-homebrew  # gogh+iterm
+base24-hurtado  # gogh+iterm
+base24-hybrid  # gogh+iterm
+base24-ic-green-ppl  # gogh+iterm
+base24-ic-orange-ppl  # gogh+iterm
+base24-idea  # gogh+iterm
+base24-idle-toes  # gogh+iterm
+base24-jackie-brown  # gogh+iterm
+base24-japanesque  # gogh+iterm
+base24-jet-brains-darcula  # gogh+iterm
+base24-kibble  # gogh+iterm
+base24-lab-fox  # gogh+iterm
+base24-laser  # gogh+iterm
+base24-later-this-evening  # gogh+iterm
+base24-lavandula  # gogh+iterm
+base24-lovelace  # gogh+iterm
+base24-material-dark  # gogh+iterm
+base24-mathias  # gogh+iterm
+base24-medallion  # gogh+iterm
+base24-misterioso  # gogh+iterm
+base24-molokai  # gogh+iterm
+base24-monokai-vivid  # gogh+iterm
+base24-night-lion-v1  # gogh+iterm
+base24-night-lion-v2  # gogh+iterm
+base24-night-owlish-light  # gogh+iterm
+base24-nocturnal-winter  # gogh+iterm
+base24-obsidian  # gogh+iterm
+base24-oceanic-material  # gogh+iterm
+base24-ollie  # gogh+iterm
+base24-operator-mono-dark  # gogh+iterm
+base24-paul-millr  # gogh+iterm
+base24-pencil-dark  # gogh+iterm
+base24-piatto-light  # gogh+iterm
+base24-pnevma  # gogh+iterm
+base24-pro  # gogh+iterm
+base24-pro-light  # gogh+iterm
+base24-purplepeter  # gogh+iterm
+base24-red-alert  # gogh+iterm
+base24-red-planet  # gogh+iterm
+base24-red-sands  # gogh+iterm
+base24-rippedcasts  # gogh+iterm
+base24-royal  # gogh+iterm
+base24-sea-shells  # gogh+iterm
+base24-seafoam-pastel  # gogh+iterm
+base24-shaman  # gogh+iterm
+base24-slate  # gogh+iterm
+base24-sleepy-hollow  # gogh+iterm
+base24-smyck  # gogh+iterm
+base24-solarized-dark-higher-contrast  # gogh+iterm
+base24-solarized-dark-patched  # gogh+iterm
+base24-space-gray-eighties  # gogh+iterm
+base24-space-gray-eighties-dull  # gogh+iterm
+base24-spacedust  # gogh+iterm
+base24-spiderman  # gogh+iterm
+base24-square  # gogh+iterm
+base24-sundried  # gogh+iterm
+base24-tango-adapted  # gogh+iterm
+base24-tango-half-adapted  # gogh+iterm
+base24-terminal-basic  # gogh+iterm
+base24-thayer-bright  # gogh+iterm
+base24-the-hulk  # gogh+iterm
+base24-toy-chest  # gogh+iterm
+base24-treehouse  # gogh+iterm
+base24-ubuntu  # gogh+iterm
+base24-unikitty  # gogh+iterm
+base24-vibrant-ink  # gogh+iterm
+base24-violet-dark  # gogh+iterm
+base24-violet-light  # gogh+iterm
+base24-warm-neon  # gogh+iterm
+base24-wez  # gogh+iterm
+base24-wild-cherry  # gogh+iterm
+base24-wombat  # gogh+iterm
+base24-wryan  # gogh+iterm
+base16-3024  # gogh
+base16-arroz-con-dulce-dark  # gogh
+base16-ascendancy  # gogh
+base16-ashes  # gogh
+base16-atelier-cave  # gogh
+base16-atelier-cave-light  # gogh
+base16-atelier-dune  # gogh
+base16-atelier-dune-light  # gogh
+base16-atelier-estuary  # gogh
+base16-atelier-estuary-light  # gogh
+base16-atelier-forest  # gogh
+base16-atelier-forest-light  # gogh
+base16-atelier-heath  # gogh
+base16-atelier-heath-light  # gogh
+base16-atelier-lakeside  # gogh
+base16-atelier-lakeside-light  # gogh
+base16-atelier-plateau  # gogh
+base16-atelier-plateau-light  # gogh
+base16-atelier-savanna  # gogh
+base16-atelier-savanna-light  # gogh
+base16-atelier-seaside  # gogh
+base16-atelier-seaside-light  # gogh
+base16-atlas  # gogh
+base16-aztec  # gogh
+base16-bespin  # gogh
+base16-blueforest  # gogh
+base16-blueish  # gogh
+base16-boo-shnickle-light  # gogh
+base16-bosque  # gogh
+base16-brasa  # gogh
+base16-brewer  # gogh
+base16-bright  # gogh
+base16-brushtrees-dark  # gogh
+base16-cacao  # gogh
+base16-caroline  # gogh
+base16-cerulean-signal-dark  # gogh
+base16-cerulean-signal-light  # gogh
+base16-chicago-day  # gogh
+base16-chicago-night  # gogh
+base16-chinoiserie  # gogh
+base16-chinoiserie-midnight  # gogh
+base16-chinoiserie-morandi  # gogh
+base16-chinoiserie-night  # gogh
+base16-circus  # gogh
+base16-classic-dark  # gogh
+base16-classic-light  # gogh
+base16-codeschool  # gogh
+base16-colors  # gogh
+base16-cupertino  # gogh
+base16-da-one-black  # gogh
+base16-da-one-gray  # gogh
+base16-da-one-ocean  # gogh
+base16-da-one-paper  # gogh
+base16-da-one-sea  # gogh
+base16-da-one-white  # gogh
+base16-danqing  # gogh
+base16-danqing-light  # gogh
+base16-darkmoss  # gogh
+base16-darktooth  # gogh
+base16-darkviolet  # gogh
+base16-decaf  # gogh
+base16-deep-oceanic-next  # gogh
+base16-default-dark  # gogh
+base16-default-light  # gogh
+base16-edge-light  # gogh
+base16-eighties  # gogh
+base16-emil  # gogh
+base16-equilibrium-dark  # gogh
+base16-equilibrium-gray-dark  # gogh
+base16-equilibrium-gray-light  # gogh
+base16-equilibrium-light  # gogh
+base16-eris  # gogh
+base16-eva  # gogh
+base16-eva-dim  # gogh
+base16-fruit-soda  # gogh
+base16-gigavolt  # gogh
+base16-google-dark  # gogh
+base16-google-light  # gogh
+base16-grayscale-light  # gogh
+base16-gruvbox-dark-medium  # gogh
+base16-gruvbox-dark-medium-forest  # gogh
+base16-gruvbox-dark-pale  # gogh
+base16-gruvbox-dark-soft  # gogh
+base16-gruvbox-light-medium  # gogh
+base16-gruvbox-light-soft  # gogh
+base16-gruvbox-material-dark-hard  # gogh
+base16-gruvbox-material-dark-soft  # gogh
+base16-gruvbox-material-light-hard  # gogh
+base16-gruvbox-material-light-soft  # gogh
+base16-hardhacker  # gogh
+base16-harmonic16-dark  # gogh
+base16-harmonic16-light  # gogh
+base16-heetch-light  # gogh
+base16-helios  # gogh
+base16-horizon-terminal-dark  # gogh
+base16-horizon-terminal-light  # gogh
+base16-humanoid-dark  # gogh
+base16-humanoid-light  # gogh
+base16-ia-dark  # gogh
+base16-ia-light  # gogh
+base16-icy  # gogh
+base16-jabuti  # gogh
+base16-kimber  # gogh
+base16-kissa-macchiato  # gogh
+base16-lichen-chartreuse-dark  # gogh
+base16-lichen-chartreuse-light  # gogh
+base16-lime  # gogh
+base16-marrakesh  # gogh
+base16-materia  # gogh
+base16-material-lighter  # gogh
+base16-material-palenight  # gogh
+base16-material-vivid  # gogh
+base16-measured-dark  # gogh
+base16-measured-light  # gogh
+base16-mellow-purple  # gogh
+base16-mezcal  # gogh
+base16-mocha  # gogh
+base16-mountain  # gogh
+base16-nebula  # gogh
+base16-neovim-dark  # gogh
+base16-neovim-light  # gogh
+base16-noche  # gogh
+base16-nova  # gogh
+base16-ocote  # gogh
+base16-papel  # gogh
+base16-papercolor-dark  # gogh
+base16-pasque  # gogh
+base16-pastelon-de-amarillos  # gogh
+base16-pastelon-de-amarillos-dark  # gogh
+base16-penumbra-dark  # gogh
+base16-penumbra-dark-contrast-plus  # gogh
+base16-penumbra-dark-contrast-plus-plus  # gogh
+base16-penumbra-light  # gogh
+base16-penumbra-light-contrast-plus  # gogh
+base16-penumbra-light-contrast-plus-plus  # gogh
+base16-phd  # gogh
+base16-pico  # gogh
+base16-pop  # gogh
+base16-porple  # gogh
+base16-precious-dark-eleven  # gogh
+base16-precious-dark-fifteen  # gogh
+base16-precious-light-warm  # gogh
+base16-precious-light-white  # gogh
+base16-primer-dark  # gogh
+base16-primer-dark-dimmed  # gogh
+base16-primer-light  # gogh
+base16-purpledream  # gogh
+base16-qualia  # gogh
+base16-saga  # gogh
+base16-sagelight  # gogh
+base16-sandcastle  # gogh
+base16-selenized-white  # gogh
+base16-shadesmear-dark  # gogh
+base16-shadesmear-light  # gogh
+base16-shapeshifter  # gogh
+base16-silk-light  # gogh
+base16-spaceduck  # gogh
+base16-sparky  # gogh
+base16-standardized-dark  # gogh
+base16-standardized-light  # gogh
+base16-stella  # gogh
+base16-summerfruit-dark  # gogh
+base16-summerfruit-light  # gogh
+base16-swamp-dark  # gogh
+base16-swamp-light  # gogh
+base16-synth-midnight-light  # gogh
+base16-tango  # gogh
+base16-terracotta  # gogh
+base16-terracotta-dark  # gogh
+base16-tinta  # gogh
+base16-tokyo-city-dark  # gogh
+base16-tokyo-city-light  # gogh
+base16-tokyo-city-terminal-dark  # gogh
+base16-tokyo-city-terminal-light  # gogh
+base16-tokyo-night-terminal-dark  # gogh
+base16-tokyo-night-terminal-light  # gogh
+base16-tokyo-night-terminal-storm  # gogh
+base16-tokyodark-terminal  # gogh
+base16-unikitty-reversible  # gogh
+base16-valua  # gogh
+base16-windows-10  # gogh
+base16-windows-10-light  # gogh
+base16-windows-highcontrast  # gogh
+base16-windows-highcontrast-light  # gogh
+base16-windows-nt  # gogh
+base16-windows-nt-light  # gogh
+base16-woodland  # gogh
+base16-xcode-dusk  # gogh
+base16-yesterday  # gogh
+base16-yesterday-bright  # gogh
+base16-yesterday-night  # gogh
+base24-alucard  # gogh
+base24-builtin-solarized-dark  # gogh
+base24-builtin-solarized-light  # gogh
+base24-dark-plus  # gogh
+base24-embarcadero  # gogh
+base24-mission-brogue  # gogh
+base24-one-black  # gogh
+base24-ultra-violet  # gogh

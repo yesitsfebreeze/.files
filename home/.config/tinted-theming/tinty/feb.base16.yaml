@@ -1,0 +1,22 @@
+system: "base16"
+name: "feb"
+author: "feb — after rainglow's blink-contrast: white text, blue + orange accents, red/green for status"
+description: "Custom scheme for this dotfiles repo, built on rainglow blink-contrast (near-black blue-tinted background, slate-gray ramp). The main text is pure white; only two accent hues sit on it, blue (base0D/0C: functions, links, the current tmux window) and orange (base0E/09/0A: keywords, numbers, classes). Red (base08, salmon) and green (base0B, cyan-leaning) stay readable as status hues so errors, diagnostics, diffs and test output read as fail/pass. Tracked source lives here in the config dir; copied into the (gitignored) tinty data-dir custom-schemes/base16/feb.yaml so tinty and the colors generators resolve base16-feb."
+variant: "dark"
+palette:
+  base00: "#131719" # background — blink's near-black, blue tint
+  base01: "#1e2427" # lighter background — blink's ansiBlack
+  base02: "#2b3a41" # selection — teal-tinted slate
+  base03: "#5d707c" # comments / status text — slate, legible on base00
+  base04: "#8b9aa8" # darker foreground — punctuation, active pane border
+  base05: "#ffffff" # foreground — white, the main text colour
+  base06: "#ffffff" # light foreground — white
+  base07: "#ffffff" # brightest — white
+  base08: "#f08a7a" # salmon red — errors, diagnostics, deletions
+  base09: "#ff9e57" # orange — numbers / constants (clean, not blink's muddy #d4856a)
+  base0A: "#ebc6b9" # peach — classes / attributes (blink's bright yellow)
+  base0B: "#5ecfb0" # cyan green — success, additions, strings
+  base0C: "#43b5b3" # teal — support / escapes (blink's ansiBlue)
+  base0D: "#5298c4" # blue — primary accent: functions, links, current window
+  base0E: "#ff9e57" # orange — primary accent: keywords
+  base0F: "#6f8391" # dim slate — deprecated / embedded
