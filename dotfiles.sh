@@ -99,26 +99,95 @@ if [ -x /opt/homebrew/bin/brew ]; then
 fi
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
+# --- the base a Linux/WSL box needs before the deploy can run its hooks -------
+# The hooks shell out to jq, nvim, tmux, zoxide, television (tv), nushell and
+# claude — a fresh distro has none of them, and Homebrew is a macOS path the
+# hooks do not read. So on Linux the distro package manager owns the everyday
+# tools, and the two with no package (nushell, television) come from their
+# GitHub releases into ~/.local/bin, which env.nu puts first on PATH.
+latest_tag() {
+    curl -fsSL --max-time 30 "https://api.github.com/repos/$1/releases/latest" \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1
+}
+
+# Install a release tarball's binary into ~/.local/bin.
+# $1 repo, $2 tag, $3 asset name, $4 binary path inside the extracted tree.
+release_bin() {
+    _tag=$2
+    _dir=$(mktemp -d)
+    if curl -fsSL --max-time 300 -o "$_dir/a.tgz" \
+            "https://github.com/$1/releases/download/$_tag/$3" \
+        && tar -xf "$_dir/a.tgz" -C "$_dir"; then
+        install -m 755 "$_dir/$4" "$HOME/.local/bin/" \
+            && log "installed $(basename "$4") $_tag"
+    else
+        warn "$1: could not install $_tag"
+    fi
+    rm -rf "$_dir"
+}
+
+# npm CLIs that the Windows host also installs. The /mnt/c interop PATH exposes those
+# shims, so `command -v` finds one — and it then dies, because the Windows codex has no
+# @openai/codex-linux-x64 binary. A hit under /mnt/ therefore counts as NOT installed:
+# only a distro-local copy runs. $1 binary, $2 npm package.
+node_tool() {
+    _p=$(command -v "$1" 2>/dev/null || true)
+    case "$_p" in
+        ''|/mnt/*) sudo npm install -g "$2" || warn "$1: npm install failed" ;;
+    esac
+}
+
+linux_base() {
+    log "installing base packages (apt)"
+    sudo apt-get update -qq || warn "apt update failed"
+    sudo apt-get install -y --no-install-recommends \
+        jq neovim tmux zoxide ripgrep fzf gh nodejs npm curl git ca-certificates \
+        || warn "apt install incomplete"
+
+    mkdir -p "$HOME/.local/bin"
+    case "$(uname -m)" in
+        aarch64|arm64) _arch=aarch64-unknown-linux-gnu ;;
+        *)             _arch=x86_64-unknown-linux-gnu ;;
+    esac
+
+    if ! have nu; then
+        _t=$(latest_tag nushell/nushell)
+        [ -n "$_t" ] && release_bin nushell/nushell "$_t" \
+            "nu-$_t-$_arch.tar.gz" "nu-$_t-$_arch/nu"
+    fi
+    if ! have tv; then
+        _t=$(latest_tag alexpasmantier/television)
+        [ -n "$_t" ] && release_bin alexpasmantier/television "$_t" \
+            "tv-$_t-$_arch.tar.gz" "tv-$_t-$_arch/tv"
+    fi
+    node_tool claude @anthropic-ai/claude-code
+    node_tool codex @openai/codex
+}
+
 # --- --install: the fresh-machine bootstrap, then fall through to the deploy ---
 # Order is the contract: every tool is on PATH before the deploy, because the
 # hooks generate shell init by running those tools. A failed step warns and
 # the run continues — a missing tool must be a warning, never a dead install.
 install() {
-    if ! have brew; then
-        log "installing Homebrew"
-        NONINTERACTIVE=1 /bin/bash -c \
-            "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
-            || warn "Homebrew: bootstrap failed — install it by hand and re-run"
-    fi
-    if have brew; then
-        # TRAP: Homebrew 6 refuses a formula from an untrusted third-party tap
-        # and `brew bundle` will not trust one for you — without this the
-        # Brewfile's tinty is skipped with an error, and tinty owns the palette.
-        brew trust --tap tinted-theming/tinted || warn "could not trust the tinted tap"
-        brew bundle install --file "$home_src/.config/Brewfile" \
-            || warn "brew bundle incomplete"
+    if [ "$(uname -s)" = Darwin ]; then
+        if ! have brew; then
+            log "installing Homebrew"
+            NONINTERACTIVE=1 /bin/bash -c \
+                "$(curl -fsSL --max-time 60 https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+                || warn "Homebrew: bootstrap failed — install it by hand and re-run"
+        fi
+        if have brew; then
+            # TRAP: Homebrew 6 refuses a formula from an untrusted third-party tap
+            # and `brew bundle` will not trust one for you — without this the
+            # Brewfile's tinty is skipped with an error, and tinty owns the palette.
+            brew trust --tap tinted-theming/tinted || warn "could not trust the tinted tap"
+            brew bundle install --file "$home_src/.config/Brewfile" \
+                || warn "brew bundle incomplete"
+        else
+            warn "no brew — nothing was installed"
+        fi
     else
-        warn "no brew — nothing was installed"
+        linux_base
     fi
 
     # Remote access: sshd over the tailnet. The GUI cask cannot be a Tailscale

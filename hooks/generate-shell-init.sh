@@ -8,7 +8,9 @@
 # internals/provisioning.
 set -uo pipefail
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew is macOS-only here; on Linux the tools come from apt or ~/.local/bin, so
+# eval'ing a literal /opt/homebrew path just prints "No such file" every deploy.
+[ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 hash -r
 

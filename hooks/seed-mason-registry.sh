@@ -40,7 +40,10 @@ if ! nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; then
     exit 0
 fi
 
-if nvim --headless "+MasonUpdate" +qa >/dev/null 2>&1; then
+# mason.nvim is a dependency of lspconfig and lazy-loads on BufReadPre, so in a
+# headless run `:MasonUpdate` does not exist yet — E492, exit 0, no registry. Load
+# it explicitly first.
+if nvim --headless "+Lazy! load mason.nvim" "+MasonUpdate" +qa >/dev/null 2>&1; then
     if [ -d "$DATA/registries" ] && [ -n "$(ls -A "$DATA/registries" 2>/dev/null)" ]; then
         log "registry seeded"
     else

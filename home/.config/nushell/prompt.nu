@@ -145,7 +145,15 @@ def _prompt [] {
 def _prompt_first [] { (_state_dir) | path join $"first-($nu.pid).txt" }
 def _prompt_uptime [] {
     let boot = (try {
-        ^sysctl -n kern.boottime | split row " " | get 3 | str trim --char "," | into int
+        if $nu.os-info.name == "macos" {
+            ^sysctl -n kern.boottime | split row " " | get 3 | str trim --char "," | into int
+        } else {
+            # TRAP: kern.boottime is a macOS-only sysctl key — calling it on Linux (and
+            # WSL) prints "cannot stat /proc/sys/kern/boottime" at every shell start.
+            # Linux carries the same fact as SECONDS-since-boot at /proc/uptime.
+            let now_s = ((date now | into int) / 1_000_000_000 | math floor)
+            $now_s - (open /proc/uptime | split row " " | first | into float | math floor)
+        }
     } catch { null })
     if $boot == null { return null }
     # TRAP: `date now | into int` is NANOSECONDS; kern.boottime is SECONDS.
@@ -154,7 +162,15 @@ def _prompt_uptime [] {
 }
 
 def _prompt_load [] {
-    try { ^sysctl -n vm.loadavg | split row " " | get 1 | into float | math round --precision 1 | into string } catch { "" }
+    # TRAP: vm.loadavg is macOS-only too; /proc/loadavg holds the same three
+    # averages on Linux/WSL, so read it instead of letting sysctl complain.
+    try {
+        if $nu.os-info.name == "macos" {
+            ^sysctl -n vm.loadavg | split row " " | get 1 | into float | math round --precision 1 | into string
+        } else {
+            open /proc/loadavg | split row " " | first | into float | math round --precision 1 | into string
+        }
+    } catch { "" }
 }
 
 def _prompt_header [] {
