@@ -51,11 +51,11 @@ See also: [`F5 t t`](./appearance.md#switch-scheme) · [`theme`](./appearance.md
 
 ## `F5 t w`
 
-**Pick a wallpaper, darkness and blur**
+**Pick a wallpaper, darkness, blur and tint**
 
 *terminal*
 
-Press `F5 t w` in any pane and the images in `~/wallpapers` float over it. The row you stop on is drawn behind the terminal at once; `←`/`→` darken or lighten it in steps of 5, `Shift+←`/`Shift+→` blur or sharpen it in steps of 4 px, and the preview pane shows both values. `Enter` keeps the pick, `Esc` puts back the image you had, and the `off` row removes the image altogether.
+Press `F5 t w` in any pane and the images in `~/wallpapers` float over it. The row you stop on is drawn behind the terminal at once; `←`/`→` darken or lighten it in steps of 5, `Shift+←`/`Shift+→` blur or sharpen it in steps of 4 px, `Alt+←`/`Alt+→` lay the theme's background colour over it in steps of 10 % (0 shows only the image, 100 only the colour), and the preview pane shows all three values. `Enter` keeps the pick, `Esc` puts back the image you had, and the `off` row removes the image altogether.
 
 > **Why it is this way**
 >

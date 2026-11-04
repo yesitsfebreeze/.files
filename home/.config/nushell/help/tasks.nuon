@@ -40,14 +40,14 @@
     {
         id: "windows"
         title: "Move around windows and panes"
-        summary: "tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift+arrow, moves by Ctrl+arrow."
+        summary: "tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift or Alt+arrow, moves by Ctrl+arrow."
         intro: "There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see."
     }
     {
         id: "copy"
         title: "Copy and paste"
         summary: "Keyboard selection in the scrollback, and the clipboard that follows you over ssh."
-        intro: "Copying works without the mouse: freeze the screen, move the cursor, and press `c` to widen the selection from a cell to a word to a whole line. Where the text lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at."
+        intro: "Copying works without the mouse: freeze the screen, move the cursor, and `Space` grows the selection a press at a time — word, line, then a line more. `c` is the other half: it arms a rewrite (lower, snake, Pascal…) that holds the piece until `t` types all held pieces at the prompt. Where a copy lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at."
     }
     {
         id: "editing"

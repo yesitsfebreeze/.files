@@ -1,0 +1,72 @@
+#!/bin/bash
+# tmux-lock — tmux's `lock-command`: F5 l locks the terminal.
+#
+# tmux stops drawing to the client, runs this in the client's own terminal
+# (the real tty, not a pane) and ignores every key until it exits. So: a
+# password field in the centre, nothing else; exit 0 only after the macOS
+# login password of the current user checks out (`dscl . -authonly`).
+#
+# The `lock` user var tells WezTerm to show the wallpaper as is (the cached
+# unblurred render, no darkness, no tint) while locked; see wezterm.lua. `@locked` on the server
+# makes every client that attaches while locked lock again (tmux.conf hook),
+# so closing the WezTerm window and reopening it does not skip the lock.
+#
+# Ceiling: the password reaches dscl as an argument, visible in `ps` for the
+# ~100 ms the check takes to any other user on this machine. One-user
+# laptop; the upgrade is a PAM helper that reads it from stdin.
+# Keys never end this (Ctrl+C, Ctrl+\, Ctrl+Z); a hangup does: the window is
+# gone, and the reattach hook locks the next client.
+trap '' INT QUIT TSTP
+tmux set -g @locked 1 2>/dev/null
+
+E=$'\e'
+uservar() { printf '%s]1337;SetUserVar=lock=%s%s\\' "$E" "$(printf '%s' "$1" | base64)" "$E"; }
+uservar 1
+
+# One rounded box, the dots growing from its centre; no title. Glyphs are
+# built by loops, not tr: tr maps bytes and the lock-command env may lack
+# a UTF-8 locale.
+width=32 inner=30
+bar=""; for ((i = 0; i < inner; i++)); do bar+=─; done
+pw="" msg=""
+draw() {
+    local rows cols row col n dots pad
+    rows=$(tput lines) cols=$(tput cols)
+    row=$(( rows / 2 )); col=$(( (cols - width) / 2 ))
+    (( col < 1 )) && col=1
+    n=${#pw}; (( n > inner )) && n=$inner
+    dots=""; for ((i = 0; i < n; i++)); do dots+=•; done
+    pad=$(( (inner - n) / 2 ))
+    printf '%s[2J%s[?25l' "$E" "$E"
+    printf '%s[%d;%dH╭%s╮' "$E" $(( row - 1 )) "$col" "$bar"
+    printf '%s[%d;%dH│%*s%s%*s│' "$E" "$row" "$col" "$pad" '' "$dots" $(( inner - pad - n )) ''
+    printf '%s[%d;%dH╰%s╯' "$E" $(( row + 1 )) "$col" "$bar"
+    printf '%s[%d;%dH%s[31m%s%s[0m' "$E" $(( row + 3 )) $(( (cols - ${#msg}) / 2 )) "$E" "$msg" "$E"
+}
+trap draw WINCH
+
+draw
+while :; do
+    # `-n1` turns canonical mode off, so Ctrl+D arrives as a byte (ignored
+    # below) and read fails only when the terminal itself is gone.
+    IFS= read -rsn1 key || exit 1
+    case "$key" in
+    "")  # Enter
+        if dscl . -authonly "$USER" "$pw" >/dev/null 2>&1; then
+            break
+        fi
+        pw="" msg="wrong password"
+        sleep 1 ;;
+    $'\x7f'|$'\b') pw=${pw%?} ;;
+    $'\x15') pw="" ;;                        # Ctrl+U clears
+    $'\x04') ;;                               # Ctrl+D: nothing
+    $'\e') read -rsn8 -t 0.01 _ ;;           # swallow an escape sequence
+    *) pw+=$key ;;
+    esac
+    draw; msg=""
+done
+
+tmux set -gu @locked 2>/dev/null
+uservar 0
+printf '%s[2J%s[?25h' "$E" "$E"
+exit 0

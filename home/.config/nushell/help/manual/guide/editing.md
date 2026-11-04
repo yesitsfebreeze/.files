@@ -18,11 +18,11 @@ See also: [`nn`](./editing.md#nn)
 
 ## `nn`
 
-**Open the notes file**
+**Start a new note**
 
 *shell*
 
-`nn` opens `~/notes.md` in nvim, from wherever you are.
+`nn` creates a fresh timestamped file in `~/.notes` (`2026-10-08_143012.md`) and opens it in nvim, from wherever you are. Jot down ideas, infos, tasks; every call is a new note.
 
 See also: [`nv / vi`](./editing.md#nv-vi)
 

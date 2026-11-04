@@ -19,6 +19,11 @@ the leader in Normal at once; a second `F24` closes it and stays in
 Normal. Neither gesture waits for a possible second key. Buffers with a `buftype` (terminal,
 help, pickers, plugin floats) keep their own mode.
 
+Telescope find_files and live_grep cycle normal → hidden files →
+gitignored files on <C-.>, the same modes television cycles in the shell
+pickers (terminal.txt); the prompt title names the mode, and one mode
+index is shared between both pickers.
+
 Hard-won constraints worth carrying into any change:
 
 - the cursor is a block in every mode and keeps its cell across Insert and
@@ -36,3 +41,7 @@ Hard-won constraints worth carrying into any change:
   nvim-web-devicons (lazy-lock pin) — never hand-typed, so shell and
   editor never disagree.
 - mason registry seeding happens as a deploy hook (seed-mason-registry.sh).
+
+No cursor animation (2026-10-12): smear-cursor.nvim and the config/smear-tmux.lua
+metadata bridge were removed. Neovim draws the plain terminal cursor; any cursor
+trail is tmux's `cursor-smear` option alone, and that is off by default.

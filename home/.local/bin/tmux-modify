@@ -1,0 +1,102 @@
+#!/bin/bash
+# tmux-modify — the transform half of modify mode (F5 m, tmux copy mode).
+# Copy mode is not only a copier: with a selection open, `c` arms a transform
+# key (tmux.conf's `modify` table) and the letter says what to do to the
+# selection — `c` lower, `C` upper, `s` snake, `k` kebab, `p` Pascal, `t`
+# title, `a` raw. A transform does NOT deliver anything: the rewritten piece
+# is appended to the hold buffer, one piece per line, so several can be
+# taken — one per selection, across panes and windows — before anything is
+# typed. `t` at navigation level types the whole hold at the pane's prompt,
+# space-joined, and clears it; `x` clears it untouched. The hold lives in
+# $state/tmux/modify.txt and survives leaving the mode: collect, hide a
+# pane, collect elsewhere, type.
+#
+#   tmux-modify TRANSFORM CLIENT PANE SOCKET   (armed key: pipe the selection)
+#   tmux-modify in TRANSFORM CLIENT PANE SOCKET   (the pipe child: stdin is
+#                the selection; transform, append, unarm, say how many)
+#   tmux-modify type CLIENT PANE SOCKET       (t: type the hold at the prompt)
+#   tmux-modify clear CLIENT PANE SOCKET      (x: empty the hold)
+#
+# TRAP: every exec costs ~80 ms on this host (2026-09-23), so the parent is
+# one tmux call and the child is three.
+# The socket is an ARGUMENT, never derived: the pipe child does carry a
+# $TMUX pointing at this server (measured 2026-10-05), but explicit beats
+# derived — no path here trusts an environment it was handed.
+# manual → guide/copy (terminal.nuon, the modify-mode entry).
+
+# TRAP: /bin/bash on this machine is 3.2 (measured), so no ${var^} — the
+# one-letter capitalisation goes through tr.
+cap() { printf '%s' "${1:0:1}" | tr '[:lower:]' '[:upper:]' | tr -d '\n'; printf '%s' "${1:1}"; }
+
+# one PIECE: newline-squeezed, end-trimmed — a line selection pads to the
+# pane edge and a multi-line selection carries real newlines.
+clean() { printf '%s' "$1" | tr '\n' ' ' | sed -E 's/ +$//; s/^ +//; s/  +/ /g'; }
+
+# TRANSFORM PIECE — the same set VS Code leader mode had (cc cC cs ck cp ct).
+transform() {
+    t=$(clean "$2")
+    case $1 in
+    low)  printf '%s' "$t" | tr '[:upper:]' '[:lower:]' ;;
+    up)   printf '%s' "$t" | tr '[:lower:]' '[:upper:]' ;;
+    raw)  printf '%s' "$t" ;;
+    snake) printf '%s' "$t" | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g' |
+            tr '[:upper:]' '[:lower:]' | tr ' -' '__' | tr -cd 'a-z0-9_' |
+            sed -E 's/_+/_/g; s/^_+//; s/_+$//' ;;
+    kebab) printf '%s' "$t" | sed -E 's/([a-z0-9])([A-Z])/\1-\2/g' |
+            tr '[:upper:]' '[:lower:]' | tr ' _' '--' | tr -cd 'a-z0-9-' |
+            sed -E 's/-+/-/g; s/^-+//; s/-+$//' ;;
+    pascal) printf '%s' "$t" | tr -c 'a-zA-Z0-9' '\n' |
+            while IFS= read -r w; do [ -n "$w" ] && printf '%s' "$(cap "$w")"; done ;;
+    title) printf '%s' "$t" | tr ' ' '\n' |
+            while IFS= read -r w; do [ -n "$w" ] && printf '%s ' "$(cap "$w")"; done |
+            sed -E 's/ +$//' ;;
+    esac
+}
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/tmux/modify.txt
+
+say() { tmux -S "$SOCKET" display -c "$CLIENT" "modify: $1"; }
+unarm() { tmux -S "$SOCKET" switch-client -c "$CLIENT" -T root; }
+
+MODE=${1:?tmux-modify: no mode}
+
+# ── armed key: pipe the selection into an instance of this script ──────────
+if [ "$MODE" != in ] && [ "$MODE" != type ] && [ "$MODE" != clear ]; then
+    T=$1 CLIENT=${2:?} PANE=${3:?} SOCKET=${4:?}
+    # No selection is not an error — unarm and say so, the user may have
+    # pressed c on the way to something else.
+    [ "$(tmux -S "$SOCKET" display -p -t "$PANE" '#{selection_present}')" = 1 ] \
+        || { unarm; say "no selection"; exit 0; }
+    # copy-pipe: captures the selection, CLEARS it, stays in the mode, and
+    # pipes the exact bytes to the child (man tmux, copy-pipe).
+    exec tmux -S "$SOCKET" send-keys -t "$PANE" -X copy-pipe \
+        "$0 in $T $CLIENT $PANE $SOCKET"
+fi
+
+case $MODE in
+in)
+    T=$2 CLIENT=${3:?} PANE=${4:?} SOCKET=${5:?}
+    out=$(transform "$T" "$(cat)")
+    if [ -z "$out" ]; then unarm; say "nothing selected"; exit 0; fi
+    mkdir -p "${state%/*}"
+    printf '%s\n' "$out" >> "$state"
+    unarm
+    say "$(grep -c . "$state") pieces held"
+    ;;
+type)
+    CLIENT=${2:?} PANE=${3:?} SOCKET=${4:?}
+    if [ ! -s "$state" ]; then say "nothing held"; exit 0; fi
+    # TRAP: a pane sitting in a mode swallows sent keys — cancel first, the
+    # same ordering as copy-mode-vi s → tmux-claude-resume.
+    tmux -S "$SOCKET" send-keys -t "$PANE" -X cancel
+    text=$(tr '\n' ' ' < "$state" | sed -E 's/ +$//')
+    # `--` guards a piece that begins with a dash.
+    tmux -S "$SOCKET" send-keys -t "$PANE" -l -- "$text"
+    : > "$state"
+    ;;
+clear)
+    CLIENT=${2:?} PANE=${3:?} SOCKET=${4:?}
+    : > "$state"
+    say "hold cleared"
+    ;;
+esac

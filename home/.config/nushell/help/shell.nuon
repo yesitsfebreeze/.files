@@ -242,8 +242,8 @@
     }
     {
         cmd: "nn"
-        title: "Open the notes file"
-        use: "`nn` opens `~/notes.md` in nvim, from wherever you are."
+        title: "Start a new note"
+        use: "`nn` creates a fresh timestamped file in `~/.notes` (`2026-10-08_143012.md`) and opens it in nvim, from wherever you are. Jot down ideas, infos, tasks; every call is a new note."
         topic: "edit"
         task: "editing"
         step: 2
@@ -309,13 +309,13 @@
     {
         cmd: "cr [...args]"
         title: "Resume a Claude session in this directory"
-        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F5 c s` types for you."
+        use: "`cr` is `cc --resume`: it offers the sessions from this directory and continues the one you pick. Given an id it resumes that one without asking, which is the form `F5 m s` types for you."
         topic: "agents"
         task: "agents"
         step: 2
         does: "resume-claude"
         mode: "shell"
-        also: ["cc [...args]", "F5 c s"]
+        also: ["cc [...args]", "F5 m s"]
     }
     {
         cmd: "help --json"

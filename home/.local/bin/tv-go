@@ -65,11 +65,18 @@ font)  row=$("$FONT" --list | look font "$FONT") ;;
 # pane's header shows both.
 wallpaper) row=$("$WALL" --list | look wallpaper "$WALL" \
     --bind "left:execute-silent($WALL dark -5)+refresh-preview" --bind "right:execute-silent($WALL dark +5)+refresh-preview" \
-    --bind "shift-left:execute-silent($WALL blur -4)+refresh-preview" --bind "shift-right:execute-silent($WALL blur +4)+refresh-preview") ;;
+    --bind "shift-left:execute-silent($WALL blur -4)+refresh-preview" --bind "shift-right:execute-silent($WALL blur +4)+refresh-preview" \
+    --bind "alt-left:execute-silent($WALL tint -10)+refresh-preview" --bind "alt-right:execute-silent($WALL tint +10)+refresh-preview") ;;
 # Enter returns the row: several channels bind it to an action of their own
 # (text opens nvim, git-stash applies), which would run inside the picker.
-*)     row=$(tv "$ch" --no-remote --keybindings 'enter="confirm_selection"' \
-           ${q:+--input "$q"} | head -1) ;;
+# TRAP: enable modifyOtherKeys around the picker — television never asks
+# tmux for csi-u (crossterm pushes no modifyOtherKeys), so without this a
+# ctrl-. reaches the pane as a bare dot. Same dance as the tv def in
+# finder.nu.
+*)     printf '\033[>4;2m'
+       row=$(tv "$ch" --no-remote --keybindings 'enter="confirm_selection"' \
+           ${q:+--input "$q"} | head -1)
+       printf '\033[>4m' ;;
 esac
 
 # theme, font and wallpaper preview by side effect: settle it whether or not a row came
@@ -93,10 +100,18 @@ case $row in "~/"*) row="$HOME/${row#\~/}" ;; esac
 
 # TRAP: a full window refuses a split, and the picker window has closed —
 # fall back to a new window or the key reads as doing nothing.
+# TRAP: the new pane is NOT selected here and must not be: the picker runs
+# inside modal's popup, which is a floating pane of the client's window —
+# the active pane while it is open — so the split's own selection never
+# lands, and the popup's close re-activates the pane focused when it opened.
+# The pane's id goes to @modal-select; modal selects it after the popup died,
+# the only moment the focus sticks.
 split() {
     _d=$1; shift
-    tmux split-window -v -P -F '#{pane_id}' -t "$ORIGIN" -c "$_d" "$@" 2>/dev/null ||
-        tmux new-window -P -F '#{pane_id}' -c "$_d" "$@" 2>/dev/null
+    _p=$(tmux split-window -v -P -F '#{pane_id}' -t "$ORIGIN" -c "$_d" "$@" 2>/dev/null ||
+        tmux new-window -P -F '#{pane_id}' -c "$_d" "$@" 2>/dev/null) || return 1
+    tmux set -g @modal-select "$_p"
+    printf '%s' "$_p"
 }
 # prefill DIR TEXT: a new pane in DIR with TEXT on its prompt, unrun.
 # TRAP 1: splice `--execute "cd …"` into default-command, never type the cd:

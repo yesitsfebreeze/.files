@@ -32,6 +32,18 @@ files, dirs, text (rg), docs (the manual, line by line), git-* (log, diff,
 stash, tags, remotes, worktrees, reflog, deletions, repos, submodules),
 nu-history, quicklist, recent-dirs, recent-files, theme, font.
 
+Every file or folder channel (files, dirs, text, recent-files) carries the
+same source cycle: normal, hidden files, gitignored files — ctrl-. cycles
+it on every screen that searches files or folders, telescope find_files and
+live_grep in nvim included, and the shipped ctrl-s still cycles television.
+The border names the mode. TRAP: the key reaches a pane only when the pane
+speaks csi-u, and television never asks tmux for it — the nushell tv def
+(finder.nu) and tv-go print \ e[>4;2m around the picker and \ e[>4m after
+(the pre_prompt hook in config.nu restores a pane a killed run leaves
+enabled), and modal turns extended-keys on for its popup server, which is
+born from /dev/null. nvim enables the encoding for its own panes, so
+telescope needs nothing.
+
 fzf is the ONE accepted second picker, reached only through
 `zoxide query --interactive` (frecency ranking television cannot do).
 tv needs a real TTY.

@@ -7,6 +7,7 @@ tap "tinted-theming/tinted"
 brew "nushell"
 brew "zoxide"
 brew "television"
+brew "yazi"
 brew "tinted-theming/tinted/tinty"
 
 # editor and its formatters — conform.nvim names these by binary, and a

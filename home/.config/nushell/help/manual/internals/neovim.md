@@ -136,7 +136,7 @@ Leader must be set before lazy/plugins load.
 opt.scrolloff = 999
 ```
 
-scrolloff is a minimum distance from the window edge, not a centering command: 999 keeps the cursor line centered everywhere except the first and last half-screen of the buffer, where there is nothing left to scroll and the cursor walks to the edge (correction M-1).
+scrolloff is a minimum distance from the window edge, not a centering command: 999 keeps the cursor line centered everywhere except the first and last half-screen of the buffer, where there is nothing left to scroll and the cursor walks to the edge (correction M-1). The `center_pad` autocmds (autocmds.lua) close that gap: they pad both ends of every file buffer with half a window of empty virtual lines and, while the cursor is in either half-screen, set `topline`/`topfill` by hand with scrolloff off for that window. A file therefore opens with its first line in the middle of the window and empty space above it.
 
 ```lua
 opt.list = true

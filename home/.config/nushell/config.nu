@@ -63,7 +63,12 @@ alias g = git
 alias lg = lazygit
 alias nv = nvim
 alias vi = nvim
-alias nn = nvim ~/notes.md
+# nn: a fresh timestamped note in ~/.notes for ideas, infos, tasks.
+def nn [] {
+    let dir = ("~/.notes" | path expand)
+    mkdir $dir
+    nvim ($dir | path join $"(date now | format date '%Y-%m-%d_%H%M%S').md")
+}
 alias y = yazi
 
 alias q = exit
@@ -203,6 +208,22 @@ $env.config.hooks.pre_execution = (
     }
 )
 
+# ── PANE KEY ENCODING ──
+# The tv def (finder.nu) enables modifyOtherKeys (csi-u) for its pane so
+# ctrl-. reaches television, and restores it when the picker exits. If
+# nushell itself is interrupted in between, this fires on the next prompt
+# instead: reedline does not speak csi-u, so a pane left enabled eats
+# ctrl-key chords.
+$env.config.hooks.pre_prompt = (
+    ($env.config.hooks.pre_prompt? | default [])
+    | append {||
+        if ($env._TV_KEYS? | default "" | is-not-empty) {
+            $env._TV_KEYS = ""
+            print -n --stderr "\e[>4m"
+        }
+    }
+)
+
 # TRAP: THE DIRSTACK APPEND MUST STAY FIRST. An error in a PWD closure aborts
 # every closure appended after it, on every fire — the dirstack survives a
 # failing listing only by being appended ahead of it.
@@ -290,6 +311,25 @@ def theme [sub?: string] {
     ^tv-go act theme
 }
 
+# ── SCREEN ──
+# The prompt starts at the BOTTOM of the pane, not the top: a fresh shell and
+# every `clear` park the cursor on the second-to-last row (the prompt is two
+# lines), so output grows upward from the first command on. Plain CUP, no
+# newlines: newlines would scroll blank rows into tmux's scrollback.
+# Ctrl-L is rebound below to this `clear`; reedline's own `clearscreen`
+# would home the cursor again. `core-clear` precedes the shadow, as with
+# `core-help`.
+alias core-clear = clear
+def _screen_bottom [] {
+    let rows = (try { (term size).rows } catch { return })
+    print -n (ansi -e $"(([($rows - 1) 1] | math max));1H")
+}
+def clear [--keep-scrollback (-k)] {
+    if $keep_scrollback { core-clear --keep-scrollback } else { core-clear }
+    _screen_bottom
+}
+if $nu.is-interactive { _screen_bottom }
+
 # ── KEYBINDINGS ──
 # LAST: reedline keeps the LATER of duplicate (modifier, keycode) records, so
 # these beat tv's generated Ctrl-T/Ctrl-R. Append, never interleave. Arrows try
@@ -302,6 +342,7 @@ $env.config = (
     $env.config | upsert keybindings (
         $env.config.keybindings | append [
             { name: esc_clear, modifier: none, keycode: escape, mode: [emacs vi_insert], event: { edit: clear } }
+            { name: clear_bottom, modifier: control, keycode: char_l, mode: $KB_MODES, event: { send: executehostcommand, cmd: "clear" } }
             { name: hist_picker_local, modifier: control, keycode: char_r, mode: $KB_MODES, event: { send: executehostcommand, cmd: "tv_history_local" } }
             { name: hist_picker_global, modifier: alt, keycode: char_r, mode: $KB_MODES, event: { send: executehostcommand, cmd: "tv_shell_history" } }
             { name: hist_up_local, modifier: none, keycode: up, mode: $KB_MODES, event: { until: [{ send: menuup } { send: executehostcommand, cmd: "_hist_local" }] } }
@@ -313,3 +354,4 @@ $env.config = (
         ]
     )
 )
+

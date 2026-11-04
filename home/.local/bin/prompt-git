@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Shared, nonblocking Git prompt refresh. manual → internals/nushell-modules."""
+import fcntl
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+
+FRESH_SECONDS = 0.75
+
+
+def segment(status: bytes) -> str:
+    branch = ""
+    staged = modified = untracked = False
+    for row in status.splitlines():
+        if row.startswith(b"# branch.head "):
+            branch = row[14:].decode("utf-8", errors="replace")
+        elif row.startswith((b"1 ", b"2 ", b"u ")):
+            xy = row.split(b" ", 2)[1]
+            staged |= xy[:1] != b"."
+            modified |= xy[1:2] != b"."
+        elif row.startswith(b"? "):
+            untracked = True
+    if not branch or branch == "(detached)":
+        return ""
+    symbols = ("$" if staged else "") + ("!" if modified else "") + ("?" if untracked else "")
+    return f"  {branch}{' ' + symbols if symbols else ''} "
+
+
+def refresh(root: str, cache: Path) -> bool:
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    # Keep this inode: unlinking a lock file can admit two owners. The OS
+    # releases flock on process exit, including a killed refresh worker.
+    with open(str(cache) + ".lock", "a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        try:
+            age = time.time() - cache.stat().st_mtime
+            if 0 <= age < FRESH_SECONDS:
+                return False
+        except FileNotFoundError:
+            pass
+        result = subprocess.run(
+            ["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v2", "--branch", "--untracked-files=normal"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=10,
+        )
+        fd, temporary = tempfile.mkstemp(prefix="." + cache.name + ".", dir=cache.parent)
+        try:
+            with os.fdopen(fd, "w") as output:
+                output.write(segment(result.stdout))
+            os.replace(temporary, cache)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+        return True
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        sys.exit("usage: prompt-git REPOSITORY CACHE_FILE")
+    try:
+        refresh(sys.argv[1], Path(sys.argv[2]))
+    except (OSError, subprocess.SubprocessError):
+        # A failed probe must not overwrite the last known status as clean.
+        sys.exit(1)

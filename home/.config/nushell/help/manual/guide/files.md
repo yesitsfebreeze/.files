@@ -6,6 +6,20 @@
 
 One key opens everything: `F5 s q` asks what you are looking for, then which channel to look in — files, directories, file contents, git log, the manual, history — and opens that channel with your query already typed. Pick a row and it opens in a new pane below you. It is a tmux binding, so it answers from inside the editor and inside an agent pane too; in the editor telescope remains a second finder, deliberately not unified with this one.
 
+## `F5 f`
+
+**Browse files with Yazi in the overlay**
+
+*terminal*
+
+Press `F5` then `f` to open Yazi in the active pane's working directory. Navigate with arrows or `hjkl`; `Enter` opens a text file in Neovim inside the same overlay. Quit Neovim to return to Yazi, then press `q` or `Esc` when idle to close the overlay and return to the original pane. `Esc` first cancels selections, searches, filters, or pending cut/copy state; dialogs and Neovim keep their own Escape behavior, and unfinished tasks retain Yazi's quit warning.
+
+> **Why it is this way**
+>
+> Yazi's blocking Neovim opener keeps editing in the overlay rather than creating a separate tmux pane.
+
+See also: [`F5`](./windows.md#f5) · [`y`](./listing.md#y)
+
 ## `F5 s q`
 
 **Search: say what, then pick the channel**
@@ -75,6 +89,20 @@ See also: [`F5 s c`](./files.md#f5-s-c) · [`F5 s q`](./files.md#f5-s-q)
 > `rg` and `fd` share one ignore ruleset through `RIPGREP_CONFIG_PATH`, so a path hidden from one is hidden from both.
 
 See also: [`F5 s q`](./files.md#f5-s-q) · [`idioms`](./agents.md#idioms)
+
+## `Ctrl-. in the pickers`
+
+**Cycle the search modes: normal, hidden files, gitignored files**
+
+*terminal*
+
+In every picker that searches files or folders — the files, dirs, text and recent-files channels of television, plus telescope find_files and live_grep in the editor — `ctrl-.` cycles the mode: normal, then hidden files, then gitignored files, then back. Television names the mode in the border; telescope names it in the prompt title. The shipped `ctrl-s` cycles the same sources in television.
+
+> **Why it is this way**
+>
+> fd, rg and telescope skip hidden and gitignored paths by default, and the files a search most needs — a dotfile, an untracked build output — are often exactly those. Television cycles its channel sources natively (`config.toml` binds `ctrl-.`), but the key only reaches a pane that speaks csi-u: television never asks tmux for it, so the nushell tv def and tv-go enable it around the picker, the pre_prompt hook in config.nu restores a pane a killed run leaves enabled, and modal turns extended-keys on for its popup server. Telescope reopens the picker with the same query — hidden or no_ignore for files, --hidden or --no-ignore for grep — and one mode index is shared, so the editor keeps one visibility state.
+
+See also: [`F5 s c`](./files.md#f5-s-c) · [`finder`](./files.md#finder) · [`F5 s q`](./files.md#f5-s-q)
 
 ## `F5 s t`
 

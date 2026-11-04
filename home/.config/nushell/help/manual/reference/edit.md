@@ -11,7 +11,7 @@ Every entry links to where the guide explains it.
 | `Esc` | Clear the command line | shell | [Edit text](../guide/editing.md#esc) |
 | `cat <file>` | Dump a file with syntax highlighting and no pager | shell | [Edit text](../guide/editing.md#cat-file) |
 | `nv / vi` | Open Neovim | shell | [Edit text](../guide/editing.md#nv-vi) |
-| `nn` | Open the notes file | shell | [Edit text](../guide/editing.md#nn) |
+| `nn` | Start a new note | shell | [Edit text](../guide/editing.md#nn) |
 | `cf <file>` | Copy a file's contents to the system clipboard | shell | [Copy and paste](../guide/copy.md#cf-file) |
 | `<leader>` | Show what the leader key can do | nvim normal | [Edit text](../guide/editing.md#leader) |
 | `<Esc>` | Clear highlight | nvim normal | [Edit text](../guide/editing.md#esc) |

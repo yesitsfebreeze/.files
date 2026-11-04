@@ -35,31 +35,11 @@ def _gitseg_key [root: string] { $root | hash sha256 | str substring 0..15 }
 
 def _gitseg_file [root: string] { (_seg_dir "gitseg") | path join (_gitseg_key $root) }
 
-# The refresh job — never on the render path. Symbols match starship's
-# git_status: `$` staged, `!` unstaged-modified, `?` untracked. No branch
-# (detached, empty repo) or no git at all means an EMPTY segment and the
-# prompt shows only its own transitions — exactly the non-git rendering
-# starship produced before this module existed.
+# One porcelain-v2 query, protected across every pane by an OS file lock.
+# The worker times out Git after 10s and preserves the last good cache on error.
 def _gitseg_refresh [root: string] {
-    let seg = (try {
-        let branch = (^git -C $root branch --show-current | str trim)
-        if ($branch | is-empty) { "" } else {
-            let st = (do -i { ^git -C $root status --porcelain | lines } | default [])
-            let symbols = ([
-                (if ($st | any {|r| ($r | str substring 0..0) =~ '[AMDRUC]' }) { "$" } else { "" })
-                (if ($st | any {|r| ($r | str substring 1..1) =~ '[MD]' }) { "!" } else { "" })
-                (if ($st | any {|r| ($r | str starts-with "??") }) { "?" } else { "" })
-            ] | str join)
-            $"  ($branch)(if ($symbols | is-empty) { "" } else { $" ($symbols)" }) "
-        }
-    } catch { "" })
-    let d = (_seg_dir "gitseg")
-    mkdir $d
-    # TRAP: tmp carries the pid — two panes in one repo refresh at once and
-    # a shared tmp name would interleave their writes.
-    let tmp = ($d | path join $".(_gitseg_key $root).($nu.pid).new")
-    $seg | save -f --raw $tmp
-    mv -f $tmp (_gitseg_file $root)
+    let worker = ($nu.home-dir | path join ".local/bin/prompt-git")
+    ^python3 $worker $root (_gitseg_file $root)
 }
 
 # The reader — the only thing on the render path, µs.
@@ -71,26 +51,20 @@ def _gitseg [] {
     open --raw $f
 }
 
-# The revalidate — runs in pre_prompt, before each render. At most one
-# refresh per repo is in flight; a job that has not written in 30s (a hung
-# git) is abandoned and reissued.
+# Cached reads stay synchronous; only stale entries start a refresh job.
+# The shared worker rechecks freshness after locking, so peers do no Git work.
 def --env _gitseg_revalidate [] {
     let root = (_gitseg_root)
     if ($root == null) { return }
     let f = (_gitseg_file $root)
-    let mtime = (if ($f | path exists) { (ls $f | get 0.modified) } else { null })
-    let key = (_gitseg_key $root)
-    let inflight = ($env._GITSEG_INFLIGHT? | default null)
-    if ($inflight != null) and ($inflight.key == $key) {
-        # the job wrote the file — this render is the one that replaces the view
-        let done = ($mtime != null) and (($inflight.mtime == null) or ($mtime > $inflight.mtime))
-        if $done {
-            $env._GITSEG_INFLIGHT = null
-            return
-        }
-        if ((date now) - $inflight.at) < 30sec { return }
+    let now = (date now)
+    if ($f | path exists) {
+        let age = ($now - (ls $f | get 0.modified))
+        if $age >= 0sec and $age < 750ms { return }
     }
-    $env._GITSEG_INFLIGHT = { key: $key, mtime: $mtime, at: (date now) }
+    let last = ($env._GITSEG_LAST? | default null)
+    if $last != null and $last.root == $root and ($now - $last.at) < 750ms { return }
+    $env._GITSEG_LAST = {root: $root, at: $now}
     job spawn { _gitseg_refresh $root } | ignore
 }
 

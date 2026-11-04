@@ -19,5 +19,6 @@ Every entry links to where the guide explains it.
 | `<Tab> <S-Tab> <CR> (telescope)` | Send several picks to the quickfix list | nvim normal | [Find a file, a line, or a directory](../guide/files.md#tab-s-tab-cr-telescope) |
 | `F5 s c` | Pick a channel, then a row, and act on it | terminal | [Find a file, a line, or a directory](../guide/files.md#f5-s-c) |
 | `Ctrl-x in the files picker` | Copy, move or open the picked file | terminal | [Find a file, a line, or a directory](../guide/files.md#ctrl-x-in-the-files-picker) |
+| `Ctrl-. in the pickers` | Cycle the search modes: normal, hidden files, gitignored files | terminal | [Find a file, a line, or a directory](../guide/files.md#ctrl-in-the-pickers) |
 | `F5 s t` | Pick a channel, then a row, and type it into this pane | terminal | [Find a file, a line, or a directory](../guide/files.md#f5-s-t) |
 | `F5 s q` | Search: say what, then pick the channel | terminal | [Find a file, a line, or a directory](../guide/files.md#f5-s-q) |

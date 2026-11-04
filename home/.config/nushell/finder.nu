@@ -2,6 +2,23 @@
 # Why this file is shaped the way it is:
 #   manual → internals/nushell-modules
 
+# ── the tv wrapper ──────────────────────────────────────────────────────────
+# ctrl-. cycles the source modes (television config.toml binds it; the file
+# and folder channels carry Default, Hidden, Gitignored), but television
+# cannot ask tmux for csi-u: crossterm pushes no modifyOtherKeys, so a tv
+# pane is handed a bare dot for ctrl-. until the pane itself enables the
+# encoding — nvim does this for its own panes, television does not. Enable
+# for this pane, run, restore. stderr, so a caller capturing tv rows (the
+# finder def below) still gets clean stdout; the pre_prompt hook in
+# config.nu restores a pane if nushell dies between the two prints.
+def --wrapped tv [...args] {
+    $env._TV_KEYS = "1"
+    print -n --stderr "\e[>4;2m"
+    ^tv ...$args
+    $env._TV_KEYS = ""
+    print -n --stderr "\e[>4m"
+}
+
 # ── public entrypoint ────────────────────────────────────────────────────────
 
 export def --env finder [

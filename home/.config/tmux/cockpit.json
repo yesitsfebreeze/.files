@@ -48,12 +48,17 @@
   "tw": {"label": "wallpaper", "icon": "󰋩", "popup": "~/.local/bin/tv-go act wallpaper", "height": 30},
 
   "u": {"label": "wezterm", "icon": ""},
-  "un": {"label": "new window", "icon": "", "wezterm": "window"},
   "uq": {"label": "close window", "icon": "", "wezterm": "close"},
   "u+": {"label": "font bigger", "icon": "", "wezterm": "bigger"},
   "u-": {"label": "font smaller", "icon": "", "wezterm": "smaller"},
   "u0": {"label": "font reset", "icon": "", "wezterm": "reset"},
-  "c": {"label": "copy mode", "icon": "", "tmux": "copy-mode"},
+  "f": {"label": "files", "icon": "", "tmux": "display-popup -E -B -d '#{E:@cwd}' -w 90% -h 85% yazi"},
+  "e": {"label": "environment", "icon": "󰘔"},
+  "es": {"label": "search", "icon": "", "popup": "~/.local/bin/envs search"},
+  "ec": {"label": "copy", "icon": "", "popup": "~/.local/bin/envs copy"},
+  "ee": {"label": "edit", "icon": "", "popup": "~/.local/bin/envs edit"},
+  "m": {"label": "modify", "icon": "", "tmux": "copy-mode"},
   "d": {"label": "detach", "icon": "", "tmux": "detach-client"},
+  "l": {"label": "lock", "icon": "", "tmux": "lock-server"},
   "r": {"label": "reload config", "icon": "", "tmux": "source-file \"$XDG_CONFIG_HOME/tmux/tmux.conf\" ; display 'reloaded'"}
 }

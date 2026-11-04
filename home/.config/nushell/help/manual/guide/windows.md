@@ -2,7 +2,7 @@
 
 # Move around windows and panes
 
-> tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift+arrow, moves by Ctrl+arrow.
+> tmux owns all of it: nine windows by digit, panes by letter or arrow, splits by Shift or Alt+arrow, moves by Ctrl+arrow.
 
 There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm binds nothing that addresses a window or a pane, which is why the same keys work over ssh and survive closing the terminal. A digit addresses a window, a letter addresses a pane, and both indices start at 1 so the key matches the label you can see.
 
@@ -12,13 +12,27 @@ There are no tabs. tmux took over the multiplexing on 2026-08-30 and WezTerm bin
 
 *terminal*
 
-Press `F5` in any pane — a shell, the editor, an agent — and the cockpit opens. It is the only function key: every action lives under it by mnemonic, `k ➜ label` in columns with the key's letter lit, a `+` marking a group. Top level: `s` search, `g` git (`g l` is lazygit), `w` window, `p` pane, `t` theme, `u` WezTerm, `c` copy mode, `d` detach, `r` reload the tmux config; `Backspace` goes up, `Escape` closes. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Shift and an arrow splits the whole window that way at once (the new pane runs the full height or width), Alt and an arrow splits only the pane you are in, both into move mode. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in.
+Press `F5` in any pane — a shell, the editor, an agent — and the cockpit opens. It is the only function key: every action lives under it by mnemonic, `k ➜ label` in columns with the key's letter lit, a `+` marking a group. Top level: `f` Yazi file manager, `s` search, `g` git (`g l` is lazygit), `w` window, `p` pane, `t` theme, `m` modify, `l` lock, `d` detach, `r` reload the tmux config; `Backspace` goes up, `Escape` closes. Press an arrow in it and the cockpit closes into move mode, already one pane that way; Alt and an arrow splits the whole window that way at once (the new pane runs the full height or width), Shift and an arrow splits only the pane you are in, both focus the new pane and return to normal mode, ready to type. Press a digit `1`–`9` and you go to that window of the session; a missing one is made at `~`, so `F5 3` always lands on window 3. `F5 s s` finds a pane by name or content and swaps it in.
 
 > **Why it is this way**
 >
-> The menu is the thing to reach for first, and moving is the next most common thing, so an arrow is the way out of it into moving. The cockpit reads the arrow itself, moves, and arms tmux's `jump` table on the client as it closes, so move mode's keys are plain key tables that act the instant they are pressed.
+> The menu is the thing to reach for first, and moving is the next most common thing, so an arrow is the way out of it into moving. Native tmux bindings move and arm the `jump` table on the client, so move mode's keys are plain key tables that act the instant they are pressed.
 
 See also: [`F5 s s`](./windows.md#f5-s-s) · [`F5 <arrow>`](./windows.md#f5-arrow)
+
+## `F5 l`
+
+**Lock the terminal behind your login password**
+
+*terminal*
+
+Press `F5` then `l`. The screen clears to the wallpaper as it really is — no blur, no darkening, no theme tint — with one empty rounded box in the centre; what you type fills it from the middle outwards as dots. Type your macOS login password and press `Enter`; nothing else gets through: tmux ignores every key, `Ctrl+C`, `Ctrl+Z` and `Ctrl+D` do nothing, a wrong password says so and waits a second. Closing the WezTerm window does not help either: the next client that attaches is locked the same way. On the right password the session comes back exactly as it was, wallpaper included.
+
+> **Why it is this way**
+>
+> tmux's own `lock-server` runs the lock in the client's real terminal and stops reading keys until it exits, so no key table or popup can be reached around it; the password is checked against the system account (`dscl . -authonly`), so there is no second secret to keep.
+
+See also: [`F5`](./windows.md#f5) · `F5 d`
 
 ## `F5 s s`
 
@@ -96,11 +110,11 @@ See also: [`F5 w w`](./windows.md#f5-w-w) · [`F5 s s`](./windows.md#f5-s-s)
 
 *terminal*
 
-Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift or Alt and an arrow splits that way straight away. Arrows keep moving; Shift and an arrow splits greedily — at the top of the layout, so with the window split top/bottom, Shift+→ in the lower pane puts a full-height pane on the right half — and Alt and an arrow splits only the pane you are in (either way the new pane opens in the old one's directory); `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed.
+Press `F5`, then an arrow: you move one pane that way and stay in move mode. `F5` then Shift or Alt and an arrow splits that way straight away. Arrows keep moving; Alt and an arrow splits greedily — at the top of the layout, so with the window split top/bottom, Alt+→ in the lower pane puts a full-height pane on the right half — and Shift and an arrow splits only the pane you are in (either way the new pane opens in the old one's directory); `q` closes the pane you are in with no confirmation — and you stay in move mode after each. `Enter` or `Escape` ends it; so does any other key, which is dropped rather than typed.
 
 > **Why it is this way**
 >
-> Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. Shift's split is `split-window -f`, which splits the whole window rather than the pane; Alt's is the plain split. A split inherits the directory through the shell's OSC 7 report (`@cwd`).
+> Every move-mode key ends by re-arming the `jump` table, so the mode lasts until you leave it. A key the table lacks falls to the root table and is then dropped, which is what ends the mode on any other key. Alt's split is `split-window -f`, which splits the whole window rather than the pane; Shift's is the plain split. A split inherits the directory through the shell's OSC 7 report (`@cwd`).
 
 See also: [`F5`](./windows.md#f5) · [`F5 s s`](./windows.md#f5-s-s)
 
@@ -128,7 +142,7 @@ Press `F5 w z` and zen mode is on for every window: the active column sits centr
 
 > **Why it is this way**
 >
-> tmux has no margins, so the two sides of the centre are blank spacer panes, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. Each pane's column is the pane option `@zen_col`: a new pane in a top/bottom split joins its sibling's column, any other starts its own. The centre is the active column's panes stacked (a `v` cell) at the heights the split or a drag left; every pane of every other column is a floating pane of the frames build, marked `@zen_float`, the column's panes stacked at equal heights within the active column's content size; a floating pane may sit past the window edge and is clipped there, which is what cuts the neighbours off and keeps every column the same size, so nothing reflows as you cycle. In zen a Shift split is the plain pane split, not the whole-window one: `split-window -f` beside the floats fails with `no space for a new pane` on a `separate` border, and the refit places the pane by column anyway. Inactive panes are dimmed by `window-style` as everywhere. The carousel is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call. The layout, new-window and select-pane hooks refit after every new window, split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. TRAP: `new-window` fires no `window-layout-changed`, so without `after-new-window` a window opened with zen on stayed unfitted until its first split. Zoom is left alone.
+> tmux has no margins, so the two sides of the centre are blank spacer panes, marked `@zen_spacer` with an empty header; the process chip in the bar and the pane count skip them, and an arrow or click into one lands back on the pane it left. Each pane's column is the pane option `@zen_col`: a new pane in a top/bottom split joins its sibling's column, any other starts its own. The centre is the active column's panes stacked (a `v` cell) at the heights the split or a drag left; every pane of every other column is a floating pane of the frames build, marked `@zen_float`, the column's panes stacked at equal heights within the active column's content size; a floating pane may sit past the window edge and is clipped there, which is what cuts the neighbours off and keeps every column the same size, so nothing reflows as you cycle. In zen an Alt split is the plain pane split, not the whole-window one: `split-window -f` beside the floats fails with `no space for a new pane` on a `separate` border, and the refit places the pane by column anyway. Inactive panes are dimmed by `window-style` as everywhere. The carousel is one `select-layout` of the JSON layout string, which places every pane by index and sets the active one in the same call. The layout, new-window and select-pane hooks refit after every new window, split, close, drag, resize and focus change, and a layout that already fits is left alone — the hook's own call fires it again, so it must be a fixed point. TRAP: `new-window` fires no `window-layout-changed`, so without `after-new-window` a window opened with zen on stayed unfitted until its first split. Zoom is left alone.
 
 See also: [`F5 p r`](./windows.md#f5-p-r) · [`F5 <arrow>`](./windows.md#f5-arrow)
 

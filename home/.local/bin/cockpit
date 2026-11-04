@@ -1,133 +1,54 @@
 #!/bin/bash
-# cockpit — F5's which-key, drawn in the STATUS LINE like VS Code's leader
-# mode: no popup, no second program reading keys. F5 enters the `cockpit` key
-# table; every key in it runs `key`; the menu for the current level is printed
-# by `line`, a status #() job — `k label`, groups marked `+`. A group's key
-# stays in the table and moves the menu one level down (@cockpit-at);
-# Backspace goes up, Escape and Enter close, any UNBOUND key resets the client
-# to root and is dropped (move mode's contract). An arrow closes into move
-# mode (the `jump` table) until Enter, Shift+arrow splits the whole window,
-# Alt+arrow splits the pane, a digit 1-9 at the top level goes to that window.
-#
-#   cockpit gen                        (refresh tsv + key tables)
-#   cockpit key KEY CLIENT PANE SOCKET (every key in the table)
-#   cockpit line AT                    (the status bar's menu)
-#   cockpit --tsv JSON                 (print the compiled table)
-#
-# cockpit.json maps a key path to {label, icon?} plus at most one action;
-# an entry with no action is a group. The action names where it runs:
-#   "tmux":    a tmux command, run against the pane F5 was pressed in
-#   "popup":   a shell command, run in the centred floating terminal
-#              (a picker; "border": true boxes it, "height": N is N% tall)
-#   "shell":   text typed into the pane F5 was pressed in, then Enter
-#   "wezterm": a wezterm.lua cockpit action (window, close, bigger, ...)
-# Every string is expanded as a tmux format first, so `#{E:@cwd}` and
-# `#{pane_id}` work anywhere and a literal `#` is written `##`.
+# cockpit — compile cockpit.json into native tmux key tables on config reload.
+# F5 and every menu key then run inside tmux; no dispatcher or status jobs.
+# Each group has its own client-local table. Arrows reuse the jump bindings.
+# JSON actions: tmux, popup (optional border/height), shell, or wezterm.
 # manual → internals/tmux, "F5 — the cockpit".
-set -u
-json=${XDG_CONFIG_HOME:-$HOME/.config}/tmux/cockpit.json
-tsv=${XDG_CACHE_HOME:-$HOME/.cache}/cockpit.tsv
-tables=${tsv%.tsv}-tables.conf
-
-# `tq` escapes typed text for a tmux double-quoted string.
-read -r -d '' jqprog <<'JQ'
-def tq: gsub("(?<c>[\\\\\"$])"; "\\\(.c)");
-to_entries[] | .value as $v | [.key, ($v.icon // ""), $v.label,
-    if $v.tmux then $v.tmux
-    elif $v.popup then "run-shell -b \"~/.local/bin/modal '#{client_name}' '#{pane_id}' '#{E:@cwd}' '\($v.popup)'\(if $v.border then " border" else "" end)\(if $v.height then " h=\($v.height)" else "" end)\""
-    elif $v.shell then "send-keys -t '#{pane_id}' -l \"\($v.shell | tq)\" ; send-keys -t '#{pane_id}' Enter"
-    elif $v.wezterm then "run-shell \"printf '\\\\033]1337;SetUserVar=wez=%s\\\\007' $(printf \($v.wezterm) | base64) > #{client_tty}\""
-    else "" end] | join("\t")
-JQ
-
-case ${1-} in
---tsv) exec jq -r "$jqprog" "$2" ;;
-
-# Recompile when the json or this script is newer than its output, with the key table that
-# binds every key the menu uses; a fresh server only sources the table. A broken edit keeps the last good table.
-gen)
-    if [ "$tsv" -nt "$json" ] && [ "$tables" -nt "$0" ]; then tmux source-file "$tables"; exit 0; fi
-    mkdir -p "${tsv%/*}"
-    jq -r "$jqprog" "$json" > "$tsv.new" 2>/dev/null \
-        || { tmux display "cockpit: $json does not parse"; exit 1; }
-    mv "$tsv.new" "$tsv"
-    {
-        # Every character of every path, the digits for windows, the editing
-        # keys and the arrows. Escape and Enter close; the rest re-arm the
-        # table in the binding itself, so a fast second key is never dropped.
-        for k in $({ cut -f1 "$tsv" | fold -w1; printf '%s\n' 1 2 3 4 5 6 7 8 9; } | sort -u) \
-            BSpace Up Down Left Right S-Up S-Down S-Left S-Right M-Up M-Down M-Left M-Right; do
-            printf 'bind -T cockpit %s switch-client -T cockpit \\; run-shell -b "%s/.local/bin/cockpit key %s \\"#{client_name}\\" \\"#{pane_id}\\" \\"#{socket_path}\\""\n' \
-                "$k" "$HOME" "$k"
-        done
-        for k in Escape Enter; do
-            printf 'bind -T cockpit %s run-shell -b "%s/.local/bin/cockpit key %s \\"#{client_name}\\" \\"#{pane_id}\\" \\"#{socket_path}\\""\n' \
-                "$k" "$HOME" "$k"
-        done
-    } > "$tables.new" && mv "$tables.new" "$tables"
-    tmux source-file "$tables"
-    exit 0 ;;
-
-# The menu for level $2: actions first, then +groups, then the help keys.
-line)
-    [ -r "$tsv" ] || exit 0
-    awk -F'\t' -v at="${2-}" '
-    BEGIN { n = length(at) }
-    $1 == at { crumb = $3 }
-    length($1) == n + 1 && substr($1, 1, n) == at { k[++m] = $1; label[$1] = $3; grp[$1] = ($4 == "") }
-    END {
-        out = (crumb != "" ? "#[fg=colour8]" crumb " ›  " : "")
-        for (pass = 0; pass < 2; pass++) for (i = 1; i <= m; i++) if (grp[k[i]] == pass)
-            out = out "#[fg=colour7]" substr(k[i], n + 1) (pass ? "#[fg=colour4] +" : "#[fg=colour8] ") label[k[i]] "  "
-        print out "#[fg=colour7]⌫#[fg=colour8] back  #[fg=colour7]Esc#[fg=colour8] close"
-    }' "$tsv" ;;
-
-key)
-    key=$2 client=$3 pane=$4 sock=$5
-    t() { tmux -S "$sock" "$@"; }
-    at=$(t show -gqv @cockpit-at)
-    # close: back to root, bar redrawn. TRAP: the client is `-t` on
-    # refresh-client; `-c` reads as an adjustment and the list dies.
-    close() { t switch-client -c "$client" -T root \; refresh-client -S -t "$client" "$@"; }
-    stay() { t set -g @cockpit-at "$1" \; refresh-client -S -t "$client"; }
-    case $key in
-    Escape | Enter) t set -g @cockpit-at ''; close; exit 0 ;;
-    BSpace) if [ -n "$at" ]; then stay "${at%?}"; else close; fi; exit 0 ;;
-    Up | Down | Left | Right)
-        d=${key:0:1}
-        # With zen on, ←/→ step the carousel — the next pane comes to the
-        # centre — and arm move mode too, whose ←/→ keep stepping.
-        case $d$(t show -gqv @zen) in
-        L1 | R1)
-            close \; switch-client -c "$client" -T jump
-            [ "$d" = L ] && exec ~/.local/bin/tmux-zen prev "$pane"
-            exec ~/.local/bin/tmux-zen next "$pane" ;;
-        esac
-        close \; select-pane -t "$pane" "-$d" \; switch-client -c "$client" -T jump; exit 0 ;;
-    S-* | M-*)
-        d=${key#?-}; d=${d:0:1}
-        case $d in U) f=vb ;; D) f=v ;; R) f=h ;; L) f=hb ;; esac
-        # Shift splits the whole window (-f), Alt the pane. In zen a
-        # whole-window split finds no room beside the floats and the refit
-        # places it anyway: ←/→ start a column, ↑/↓ stack in it.
-        [ "${key%%-*}" = S ] && [ "$(t show -gqv @zen)" != 1 ] && f=f$f
-        close \; split-window -t "$pane" "-$f" -c '#{E:@cwd}' \; switch-client -c "$client" -T jump
-        exit 0 ;;
-    esac
-    path=$at$key
-    if cmd=$(awk -F'\t' -v p="$path" '$1 == p { print $4; f = 1 } END { exit !f }' "$tsv"); then
-        if [ -z "$cmd" ]; then stay "$path"; exit 0; fi
-        t set -g @cockpit-at ''
-        close \; if -F -t "$pane" 1 "$(t display -p -c "$client" -t "$pane" "$cmd")"
-        exit 0
-    fi
-    # A digit at the top level goes to that window of the session, made at ~
-    # when it is missing. `=`: exact index, else `2` prefix-matches `2.1.280`.
-    case $key$at in
-    [1-9])
-        s=$(t display -p -t "$pane" '#{session_name}')
-        close \; select-window -t "$s:=$key" 2>/dev/null || t new-window -t "$s:$key" -c ~
-        exit 0 ;;
-    esac
-    close ;;
+set -eu
+case ${1:-gen} in
+--open) exec tmux switch-client -T cockpit \; refresh-client -S ;;
+gen) ;;
+*) echo 'usage: cockpit gen | --open' >&2; exit 1 ;;
 esac
+json=${XDG_CONFIG_HOME:-$HOME/.config}/tmux/cockpit.json
+cache=${XDG_CACHE_HOME:-$HOME/.cache}
+mkdir -p "$cache"
+compiled=$(mktemp "$cache/cockpit.XXXXXX")
+trap 'rm -f "$compiled"' EXIT
+# Compile before touching the server: malformed JSON keeps the working menu.
+jq -r --arg arrows "$(tmux list-keys -T jump | awk '$4 ~ /^((S-|M-)?(Up|Down|Left|Right))$/')" '
+def q: "\"" + gsub("(?<c>[\\\\\"$])"; "\\\(.c)") + "\"";
+def table: "cockpit" + (if . == "" then "" else "-" + . end);
+def action:
+    if .tmux then .tmux
+    elif .popup then "run-shell -b " + ("~/.local/bin/modal \u0027#{client_name}\u0027 \u0027#{pane_id}\u0027 \u0027#{E:@cwd}\u0027 \u0027" + .popup + "\u0027" +
+        (if .border then " border" else "" end) + (if .height then " h=\(.height)" else "" end) | q)
+    elif .shell then "send-keys -Fl -- " + (.shell | q) + " ; send-keys Enter"
+    elif .wezterm then "run-shell " + ("printf \u0027\\033]1337;SetUserVar=wez=" + (.wezterm | @base64) + "\\007\u0027 > #{client_tty}" | q)
+    else "" end;
+. as $menu | to_entries | map(. + {action: (.value | action)}) as $rows |
+([""] + [$rows[] | select(.action == "") | .key]) as $paths |
+("set -g @cockpit-menu " + (reduce $paths[] as $p ("";
+    "#{?#{==:#{client_key_table},\($p | table)},#{E:@cockpit-menu-\($p | table)}," + . + "}") | q)),
+($paths[] as $path |
+($path | table) as $table |
+[$rows[] | select((.key | length) == ($path | length) + 1 and (.key | startswith($path)))] as $children |
+"unbind-key -aq -T \($table)",
+"bind-key -T \($table) Any switch-client -T root",
+(("Escape", "Enter") as $exit | "bind-key -T \($table) \($exit) { switch-client -T root ; refresh-client -S }"),
+"bind-key -T \($table) BSpace { switch-client -T \(if $path == "" then "root" else $path[:-1] | table end) ; refresh-client -S }",
+($arrows | gsub("-T jump +"; "-T \($table) ")),
+($children[] | "bind-key -T \($table) \(.key[-1:] | q) { " +
+    (if .action == "" then "switch-client -T " + (.key | table)
+     else "switch-client -T root ; " + .action end) + " ; refresh-client -S }"),
+(if $path == "" then range(1; 10) as $n |
+    "bind-key -T cockpit \($n) { switch-client -T root ; if -F \"#{W:#{?#{==:#{window_index},\($n)},1,}}\" { select-window -t :=\($n) } { new-window -t :\($n) -c ~ } }"
+ else empty end),
+("set -g @cockpit-menu-\($table) " +
+    ((if $path == "" then "" else "#[fg=colour8]" + $menu[$path].label + " ›  " end) +
+     ([$children[] | select(.action != "")] + [$children[] | select(.action == "")] |
+        map("#[fg=colour7]" + .key[-1:] + (if .action == "" then "#[fg=colour4] +" else "#[fg=colour8] " end) + .value.label + "  ") | join("")) +
+     "#[fg=colour7]⌫#[fg=colour8] back  #[fg=colour7]Esc#[fg=colour8] close" | q)))
+' "$json" > "$compiled"
+tmux source-file -n "$compiled"
+tmux source-file "$compiled"

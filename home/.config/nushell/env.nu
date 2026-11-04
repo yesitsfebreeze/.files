@@ -32,10 +32,23 @@ $env.VISUAL = "nvim"
 # Kern host: skip its ask-before-act confirmations.
 $env.KERN_YOLO = "1"
 
+# Kern development mode: the daemon hot-reloads its logic and keeps memory.
+$env.KERN_DEV = "1"
+
 $env.SHELL = $nu.current-exe
 
 # This repo's clone: `rr` pulls and deploys from here (dotfiles.sh).
 $env.DOTFILES = ($nu.home-dir | path join "dev" "dotfiles")
+
+# Kept variables: F5 e e writes them as KEY=VALUE lines (~/.local/bin/envs).
+# The file lives outside this repo because it may hold secrets.
+let kept_env = ($env.XDG_STATE_HOME? | default ($nu.home-dir | path join ".local" "state") | path join "env" "vars")
+if ($kept_env | path exists) {
+    open --raw $kept_env | lines
+    | parse --regex '^(?<k>[A-Za-z_][A-Za-z0-9_]*)=(?<v>.*)$'
+    | reduce --fold {} {|it, acc| $acc | upsert $it.k $it.v }
+    | load-env
+}
 
 # ── Start dir (R7) ──────────────────────────────────────────────────────────
 # TRAP: only OUTSIDE tmux — inside it this `cd` defeats every `-c` (splits

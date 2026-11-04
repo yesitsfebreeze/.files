@@ -5,8 +5,9 @@ requirements = ["fd"]
 
 [source]
 command = [
-  { name = "Default", run = "fd -t d" },
-  { name = "Hidden",  run = "fd -t d --hidden" },
+  { name = "normal", run = "fd -t d" },
+  { name = "hidden files",  run = "fd -t d --hidden" },
+  { name = "gitignored files", run = "fd -t d -I" },
 ]
 
 [preview]

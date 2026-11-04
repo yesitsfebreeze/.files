@@ -7,6 +7,8 @@ requirements = ["fd", "bat"]
 command = [
   { name = "Recent",    run = "fd -t f --changed-within 7d" },
   { name = "Last hour", run = "bash -c \"find . -type f -mmin -60 -not -path '*/.*' 2>/dev/null | head -100\"" },
+  { name = "hidden files",     run = "fd -t f -H --changed-within 7d" },
+  { name = "gitignored files", run = "fd -t f -I --changed-within 7d" },
 ]
 
 [preview]

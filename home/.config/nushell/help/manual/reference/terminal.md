@@ -10,6 +10,8 @@ Every entry links to where the guide explains it.
 |---|---|---|---|
 | `q / :q / /exit` | Leave the shell | shell | [Move around windows and panes](../guide/windows.md#q-q-exit) |
 | `F5` | Open the cockpit; an arrow in it moves between panes | terminal | [Move around windows and panes](../guide/windows.md#f5) |
+| `F5 f` | Browse files with Yazi in the overlay | terminal | [Find a file, a line, or a directory](../guide/files.md#f5-f) |
+| `F5 l` | Lock the terminal behind your login password | terminal | [Move around windows and panes](../guide/windows.md#f5-l) |
 | `F5 s s` | Search sessions: find a pane by name or content, swap it in | terminal | [Move around windows and panes](../guide/windows.md#f5-s-s) |
 | `F5 w w` | Replace this pane with a fresh shell | terminal | [Move around windows and panes](../guide/windows.md#f5-w-w) |
 | `F5 w b / F5 w f` | Step back and forward through what this pane showed | terminal | [Move around windows and panes](../guide/windows.md#f5-w-b-f5-w-f) |
@@ -22,8 +24,8 @@ Every entry links to where the guide explains it.
 | `a lone pane` | A window with one pane has no border | terminal | [Move around windows and panes](../guide/windows.md#a-lone-pane) |
 | `the status bar` | Read the bar across the top | terminal | [Move around windows and panes](../guide/windows.md#the-status-bar) |
 | `the session survives` | Close the terminal without losing your work | terminal | [Move around windows and panes](../guide/windows.md#the-session-survives) |
-| `F5 c` | Freeze the screen and select text with the keyboard | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
-| `F5 c s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
+| `F5 m` | Freeze the screen, select text — then modify it | terminal | [Copy and paste](../guide/copy.md#enter-copy-mode) |
+| `F5 m s` | Resume the Claude session this pane already printed | terminal | [Run coding agents](../guide/agents.md#resume-claude) |
 | `drag` | Select with the mouse and have it on the clipboard | terminal | [Copy and paste](../guide/copy.md#drag) |
 | `Ctrl+V` | Paste the clipboard into whatever is running | terminal | [Copy and paste](../guide/copy.md#ctrl-v) |
 | `Ctrl+C` | Copy the selection, or interrupt when there is none | terminal | [Copy and paste](../guide/copy.md#ctrl-c) |

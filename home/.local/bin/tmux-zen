@@ -12,8 +12,6 @@
 #   tmux-zen apply TARGET     re-fit; the layout, new-window and select-pane
 #                             hooks run it
 #   tmux-zen next|prev PANE   focus the next/previous column (F5 →/←)
-#   tmux-zen procs            every pane on the server that is not a spacer
-#                             or a popup, for the status bar's chip
 #
 # TARGET is a pane or window id. `@zen` and `@zen-width` are global (`-g`)
 # options. A spacer is a pane running `sleep` with `@zen_spacer` set; the
@@ -27,8 +25,13 @@ set -u
 real='#{&&:#{!=:#{@zen_spacer},1},#{||:#{!=:#{pane_floating_flag},1},#{==:#{@zen_float},1}}}'
 cmd=${1:-apply}; t=${2:-${TMUX_PANE:-}}
 case $cmd in
-procs) tmux list-panes -a -f "$real" | wc -l | tr -d ' '; exit 0 ;;
 toggle)
+    # The carousel needs the JSON layouts introduced after stable 3.7.
+    # Check before setting @zen or creating spacers on an older server.
+    case $(tmux display -p '#{window_layout}') in
+    '{'*) ;;
+    *) tmux display 'zen needs tmux 3.8 JSON layouts; use F5 p z to zoom'; exit 1 ;;
+    esac
     if [ "$(tmux show -gqv @zen)" = 1 ]; then tmux set -g @zen 0; else tmux set -g @zen 1; fi
     for w in $(tmux list-windows -a -F '#{window_id}'); do "$0" apply "$w"; done
     exit 0 ;;
@@ -116,7 +119,10 @@ else show_borders; fi
 # rest off-screen at x = width + 2. A float's x/y/w/h are its content, so
 # they copy the active pane's content: on a `separate` border type that is
 # the cell less its left frame column and top and bottom rows (measured:
-# a 60x30 cell holds 59x28). A pane's column is `@zen_col`; a pane without
+# a 60x30 cell holds 59x28); `separate-active` shares the seam with the
+# spacer and insets only at the window edge, so the centre column keeps its
+# width and loses the top and bottom rows (60x28). A pane's column is
+# `@zen_col`; a pane without
 # one is new: in a `v` container it joins a sibling's column (the active
 # pane's when its siblings are containers, a full-width -fv), else it is a
 # column of its own — the jq prints `col PANE COL` lines before the layout.
@@ -126,8 +132,10 @@ else show_borders; fi
 # along unchanged, as the parser needs a cell per pane. The geometry is
 # compared first, so apply is a fixed point.
 pct=$(tmux show -gqv @zen-width); pct=${pct:-50}
-case $(tmux display -p -t "$win" '#{pane-border-type}') in separate*) sep=1 ;; *) sep=0 ;; esac
-out=$(tmux display -p -t "$win" '#{window_layout}' | jq -r --argjson pct "$pct" --argjson sep "$sep" \
+# sepx: the centre column's left frame column; sepy: its top and bottom rows.
+case $(tmux display -p -t "$win" '#{pane-border-type}') in
+separate-active) sepx=0; sepy=1 ;; separate) sepx=1; sepy=1 ;; *) sepx=0; sepy=0 ;; esac
+out=$(tmux display -p -t "$win" '#{window_layout}' | jq -r --argjson pct "$pct" --argjson sepx "$sepx" --argjson sepy "$sepy" \
     --argjson sp "[$(idx '#{@zen_spacer}')]" --argjson col "$(cols '')" '
 .L.w as $W | .L.h as $H |
 def geo: [.. | objects | select(.t == "p") | {i, w, h, x, y, a: (.a == true)}] | sort_by(.i);
@@ -148,7 +156,7 @@ def cell: {t: "p", i} + (if has("l") then {l} else {} end);
   if $k == null then "skip" elif ($spc | length) != 2 then "spacers \(2 - ($spc | length))" else
   ($cols | length) as $n | $cols[$k] as $ac | ($ac | length) as $m
   | ($W * $pct / 100 | floor) as $c | ($W - $c - 2) as $rem | ($rem / 2 | floor) as $l
-  | ($l + 1 + $sep) as $ax | ($c - $sep) as $aw | ($H - 1 - $sep) as $ah
+  | ($l + 1 + $sepx) as $ax | ($c - $sepx) as $aw | ($H - 1 - $sepy) as $ah
   | (if ($ac | map(.h) | add) + $m - 1 == $H then ($ac | map(.h))
      else [range($m) | if . < $m - 1 then (($H - $m + 1) / $m | floor) else $H - $m + 1 - ($m - 1) * (($H - $m + 1) / $m | floor) end] end) as $hs
   | (if $m == 1 then ($ac[0] | cell) + {w: $c, h: $H, x: ($l + 1), y: 0, a: true}

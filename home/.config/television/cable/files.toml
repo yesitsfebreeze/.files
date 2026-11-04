@@ -5,8 +5,9 @@ requirements = ["fd", "bat"]
 
 [source]
 command = [
-  { name = "Default", run = "fd -t f" },
-  { name = "Hidden",  run = "fd -t f -H" },
+  { name = "normal", run = "fd -t f" },
+  { name = "hidden files",  run = "fd -t f -H" },
+  { name = "gitignored files", run = "fd -t f -I" },
 ]
 
 [preview]

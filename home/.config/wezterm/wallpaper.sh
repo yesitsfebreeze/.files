@@ -6,7 +6,8 @@
 #   wallpaper.sh --list       images in ~/wallpapers, the current one first, `off` last
 #   wallpaper.sh --preview F  put F behind every window (wezterm-bg F), header below
 #   wallpaper.sh --apply F    keep F
-#   wallpaper.sh dark|blur ±N nudge darkness or blur (px), print the header
+#   wallpaper.sh dark|blur|tint ±N  nudge darkness, blur (px) or theme tint (%),
+#                       print the header
 #   wallpaper.sh              put back what the picker opened on (Esc)
 #
 # A preview IS a wezterm-bg apply — wezterm.lua's reload watch repaints every
@@ -17,8 +18,9 @@ DIR="$HOME/.local/state/wezterm"
 STATE="$DIR/background.txt"
 ORIG="$DIR/background.orig"
 WALL="${WALLPAPERS:-$HOME/wallpapers}"
-cur="" blur=20 dark=60
-[[ -f "$STATE" ]] && { read -r cur; read -r blur; read -r dark; } < "$STATE"
+cur="" blur=20 dark=60 tint=0
+[[ -f "$STATE" ]] && { read -r cur; read -r blur; read -r dark; read -r tint; } < "$STATE"
+tint=${tint:-0}
 [[ -f "$DIR/background" ]] || cur=""
 
 id="${2:-}"
@@ -26,7 +28,7 @@ id="${id%% (current)}"
 [[ "$id" == off || "$id" == "" || "$id" == /* ]] || id="$WALL/$id"
 show() { if [[ "$1" == off ]]; then wezterm-bg off; else wezterm-bg "$1"; fi; }
 park() { [[ -f "$ORIG" ]] || { [[ -n "$cur" ]] && cat "$STATE" || :; } > "$ORIG"; }
-header() { printf 'dark %s  ←/→      blur %spx  shift-←/→\n' "$dark" "$blur"; }
+header() { printf 'dark %s  ←/→      blur %spx  shift-←/→      tint %s%%  alt-←/→\n' "$dark" "$blur" "$tint"; }
 case "${1:-}" in
 --list)
     [[ -n "$cur" ]] && echo "${cur#"$WALL"/} (current)"
@@ -39,12 +41,12 @@ case "${1:-}" in
     header
     [[ "$id" == off ]] || magick identify -format '\n%f  %wx%h\n' "$id" 2>/dev/null ;;
 --apply) rm -f "$ORIG"; [[ "$id" == "$cur" ]] || show "$id" ;;
-dark|blur)
+dark|blur|tint)
     park
-    v=$([[ $1 == dark ]] && echo "$dark" || echo "$blur")
+    case $1 in dark) v=$dark ;; blur) v=$blur ;; tint) v=$tint ;; esac
     ((v += ${2:-0})); ((v < 0)) && v=0
     wezterm-bg "$1" "$v"
-    { read -r _; read -r blur; read -r dark; } < "$STATE"
+    { read -r _; read -r blur; read -r dark; read -r tint; } < "$STATE"
     header ;;
 *)
     [[ -f "$ORIG" ]] || exit 0

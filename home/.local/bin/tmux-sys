@@ -29,6 +29,18 @@
 # previous tick, kept in $TMPDIR; the first tick after a boot or an interface
 # change prints 0.
 
+
+# Socket heal. Something that clears /tmp can delete the server's socket
+# (/private/tmp/tmux-501/default) while the server keeps running: the panes
+# still work, but every `tmux` command from a script then fails with "no
+# server running", and run-shell bindings such as the cockpit's modal pickers
+# only report "returned 1". SIGUSR1 makes the server create its socket again.
+# This tick is the one script the server itself runs every status-interval,
+# so the socket is back within 5 s. Its ceiling: while the status line is
+# hidden nothing heals; `kill -USR1 <server pid>` does it by hand.
+sock=${TMUX%%,*} pid=${TMUX#*,}
+[ -z "$TMUX" ] || [ -S "$sock" ] || kill -USR1 "${pid%%,*}"
+
 state="${TMPDIR:-/tmp}/tmux-sys.net"
 iface=$(route -n get default 2> /dev/null | awk '/interface:/ { print $2 }')
 now=$(date +%s)

@@ -31,6 +31,59 @@ autocmd("BufReadPost", {
   end,
 })
 
+-- 'scrolloff' cannot scroll above line 1 or below the last line, so the first
+-- and last half screen are never centred. Pad both ends of the buffer with
+-- empty virtual lines and, while the cursor is in either half, hold the view
+-- by hand (scrolloff off, topline and topfill set). In between, scrolloff=999
+-- does the centring and keeps the cursor centred under wheel scrolling too.
+-- Ceiling: counts buffer lines, so wrapped or folded lines near either end
+-- shift the cursor off centre by their extra rows; at the ends a wheel scroll
+-- moves the view without the cursor until the next cursor move.
+local center_ns = vim.api.nvim_create_namespace("center_pad")
+local center_group = augroup("center_pad", { clear = true })
+
+local function half(win)
+  return math.floor((vim.api.nvim_win_get_height(win) - 1) / 2)
+end
+
+local function center_pad(win)
+  local buf = vim.api.nvim_win_get_buf(win)
+  vim.api.nvim_buf_clear_namespace(buf, center_ns, 0, -1)
+  if vim.bo[buf].buftype ~= "" then return end
+  local lines = {}
+  for _ = 1, half(win) do lines[#lines + 1] = { { "", "" } } end
+  vim.api.nvim_buf_set_extmark(buf, center_ns, 0, 0, { virt_lines = lines, virt_lines_above = true })
+  local last = vim.api.nvim_buf_line_count(buf) - 1
+  vim.api.nvim_buf_set_extmark(buf, center_ns, last, 0, { virt_lines = lines })
+end
+
+local function center_hold(win)
+  local buf = vim.api.nvim_win_get_buf(win)
+  if vim.bo[buf].buftype ~= "" then return end
+  local h = half(win)
+  local lnum = vim.api.nvim_win_get_cursor(win)[1]
+  local edge = lnum <= h or lnum >= vim.api.nvim_buf_line_count(buf) - h
+  vim.wo[win].scrolloff = edge and 0 or 999
+  vim.api.nvim_win_call(win, function()
+    vim.fn.winrestview({ topline = math.max(1, lnum - h), topfill = math.max(0, h - lnum + 1) })
+  end)
+end
+
+autocmd({ "BufWinEnter", "VimResized", "WinResized", "TextChanged", "TextChangedI" }, {
+  group = center_group,
+  callback = function()
+    center_pad(0)
+    center_hold(0)
+  end,
+})
+
+autocmd({ "CursorMoved", "CursorMovedI" }, {
+  group = center_group,
+  callback = function()
+    center_hold(0)
+  end,
+})
+
 autocmd("BufWritePre", {
   group = augroup("trim_whitespace", { clear = true }),
   pattern = "*",

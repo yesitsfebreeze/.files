@@ -4,15 +4,15 @@
 
 > Keyboard selection in the scrollback, and the clipboard that follows you over ssh.
 
-Copying works without the mouse: freeze the screen, move the cursor, and press `c` to widen the selection from a cell to a word to a whole line. Where the text lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at.
+Copying works without the mouse: freeze the screen, move the cursor, and `Space` grows the selection a press at a time — word, line, then a line more. `c` is the other half: it arms a rewrite (lower, snake, Pascal…) that holds the piece until `t` types all held pieces at the prompt. Where a copy lands depends on where the panes are — on this desk it goes through pbcopy, and anywhere else it travels out as OSC 52 to the machine you are sitting at.
 
-## `F5 c`
+## `F5 m`
 
-**Freeze the screen and select text with the keyboard**
+**Freeze the screen, select text — then modify it**
 
 *terminal*
 
-Press `F5 c` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` grows a selection a press at a time: the link under the cursor, else the word (everything between spaces), then the whole line, then one more line down per press, scrolling along to the end. `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection.
+Press `F5 m` and the pane stops scrolling: you get a cursor that moves on vi keys — `hjkl` or the arrows to move, `b` back to the start of the word before and `w` forward to the end of the word you are on, `g` and `G` to the ends of the scrollback, `/` to search it. Nothing has to be pressed to begin. Stop where you want and Shift takes a unit outright — `W` the word under the cursor, `L` the rest of the line, `P` the whole paragraph — each copied and out of the mode in one key. Lowercase `p` selects that paragraph and stays, so it can be widened or trimmed before you take it. `Space` grows a selection a press at a time: the link under the cursor, else the word (everything between spaces), then the whole line, then one more line down per press, scrolling along to the end. `V` takes whole lines, and `v` switches between a run of text and a rectangular block. `y`, `Enter` or `Ctrl+C` copy what is selected and leave; `q` or `Esc` leave with nothing copied, and `Esc` with a selection open just drops the selection. With a selection open, `c` arms a transform and the next letter rewrites the selection into a hold buffer instead of the clipboard: `c` lower, `C` upper, `s` snake, `k` kebab, `p` Pascal, `t` title, `a` raw. Any other key disarms and is dropped. Nothing is delivered yet: each transform holds one piece, and pieces can be collected one selection at a time — across panes, the hold survives leaving the mode. `t` at navigation level types the whole hold at the pane's prompt, space-joined, and empties it; `x` empties it untouched. While `c` is held, the status bar lights the transform letters in colour4 — `c` lower, `C` upper, `s` snake, `k` kebab, `p` pascal, `t` title, `a` raw — and shows navigation hints (`SPC` select, `c` transform, `t` type, `x` clear, `y` copy, `q` leave) over the normal copy-mode row, the clock and tmux-sys staying visible; a keypress disarms and is dropped.
 
 > **Why it is this way**
 >
@@ -32,7 +32,7 @@ Drag across text with the left button and let go — the selection is on the sys
 >
 > The selection belongs to the multiplexer, not the terminal, and it has to: a terminal-level drag across a vertical split runs straight through the divider and takes both panes' columns as one line. Having taken the gesture the multiplexer owes it a clipboard, and that is the part that shipped broken — every stock copy path, the drag-release and both click counts included, pipes to NO command, which fills the multiplexer's own paste buffer and stops. The text highlighted, it looked copied, and `Cmd+V` still pasted whatever was there before. Each path now names the sink explicitly. A program that tracks the mouse itself — the editor, an agent pane — still gets its own clicks.
 
-See also: [`Ctrl+C`](./copy.md#ctrl-c) · [`Ctrl+V`](./copy.md#ctrl-v) · [`F5 c`](./copy.md#enter-copy-mode)
+See also: [`Ctrl+C`](./copy.md#ctrl-c) · [`Ctrl+V`](./copy.md#ctrl-v) · [`F5 m`](./copy.md#enter-copy-mode)
 
 ## `Ctrl+C`
 
@@ -46,7 +46,7 @@ In copy mode with something selected, `Ctrl+C` copies it and leaves; with nothin
 >
 > Two bindings in series, and the order is the whole trick. The terminal's reads ITS own selection first and sends the key on when there is none — which under the multiplexer is always, since the multiplexer owns the mouse and the terminal never sees the drag. So the key always arrives, and the multiplexer decides: copy when a selection is present, leave when it is not. Corrected 2026-09-01. This said mouse selection was left to the terminal because the multiplexer's mouse mode was off; the mouse mode is ON and has been, so the terminal's half found nothing to copy and the multiplexer's half was bound to plain `cancel` — the obvious gesture, select and press `Ctrl+C`, threw the selection away and touched no clipboard.
 
-See also: [`Ctrl+V`](./copy.md#ctrl-v) · [`F5 c`](./copy.md#enter-copy-mode) · [`drag`](./copy.md#drag)
+See also: [`Ctrl+V`](./copy.md#ctrl-v) · [`F5 m`](./copy.md#enter-copy-mode) · [`drag`](./copy.md#drag)
 
 ## `cf <file>`
 

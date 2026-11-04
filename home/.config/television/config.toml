@@ -14,3 +14,10 @@ position = "bottom"
 
 [ui.status_bar]
 hidden = true
+# Every channel that searches files or folders (files, dirs, text,
+# recent-files) cycles its sources with ctrl-.: Default -> Hidden ->
+# Gitignored. The shipped ctrl-s stays bound to the same action. The
+# pane-side encoding this needs lives in tv-go and finder.nu
+# (docs/llms/terminal.txt).
+[keybindings]
+"ctrl-." = "cycle_sources"

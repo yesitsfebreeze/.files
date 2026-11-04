@@ -2,10 +2,11 @@
 # modal — a picker as a centred popup that opens already drawn: F5 s q, F5 s t, F5 s c,
 # F5 t s and the cockpit's search, git and theme rows.
 #
-#   modal CLIENT ORIGIN_PANE DIR 'SHELL COMMAND' [border]
+#   modal CLIENT ORIGIN_PANE DIR 'SHELL COMMAND' [h=N]
 #
-# Pickers draw their own box; `border` gives a program that does not
-# (lazygit) the cockpit's rounded one, its session two cells smaller.
+# Pickers draw their own box. Every overlay keeps a blank margin between its
+# box and the panes behind: one row above and below, two columns left and
+# right (a cell is about twice as tall as wide, so the gap looks even).
 #
 # tmux paints a popup's box empty the moment it opens and the program's first
 # frame arrives later (~40 ms for tv-go on F5 s c), and nothing holds a popup
@@ -14,12 +15,16 @@
 # two polls), and only then opens the popup, which runs a nested `tmux attach`
 # to it: a client redraws a finished screen at once. When the command exits
 # the session ends, the nested client exits and the popup closes (-E).
+# A picker that opened a pane leaves its id in @modal-select: the focus
+# handoff below selects it after the popup died, because this build's popup
+# close restores the pane focused when it opened — selected from inside the
+# popup, a new pane would never keep the focus.
 # The session has an empty key table and no prefix, so every key reaches the
 # picker. manual → internals/tmux.
 set -u
-client=$1 origin=$2 dir=$3 cmd=$4 box=(-B) in=0 hp=85
-# Flags after CMD: `border` draws a box, `h=N` makes it N% tall (default 85).
-for f in "${@:5}"; do case $f in border) box=(-b rounded -S fg=colour8) in=2 ;; h=*) hp=${f#h=} ;; esac; done
+client=$1 origin=$2 dir=$3 cmd=$4 hp=85
+# Flag after CMD: `h=N` makes it N% tall (default 85).
+for f in "${@:5}"; do case $f in h=*) hp=${f#h=} ;; esac; done
 # TRAP: not `display -p -c CLIENT`: that expands client_* for another client.
 read -r cw ch < <(tmux list-clients -f "#{==:#{client_name},$client}" -F '#{client_width} #{client_height}')
 # -y is the bottom line: the one an 85%-tall centred popup has, whatever hp,
@@ -33,10 +38,26 @@ w=$((cw * 90 / 100)) h=$((ch * hp / 100)) y=$(((ch - 1) / 2 + ch * 85 / 100 / 2)
 # its first frame over the snapshot below, which is that same frame, instead
 # of blanking the popup for one frame first.
 m="tmux -L modal -f /dev/null"
-$m new-session -d -s "$s" -x $((w - in)) -y $((h - in)) -c "$dir" \
+# The margin is the nested window's own chrome, all blank: its pane-border
+# header row on top, its status line at the bottom, and a one-column spacer
+# pane (plus its one-column border) on each side. The window is h-1 tall, as
+# the status line takes the last row once the popup's client attaches.
+# TRAP: extended-keys on this server too (the set -s at the chain end) — it is
+# born from /dev/null, so without it the picker pane is handed a bare dot for
+# ctrl-. (the source cycle tv-go enables) and the nested attach never asks for csi-u.
+$m new-session -d -s "$s" -x "$w" -y $((h - 1)) -c "$dir" \
     "export TMUX='$TMUX' TV_ALL_ORIGIN='$origin' TV_ALL_CLIENT='$client'; $cmd" \; \
-    set -t "$s" status off \; set -t "$s" key-table none \; set -t "$s" prefix None \; \
-    set -s terminal-overrides '*:smcup@:rmcup@:clear=\E[H' || exit 1
+    set -t "$s" key-table none \; set -t "$s" prefix None \; \
+    set -t "$s" status-style default \; set -t "$s" status-format[0] '' \; \
+    set -w -t "$s" pane-border-status top \; set -w -t "$s" pane-border-format '' \; \
+    set -w -t "$s" pane-border-lines spaces \; set -w -t "$s" pane-border-style default \; \
+    set -w -t "$s" pane-active-border-style default \; \
+    split-window -d -hb -l 1 -t "$s" 'exec sleep 86400' \; \
+    split-window -d -h -l 1 -t "$s" 'exec sleep 86400' \; \
+    set-hook -t "$s" pane-exited "kill-session -t '$s'" \; \
+    set -s terminal-overrides '*:smcup@:rmcup@:clear=\E[H' \; \
+    set -s extended-keys on \; \
+    set -s extended-keys-format csi-u || exit 1
 last="" i=0
 # No sleep between polls: each capture is one round trip (~3 ms), which is
 # the interval. ponytail: ~2 s bound on the wait; a slower picker is shown as-is.
@@ -46,6 +67,16 @@ while [ $((i += 1)) -le 600 ]; do
     last=$now
 done
 snap=${TMPDIR:-/tmp}/modal$$.snap
-now=$($m capture-pane -e -p -t "$s"); printf '%s' "${now//$'\n'/$'\r\n'}" > "$snap"
-tmux display-popup -c "$client" -E "${box[@]}" -w "$w" -h "$h" -x C -y "$y" \
+# The snapshot sits where the pane will: one row down, two columns in.
+now=$($m capture-pane -e -p -t "$s"); printf '\r\n  %s' "${now//$'\n'/$'\r\n  '}" > "$snap"
+tmux display-popup -c "$client" -E -B -w "$w" -h "$h" -x C -y "$y" \
     "cat '$snap'; rm -f '$snap'; TMUX= exec $m attach -t '$s'"
+# The focus handoff: a picker that opened a pane (tv-go's `edit`, `prefill`
+# and `git show`) leaves its id in @modal-select, and modal — the only thing
+# that runs AFTER the popup died — selects it. The popup is a floating pane
+# of the client's window: while it is open the active pane is the popup
+# itself, so the split's own selection never lands, and its close
+# re-activates the pane focused when it opened. A picker that opens nothing
+# leaves the option unset and this is a no-op.
+sel=$(tmux show -gqv @modal-select)
+[ -z "$sel" ] || tmux set -gu @modal-select \; select-window -t "$sel" \; select-pane -t "$sel"

@@ -8,25 +8,82 @@ manual internals/tmux.md (searchable with `?`).
 
 ## F5 — the cockpit
 
-F5 runs ~/.local/bin/cockpit: a which-key of every surface action, drawn as
-a tmux popup. It is frame-cached: cockpit.json compiles to a TSV, every
-menu is pre-drawn per popup width into ~/.cache/cockpit.WIDTH/, so opening
-F5 forks nothing but the popup itself — one read and one synchronized
-write per step. Arrows close into move mode; a digit goes to that window;
-`w z` is zen mode. After a deploy, hooks/reload-tmux.sh re-source's the
-config so new bindings exist on the keyboard, and warns clients that lack
-the `sync` terminal feature (popup redraws would flicker).
+F5 opens a native tmux key table and renders the menu in the status bar.
+~/.local/bin/cockpit compiles cockpit.json at config reload into one key
+table per group (cockpit, cockpit-p, ...), plus static status formats. No
+shell dispatcher, frame cache, or menu-rendering process runs per key.
+The current group belongs to the client, so simultaneous clients cannot
+change each other’s menus. The compiler copies the jump table’s arrow
+bindings; there is only one definition of movement and split behavior.
+Edit cockpit.json, then reload tmux.conf (F5 r or deploy) to apply it.
+Malformed JSON leaves the last compiled menu intact.
+
+Plain arrows close into move mode. Alt+arrow splits the whole window,
+Shift+arrow the current pane; both focus the new pane in normal mode.
+Digits choose an exact window index, creating missing windows at ~.
+Group keys and Backspace switch native tables; Enter, Escape and unbound
+keys close. cockpit --open supports the editor-side opener.
+The pane count uses native session/window/pane format loops. Enter’s URL
+scanner uses Bash builtins and one tmux query, with no per-character forks.
+
+Check source or deployed files on an isolated server:
+    python3 scripts/test-tmux-config.py
+    TMUX_TEST_BIN=~/.local/bin/tmux python3 scripts/test-tmux-config.py
+    TMUX_TEST_HOME=$HOME TMUX_TEST_BIN=~/.local/bin/tmux python3 scripts/test-tmux-config.py
+Requires Python 3.11+ for the pseudo-terminal helpers. Tests never change
+the live server. Stock 3.7c skips one border-hook assertion: after killing
+an active pane, its window-layout-changed hook can resolve the current
+window to another session. The custom build passes it.
+
+## F5 l — lock
+
+F5 then l runs `lock-server`: tmux stops drawing to every client, runs
+~/.local/bin/tmux-lock in the client's own terminal and ignores keys until it
+exits. The script sends WezTerm the `lock` user var (wezterm.lua swaps the
+wallpaper for `background.lock`, wezterm-bg's cached render without blur,
+shown as is: no darkness, no tint; the swap is one small JPEG decode), draws one
+rounded box in the centre with the password dots growing from its middle and exits 0 only when `dscl . -authonly $USER` accepts the
+macOS login password; Ctrl+C, Ctrl+Z, Ctrl+\ and Ctrl+D are ignored, a wrong
+password waits a second. While it runs `@locked` is set on the server and the
+`client-session-changed[1]` hook runs `lock-client` for any client that
+attaches, so closing and reopening the WezTerm window lands on the lock too. A
+hangup ends the script (the window is gone); unlocking clears `@locked` and
+sends `lock=0`. Checked on an isolated server through a pty client with a
+`dscl` shim: root keys dead while locked, wrong password refused, reattach
+locked, right password restores keys and wallpaper.
+
+## F5 f — Yazi
+
+F5 then f opens Yazi in a native tmux popup (90% wide, 85% tall, not the
+hidden-session modal: Yazi's exit waits five seconds there for a terminal
+probe reply) at the active pane's working directory. ~/.config/yazi/init.lua adds one rounded outer frame in
+terminal colour 8, matching the other pickers. The header, file view and footer
+sit inside it; the shared modal's blank margin and other overlays are unchanged.
+~/.config/yazi/yazi.toml sets the edit opener to
+`nvim -- %s` with `block = true`: editing stays in that overlay, never a
+new pane. Quit Neovim to return to Yazi; `q` in Yazi closes the overlay.
+`Esc` also closes it when idle. The escape-or-quit plugin first delegates
+find/visual/filter/selection/search cancellation to Yazi, then clears pending
+cut/copy state. Its normal quit action retains Yazi's unfinished-task warning;
+input/dialog/editor Escape handling is unchanged. Search detection uses
+`cwd.spec.is_search`; deprecated `cwd.is_search` triggers an API warning on
+Yazi 26.9.1. The regression check rejects obsolete URL fields and requires idle
+Escape to finish in under two seconds. The detached test answers the terminal's
+DA1 probe; otherwise Yazi waits five seconds for that missing reply on exit.
+Check source or deployed config with
+`python3 scripts/test-yazi-escape.py [YAZI_CONFIG_HOME]`.
+The former custom ~/.local/bin/explorer is retired. Yazi is in the Brewfile.
 
 ## The ~/.local/bin tmux scripts
 
-cockpit (the F5 overlay), modal (the popup runner the cockpit invokes),
+cockpit (the F5 menu compiler), modal (the popup runner the cockpit invokes),
 tmux-main (session seeding — inside tmux the start dir comes from here,
 not env.nu), tmux-zen (zen mode: centres the active column between spacer
 panes, floats other columns), tmux-sys / tmux-panes / tmux-slot /
 tmux-relax / tmux-git (pane header bits; the header shows git state
 because the prompt is gone the moment a full-screen tool takes over),
 tmux-claude-state / tmux-claude-resume (Claude session bits),
-tmux-copy-open-link / tmux-copy-expand (copy-mode helpers), tv-go
+tmux-copy-open-link / tmux-copy-expand / tmux-modify (copy-mode helpers; tmux-modify is the transform half of modify mode — F5 m, hold buffer, `t` types it at the prompt), tv-go
 (channel actions), bounded (spawn with a timeout — used against the
 Keychain and git credential helpers, which can block indefinitely),
 wezterm-bg, font.sh/wallpaper.sh under wezterm/.
@@ -35,3 +92,65 @@ wezterm-bg, font.sh/wallpaper.sh under wezterm/.
 
 ~/.config/tmux/tmux.conf + cockpit.json (the key map). Plugins:
 tmux-resurrect, tmux-continuum (cloned by dotfiles.sh --install, no tpm).
+
+## Custom build and shared cursor (2026-09-30)
+
+Source: https://github.com/yesitsfebreeze/tmux, branch personal; local checkout
+~/dev/tmux. The branch retains the existing pane-frame patches and adds the
+opt-in `cursor-smear` session option. The current configuration leaves cursor-smear off; it is optional. One overlay follows the focused client's final cursor,
+including pane switches and copy mode. Physical cursor visibility and shape
+are restored when motion settles; application grids remain untouched.
+
+Neovim has no smear plugin and no metadata bridge since 2026-10-12; the
+renderer sees Neovim as any other application grid. The fork embeds the
+unmodified pinned Neovim smear engine through LuaJIT,
+including diagonal glyphs, shading and mode-specific motion. The parity
+regression compares 673 frames against the original Neovim modules. See
+README.fork.md in the fork.
+Installing a new binary does not upgrade a running server; preserve existing
+sessions and use an isolated preview until a normal server restart.
+
+## Packaged tmux and upstream contributions (2026-10-08)
+
+Keep the existing visuals. Do not replace the running server to activate
+a different binary: installing or selecting a binary does not migrate sessions.
+Homebrew’s stable bottle is 3.7c. The cockpit, split/move keys, copy mode,
+URL handling, picker popups, slot history and status gauges use standard
+commands and do not require our fork.
+
+The zen carousel relies on JSON layouts and floating-pane placement, which
+upstream 3.8 adds. 3.8-rc3 is currently a prerelease, not the stable Homebrew
+bottle. On older servers, attempting zen now reports the missing capability
+before changing @zen or creating spacer panes. Native pane zoom remains
+available, but is not a visual replacement for the carousel.
+
+Separate rounded tiled-pane frames are still in the active upstream PR
+#5433. Contribute fixes or regression evidence there rather than opening a
+duplicate feature PR. Our cursor renderer is a separate feature; the latest
+implementation embeds GPL-3.0 smear-cursor modules and adds LuaJIT plus
+thousands of generated/vendored lines. It needs its own upstream design and
+review, not a combined frames/cursor/config PR. A terminal-side cursor trail
+(e.g. Kitty) avoids a tmux patch but is not identical to the Neovim engine,
+and changing the terminal is outside this cleanup.
+
+Sources checked:
+- https://formulae.brew.sh/formula/tmux
+- https://github.com/tmux/tmux/releases
+- https://github.com/tmux/tmux/blob/master/CHANGES
+- https://github.com/tmux/tmux/pull/5433
+- https://sw.kovidgoyal.net/kitty/conf/#opt-kitty.cursor_trail
+
+A detached-session reproducer also exposed a queued target bug on current
+upstream 48bbaa1: after the active pane is removed, a layout hook can modify
+another session’s window. Draft PR https://github.com/tmux/tmux/pull/5703
+keeps the surviving queued window as the fallback. It contains only
+cmd-find.c and one regression script; all 15 relevant hook, target, and
+pane/session lifecycle regressions pass. Worktree:
+~/dev/tmux-layout-hook, branch fix/layout-hook-target, commit 16b11bd.
+This PR was not installed into the live custom server.
+
+Cleanup verification: all 11 tests pass against the deployed custom build,
+including zen split focus, two clients in different menus, native popup
+arguments and WezTerm action output. The cockpit compiler is 54 lines
+(previously 134); URL handling is 24 (previously 53). The frames and cursor
+sources in ~/dev/tmux were not changed by this cleanup.

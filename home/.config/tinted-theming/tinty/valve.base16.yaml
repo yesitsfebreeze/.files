@@ -1,0 +1,22 @@
+system: "base16"
+name: "valve"
+author: "feb — Counter-Strike 1.6 VGUI: the olive-green in-game interface (cs16.css tokens + the game's bevel colours)"
+description: "Custom scheme copied from the real CS 1.6 interface, not the amber Steam menu: the olive-green panel every buy menu and scoreboard was drawn on (#4a5942), its inset panels (#3e4637), the off-white text (#dedfd6), the sage dim text (#a0aa95), the bevel pair (border-light #8c9284, border-dark #292c21), the CS-yellow accent (#c4b550) and the pale green / light blue button tints (ekmas/cs16.css). Accents are the game's hues lifted just enough to read on the olive; the game itself runs them at ~3.5:1 on this exact background. Tracked source lives here in the config dir; copied into the (gitignored) tinty data-dir custom-schemes/ so tinty and the colors generators resolve base16-valve."
+variant: "dark"
+palette:
+  base00: "#4a5942" # background — THE olive-green VGUI panel
+  base01: "#333b2c" # lighter background — inset panels (secondary-bg #3e4637 toward border-dark)
+  base02: "#57664b" # selection — the scrollbar-track olive lifted
+  base03: "#a0aa95" # comments — the game's sage text-3, status text
+  base04: "#8c9284" # darker foreground — border-light, the bevel's lit side (active panes)
+  base05: "#dedfd6" # foreground — the game's off-white text
+  base06: "#e6ecdf" # light foreground
+  base07: "#ffffff" # brightest — button text
+  base08: "#f0a590" # red — the red-button family, pastelized for the olive
+  base09: "#d5b776" # orange — the tan tint
+  base0A: "#c4b550" # yellow — THE CS accent, highlighted items
+  base0B: "#c2dfba" # green — pale green tint
+  base0C: "#7eb7cd" # cyan — light blue tint
+  base0D: "#99ccff" # blue — the CT blue
+  base0E: "#c99bc2" # purple — the purple-button family, lifted
+  base0F: "#b59a7f" # brown — the game's brown button

@@ -4,18 +4,24 @@
 #   wezterm-bg IMAGE    use IMAGE (blur and darkness kept)
 #   wezterm-bg blur N   blur radius in px, 0 = sharp
 #   wezterm-bg dark N   darkness, 0 = untouched, every 20 halves the brightness
+#   wezterm-bg tint N   theme background over the image, 0-100 %: 0 = image only,
+#                       100 = only the background colour
 #   wezterm-bg off      no image
-#   wezterm-bg          print image, blur, dark
+#   wezterm-bg          print image, blur, dark, tint
 #
 # Blur is baked into `background` (JPEG, or GIF for an animated source) by magick (WezTerm cannot blur an image);
-# darkness is applied by wezterm.lua, so `dark` never re-renders. Both files
-# are on wezterm.lua's reload watch.
+# darkness and tint are applied by wezterm.lua, so neither re-renders. Both files
+# are on wezterm.lua's reload watch. `background.lock` is the same render
+# without blur: what the lock screen (tmux-lock) shows as is, cached so the
+# swap never decodes the full-size source.
 
 DIR="$HOME/.local/state/wezterm"
 STATE="$DIR/background.txt"
 OUT="$DIR/background"
-src="" blur=20 dark=60
-[[ -f "$STATE" ]] && { read -r src; read -r blur; read -r dark; } < "$STATE"
+LOCK="$DIR/background.lock"
+src="" blur=20 dark=60 tint=0
+[[ -f "$STATE" ]] && { read -r src; read -r blur; read -r dark; read -r tint; } < "$STATE"
+tint=${tint:-0}  # a three-line state predates tint
 
 render() {
     [[ -f "$src" ]] || { echo "wezterm-bg: no such image: $src" >&2; exit 1; }
@@ -27,8 +33,20 @@ render() {
     # An animated GIF stays a GIF, every frame blurred; WezTerm plays it.
     local fmt=jpg
     [[ $(magick identify -format '%n\n' "$src" | head -1) -gt 1 ]] && fmt=gif
-    magick "$src" -coalesce -quality 92 -resize '2560x2560>' "${shrink[@]}" \
-        -gravity center -crop 97x97%+0+0 +repage "$fmt:$OUT.tmp" && mv "$OUT.tmp" "$OUT"
+    # One run at a time, the newest wins: the wallpaper picker fires a render
+    # per row, and two in flight would leave `background` from one row and
+    # `background.lock` from another. Children (magick) first, then the script.
+    local old; old=$(cat "$DIR/render.pid" 2>/dev/null)
+    [[ -n "$old" && "$old" != "$$" ]] && { pkill -P "$old" 2>/dev/null; kill "$old" 2>/dev/null; }
+    echo $$ > "$DIR/render.pid"
+    # Both files from one decode: the sharp crop is written on the way, then
+    # the blur. `background.lock` lands first so the reload `background` fires
+    # sees the pair.
+    magick "$src" -coalesce -quality 92 -resize '2560x2560>' \
+        \( -clone 0--1 -gravity center -crop 97x97%+0+0 +repage -write "$fmt:$LOCK.tmp" -delete 0--1 \) \
+        "${shrink[@]}" -gravity center -crop 97x97%+0+0 +repage "$fmt:$OUT.tmp" \
+        && mv "$LOCK.tmp" "$LOCK" && mv "$OUT.tmp" "$OUT"
+    rm -f "$DIR/render.pid"
 }
 
 int() { [[ "$1" =~ ^[0-9]+$ ]] || { echo "wezterm-bg: not a number: $1" >&2; exit 1; }; }
@@ -36,10 +54,11 @@ int() { [[ "$1" =~ ^[0-9]+$ ]] || { echo "wezterm-bg: not a number: $1" >&2; exi
 mkdir -p "$DIR"
 case "${1:-}" in
 "") [[ -f "$OUT" ]] || { echo off; exit 0; }
-    printf 'image %s\nblur  %s\ndark  %s\n' "$src" "$blur" "$dark"; exit 0 ;;
-off) rm -f "$OUT"; exit 0 ;;
+    printf 'image %s\nblur  %s\ndark  %s\ntint  %s\n' "$src" "$blur" "$dark" "$tint"; exit 0 ;;
+off) rm -f "$OUT" "$LOCK"; exit 0 ;;
 blur) int "${2:-}"; blur=$2; render ;;
 dark) int "${2:-}"; dark=$2 ;;
+tint) int "${2:-}"; tint=$(( $2 > 100 ? 100 : $2 )) ;;
 *) src=$(cd "$(dirname "$1")" && pwd)/$(basename "$1"); render ;;
 esac
-printf '%s\n%s\n%s\n' "$src" "$blur" "$dark" > "$STATE"
+printf '%s\n%s\n%s\n%s\n' "$src" "$blur" "$dark" "$tint" > "$STATE"

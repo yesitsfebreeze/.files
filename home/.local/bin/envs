@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# envs — F5 e: environment variables, searched, copied and kept.
+#
+#   envs search   (F5 e s) pick a variable, type `$env.KEY` into the pane
+#   envs copy     (F5 e c) pick a variable, copy its value; ctrl-y copies its KEY
+#   envs edit     (F5 e e) every variable; enter edits the value in $EDITOR,
+#                 ctrl-n adds one, ctrl-d drops the kept value, esc leaves
+#
+# Kept variables live in STORE as KEY=VALUE lines, outside this repo, since
+# they may hold secrets. env.nu loads STORE into every new nu shell, so an
+# edit reaches new panes, not shells already running.
+# The pickers list this process's environment (the tmux server's, as modal
+# runs here) plus STORE, which wins; a pane's own `$env` changes are not seen.
+# The pane is TV_ALL_ORIGIN, named by `modal`.
+set -u
+STORE=${XDG_STATE_HOME:-$HOME/.local/state}/env/vars
+mkdir -p "${STORE%/*}" && touch "$STORE"
+ORIGIN=${TV_ALL_ORIGIN:-}
+export FZF_DEFAULT_OPTS="--reverse --border rounded --info inline-right \
+ --color 16,fg:7,bg:-1,hl:4,fg+:15,bg+:8,hl+:4,border:8,label:7 \
+ --color prompt:5,pointer:1,marker:2,info:8,header:8,spinner:6,preview-border:8"
+NAME='^[A-Za-z_][A-Za-z0-9_]*='
+
+# STORE first, then the environment; the first line per key wins.
+merged() { { grep -E "$NAME" "$STORE"; env | grep -E "$NAME"; } | awk -F= '!seen[$1]++' | sort; }
+pick() { fzf --delimiter = --with-nth 1 --preview 'printf "%s\n" {2..}' --preview-window right,65%,wrap "$@"; }
+note() { tmux display-message -d 1500 "$1" 2>/dev/null || :; }
+# drop KEY: STORE without KEY's line.
+drop() { grep -v "^$1=" "$STORE" > "$STORE.tmp"; mv "$STORE.tmp" "$STORE"; }
+
+case ${1:-} in
+search)
+    row=$(merged | pick --prompt 'env> ') || exit 0
+    : "${ORIGIN:?envs: set TV_ALL_ORIGIN}"
+    exec tmux send-keys -t "$ORIGIN" -l "\$env.${row%%=*}" ;;
+copy)
+    out=$(merged | pick --prompt 'copy> ' --expect ctrl-y --header 'enter copy value · ^y copy key') || exit 0
+    k=$(sed -n 1p <<<"$out") row=$(sed -n '2,$p' <<<"$out")
+    [ -n "$row" ] || exit 0
+    if [ "$k" = ctrl-y ]; then v=${row%%=*} what=$v; else v=${row#*=} what="value of ${row%%=*}"; fi
+    printf '%s' "$v" | pbcopy; tmux set-buffer -- "$v" 2>/dev/null
+    note "copied $what" ;;
+edit)
+    while :; do
+        out=$(merged | pick --prompt 'edit> ' --expect ctrl-n,ctrl-d \
+            --header 'enter edit · ^n new · ^d unkeep · esc done') || [ "$(head -1 <<<"$out")" = ctrl-n ] || exit 0
+        k=$(sed -n 1p <<<"$out") row=$(sed -n 2p <<<"$out") key=${row%%=*}
+        clear
+        case $k in
+        ctrl-n)
+            read -r -e -p 'new key: ' key || continue
+            [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "not a name: $key"; sleep 1; continue; }
+            read -r -e -p "$key=" val || continue
+            drop "$key"; printf '%s=%s\n' "$key" "$val" >> "$STORE" ;;
+        ctrl-d) [ -n "$row" ] && drop "$key" ;;
+        *)
+            [ -n "$row" ] || continue
+            # The value opens in $EDITOR: macOS bash 3.2 has no `read -i`.
+            t=$(mktemp); printf '%s\n' "${row#*=}" > "$t"
+            "${EDITOR:-nvim}" "$t"; val=$(head -1 "$t"); rm -f "$t"
+            drop "$key"; printf '%s=%s\n' "$key" "$val" >> "$STORE" ;;
+        esac
+    done ;;
+*) echo "usage: envs search|copy|edit" >&2; exit 2 ;;
+esac

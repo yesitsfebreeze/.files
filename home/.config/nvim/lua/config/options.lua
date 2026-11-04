@@ -15,6 +15,7 @@ opt.scrolloff = 999
 opt.sidescrolloff = 8
 opt.wrap = false
 opt.showmode = false
+opt.shortmess:append("I") -- no intro screen on an empty start
 opt.splitright = true
 opt.splitbelow = true
 opt.pumheight = 10
