@@ -171,12 +171,12 @@
     {
         key: "<Tab> <S-Tab> <C-n> <C-p> <C-Space> <C-e>"
         title: "Drive the completion menu"
-        use: "`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call."
+        use: "`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. `<Esc>` cancels the menu and leaves you in Insert. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call."
         topic: "edit"
         task: "code"
         step: 1
         mode: "nvim:insert"
-        why: "`<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode."
+        why: "`<CR>` accepts the selected item and falls back to its ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline. `<Esc>` does not fall back: cancelling a menu and leaving Insert are separate gestures here, and only `F24` leaves."
     }
     {
         key: "<BS> and <CR> (autopairs)"
@@ -218,6 +218,17 @@
         mode: "nvim:normal"
         also: ["<leader>cf"]
         why: "Table mode is switched on by a FileType autocmd, not by the plugin itself: `vim-table-mode` ships inactive and needs `TableModeEnable` per buffer. Without the autocmd only the file you opened nvim with would align, and every markdown buffer you `:edit` afterwards would not."
+    }
+    {
+        key: "<F24>"
+        title: "Open the leader with one key, Normal with two"
+        use: "A press leaves Insert, opens which-key at once, and lists what the leader can do. A second press closes the leader and leaves you in Normal. `Esc` returns to Insert from any mode, closing a focused picker, a float or the leader on the way."
+        topic: "edit"
+        task: "editing"
+        step: 21
+        mode: "nvim:insert"
+        also: ["<leader>"]
+        why: "`Esc` is mapped in every editor mode to `startinsert`, but which-key owns `Esc` while its popup is open and swallows it; a watcher sees that close and enters Insert. F24 closes the leader through the leader mapping `<leader><F24>`, so which-key never treats the key as unknown and feeds its prefix back — that feed-back is what would re-open the popup instead of closing it."
     }
 
     # -------------------------------------------------------------------- find

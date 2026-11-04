@@ -219,3 +219,17 @@ See also: [`<C-v> (visual)`](./editing.md#c-v-visual) · [`<leader>p (visual)`](
 > Note what this costs: `<C-v>` no longer starts visual-block from within a selection. Blockwise select is still `<C-v>` from normal mode.
 
 See also: [`<C-c> (visual)`](./editing.md#c-c-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)
+
+## `<F24>`
+
+**Open the leader with one key, Normal with two**
+
+*nvim insert*
+
+A press leaves Insert, opens which-key at once, and lists what the leader can do. A second press closes the leader and leaves you in Normal. `Esc` returns to Insert from any mode, closing a focused picker, a float or the leader on the way.
+
+> **Why it is this way**
+>
+> `Esc` is mapped in every editor mode to `startinsert`, but which-key owns `Esc` while its popup is open and swallows it; a watcher sees that close and enters Insert. F24 closes the leader through the leader mapping `<leader><F24>`, so which-key never treats the key as unknown and feeds its prefix back — that feed-back is what would re-open the popup instead of closing it.
+
+See also: [`<leader>`](./editing.md#leader)

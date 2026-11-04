@@ -65,25 +65,81 @@ return {
       if not ok then return end
       local p = tn.get_palette()
       if not p then return end
-      vim.api.nvim_set_hl(0, "CursorNormal", { bg = p.base0D }) -- blue
-      vim.api.nvim_set_hl(0, "CursorInsert", { bg = p.base0B }) -- green
-      vim.api.nvim_set_hl(0, "CursorVisual", { bg = p.base0E }) -- magenta
-      vim.api.nvim_set_hl(0, "CursorReplace", { bg = p.base08 }) -- red
       vim.api.nvim_set_hl(0, "Whitespace", { fg = p.base02 })
       vim.api.nvim_set_hl(0, "NonText", { fg = p.base02 })
     end
+
+    -- Cursor color follows the mode color lualine already shows, so the
+    -- block and the statusline never disagree. Every value is read from a
+    -- theme highlight group; the statusline groups ARE the mode colors.
+    local theme_insert = nil
+
+    local function mode_cursor_hl()
+      local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+      -- Capture Insert's statusline colors before restyling them: the
+      -- theme's insert color is the blue that Normal keeps.
+      if not theme_insert then
+        local li = vim.api.nvim_get_hl(0, { name = "lualine_a_insert", link = false })
+        if li.bg then
+          theme_insert = { bg = li.bg, fg = li.fg }
+        end
+      end
+      local blue, blue_fg = nil, nil
+      if theme_insert then
+        blue, blue_fg = theme_insert.bg, theme_insert.fg
+      end
+      if blue then
+        vim.api.nvim_set_hl(0, "CursorNormal", { bg = blue })
+        vim.api.nvim_set_hl(0, "lualine_a_normal", { bg = blue, fg = blue_fg, bold = true })
+      end
+      -- Insert takes the theme foreground on the theme background.
+      local fg = normal.fg
+      local bg = normal.bg or blue_fg
+      if fg then
+        vim.api.nvim_set_hl(0, "CursorInsert", { bg = fg, fg = bg })
+        vim.api.nvim_set_hl(0, "lualine_a_insert", { bg = fg, fg = bg, bold = true })
+      end
+      local groups = {
+        CursorVisual = "lualine_a_visual",
+        CursorReplace = "lualine_a_replace",
+        CursorCommand = "lualine_a_command",
+      }
+      for cursor, source in pairs(groups) do
+        local hl = vim.api.nvim_get_hl(0, { name = source, link = false })
+        if hl.bg then
+          vim.api.nvim_set_hl(0, cursor, { bg = hl.bg })
+        end
+      end
+    end
     set_palette_hl()
-    vim.api.nvim_create_autocmd("ColorScheme", {
+    mode_cursor_hl()
+    vim.api.nvim_create_autocmd({ "ColorScheme", "User" }, {
       group = vim.api.nvim_create_augroup("palette_hl", { clear = true }),
-      callback = set_palette_hl,
+      pattern = "*",
+      callback = function(event)
+        set_palette_hl()
+        if event.event == "ColorScheme" then
+          -- Let lualine re-apply its theme first, then read the new colors.
+          theme_insert = nil
+          vim.schedule(mode_cursor_hl)
+        elseif event.match == "VeryLazy" then
+          mode_cursor_hl()
+        end
+      end,
     })
+    -- lualine sets its theme after this config runs; refresh once loaded.
+    vim.defer_fn(mode_cursor_hl, 500)
 
     vim.opt.guicursor = table.concat({
-      "a:blinkwait700-blinkon400-blinkoff250",
-      "n-c-sm:block-CursorNormal",
-      "i-ci-ve:ver25-CursorInsert",
+      "a:block-blinkwait700-blinkon400-blinkoff250",
+      "n:block-CursorNormal",
       "v:block-CursorVisual",
-      "r-cr-o:hor20-CursorReplace",
+      "i-ci-ve:block-CursorInsert",
+      "r-cr:block-CursorReplace",
+      "o:block-CursorNormal",
+      "c:block-CursorCommand",
+      "t:block",
+      "sm:block",
     }, ",")
   end,
 }

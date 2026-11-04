@@ -38,3 +38,100 @@ map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
 
 map("x", "<leader>p", [["_dP]], { desc = "Paste (keep register)" })
+
+-- Esc is the way back: from any editor mode it lands in Insert, after
+-- closing a focused picker or float so a sub-modal cannot trap you.
+--
+-- F24 is the way out. One press goes Normal and opens the leader at once;
+-- a second press closes the leader and stays Normal. Neither gesture waits
+-- for a possible second key.
+local modes = { "n", "i", "v", "x", "s", "o" }
+local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+-- Esc moves the cursor one cell left on the way out of Insert. This does
+-- not, so a block cursor stays on the same cell across a mode change.
+local leave_insert = vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true)
+
+-- Leave the current mode now, so the leader key fed next is read in Normal.
+local function to_normal()
+  local mode = vim.api.nvim_get_mode().mode
+  -- Queued, never "x": feedkeys(..., "x") from a mapping or timer leaves
+  -- later typed keys unprocessed.
+  if mode == "i" or mode == "ic" or mode == "ix" then
+    -- The Insert caret sits one cell right of the Normal cursor. Leaving
+    -- Insert moves the block one cell left; restore the column so the
+    -- cursor stays put (clamped at end of line, where Vim cannot go).
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    vim.api.nvim_feedkeys(leave_insert, "n", false)
+    vim.defer_fn(function()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_get_current_line()
+      vim.api.nvim_win_set_cursor(0, { row, math.min(col, math.max(#line - 1, 0)) })
+    end, 1)
+  elseif mode ~= "n" then
+    vim.api.nvim_feedkeys(esc, "n", false)
+  end
+end
+
+-- Which-key owns Esc while its popup is open and swallows it, so the
+-- editor's Esc map never runs. Watch for that close and finish the
+-- gesture: Esc closes the leader and lands in Insert, F24 leaves Normal.
+local last_key = nil
+local leader_watch = nil
+
+vim.on_key(function(key)
+  last_key = key
+end)
+
+local function watch_leader()
+  if leader_watch then
+    return
+  end
+  local uv = vim.uv or vim.loop
+  local timer = uv.new_timer()
+  local seen = false
+  local deadline = uv.now() + 5000
+  leader_watch = timer
+  timer:start(30, 30, vim.schedule_wrap(function()
+    local ok, wk = pcall(require, "which-key.state")
+    local open = ok and wk.state ~= nil
+    if open then
+      seen = true
+    end
+    if (seen and not open) or (not seen and uv.now() > deadline) then
+      timer:stop()
+      timer:close()
+      leader_watch = nil
+      if seen and last_key == esc then
+        vim.cmd("startinsert")
+      end
+    end
+  end))
+end
+
+map(modes, "<Esc>", function()
+  local bt = vim.bo.buftype
+  -- A prompt buffer is a modal UI (telescope and friends) wherever its
+  -- window sits; a nofile float is one too. Close it, then land in Insert.
+  if bt == "prompt" or (bt == "nofile" and vim.api.nvim_win_get_config(0).relative ~= "") then
+    -- "close!" because a prompt buffer holds its query as an unsaved change.
+    pcall(vim.cmd, "close!")
+    -- Insert belongs to the window that is current after the close.
+    vim.schedule(function()
+      vim.cmd("startinsert")
+    end)
+    return
+  end
+  vim.cmd("startinsert")
+end, { desc = "Insert mode" })
+
+map(modes, "<F24>", function()
+  to_normal()
+  -- Type the leader from a timer, not from inside the map: keys fed during
+  -- mapping resolution never reach which-key's trigger, and nvim_input
+  -- goes through the real input path, so which-key sees a typed Space.
+  -- Which-key owns F24 and Esc from there (see which-key.lua).
+  watch_leader()
+  vim.defer_fn(function()
+    vim.api.nvim_input(" ")
+  end, 10)
+end, { desc = "Leader mode" })

@@ -8,10 +8,15 @@ return {
   version = "1.*", -- tagged release so the prebuilt rust fuzzy lib is fetched
   dependencies = { "rafamadriz/friendly-snippets" },
   opts = {
+    -- Esc is the editor's mode gesture in pickers and prompts, and
+    -- blink's buffer-local Esc would swallow it before the editor map.
+    enabled = function()
+      return vim.bo.buftype ~= "prompt" and vim.bo.buftype ~= "nofile"
+    end,
     keymap = {
       preset = "super-tab",
       ["<CR>"] = { "accept", "fallback" },
-      ["<Esc>"] = { "cancel", "fallback" },
+      ["<Esc>"] = { "cancel" },
     },
     appearance = { nerd_font_variant = "mono" },
     completion = {

@@ -41,6 +41,23 @@ autocmd("BufWritePre", {
   end,
 })
 
+-- Start files in Insert. Vim's easy mode ('insertmode') was removed from
+-- Neovim, so this is the whole of it: no mode juggling, Esc still reaches
+-- Normal, and buffers that carry their own mode (terminal, help, pickers,
+-- plugin floats) are skipped.
+autocmd("BufWinEnter", {
+  group = augroup("start_insert", { clear = true }),
+  callback = function(event)
+    if event.buf ~= vim.api.nvim_get_current_buf() then
+      return
+    end
+    if vim.bo[event.buf].buftype ~= "" then
+      return
+    end
+    vim.cmd("startinsert")
+  end,
+})
+
 autocmd("FileType", {
   group = augroup("close_with_q", { clear = true }),
   pattern = { "help", "qf", "man", "lspinfo", "checkhealth", "startuptime" },

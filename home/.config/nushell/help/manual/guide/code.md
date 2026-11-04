@@ -12,11 +12,11 @@ The language server does the heavy lifting and Neovim's own built-in keys drive 
 
 *nvim insert*
 
-`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call.
+`<Tab>` selects and accepts, and jumps to the next snippet placeholder once you are inside one; `<S-Tab>` goes back. `<C-n>`/`<C-p>` cycle, `<C-Space>` toggles the menu, `<C-e>` hides it. `<Esc>` cancels the menu and leaves you in Insert. Documentation for the selected item appears on its own after a moment, and signature help shows while you are inside a call.
 
 > **Why it is this way**
 >
-> `<CR>` accepts the selected item and `<Esc>` cancels the menu, but both fall back to their ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline or leave insert mode.
+> `<CR>` accepts the selected item and falls back to its ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline. `<Esc>` does not fall back: cancelling a menu and leaving Insert are separate gestures here, and only `F24` leaves.
 
 ## `<BS> and <CR> (autopairs)`
 

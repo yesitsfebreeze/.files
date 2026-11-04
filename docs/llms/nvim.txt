@@ -1,6 +1,6 @@
 # Nvim.txt — the editor
 
-Last updated: 2026-09-29
+Last updated: 2026-11-04
 
 ~/.config/nvim/. lazy.nvim bootstrap (config/lazy.lua); plugin specs in
 lua/plugins/; options, keymaps, autocmds in lua/config/. Deep detail:
@@ -12,8 +12,22 @@ editor), gitsigns, completion, conform, lsp, treesitter, explorer,
 statusline, autopairs, table-mode, session, colorscheme (base16 via
 tinty's palette), shift-select, claude.
 
+Files open in Insert: a `BufWinEnter` autocmd runs `startinsert`, since
+Neovim removed Vim's `'insertmode'` easy mode. `Esc` always returns to
+Insert, closing a focused picker, float or the leader first. `F24` opens
+the leader in Normal at once; a second `F24` closes it and stays in
+Normal. Neither gesture waits for a possible second key. Buffers with a `buftype` (terminal,
+help, pickers, plugin floats) keep their own mode.
+
 Hard-won constraints worth carrying into any change:
 
+- the cursor is a block in every mode and keeps its cell across Insert and
+  Normal: Insert leaves with `<C-\><C-n>` and restores its column, because
+  Esc would move the block one cell left. Insert draws the foreground
+  color on the background color; Normal keeps the blue that Insert carries
+  in the statusline; Visual, Replace and Command take the background of
+  lualine's `lualine_a_<mode>` group. Shape and colors live in
+  colorscheme.lua.
 - lualine's `auto` theme breaks on base16 — the statusline pins the theme.
 - an unrotated LSP log can hit double-digit GB — it is rotated.
 - a `dofile` must never become a `require`: module-name caching hands
