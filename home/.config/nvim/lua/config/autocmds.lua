@@ -96,18 +96,27 @@ autocmd("BufWritePre", {
 
 -- Start files in Insert. Vim's easy mode ('insertmode') was removed from
 -- Neovim, so this is the whole of it: no mode juggling, Esc still reaches
--- Normal, and buffers that carry their own mode (terminal, help, pickers,
--- plugin floats) are skipped.
+-- Normal, and every buffer that is not a plain editable file stays in Normal
+-- (terminal, help, pickers, plugin floats, oil, fugitive, diffview).
+-- The check waits one tick: plugins such as oil set 'buftype' only after
+-- BufWinEnter, so checking right away sees "" and wrongly enters Insert.
 autocmd("BufWinEnter", {
   group = augroup("start_insert", { clear = true }),
   callback = function(event)
-    if event.buf ~= vim.api.nvim_get_current_buf() then
-      return
-    end
-    if vim.bo[event.buf].buftype ~= "" then
-      return
-    end
-    vim.cmd("startinsert")
+    vim.schedule(function()
+      local buf = event.buf
+      if buf ~= vim.api.nvim_get_current_buf() or not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
+      if vim.bo[buf].buftype ~= "" or not vim.bo[buf].modifiable then
+        return
+      end
+      -- Plugin buffers are named like oil:// or fugitive://; real files are not.
+      if vim.api.nvim_buf_get_name(buf):match("^%a[%w+.-]*://") then
+        return
+      end
+      vim.cmd("startinsert")
+    end)
   end,
 })
 
