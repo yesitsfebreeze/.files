@@ -124,15 +124,18 @@ map(modes, "<Esc>", function()
   vim.cmd("startinsert")
 end, { desc = "Insert mode" })
 
-map(modes, "<F24>", function()
-  to_normal()
-  -- Type the leader from a timer, not from inside the map: keys fed during
-  -- mapping resolution never reach which-key's trigger, and nvim_input
-  -- goes through the real input path, so which-key sees a typed Space.
-  -- Which-key owns F24 and Esc from there (see which-key.lua).
-  watch_leader()
-  vim.defer_fn(function()
-    vim.api.nvim_input(" ")
-  end, 10)
-end, { desc = "Leader mode" })
+-- F12 does the same as F24, for keyboards (the Mac's) that have no F24.
+for _, key in ipairs({ "<F24>", "<F12>" }) do
+  map(modes, key, function()
+    to_normal()
+    -- Type the leader from a timer, not from inside the map: keys fed during
+    -- mapping resolution never reach which-key's trigger, and nvim_input
+    -- goes through the real input path, so which-key sees a typed Space.
+    -- Which-key owns F24/F12 and Esc from there (see which-key.lua).
+    watch_leader()
+    vim.defer_fn(function()
+      vim.api.nvim_input(" ")
+    end, 10)
+  end, { desc = "Leader mode" })
+end
 require("config.cockpit")

@@ -30,6 +30,14 @@ return {
         hidden = true,
       },
       {
+        "<leader><F12>",
+        function()
+          require("which-key.state").stop()
+        end,
+        desc = "Close the leader, stay in Normal",
+        hidden = true,
+      },
+      {
         "<leader><Esc>",
         function()
           require("which-key.state").stop()
