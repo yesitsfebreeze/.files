@@ -40,7 +40,8 @@ map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
 map("x", "<leader>p", [["_dP]], { desc = "Paste (keep register)" })
 
 -- Esc is the way back: from any editor mode it lands in Insert, after
--- closing a focused picker or float so a sub-modal cannot trap you.
+-- closing a focused picker or float so a sub-modal cannot trap you. In a
+-- screen that is not a plain file (oil, :Lazy, help) it lands in Normal.
 --
 -- F6 is the way out. One press goes Normal and opens the leader at once;
 -- a second press closes the leader and stays Normal. Neither gesture waits
@@ -92,6 +93,11 @@ local function watch_leader()
   local deadline = uv.now() + 5000
   leader_watch = timer
   timer:start(30, 30, vim.schedule_wrap(function()
+    -- Each tick queues one callback; while the editor is busy several queue
+    -- up, and the ones after the close must not touch the timer again.
+    if timer:is_closing() then
+      return
+    end
     local ok, wk = pcall(require, "which-key.state")
     local open = ok and wk.state ~= nil
     if open then
@@ -102,7 +108,7 @@ local function watch_leader()
       timer:close()
       leader_watch = nil
       if seen and last_key == esc then
-        vim.cmd("startinsert")
+        require("config.insert").start()
       end
     end
   end))
@@ -116,12 +122,10 @@ map(modes, "<Esc>", function()
     -- "close!" because a prompt buffer holds its query as an unsaved change.
     pcall(vim.cmd, "close!")
     -- Insert belongs to the window that is current after the close.
-    vim.schedule(function()
-      vim.cmd("startinsert")
-    end)
+    vim.schedule(require("config.insert").start)
     return
   end
-  vim.cmd("startinsert")
+  require("config.insert").start()
 end, { desc = "Insert mode" })
 
 map(modes, "<F6>", function()

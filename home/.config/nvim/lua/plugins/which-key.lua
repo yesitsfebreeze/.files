@@ -33,7 +33,7 @@ return {
         "<leader><Esc>",
         function()
           require("which-key.state").stop()
-          vim.cmd("startinsert")
+          require("config.insert").start()
         end,
         desc = "Close the leader and return to Insert",
         hidden = true,

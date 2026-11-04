@@ -13,14 +13,19 @@ statusline, autopairs, table-mode, session, colorscheme (base16 via
 tinty's palette), shift-select, claude.
 
 Files open in Insert: a `BufWinEnter` autocmd runs `startinsert`, since
-Neovim removed Vim's `'insertmode'` easy mode. `Esc` always returns to
-Insert, closing a focused picker, float or the leader first. `F6` opens
-the leader in Normal at once; a second `F6` closes it and stays in
-Normal. Neither gesture waits for a possible second key. Only plain
-editable files start in Insert: buffers with a `buftype` (terminal, help,
-pickers, plugin floats, oil), unmodifiable buffers and plugin URIs such as
-`oil://` or `fugitive://` stay in Normal. The check runs one tick after
-`BufWinEnter`, because oil sets its `buftype` only after that event.
+Neovim removed Vim's `'insertmode'` easy mode. `Esc` returns to Insert,
+closing a focused picker, float or the leader first. `F6` opens the leader
+in Normal at once; a second `F6` closes it and stays in Normal. Neither
+gesture waits for a possible second key.
+
+Only plain editable files get Insert. One rule in `lua/config/insert.lua`
+decides it for every path (opening a buffer, `Esc`, closing the leader):
+buffers with a `buftype` (oil, :Lazy, :Mason, help, quickfix, checkhealth,
+terminal, plugin floats), unmodifiable or readonly buffers and plugin URIs
+such as `oil://` or `fugitive://` stay in Normal. A screen like that which
+takes focus while Insert is on leaves Insert; prompt buffers (telescope)
+keep it. The check runs one tick after `BufWinEnter`, because oil sets its
+`buftype` only after that event.
 
 Telescope find_files and live_grep cycle normal → hidden files →
 gitignored files on <C-.>, the same modes television cycles in the shell

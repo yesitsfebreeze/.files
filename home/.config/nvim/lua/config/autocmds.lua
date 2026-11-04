@@ -104,18 +104,16 @@ autocmd("BufWinEnter", {
   group = augroup("start_insert", { clear = true }),
   callback = function(event)
     vim.schedule(function()
-      local buf = event.buf
-      if buf ~= vim.api.nvim_get_current_buf() or not vim.api.nvim_buf_is_valid(buf) then
+      if event.buf ~= vim.api.nvim_get_current_buf() then
         return
       end
-      if vim.bo[buf].buftype ~= "" or not vim.bo[buf].modifiable then
-        return
+      if require("config.insert").editable(event.buf) then
+        vim.cmd("startinsert")
+      elseif vim.api.nvim_get_mode().mode == "i" and vim.bo[event.buf].buftype ~= "prompt" then
+        -- A screen opened from Insert (help, :Lazy) would inherit it.
+        -- Prompt buffers (telescope) want Insert and set it themselves.
+        vim.cmd("stopinsert")
       end
-      -- Plugin buffers are named like oil:// or fugitive://; real files are not.
-      if vim.api.nvim_buf_get_name(buf):match("^%a[%w+.-]*://") then
-        return
-      end
-      vim.cmd("startinsert")
     end)
   end,
 })
