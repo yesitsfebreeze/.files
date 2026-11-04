@@ -16,7 +16,7 @@ The language server does the heavy lifting and Neovim's own built-in keys drive 
 
 > **Why it is this way**
 >
-> `<CR>` accepts the selected item and falls back to its ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline. `<Esc>` does not fall back: cancelling a menu and leaving Insert are separate gestures here, and only `F24` leaves.
+> `<CR>` accepts the selected item and falls back to its ordinary meaning when no menu is open — that fallback is load-bearing: without it you could not insert a newline. `<Esc>` does not fall back: cancelling a menu and leaving Insert are separate gestures here, and only `F6` leaves.
 
 ## `<BS> and <CR> (autopairs)`
 

@@ -34,6 +34,6 @@ Every entry links to where the guide explains it.
 | `<leader>e` | Open the current directory as a buffer | nvim normal | [Find a file, a line, or a directory](../guide/files.md#leader-e) |
 | `<leader>cf` | Format the buffer now | nvim normal | [Work with code](../guide/code.md#leader-cf) |
 | `<leader>t` | Work with markdown tables | nvim normal | [Work with code](../guide/code.md#leader-t) |
-| `<F24>` | Open the leader with one key, Normal with two | nvim insert | [Edit text](../guide/editing.md#f24) |
+| `<F6>` | Open the leader with one key, Normal with two | nvim insert | [Edit text](../guide/editing.md#f6) |
 | `Neovim's own LSP keys` | Use the LSP keys Neovim already ships | nvim normal | [Work with code](../guide/code.md#neovim-s-own-lsp-keys) |
 | `<leader>ss <leader>sl <leader>sd` | Restore the buffers you had open here | nvim normal | [Work with code](../guide/code.md#leader-ss-leader-sl-leader-sd) |

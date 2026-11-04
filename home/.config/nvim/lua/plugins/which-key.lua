@@ -22,15 +22,7 @@ return {
       -- whole prefix, which re-opens the popup and never reaches the
       -- editor's own maps.
       {
-        "<leader><F24>",
-        function()
-          require("which-key.state").stop()
-        end,
-        desc = "Close the leader, stay in Normal",
-        hidden = true,
-      },
-      {
-        "<leader><F12>",
+        "<leader><F6>",
         function()
           require("which-key.state").stop()
         end,

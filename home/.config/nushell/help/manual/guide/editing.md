@@ -220,7 +220,7 @@ See also: [`<C-v> (visual)`](./editing.md#c-v-visual) · [`<leader>p (visual)`](
 
 See also: [`<C-c> (visual)`](./editing.md#c-c-visual) · [`<leader>p (visual)`](./editing.md#leader-p-visual)
 
-## `<F24>`
+## `<F6>`
 
 **Open the leader with one key, Normal with two**
 
@@ -230,6 +230,6 @@ A press leaves Insert, opens which-key at once, and lists what the leader can do
 
 > **Why it is this way**
 >
-> `Esc` is mapped in every editor mode to `startinsert`, but which-key owns `Esc` while its popup is open and swallows it; a watcher sees that close and enters Insert. F24 closes the leader through the leader mapping `<leader><F24>`, so which-key never treats the key as unknown and feeds its prefix back — that feed-back is what would re-open the popup instead of closing it.
+> `Esc` is mapped in every editor mode to `startinsert`, but which-key owns `Esc` while its popup is open and swallows it; a watcher sees that close and enters Insert. F6 closes the leader through the leader mapping `<leader><F6>`, so which-key never treats the key as unknown and feeds its prefix back — that feed-back is what would re-open the popup instead of closing it.
 
 See also: [`<leader>`](./editing.md#leader)

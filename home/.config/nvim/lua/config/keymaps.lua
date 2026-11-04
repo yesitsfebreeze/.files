@@ -42,7 +42,7 @@ map("x", "<leader>p", [["_dP]], { desc = "Paste (keep register)" })
 -- Esc is the way back: from any editor mode it lands in Insert, after
 -- closing a focused picker or float so a sub-modal cannot trap you.
 --
--- F24 is the way out. One press goes Normal and opens the leader at once;
+-- F6 is the way out. One press goes Normal and opens the leader at once;
 -- a second press closes the leader and stays Normal. Neither gesture waits
 -- for a possible second key.
 local modes = { "n", "i", "v", "x", "s", "o" }
@@ -74,7 +74,7 @@ end
 
 -- Which-key owns Esc while its popup is open and swallows it, so the
 -- editor's Esc map never runs. Watch for that close and finish the
--- gesture: Esc closes the leader and lands in Insert, F24 leaves Normal.
+-- gesture: Esc closes the leader and lands in Insert, F6 leaves Normal.
 local last_key = nil
 local leader_watch = nil
 
@@ -124,18 +124,15 @@ map(modes, "<Esc>", function()
   vim.cmd("startinsert")
 end, { desc = "Insert mode" })
 
--- F12 does the same as F24, for keyboards (the Mac's) that have no F24.
-for _, key in ipairs({ "<F24>", "<F12>" }) do
-  map(modes, key, function()
-    to_normal()
-    -- Type the leader from a timer, not from inside the map: keys fed during
-    -- mapping resolution never reach which-key's trigger, and nvim_input
-    -- goes through the real input path, so which-key sees a typed Space.
-    -- Which-key owns F24/F12 and Esc from there (see which-key.lua).
-    watch_leader()
-    vim.defer_fn(function()
-      vim.api.nvim_input(" ")
-    end, 10)
-  end, { desc = "Leader mode" })
-end
+map(modes, "<F6>", function()
+  to_normal()
+  -- Type the leader from a timer, not from inside the map: keys fed during
+  -- mapping resolution never reach which-key's trigger, and nvim_input
+  -- goes through the real input path, so which-key sees a typed Space.
+  -- Which-key owns F6 and Esc from there (see which-key.lua).
+  watch_leader()
+  vim.defer_fn(function()
+    vim.api.nvim_input(" ")
+  end, 10)
+end, { desc = "Leader mode" })
 require("config.cockpit")
